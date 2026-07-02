@@ -57,7 +57,7 @@ Projenin "neden/nasıl/ne oldu" bilgisi 4 dosyada, birbirine bağlı. Bir soru g
 
 ---
 
-## 🗺️ Doküman haritası (34 dosya)
+## 🗺️ Doküman haritası (35 dosya)
 
 ### 1. Oryantasyon
 [MANIFESTO](MANIFESTO.md) · [SYSTEM_ARCHITECTURE](SYSTEM_ARCHITECTURE.md) · [GLOSSARY](GLOSSARY.md) (terim sözlüğü) · [TENANTS](TENANTS.md) (Whitecross/HeroHairs/EeKurt, Class A/B) · [PEOPLE](PEOPLE.md) (kişiler/roller/emailler)

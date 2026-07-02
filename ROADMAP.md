@@ -169,7 +169,7 @@ Login redesign ✅ canlı (animated hub); Google/Apple butonları **görsel var 
 
 ### E · Yetki & Güvenlik Phase 2 (🔒)
 
-**E1 — Rules Phase 2: delete = super-admin + cross-tenant user yönetimi** · 🔵 Planlandı
+**E1 — Rules Phase 2: delete = super-admin + cross-tenant user yönetimi** · 🟡 Kısmen (çekirdek ✅ CANLI, scale işleri kaldı)
 > Phase 1 ✅ DEPLOYED (2026-06-21): cross-tenant deliği kapatıldı, `firestore.rules` canonical oldu.
 
 Politika: `owner > admin > staff`. **Silme SADECE super-admin** (`isSuperAdmin` claim).
@@ -208,7 +208,7 @@ Bkz memory `feedback-delete-superadmin-only`, `feedback-firestore-rules-safety`.
 
 ### H · Onboarding & Super-Admin (🎫)
 
-> **Durum netliği (2026-07-02):** Self-onboarding (`/signup` → `provisionTenant`) **AÇIK ve çalışıyor** — kapatılmadı. Davetiye = üstüne konan **geçici ek kapı**. Memory `keep-self-onboarding-active` hâlâ geçerli. **✅ G1 rol-claim KAPANDI** (`0f8de7e`) → onboarding otomasyonunun asıl blokajı kalktı; kalan blokaj = `AppRouter.jsx:104` `isAdmin=true` hardcode (yukarıda **T-a**) + davet formu/mail'in hiç kurulmamış olması (H2).
+> **Durum netliği (2026-07-02):** Self-onboarding (`/signup` → `provisionTenant`) **AÇIK ve çalışıyor** — kapatılmadı, sadece görünür self-signup butonları gizlendi (H2 P1). Davetiye = üstüne konan ek kapı. Memory `keep-self-onboarding-active` hâlâ geçerli. **✅ Tüm eski blokajlar kapandı:** G1 rol-claim (`0f8de7e`), T-a `isAdmin=true` hardcode (`7e95d40`/`643c8ce`), ve davet formu/mail (H2 ✅ `ae495a1`/`57e3959`). Onboarding otomasyonu artık uçtan uca canlı.
 
 > **✅ H1 + H2 KAPANDI (2026-07-02)** — early-access hunisi uçtan uca canlı: demo formu (tam bilgi) → `superAdmin/waitlist` → super-admin Applications sekmesi → Approve → tenant kurulur + davet maili. Self-signup butonları gizlendi (flow korundu).
 
@@ -226,7 +226,7 @@ Vetted huni: millet self-signup yerine **demo talep etsin → biz bakıp onaylay
 - 🟢 **Kalan (opsiyonel polish):** salown.com'u Firebase Auth Authorized domains'e ekle (davet maili branded salown.com/login linki için); test başvuru doc'ları (`h1-*`, kwolf) UI Delete ile temizlenebilir; orphan auth user `eekurtbookings@gmail.com` Console'dan silinecek (düşük öncelik).
 
 **H3 — super-admin panel genel** · 🟡 Kısmen
-Sayfalar: Overview · Tenants (yayın-onayı ✅ `salownReviewProfile`) · Analytics · AuditLog · Infrastructure · OnboardImport (`salownManualImport`) · Settings. **Kalan:** Applications/davet sekmeleri (H1/H2), cross-tenant user/izin yönetimi (= **E1**), tenant metrik derinleştirme.
+Sayfalar: Overview · **Applications** (✅ H2 P3 — başvuru onay/red + tenant maintenance) · Tenants (yayın-onayı ✅ `salownReviewProfile`) · Analytics · AuditLog · Infrastructure · OnboardImport (`salownManualImport`) · Settings. **Kalan:** cross-tenant user/izin yönetimi (= **E1**), tenant metrik derinleştirme, Billing sayfası (placeholder).
 
 **H3a — Analytics doğruluk pass'i** · ✅ **DONE (2026-06-30, CANLI · admin.salown.com)**
 Analytics sayfası gerçek veriyi düzgün yansıtıyor (doğrulandı 2026-07-02: kaynak dosyalarla senkron).
@@ -262,6 +262,13 @@ Tüm test kayıtları tek yerde. Kapsam: 1) Firestore Rules (otomatik, `test-fir
 ---
 
 ## ✅ Tamamlananlar (arşiv)
+
+### 🗓️ 2026-07-02 — CANLI
+| İş | Detay |
+|----|-------|
+| **Early-access hunisi H1 + H2** | `a2689f9` (intake fix) + `ae495a1` (demo funnel + tam form) + super-admin `57e3959` (Applications sekmesi + `approveApplication` approve→provision + `adminPurgeTenant`). Self-signup butonları gizlendi (flow korundu). Bkz **H1/H2**. |
+| **Approve 2 bug fix** | Davet maili domain-allowlist fallback + claim-clobber guard. Bkz [INCIDENTS.md](INCIDENTS.md) 2026-07-02. |
+| **Mimari review + docs beyin sistemi** | `ARCHITECTURE_REVIEW_2026-07-02` (GPT+Claude) + ROADMAP tema I (parser canary/functions split/reporting pre-agg) + Tier 2 read:true. README/GLOSSARY/4-katmanlı hafıza (INCIDENTS/INVARIANTS/QUIRKS/DECISIONS). |
 
 ### 🗓️ 2026-06-27 → 07-01 — Son dönem (hepsi CANLI)
 | İş | Detay |
