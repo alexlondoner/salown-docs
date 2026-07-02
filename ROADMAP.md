@@ -2,7 +2,7 @@
 
 > Format: her iş bir **durum rozeti** taşır — ✅ Done · 🟡 Kısmen · 🔵 Sıradaki · 🟣 Vizyon · 🔴 Blocker.
 > Tarih vermiyoruz (eskir) — istisna: canlı doğrulama/deploy kayıtları. Test maddeleri iş listesine karışmaz → [TESTS.md](TESTS.md).
-> **Son revizyon: 2026-07-02** (yeniden yapılandırıldı 07-01; C2/C2b/C2c/C5 + H teması eklendi 07-02; **G1-G4 gerçek deploy durumuna düzeltildi + SSOT protokolü eklendi 07-02**; **I teması (Güvenilirlik & Teknik Borç) + Tier 2 read:true yüzeyi eklendi 07-02, kaynak [ARCHITECTURE_REVIEW_2026-07-02.md](ARCHITECTURE_REVIEW_2026-07-02.md); H1 early-access intake ✅ CANLI `a2689f9` 07-02**).
+> **Son revizyon: 2026-07-02** (yeniden yapılandırıldı 07-01; C2/C2b/C2c/C5 + H teması eklendi 07-02; **G1-G4 gerçek deploy durumuna düzeltildi + SSOT protokolü eklendi 07-02**; **I teması (Güvenilirlik & Teknik Borç) + Tier 2 read:true yüzeyi eklendi 07-02, kaynak [ARCHITECTURE_REVIEW_2026-07-02.md](ARCHITECTURE_REVIEW_2026-07-02.md); H1 early-access intake ✅ CANLI `a2689f9` 07-02; H2 vetted-onboarding (demo funnel + Applications approve→provision) ✅ CANLI 07-02, INCIDENTS 2026-07-02 (claim clobber guard) eklendi**).
 
 ---
 
@@ -210,20 +210,20 @@ Bkz memory `feedback-delete-superadmin-only`, `feedback-firestore-rules-safety`.
 
 > **Durum netliği (2026-07-02):** Self-onboarding (`/signup` → `provisionTenant`) **AÇIK ve çalışıyor** — kapatılmadı. Davetiye = üstüne konan **geçici ek kapı**. Memory `keep-self-onboarding-active` hâlâ geçerli. **✅ G1 rol-claim KAPANDI** (`0f8de7e`) → onboarding otomasyonunun asıl blokajı kalktı; kalan blokaj = `AppRouter.jsx:104` `isAdmin=true` hardcode (yukarıda **T-a**) + davet formu/mail'in hiç kurulmamış olması (H2).
 
-> **✅ H1 KAPANDI (2026-07-02, `a2689f9`)** — başvuru artık kaybolmuyor. Kalan blokaj = H2 (davet formu/mail) + super-admin Applications reader.
+> **✅ H1 + H2 KAPANDI (2026-07-02)** — early-access hunisi uçtan uca canlı: demo formu (tam bilgi) → `superAdmin/waitlist` → super-admin Applications sekmesi → Approve → tenant kurulur + davet maili. Self-signup butonları gizlendi (flow korundu).
 
 **H1 — Early-access başvuru intake (inbound)** · ✅ **DONE (2026-07-02, CANLI · commit `a2689f9` + functions deploy)**
 Landing formu var olmayan fonksiyona POST edip 404'ü `.catch` ile yutuyordu → başvuru kayboluyordu. **Çözüldü:** `addToWaitlist` onRequest (`functions:salown:addToWaitlist`, europe-west2, cors:true) → başvuruyu **önce** `superAdmin/waitlist/entries`'e yazar (`{email, source, status:'new', createdAt}`, email-dedup) → **sonra** best-effort Brevo bildirimi `info@salown.com`'a (mail patlasa bile kayıt durur). Frontend değişmedi (form zaten doğru URL'ye gidiyordu). Canlı test: GET→405, invalid→400, CORS preflight→204, valid→`{ok:true}`, dedup→`{duplicate:true}` ✅.
 - **Küçük temizlik:** `h1-deploy-test@salown.com` (source `deploy-test`) test doc'u `superAdmin/waitlist/entries`'te duruyor — Firebase console'dan sil ya da H3 Applications sekmesi gelince yönet.
 - **Sıradaki (H2):** başvuruyu okuyup onaylayan super-admin Applications sekmesi + davet-link maili.
 
-**H2 — Davetiyeli onboarding (outbound)** · 🟡 **P1+P2 CANLI (2026-07-02, `ae495a1`) · P3 (Applications sekmesi + approve) KALDI**
+**H2 — Davetiyeli onboarding (outbound)** · ✅ **DONE (2026-07-02, CANLI) — P1+P2+P3 hepsi canlı**
 Vetted huni: millet self-signup yerine **demo talep etsin → biz bakıp onaylayalım**.
 - ✅ **P1 — Self-signup kapıları gizlendi (akış korundu):** Login "Sign up free" → "Request a demo", tour.html başlığı, 11 marketing sayfasında "Apply for early access" → "Request a demo". `/signup`+`Signup.jsx`+`provisionTenant`+`OnboardingWizard` DOKUNULMADI (URL elle yazılırsa hâlâ çalışır → memory `keep-self-onboarding-active`).
 - ✅ **P2 — Tam başvuru formu:** landing #waitlist email-only → business/kişi/email/telefon/adres/platform/personel/website/not. `addToWaitlist` hepsini `superAdmin/waitlist/entries`'e yazar + `info@salown.com`'a tam-detay maili (H1 fonksiyonu genişletildi). Canlı doğrulandı.
-- 🔵 **P3 — KALDI:** super-admin (`admin.salown.com`, ayrı repo) **Applications sekmesi** → `superAdmin/waitlist/entries` listesi (new/approved/rejected) + **Approve** → yeni `approveApplication` callable (provisionTenant mantığı + onboarding-link maili `noreply@salown.com`) + Reject. Memory tasarımı `project_salown_early_access_flow`.
-- **⚠️ Önce G1** (rol-claim backfill) ✅ zaten kapandı → approve otomasyonu güvenli.
-- **Küçük temizlik:** test doc'ları `superAdmin/waitlist/entries`'te: `h1-deploy-test@`, `h1-fulltest@`, `h1-minimal@salown.com` → P3 Applications reader'ıyla sil.
+- ✅ **P3 — CANLI:** super-admin (`admin.salown.com`) **Applications sekmesi** (commit `57e3959`) → `superAdmin/waitlist/entries` listesi (New/Approved/Rejected filtre + yeni-başvuru badge) + **Approve** → `approveApplication` callable (owner auth user oluştur/bul → başvurudan tenant kur → owner claim → şifre-belirleme/davet maili Brevo) + Reject/Delete (client-write). Ayrıca super-admin **Tenant maintenance** aracı: `adminPurgeTenant` callable (inspect → backup→purge + owner auth sil).
+- ⚠️ **Approve testinde 2 bug bulundu+düzeltildi (CANLI):** (a) davet maili `Domain not allowlisted` → `salown.com→salown.web.app→default` fallback; (b) **mevcut tenant hesabının claim'ini ezme** → guard eklendi (email başka tenant'a aitse approve reddeder). Detay: [INCIDENTS.md](INCIDENTS.md) 2026-07-02.
+- 🟢 **Kalan (opsiyonel polish):** salown.com'u Firebase Auth Authorized domains'e ekle (davet maili branded salown.com/login linki için); test başvuru doc'ları (`h1-*`, kwolf) UI Delete ile temizlenebilir; orphan auth user `eekurtbookings@gmail.com` Console'dan silinecek (düşük öncelik).
 
 **H3 — super-admin panel genel** · 🟡 Kısmen
 Sayfalar: Overview · Tenants (yayın-onayı ✅ `salownReviewProfile`) · Analytics · AuditLog · Infrastructure · OnboardImport (`salownManualImport`) · Settings. **Kalan:** Applications/davet sekmeleri (H1/H2), cross-tenant user/izin yönetimi (= **E1**), tenant metrik derinleştirme.

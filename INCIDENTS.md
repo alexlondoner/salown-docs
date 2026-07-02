@@ -33,6 +33,22 @@ Her olay `## YYYY-MM-DD — kısa başlık` ile açılır, hemen altına **metad
 
 ---
 
+## 2026-07-02 — Demo başvurusu approve'u, mevcut bir tenant'ın (eekurt) auth hesabının claim'ini ezdi
+
+**Severity:** 🟠 High · **Owner:** Claude (Opus 4.8) · **Status:** ✅ Resolved
+**Impact:** H2 P3 test'inde super-admin, KWOLF BARBERS demo başvurusunu (email: `eekurtbookings@gmail.com`) approve etti. Bu email zaten **eekurt tenant'ının giriş hesabıydı** (uid `L6ws…`, `docs/TENANTS.md`). `approveApplication` mevcut hesabı yeniden kullanıp custom claim'ini `{tenantId:eekurt}` → `{tenantId:kwolf-barbers, tenantRole:owner}` yaptı → eekurt hesabı kwolf-barbers'a düştü, eekurt erişimi bu hesap üzerinden bozuldu. Ayrıca davet maili `Domain not allowlisted` ile patladı.
+**Root Cause:** (1) `approveApplication` `getUserByEmail` ile bulduğu mevcut kullanıcının claim'ini **koşulsuz eziyordu** — başka tenant'a ait olup olmadığını kontrol etmiyordu. (2) `generatePasswordResetLink` continue-URL'i `salown.com` Firebase Auth Authorized domains'te değil.
+**Resolution:** Guard eklendi — `getUserByEmail` bir kullanıcı bulur ve `customClaims.tenantId` doluysa approve **reddediyor** (`failed-precondition`), ezmiyor. Mail: `salown.com → salown.web.app → default` fallback zinciri. İkisi de redeploy (`functions:salown:approveApplication`). Temizlik: eekurt + kwolf-barbers Firestore'dan silindi (kullanıcı elle); orphan auth hesabı `eekurtbookings@gmail.com` Authentication'dan silinecek (düşük öncelik).
+**Prevention:** Bir auth kullanıcısının claim'ini yazmadan **önce** o kullanıcının başka bir tenant'a bağlı olup olmadığını kontrol et. Provision/onboarding akışları asla mevcut bir hesabı sessizce başka tenant'a taşımamalı.
+
+**Ne oldu / Teşhis / Fix:** P3 (Applications sekmesi + approve→provision) canlıya alındı. İlk gerçek approve testinde başvuru email'i mevcut bir tenant hesabıyla çakıştı. `firebase functions:log` → `invite email failed: Domain not allowlisted by project` (mail); `docs/TENANTS.md` → `eekurtbookings@gmail.com`'un eekurt'ün hesabı olduğu (claim clobber). Tenant kurulumu başarılıydı (approve akışı çalışıyor) ama iki yan bug çıktı. İkisi de kodda düzeltildi + redeploy; test verisi (kwolf-barbers) + eekurt (kullanıcı kararıyla komple) silindi.
+
+**Dersler / Lessons Learned:**
+- `setCustomUserClaims` **yıkıcı** bir işlem — mevcut claim'i tamamen değiştirir. Yazmadan önce "bu hesap zaten birine mi ait?" kontrolü şart.
+- `generatePasswordResetLink`/`actionCodeSettings.url` domain'i Firebase Auth **Authorized domains**'te olmalı; custom domain (salown.com) default olarak değil — `salown.web.app` var. Kalıcı çözüm: salown.com'u Authorized domains'e ekle (Console).
+- Firestore console'dan doc silmek **auth kullanıcısını silmez** (ayrı sistem) ve alt-koleksiyonları cascade etmeyebilir — tenant retire ederken üç yeri de düşün: Firestore doc, alt-koleksiyonlar, Auth user.
+- Test verisi için gerçek/mevcut email kullanma (eekurtbookings@) — çakışma riski.
+
 ## 2026-06-29 — Müşteri reschedule barber off-gününü (Arda Çarşamba) kabul etti → "hayalet booking" (grid'de görünmez)
 
 **Severity:** 🟠 High · **Owner:** — · **Status:** ✅ Resolved
