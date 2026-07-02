@@ -221,6 +221,12 @@ Super-admin'de davet gönderen form/fonksiyon/mail **yok**. `provisionTenant` = 
 **H3 — super-admin panel genel** · 🟡 Kısmen
 Sayfalar: Overview · Tenants (yayın-onayı ✅ `salownReviewProfile`) · Analytics · AuditLog · Infrastructure · OnboardImport (`salownManualImport`) · Settings. **Kalan:** Applications/davet sekmeleri (H1/H2), cross-tenant user/izin yönetimi (= **E1**), tenant metrik derinleştirme.
 
+**H3a — Analytics doğruluk pass'i** · ✅ **DONE (2026-06-30, CANLI · admin.salown.com)**
+Analytics sayfası gerçek veriyi düzgün yansıtıyor (doğrulandı 2026-07-02: kaynak dosyalarla senkron).
+- **Source breakdown** (`fb92c8b`+`88b92cc`+`d1d857c`): `normalizeSource` casing/alias kopyalarını katlıyor (website/web/direct→Website, manual/walkin→Walk-in, app→Client App, product_sale→Product Sale); Website (tenant sitesi) ↔ salOWN (salown.com/book) AYRI kalır; Blocked/Product Sale breakdown'dan düşer. Renkler `SOURCE_COLOR` = salown-app `sourceColors.js` border'larının aynısı (birebir doğrulandı).
+- **MRR** (`2e04a66`): hardcoded £0 gitti → gerçek tenant `plan`+`status`'ından türer; `PLAN_PRICE {free:0,starter:29,pro:69,proplus:custom}` = `planLimits.js` aynası; yalnız `status==='active'` + sayısal fiyat sayılır (trial/Pro+ → £0, dürüst; Phase 5 billing'de gerçek paid-status).
+- ⚠️ super-admin ayrı repo → import edemez, renk/fiyat **mirror**; `sourceColors.js` veya `planLimits.js` değişirse `Analytics.jsx`'i senkronla. Bkz [[edit-log-salown]].
+
 ---
 
 ## 🧪 Test Listeleri → [TESTS.md](TESTS.md)
