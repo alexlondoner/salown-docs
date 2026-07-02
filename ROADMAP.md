@@ -217,11 +217,13 @@ Landing formu var olmayan fonksiyona POST edip 404'ü `.catch` ile yutuyordu →
 - **Küçük temizlik:** `h1-deploy-test@salown.com` (source `deploy-test`) test doc'u `superAdmin/waitlist/entries`'te duruyor — Firebase console'dan sil ya da H3 Applications sekmesi gelince yönet.
 - **Sıradaki (H2):** başvuruyu okuyup onaylayan super-admin Applications sekmesi + davet-link maili.
 
-**H2 — Davetiyeli onboarding (outbound)** · 🔴 **YOK — davet formu + email hiç kurulmamış**
-Super-admin'de davet gönderen form/fonksiyon/mail **yok**. `provisionTenant` = self-signup (caller uid/email kullanır, davet mekanizması değil). "Davetiye gönderince email gelmiyor" = gönderen bir şey olmadığı için. **Gerekli:**
-- Super-admin'e **davet formu** (salon email/isim gir) → onboarding-link üret (`generatePasswordResetLink`, `noreply@salown.com`) + mail at.
-- Memory tasarımı `submitApplication` + `approveApplication` + **Applications sekmesi** (`project_salown_early_access_flow`) — hiç kodlanmadı, bu kalemde yapılacak.
-- **⚠️ Önce G1** (rol-claim backfill) — davet edilen owner doğru rol almadan otomatikleştirme.
+**H2 — Davetiyeli onboarding (outbound)** · 🟡 **P1+P2 CANLI (2026-07-02, `ae495a1`) · P3 (Applications sekmesi + approve) KALDI**
+Vetted huni: millet self-signup yerine **demo talep etsin → biz bakıp onaylayalım**.
+- ✅ **P1 — Self-signup kapıları gizlendi (akış korundu):** Login "Sign up free" → "Request a demo", tour.html başlığı, 11 marketing sayfasında "Apply for early access" → "Request a demo". `/signup`+`Signup.jsx`+`provisionTenant`+`OnboardingWizard` DOKUNULMADI (URL elle yazılırsa hâlâ çalışır → memory `keep-self-onboarding-active`).
+- ✅ **P2 — Tam başvuru formu:** landing #waitlist email-only → business/kişi/email/telefon/adres/platform/personel/website/not. `addToWaitlist` hepsini `superAdmin/waitlist/entries`'e yazar + `info@salown.com`'a tam-detay maili (H1 fonksiyonu genişletildi). Canlı doğrulandı.
+- 🔵 **P3 — KALDI:** super-admin (`admin.salown.com`, ayrı repo) **Applications sekmesi** → `superAdmin/waitlist/entries` listesi (new/approved/rejected) + **Approve** → yeni `approveApplication` callable (provisionTenant mantığı + onboarding-link maili `noreply@salown.com`) + Reject. Memory tasarımı `project_salown_early_access_flow`.
+- **⚠️ Önce G1** (rol-claim backfill) ✅ zaten kapandı → approve otomasyonu güvenli.
+- **Küçük temizlik:** test doc'ları `superAdmin/waitlist/entries`'te: `h1-deploy-test@`, `h1-fulltest@`, `h1-minimal@salown.com` → P3 Applications reader'ıyla sil.
 
 **H3 — super-admin panel genel** · 🟡 Kısmen
 Sayfalar: Overview · Tenants (yayın-onayı ✅ `salownReviewProfile`) · Analytics · AuditLog · Infrastructure · OnboardImport (`salownManualImport`) · Settings. **Kalan:** Applications/davet sekmeleri (H1/H2), cross-tenant user/izin yönetimi (= **E1**), tenant metrik derinleştirme.
