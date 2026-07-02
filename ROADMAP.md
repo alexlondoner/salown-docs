@@ -42,6 +42,7 @@
 
 > **Zihniyet:** "whitecross pilot, ne çalışıyorsa olur" → 1000 müşteride bu kararlar **herkesi** vurur.
 > Roadmap'i feature sırası değil bir **gate** oku. Detay: memory `project-salown-prescale-hardening`, [SECURITY.md](SECURITY.md), [TESTS.md](TESTS.md) §2.
+> Dış-göz teşhisi (GPT+Claude, 🔴 read:true yüzeyi + parser canary + reporting pre-agg): [ARCHITECTURE_REVIEW_2026-07-02.md](ARCHITECTURE_REVIEW_2026-07-02.md).
 >
 > **✅ TIER 1 GATE KAPANDI (2026-07-02 doğrulandı).** G1+G4 commit `0f8de7e` (2026-06-27) ve G2+G3
 > commit `851efeb` (ruleset `22bdc429`) **`origin/main`'de + canlıda** (git ile doğrulandı). Rules'ta
