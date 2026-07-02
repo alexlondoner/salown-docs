@@ -36,6 +36,13 @@
 
 **Tek gerçek kapı:** aşağıdaki **Pre-Scale Hardening Gate**. Tenant #4'ü almadan önce Tier 1 kapanmalı — pilotta zararsız kısayollar, ölçekte platform politikası olur.
 
+### 🎯 Sıradaki oturum — ÖNCELİK (2026-07-03 sonu)
+> **H4 — Parser mail girişi (parse-inbox)** öncelikli işaretlendi (kullanıcı kararı 2026-07-03). Karar verildi (ADR-015); yarın uygulamaya başlanacak.
+> **Başlangıç noktası (net):** ben `salownInboundEmail` webhook'unu yazıp deploy → kullanıcıya 3 değer (webhook URL + Brevo inbound MX host + whitecross/herohairs token adresleri) → kullanıcı GoDaddy'de 1 MX (`parse.salown.com`) + Brevo Inbound Parsing + whitecross bildirim adresini token'a çevirir → whitecross'ta test.
+> **Güvence:** EKLEME, değiştirme değil — eski `salownParseEmails` IMAP cron'a dokunulmaz, paralel çalışır, `externalId`+tombstone dedup çakışmayı önler, downstream trigger'lar (email/FCM/telegram) ingestion yolunu umursamaz. Deploy anında sıfır davranış değişikliği. Tenant-tenant kademeli + geri alınabilir. **I1 canary ile birlikte** kurulmalı (tek pipe = tek arıza).
+> Detay: **H4** (aşağıda) + [DECISIONS.md](DECISIONS.md) ADR-015.
+> *(Paralel devam: A2 Stripe Connect Faz 0 backend yazıldı, deploy kullanıcının Stripe Dashboard değerlerini bekliyor.)*
+
 ---
 
 ## 🚦 EN ÖNCELİKLİ — Pre-Scale Hardening Gate
@@ -151,6 +158,11 @@ Owner/super-admin doğal dille sorar, AI her tenant'ın Firestore'unu gezip derl
    ⚠️ (arşiv) KISITLI ETKİ teşhisi: dedup yalnızca **kayıtlı client doc'u (manualId) olan** kişilerde çalışıyordu. Kök neden: lapsed listesi **booking-türevi kimlikle** hesaplanıyor (`Home.jsx:251`, booking'lerden), canonical client doc'la değil. Stamp hem yazım (`functions/index.js:3562` `if(clientId)`, `clientId=manualId||null` `SendCampaignPanel:127`) hem Home suppress kümesi (`clients` doc dizisi) **manualId'ye bağlı**. Walk-in/aggregator müşterisi (client doc'u yok) → `clientId=null` → stamp atılmaz + suppress kümesinde bulunmaz → **her gün tekrar çıkar.** Birthday bağışık (`birthday` sadece client doc'unda → listedeki herkes manualId'li). **Şiddet tenant-tipine bağlı:** whitecross (barbershop, walk-in ağırlıklı) = çoğu lapsed etkilenir; HeroHairs (online-booking) = çalışır.
    **Tam fix — iki yol (ikisi de orta risk, ayrı iş):** (A) re-engage gönderiminde `resolveMemberDocId` (`Clients.jsx:255`, zaten var) ile booking-only kişiye client doc üret→manualId→stamp; yan etki: müşteri DB'si kurulur; risk: kusurlu eşleşmede duplicate doc. (B) client doc üretmeden canonical key'li (normalize phone/email/isim) ayrı `reengagements` koleksiyonu → Home eşleştirir; doc çoğalması yok, daha hafif. Ayrıca isim-only eşleşme (aynı isim ≠ aynı kişi) her iki yolda canonical identity'ye taşınmalı. **Paste-hazır plan (A önerili, backend find-or-create): `docs/C5_LAPSED_DEDUP_PLAN.md`.**
 
+**C6 — Analytics'i Marketing'den AYIR (sayfa refactor)** · 🔵 Planlandı (2026-07-03)
+Nav ayrımı CANLI (`0b916ef`): Sidebar'da Marketing kendi **MARKETING** başlığına alındı, ANALYTICS=Reports+Finance. **AMA sayfa içeriği hâlâ karışık:** `Marketing.jsx`'in ~%80'i aslında analytics (Overview KPI'lar, Bookings, Customers, **Occupancy heatmap**) — sadece **Campaigns** sekmesi gerçek pazarlama. `Reports.jsx` ile ciddi overlap (gelir/booking-kaynağı/barber-servis performansı iki yerde).
+- **Hedef:** Marketing = **Campaigns + Occupancy** (aksiyon/pazarlama). Analytics (Reports) = tüm gelir/KPI/performans. Marketing'in Overview/Bookings/Customers sekmeleri Reports'a taşınır/birleştirilir → overlap temizlenir, kavramsal netlik.
+- **Efor:** orta-büyük (ayrı iş). Dosyalar: `Marketing.jsx` (TABS ~870: overview/bookings/customers/occupancy/campaigns), `Reports.jsx` (tabs ~212), `Sidebar.jsx` (label zaten ayrık). Analiz kaynağı: bu session'ın 3-kollu taraması (memory `edit_log_salown` 2026-07-03).
+
 ---
 
 ### D · Mobil (📱)
@@ -237,7 +249,7 @@ Analytics sayfası gerçek veriyi düzgün yansıtıyor (doğrulandı 2026-07-02
 - **MRR** (`2e04a66`): hardcoded £0 gitti → gerçek tenant `plan`+`status`'ından türer; `PLAN_PRICE {free:0,starter:29,pro:69,proplus:custom}` = `planLimits.js` aynası; yalnız `status==='active'` + sayısal fiyat sayılır (trial/Pro+ → £0, dürüst; Phase 5 billing'de gerçek paid-status).
 - ⚠️ super-admin ayrı repo → import edemez, renk/fiyat **mirror**; `sourceColors.js` veya `planLimits.js` değişirse `Analytics.jsx`'i senkronla. Bkz [[edit-log-salown]].
 
-**H4 — Parser mail girişi: parse-inbox hybrid + token izolasyon** · 🔵 **KARAR VERİLDİ (2026-07-03, ADR-015) — infra+webhook kaldı** · 🔴 onboarding-kritik
+**H4 — Parser mail girişi: parse-inbox hybrid + token izolasyon** · ⭐ **ÖNCELİK — sıradaki oturum (2026-07-03)** · 🔵 KARAR VERİLDİ (ADR-015), infra+webhook kaldı · 🔴 onboarding-kritik
 **Sorun:** `salownParseEmails` her tenant Gmail'ine **app-password + IMAP** (`functions/index.js:3065`) = onboarding-katili + düz-metin şifre (**T-b**) + Gmail-kilidi + Google app-password'leri kısıtlıyor.
 **Karar (ADR-015):** Tenant'a **seçenek** — (önerilen) **parse-inbox** `bk_<token>@parse.salown.com`, salon bildirim adresini değiştirir ya da forward eder (+video); (fallback) mevcut app-password+video. **Boru-değil-depo:** inbound servis→`salownInboundEmail` webhook→parse→Firestore, ham mail saklanmaz.
 **🔒 İZOLASYON (en kritik — "mahvoluruz" riski):** routing YALNIZ **`to:` opak-token → tenantId lookup** (`superAdmin/parseAddresses/{token}`). Token rastgele → typo/tahmin başka tenant'a **denk gelemez**; içerikten tenant çıkarma YOK; bilinmeyen token → **fail-closed** (quarantine+alarm, asla yanlış tenant'a yazma). Cross-tenant misroute **yapısal imkânsız**.
