@@ -28,6 +28,7 @@
 | [ADR-012](#adr-012--docs--ayrı-private-repo-salown-docs) | docs = ayrı private repo (salown-docs) | ✅ | 2026-07-02 |
 | [ADR-013](#adr-013--incident-kayıt-standardı-8-alan-template) | Incident kayıt standardı (8-alan template) | ✅ | 2026-07-02 |
 | [ADR-014](#adr-014--ask-salown--claude-haiku-45) | Ask salOWN = Claude Haiku 4.5 | ✅ | — |
+| [ADR-015](#adr-015--parser-mail-girişi--parse-inbox-hybrid-per-tenant-token-izolasyon) | Parser mail girişi = parse-inbox hybrid + per-tenant token izolasyon | ✅ | 2026-07-03 |
 
 ---
 
@@ -143,6 +144,21 @@
 **Karar:** **Anthropic Claude Haiku 4.5** (`askAI` onCall, `functions/index.js`, secret `ANTHROPIC_API_KEY`). Tek AI dokunuş noktası — model burada merkezi.
 **Alternatifler:** Daha büyük model (Sonnet/Opus) — asistan görevleri (özet/soru-cevap) için gereksiz maliyet/gecikme; Haiku hız+maliyet için yeterli. Başka sağlayıcı — Anthropic seçildi.
 **Sonuç:** Model tek yerde (`index.js`) → yükseltme kolay. Detay: [ARCHITECTURE_REVIEW_2026-07-02](ARCHITECTURE_REVIEW_2026-07-02.md) 🟢-6, [GLOSSARY](GLOSSARY.md) "Ask salOWN". Not: en güncel Claude modelleri (Haiku 4.5, Opus/Sonnet) değişebilir → yükseltirken tek satır.
+
+## ADR-015 — Parser mail girişi = parse-inbox hybrid + per-tenant token izolasyon
+**Durum:** ✅ Accepted (uygulama bekliyor — infra + `salownInboundEmail` webhook) · İlgili roadmap: **H4**
+
+**Bağlam:** Parser (differentiator) her tenant'ın Gmail'ine **app-password + IMAP** ile bağlanıyor. Non-teknik salon için 2FA+app-password onboarding-katili; düz-metin şifre = güvenlik borcu (T-b); Gmail'e kilitli; Google app-password'leri kısıtlıyor. Parser aslında salonun inbox'ına değil, aggregator'ların (Booksy/Fresha/Treatwell) gönderdiği **bildirim maillerine** ihtiyaç duyuyor.
+
+**Karar:** Tenant'a **seçenek** sun (zorunlu tek yol değil):
+1. **Önerilen — parse-inbox:** tenant'a **per-tenant opak token adres** verilir (`bk_<rasgele>@parse.salown.com`); salon ya aggregator'daki bildirim adresini bununla değiştirir ya da **forward** kurar. Video ile gösterilir (sektör zaten video-conferans kurulum yapıyor).
+2. **Fallback — kendi inbox'ını bağla:** mevcut app-password/IMAP + rehberli video (yara bandı; Google kısıtladıkça kırılganlaşır, ağır yatırım yok).
+- **Boru, depo DEĞİL:** inbound servis (Cloudflare Email Routing) → `salownInboundEmail` webhook → parse → tenant Firestore'una yaz → **ham mail SAKLANMAZ.**
+- **İZOLASYON (en kritik):** routing **yalnız `to:` token → tenantId lookup** (`superAdmin/parseAddresses/{token}`). Token opak+rastgele → tahmin/typo başka tenant'a **denk gelemez**. İçerikten/from'dan tenant ÇIKARMA. Bilinmeyen token → **fail-closed**: quarantine + alarm, ASLA rastgele tenant'a yazma. (+ sender-domain doğrulaması + `externalId` dedup mevcut.)
+
+**Alternatifler:** (a) **Sadece app-password** — onboarding-katili + T-b + Google kısıtı, elendi (ama fallback olarak kalır). (b) **Gmail OAuth read-only** — tek-tık UX iyi ama Google restricted-scope (CASA) güvenlik denetimi pahalı/yavaş, küçük projede zor → ertelendi. (c) **Tek paylaşımlı inbox + içerikten tenant tahmini** — cross-tenant sızıntı riski (whitecross booking'i herohairs'e düşer = "mahvoluruz") → **reddedildi**; izolasyon token'la yapısal.
+
+**Sonuç:** App-password'ü opsiyonel fallback'e indirir, parse-inbox tenant'larında **sıfır kimlik tutulur** → seçildikçe **T-b buharlaşır** (bkz ROADMAP T-b notu). Cross-tenant misroute **yapısal olarak imkânsız** (opak token + fail-closed). Gerçek-zamanlı parse (cron'dan iyi). ⚠️ Yeni tradeoff: tek inbound pipe = tek arıza noktası → **I1 parser canary** + sağlam servis şart. Sub-processor (mail servisi) GDPR listesine eklenir. İlk deneme: whitecross + herohairs (her biri ayrı token). Parser mantığı zaten raw-email string üzerinde çalışıyor (`extractPlainText`, `functions/index.js`) → IMAP yerine webhook'a bağlamak orta refactor.
 
 ---
 
