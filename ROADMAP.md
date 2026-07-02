@@ -2,7 +2,7 @@
 
 > Format: her iş bir **durum rozeti** taşır — ✅ Done · 🟡 Kısmen · 🔵 Sıradaki · 🟣 Vizyon · 🔴 Blocker.
 > Tarih vermiyoruz (eskir) — istisna: canlı doğrulama/deploy kayıtları. Test maddeleri iş listesine karışmaz → [TESTS.md](TESTS.md).
-> **Son revizyon: 2026-07-02** (yeniden yapılandırıldı 07-01; C2/C2b/C2c/C5 + H teması eklendi 07-02; **G1-G4 gerçek deploy durumuna düzeltildi + SSOT protokolü eklendi 07-02**).
+> **Son revizyon: 2026-07-02** (yeniden yapılandırıldı 07-01; C2/C2b/C2c/C5 + H teması eklendi 07-02; **G1-G4 gerçek deploy durumuna düzeltildi + SSOT protokolü eklendi 07-02**; **I teması (Güvenilirlik & Teknik Borç) + Tier 2 read:true yüzeyi eklendi 07-02, kaynak [ARCHITECTURE_REVIEW_2026-07-02.md](ARCHITECTURE_REVIEW_2026-07-02.md)**).
 
 ---
 
@@ -69,6 +69,7 @@
 
 ### 🟠 Tier 2 — ölçekte patlar ama onboarding'i bloklamaz
 `salownCreateBooking` transactional (double-booking race, aşağıda **C3**) · plan enforcement (aşağıda **A1**) · parser matching compound hatası · tek Firebase projesi quota/blast radius.
+- **🔴-1 `read: if true` yüzeyi** (ARCHITECTURE_REVIEW): G2 sadece `bookings`'i tenant-scope'ladı; `services`/`products`/`clients` + world-readable `tenants/{id}` root doc hâlâ herkese açık okunur. 10 salonda görünmez, **1000 salonda PII enumerate + Firestore read-cost bombası** — ve tenant'lar bu davranışa güvenince geri sarması zor. Public booking sitesinin gerçekten neye ihtiyacı olduğunu ayır (public projeksiyon `tenants/{id}/public/{doc}`, bkz memory `tenant-root-doc-public`) → gerisini tenant-scope'a çek. Onboarding'i bloklamaz ama **tenant hacmi artmadan** kapanmalı.
 
 ### 🟢 Tier 3 — tenant-local, güvenli (pilot mantığı kalabilir)
 Finance/partnerConfig · Muhamed wage · workingDays — tenant'ın kendi verisi, ölçek riski yok.
@@ -227,6 +228,26 @@ Analytics sayfası gerçek veriyi düzgün yansıtıyor (doğrulandı 2026-07-02
 - **Source breakdown** (`fb92c8b`+`88b92cc`+`d1d857c`): `normalizeSource` casing/alias kopyalarını katlıyor (website/web/direct→Website, manual/walkin→Walk-in, app→Client App, product_sale→Product Sale); Website (tenant sitesi) ↔ salOWN (salown.com/book) AYRI kalır; Blocked/Product Sale breakdown'dan düşer. Renkler `SOURCE_COLOR` = salown-app `sourceColors.js` border'larının aynısı (birebir doğrulandı).
 - **MRR** (`2e04a66`): hardcoded £0 gitti → gerçek tenant `plan`+`status`'ından türer; `PLAN_PRICE {free:0,starter:29,pro:69,proplus:custom}` = `planLimits.js` aynası; yalnız `status==='active'` + sayısal fiyat sayılır (trial/Pro+ → £0, dürüst; Phase 5 billing'de gerçek paid-status).
 - ⚠️ super-admin ayrı repo → import edemez, renk/fiyat **mirror**; `sourceColors.js` veya `planLimits.js` değişirse `Analytics.jsx`'i senkronla. Bkz [[edit-log-salown]].
+
+---
+
+### I · Güvenilirlik & Teknik Borç (🛠️ · kaynak [ARCHITECTURE_REVIEW_2026-07-02.md](ARCHITECTURE_REVIEW_2026-07-02.md))
+
+> Dış-göz review'ın (GPT SaaS lensi + Claude repo lensi) çıkardığı, ROADMAP'te henüz olmayan işler.
+> Sıra = ROI: **I1 en yüksek** (differentiator'ı sessiz ölümden korur), sonra ucuz-borç, sonra ölçek.
+
+**I1 — Parser sessiz-kırılma canary'si** · 🔵 Sıradaki (en yüksek ROI, ~20 satır)
+`salownParseEmails` cron API entegrasyonu değil — salon Gmail'ini IMAP+regex ile okur. Booksy/Fresha email formatını değiştirirse parser **exception atmaz, sadece 0 booking import eder** → en güçlü özellik sessizce ölür, kimse fark etmez. **İş:** son N günün import ortalamasına göre eşik; run beklenenden az/0 çekerse **alarm** (Telegram/email, mevcut bildirim altyapısı). Kaynak-bazlı (Booksy ayrı, Fresha ayrı) ki tek platform kırılınca yakalansın.
+
+**I2 — `functions/index.js` split (4541 satır)** · 🔵 (ucuz borç, ilk ödenecek)
+v2 functions → her export bağımsız redeploy, yani refactor **mekanik/düşük riskli**. Öneri klasörleme: `bookings/ · marketing/ · notifications/ · parsers/ · stripe/ · ai/ · staff/ · clients/`. Korkulacak borç değil; ucuz + okunabilirliği hemen açar, sonraki her iş kolaylaşır.
+
+**I3 — Reporting pre-aggregation** · 🔵 (~100 salon, 1000'i beklemez)
+`Reports.jsx` client-side aggregation yapıyor (Firestore'dan çekip tarayıcıda `reduce`). Tenant × aylık booking büyüdükçe **~100 salonda tarayıcıda çöker** (1000'e kalmaz). **Yön:** `tenants/{id}/stats/{period}` pre-aggregated doc (booking trigger'ı veya scheduled job günceller) → Reports önce onu okur. Finance (Whitecross-only, contained) bu kapsamda değil.
+
+> **Zamanlama notları (review'dan, mevcut maddelere):**
+> - **Delete-bottleneck** (`delete = super-admin only`, T-a1/E1): review bunu 1000 değil **~3. salonda** operasyonel darboğaz olarak işaretledi (her yanlış-booking silme tek kişiye düşer). E1 (b) owner→admin tenant-scoped yetki bu yüzden düşünüldüğünden erken gerekebilir.
+> - **Finance hardcoded** (Tier 3): review "en büyük risk mi?" → **hayır, contained** (tek dosya/tek tenant, veri bütünlüğü tehdidi yok). Tier 3'te doğru yerde; 🔴 değil.
 
 ---
 
