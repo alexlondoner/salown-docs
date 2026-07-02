@@ -27,6 +27,7 @@
 | [ADR-011](#adr-011--salown-site-silindi-tek-hosting-kaynağı) | salown-site silindi, tek hosting kaynağı | ✅ | 2026-06-29 |
 | [ADR-012](#adr-012--docs--ayrı-private-repo-salown-docs) | docs = ayrı private repo (salown-docs) | ✅ | 2026-07-02 |
 | [ADR-013](#adr-013--incident-kayıt-standardı-8-alan-template) | Incident kayıt standardı (8-alan template) | ✅ | 2026-07-02 |
+| [ADR-014](#adr-014--ask-salown--claude-haiku-45) | Ask salOWN = Claude Haiku 4.5 | ✅ | — |
 
 ---
 
@@ -77,6 +78,7 @@
 **Karar:** Bu aşamada **tüm silme işlemleri + staff atama SADECE super-admin** (`isSuperAdmin` claim). Owner'lar dahil herkes silme yetkisini kaybetti (pilot "Seçenek a"). İleride owner→admin tenant-scoped yetki gelecek.
 **Alternatifler:** Owner'a silme bırakmak (pilotta riskli), delete butonlarını tamamen kaldırmak (ileride olacak) — şimdilik super-admin gate.
 **Sonuç:** Rules (test 65/65) + UI (tüm delete butonları, Clients merge-drag, Settings Staff/Danger) `isSuperAdmin` arkasında. Detay: [SECURITY.md](SECURITY.md). İlgili invariant: INV-SEC-5.
+**Zamanlama nüansı ([ARCHITECTURE_REVIEW_2026-07-02](ARCHITECTURE_REVIEW_2026-07-02.md)):** Bu bir **operasyonel darboğaz** olarak 1000 değil **~3. salonda** vurur — her yanlış-booking silme talebi tek kişiye (aerulas@) düşer. Bus-factor + operasyon riski burada birleşir → owner→admin tenant-scoped silme yetkisi (ROADMAP E1-b) düşünüldüğünden erken gerekebilir.
 
 ## ADR-007 — Barber eşleşmesi exact, fuzzy yok, kaynakta düzelt
 **Durum:** ✅ Accepted · **Tarih:** 2026-06-26
@@ -133,6 +135,14 @@
 **Karar:** Her olay standart metadata taşır: **Date · Severity · Impact · Root Cause · Resolution · Prevention · Owner · Status** + Dersler/Lessons Learned. Prevention'a mümkünse kalıcı guard/test. Tekrar = Status 🔴 Regressed.
 **Alternatifler:** Serbest proza (mevcut) — tarama/eksik-iş görünürlüğü zayıf, elendi.
 **Sonuç:** Şablon INCIDENTS.md başında; kural CLAUDE.md (alex + salown-app) + memory'de. İlgili: [INCIDENTS.md](INCIDENTS.md).
+
+## ADR-014 — Ask salOWN = Claude Haiku 4.5
+**Durum:** ✅ Accepted
+
+**Bağlam:** Uygulama içi AI asistanı ("Ask salOWN") tek DB'deki booking + finance + marketing + clients + loyalty verisi üzerinde soru cevaplar. Bir LLM seçilmeliydi — maliyet/hız/kalite dengesi gerekli.
+**Karar:** **Anthropic Claude Haiku 4.5** (`askAI` onCall, `functions/index.js`, secret `ANTHROPIC_API_KEY`). Tek AI dokunuş noktası — model burada merkezi.
+**Alternatifler:** Daha büyük model (Sonnet/Opus) — asistan görevleri (özet/soru-cevap) için gereksiz maliyet/gecikme; Haiku hız+maliyet için yeterli. Başka sağlayıcı — Anthropic seçildi.
+**Sonuç:** Model tek yerde (`index.js`) → yükseltme kolay. Detay: [ARCHITECTURE_REVIEW_2026-07-02](ARCHITECTURE_REVIEW_2026-07-02.md) 🟢-6, [GLOSSARY](GLOSSARY.md) "Ask salOWN". Not: en güncel Claude modelleri (Haiku 4.5, Opus/Sonnet) değişebilir → yükseltirken tek satır.
 
 ---
 
