@@ -29,9 +29,7 @@ service cloud.firestore {
     // ── Tenant root doc (LIVE ile aynı) ───────────────────────────────────────
     match /tenants/{tenantId} {
       allow read:  if true;                                  // public booking siteleri okuyor
-      // [DEL] (2026-07-02) delete = super-admin only sistem geneli (feedback_delete_superadmin_only).
-      allow create: if isSuperAdmin() || isAdmin(tenantId);
-      allow delete: if isSuperAdmin();
+      allow create, delete: if isSuperAdmin() || isAdmin(tenantId);
       // [P1-D] Publication-control fields (profileStatus / profileSelfManaged / …)
       // gate whether the public site is live. Only super-admin — or the
       // salownPublishProfile / salownReviewProfile callables, which use the Admin
@@ -69,34 +67,29 @@ service cloud.firestore {
                       'date', 'time', 'startTime', 'endTime', 'rescheduledAt',
                       'barberName', 'barberId', 'updatedAt'])
         );
-        allow delete: if isSuperAdmin();   // [DEL] önce isAdmin de silebiliyordu → yalnız super-admin
+        allow delete: if isSuperAdmin() || isAdmin(tenantId);
       }
 
       // ── Public-readable collections (LIVE ile aynı) ─────────────────────────
       match /services/{docId} {
         allow read:  if true;
-        allow create, update: if isSuperAdmin() || isTenantAny(tenantId);
-        allow delete: if isSuperAdmin();   // [DEL] delete = super-admin only
+        allow write: if isSuperAdmin() || isTenantAny(tenantId);
       }
       match /serviceCategories/{docId} {
         allow read:  if true;
-        allow create, update: if isSuperAdmin() || isTenantAny(tenantId);
-        allow delete: if isSuperAdmin();   // [DEL] delete = super-admin only
+        allow write: if isSuperAdmin() || isTenantAny(tenantId);
       }
       match /barbers/{docId} {
         allow read:  if true;
-        allow create, update: if isSuperAdmin() || isTenantAny(tenantId);
-        allow delete: if isSuperAdmin();   // [DEL] delete = super-admin only
+        allow write: if isSuperAdmin() || isTenantAny(tenantId);
       }
       match /gallery/{docId} {
         allow read:  if true;
-        allow create, update: if isSuperAdmin() || isTenantAny(tenantId);
-        allow delete: if isSuperAdmin();   // [DEL] delete = super-admin only
+        allow write: if isSuperAdmin() || isTenantAny(tenantId);
       }
       match /announcements/{docId} {
         allow read:  if true;
-        allow create, update: if isSuperAdmin() || isTenantAny(tenantId);
-        allow delete: if isSuperAdmin();   // [DEL] delete = super-admin only
+        allow write: if isSuperAdmin() || isTenantAny(tenantId);
       }
       match /public/{doc} {
         allow read:  if true;
@@ -110,12 +103,7 @@ service cloud.firestore {
           isSuperAdmin() ||
           isTenantAny(tenantId)
         );
-        // [DEL] (2026-07-02) staff EKLEME/ROL/İZİN ataması + silme = yalnız super-admin.
-        //   Önce admin de yazabiliyordu (kendi staff'ını yönetir). Kullanıcı kararı: atama da
-        //   super-admin only. Staff-doc'a yalnız Settings UI yazıyor (login/onboarding otomatik yazmaz).
-        //   ⚠️ Sonuç: super-admin OLMAYAN owner'lar (herohairs durvezek@/alex2@) kendi staff'ını
-        //   yönetemez — pilot kararı (Seçenek a); scale'de owner'a tenant-scoped yetki gerekir.
-        allow create, update, delete: if isSuperAdmin();
+        allow write: if isSuperAdmin() || isAdmin(tenantId);
       }
 
       // ── Parser tombstones (LIVE ile aynı) ───────────────────────────────────
@@ -135,20 +123,20 @@ service cloud.firestore {
       //     template + ${TENANT} + virgül path stilleri). functions/ Admin SDK = rules bypass (dahil değil).
       //   Storage (logo/cover/barbers/*/photo) Firestore değil → hariç. emailOptOuts/config = functions/read.
       //   ⚠️ YENİ bir client-yazma koleksiyonu eklenince buraya da satır eklenmeli (yoksa write DENY).
-      match /clients/{document=**}                { allow read, create, update: if isSuperAdmin() || isTenantAny(tenantId); allow delete: if isSuperAdmin(); } // + clients/{id}/campaignsSent
-      match /settings/{document=**}               { allow read, create, update: if isSuperAdmin() || isTenantAny(tenantId); allow delete: if isSuperAdmin(); }
-      match /campaigns/{document=**}              { allow read, create, update: if isSuperAdmin() || isTenantAny(tenantId); allow delete: if isSuperAdmin(); }
-      match /notifications/{document=**}          { allow read, create, update: if isSuperAdmin() || isTenantAny(tenantId); allow delete: if isSuperAdmin(); }
-      match /fcmTokens/{document=**}              { allow read, create, update: if isSuperAdmin() || isTenantAny(tenantId); allow delete: if isSuperAdmin(); }
-      match /auditLogs/{document=**}              { allow read, create, update: if isSuperAdmin() || isTenantAny(tenantId); allow delete: if isSuperAdmin(); }
-      match /products/{document=**}               { allow read, create, update: if isSuperAdmin() || isTenantAny(tenantId); allow delete: if isSuperAdmin(); }
-      match /team/{document=**}                   { allow read, create, update: if isSuperAdmin() || isTenantAny(tenantId); allow delete: if isSuperAdmin(); }
-      match /finance/{document=**}                { allow read, create, update: if isSuperAdmin() || isTenantAny(tenantId); allow delete: if isSuperAdmin(); }
-      match /finance_expenses/{document=**}       { allow read, create, update: if isSuperAdmin() || isTenantAny(tenantId); allow delete: if isSuperAdmin(); }
-      match /finance_payments/{document=**}       { allow read, create, update: if isSuperAdmin() || isTenantAny(tenantId); allow delete: if isSuperAdmin(); }
-      match /expenses/{document=**}               { allow read, create, update: if isSuperAdmin() || isTenantAny(tenantId); allow delete: if isSuperAdmin(); }
-      match /advances/{document=**}               { allow read, create, update: if isSuperAdmin() || isTenantAny(tenantId); allow delete: if isSuperAdmin(); }
-      match /investment_transactions/{document=**} { allow read, create, update: if isSuperAdmin() || isTenantAny(tenantId); allow delete: if isSuperAdmin(); }
+      match /clients/{document=**}                { allow read, write: if isSuperAdmin() || isTenantAny(tenantId); } // + clients/{id}/campaignsSent
+      match /settings/{document=**}               { allow read, write: if isSuperAdmin() || isTenantAny(tenantId); }
+      match /campaigns/{document=**}              { allow read, write: if isSuperAdmin() || isTenantAny(tenantId); }
+      match /notifications/{document=**}          { allow read, write: if isSuperAdmin() || isTenantAny(tenantId); }
+      match /fcmTokens/{document=**}              { allow read, write: if isSuperAdmin() || isTenantAny(tenantId); }
+      match /auditLogs/{document=**}              { allow read, write: if isSuperAdmin() || isTenantAny(tenantId); }
+      match /products/{document=**}               { allow read, write: if isSuperAdmin() || isTenantAny(tenantId); }
+      match /team/{document=**}                   { allow read, write: if isSuperAdmin() || isTenantAny(tenantId); }
+      match /finance/{document=**}                { allow read, write: if isSuperAdmin() || isTenantAny(tenantId); }
+      match /finance_expenses/{document=**}       { allow read, write: if isSuperAdmin() || isTenantAny(tenantId); }
+      match /finance_payments/{document=**}       { allow read, write: if isSuperAdmin() || isTenantAny(tenantId); }
+      match /expenses/{document=**}               { allow read, write: if isSuperAdmin() || isTenantAny(tenantId); }
+      match /advances/{document=**}               { allow read, write: if isSuperAdmin() || isTenantAny(tenantId); }
+      match /investment_transactions/{document=**} { allow read, write: if isSuperAdmin() || isTenantAny(tenantId); }
 
       // [G4] Catch-all: READ same-tenant'a açık kalır (kaçan salt-okunur koleksiyon kırılmasın);
       //   WRITE kapalı → staff/{uid}, tenant-root, bookings yalnız kendi spesifik kurallarından yazılır.

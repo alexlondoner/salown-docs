@@ -65,11 +65,30 @@ cases=[
  case("G1: WXNOROLE booking read → ALLOW (isTenantAny hâlâ yeter)","ALLOW",req("get","/tenants/whitecross/bookings/b1",WXNOROLE)),
  # ── [G4] catch-all write kapatıldı: staff self-escalate + delete + P1-D artık bağlar ──
  case("G4: staff kendi staff-doc permissions write → DENY (self-escalate kapandı)","DENY",req("update","/tenants/whitecross/staff/wxs",WXSTAFF,{"permissions":{"canViewRevenue":True}}),{"role":"staff"}),
- case("G4: admin → staff-doc write → ALLOW","ALLOW",req("update","/tenants/whitecross/staff/u2",WX,{"permissions":{"canViewRevenue":True}}),{"role":"staff"}),
+ # [DEL] (2026-07-02) staff atama (ekle/rol/izin) artık super-admin only — admin DENY
+ case("DEL: admin → staff-doc write → DENY (atama super-admin only)","DENY",req("update","/tenants/whitecross/staff/u2",WX,{"permissions":{"canViewRevenue":True}}),{"role":"staff"}),
+ case("DEL: SUPER → staff-doc write → ALLOW","ALLOW",req("update","/tenants/whitecross/staff/u2",SUP,{"permissions":{"canViewRevenue":True}}),{"role":"staff"}),
+ case("DEL: admin → staff create → DENY","DENY",req("create","/tenants/whitecross/staff/u3",WX,{"role":"staff","email":"x@y.com"})),
+ case("DEL: SUPER → staff create → ALLOW","ALLOW",req("create","/tenants/whitecross/staff/u3",SUP,{"role":"staff","email":"x@y.com"})),
  case("G4: staff tenant-root write → DENY (admin-only)","DENY",req("update","/tenants/whitecross",WXSTAFF,{"features":{}}),{"name":"WX"}),
  case("G4: admin profileStatus write → DENY (P1-D korumalı)","DENY",req("update","/tenants/whitecross",WX,{"profileStatus":"published"}),{"name":"WX"}),
  case("G4: staff booking delete → DENY (admin-only, catch-all artık vermiyor)","DENY",req("delete","/tenants/whitecross/bookings/b1",WXSTAFF),{"status":"CONFIRMED"}),
- case("G4: admin booking delete → ALLOW","ALLOW",req("delete","/tenants/whitecross/bookings/b1",WX),{"status":"CONFIRMED"}),
+ # ── [DEL] (2026-07-02) delete = super-admin only sistem geneli (feedback_delete_superadmin_only) ──
+ case("DEL: admin booking delete → DENY (artık super-admin only)","DENY",req("delete","/tenants/whitecross/bookings/b1",WX),{"status":"CONFIRMED"}),
+ case("DEL: SUPER booking delete → ALLOW","ALLOW",req("delete","/tenants/whitecross/bookings/b1",SUP),{"status":"CONFIRMED"}),
+ case("DEL: admin client delete → DENY","DENY",req("delete","/tenants/whitecross/clients/c1",WX),{"name":"x"}),
+ case("DEL: SUPER client delete → ALLOW","ALLOW",req("delete","/tenants/whitecross/clients/c1",SUP),{"name":"x"}),
+ case("DEL: admin finance_expenses delete → DENY","DENY",req("delete","/tenants/whitecross/finance_expenses/e1",WX),{"amount":1}),
+ case("DEL: SUPER finance_expenses delete → ALLOW","ALLOW",req("delete","/tenants/whitecross/finance_expenses/e1",SUP),{"amount":1}),
+ case("DEL: admin service delete → DENY","DENY",req("delete","/tenants/whitecross/services/s1",WX),{"name":"cut"}),
+ case("DEL: SUPER service delete → ALLOW","ALLOW",req("delete","/tenants/whitecross/services/s1",SUP),{"name":"cut"}),
+ case("DEL: admin product delete → DENY","DENY",req("delete","/tenants/whitecross/products/p1",WX),{"name":"wax"}),
+ case("DEL: admin campaign delete → DENY","DENY",req("delete","/tenants/whitecross/campaigns/c1",WX),{"name":"x"}),
+ case("DEL: admin staff delete → DENY","DENY",req("delete","/tenants/whitecross/staff/u2",WX),{"role":"staff"}),
+ case("DEL: SUPER staff delete → ALLOW","ALLOW",req("delete","/tenants/whitecross/staff/u2",SUP),{"role":"staff"}),
+ # sanity: create/update HÂLÂ çalışıyor (delete kısıtı bunları bozmadı)
+ case("DEL: admin finance_expenses create → ALLOW (delete kısıtı create'i bozmadı)","ALLOW",req("create","/tenants/whitecross/finance_expenses/e2",WX,{"amount":5})),
+ case("DEL: admin service update → ALLOW","ALLOW",req("update","/tenants/whitecross/services/s1",WX,{"name":"cut2"}),{"name":"cut"}),
  case("G4: bilinmeyen koleksiyona write → DENY (catch-all write=false)","DENY",req("update","/tenants/whitecross/randomColl/x",WXSTAFF,{"a":1}),{"a":0}),
  case("G4: bilinmeyen koleksiyona read → ALLOW (catch-all read açık)","ALLOW",req("get","/tenants/whitecross/randomColl/x",WXSTAFF)),
  # ── [G4] enumerate edilen yazılır koleksiyonlar — üye (staff) yazabilmeli (eksik kalmadı kontrolü) ──

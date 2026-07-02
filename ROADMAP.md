@@ -170,8 +170,12 @@ Login redesign ✅ canlı (animated hub); Google/Apple butonları **görsel var 
 **E1 — Rules Phase 2: delete = super-admin + cross-tenant user yönetimi** · 🔵 Planlandı
 > Phase 1 ✅ DEPLOYED (2026-06-21): cross-tenant deliği kapatıldı, `firestore.rules` canonical oldu.
 
-Politika: `owner > admin > staff`. **Silme SADECE super-admin** (`isSuperAdmin` claim) → sistem oturunca delete butonları tamamen kalkacak. **Audit:** delete UI'larının hiçbiri şu an `isSuperAdmin` korumuyor. Gate'lenecek: `Barbers.jsx`, `Finance.jsx`, `Services.jsx`, `OnlineProfile.jsx`, `Marketing.jsx`, `Clients.jsx`, `firestoreActions.js`.
-**Yapılacak:** (a) yıkıcı delete'leri `isSuperAdmin` arkasına al; (b) owner→admin yetki yönetimi UI; (c) super-admin panelden cross-tenant staff izin yönetimi; (d) nihai: delete butonlarını kaldır.
+Politika: `owner > admin > staff`. **Silme SADECE super-admin** (`isSuperAdmin` claim).
+**✅ DONE (2026-07-02) — delete + staff-atama = super-admin only, iki katman CANLI:**
+- **Rules** (`694a762`, DEPLOYED, test 65/65): tüm tenant koleksiyonlarında `write`→`create,update`+`delete`; `delete: isSuperAdmin()`. staff create/update/delete de super-admin only.
+- **UI** (`7e95d40`/`643c8ce`/`851fd43`/`b20f105`): tüm delete butonları + Clients merge (drag) + Settings Staff/Danger tab'ları `isSuperAdmin` arkasına alındı. "Register me as owner" da super-admin.
+- Doğrulandı: yalnız `aerulas@`=superAdmin:True → tek silebilen/atayabilen. Arda + diğer admin/owner (herohairs dahil) kaybetti (pilot kararı Seçenek a).
+**Kalan (scale):** (b) owner→admin tenant-scoped yetki (herohairs owner kendi staff'ını yönetsin); (c) super-admin panelden cross-tenant staff izin yönetimi; (d) nihai: delete butonlarını tamamen kaldır. Staff App (staff.salown.com) delete parity ayrıca kontrol edilmeli.
 Bkz memory `feedback-delete-superadmin-only`, `feedback-firestore-rules-safety`. *(Not: E1'in temeli olan G2/G3/G4 rules açıkları ✅ KAPANDI (`851efeb`+`0f8de7e`) — kalan E1 işi = delete'leri super-admin gate'i + owner→admin yetki UI, yukarıdaki Pre-Scale değil.)*
 
 ---
