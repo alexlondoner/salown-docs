@@ -1,0 +1,117 @@
+rules_version = '2';
+// ╔══════════════════════════════════════════════════════════════════════════╗
+// ║  DRAFT — review only, NOT deployed.  Base: docs/firestore.rules.LIVE       ║
+// ║  PHASE 1 hedefi: cross-tenant deliğini kapat. Yalnızca SIKILAŞTIRIR;       ║
+// ║  hiçbir public / same-tenant / super-admin akışını bozmaz.                 ║
+// ║  Değişiklikler [P1-A] ve [P1-B] etiketli. Geri kalan her şey LIVE ile aynı.║
+// ╚══════════════════════════════════════════════════════════════════════════╝
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Helper functions (LIVE ile aynı) ──────────────────────────────────────
+    function isAuth()        { return request.auth != null; }
+    function isSuperAdmin()  { return isAuth() && request.auth.token.superAdmin == true; }
+    function isTenant(tid)   { return isAuth() && request.auth.token.tenantId == tid; }
+    // [P1-C] Backwards-compat GERİ getirildi: mevcut 10 user'ın HİÇBİRİNDE tenantRole
+    //   claim'i yok (2026-06-21 denetimi). Bu olmadan isAdmin herkes için false olur ve
+    //   Settings'ten tenant-doc yazma (features/Stripe vb.) kırılır — şu an o işlemler
+    //   yalnızca silinecek global fallback sayesinde çalışıyor. null → admin sayılır.
+    function isAdmin(tid)    { return isTenant(tid) && (request.auth.token.tenantRole == null || request.auth.token.tenantRole in ['owner', 'admin']); }
+    function isStaff(tid)    { return isTenant(tid) && (request.auth.token.tenantRole == null || request.auth.token.tenantRole in ['owner', 'admin', 'staff']); }
+    function isTenantAny(tid){ return isTenant(tid); }
+
+    // ── Tenant root doc (LIVE ile aynı) ───────────────────────────────────────
+    match /tenants/{tenantId} {
+      allow read:  if true;                                  // public booking siteleri okuyor
+      allow write: if isSuperAdmin() || isAdmin(tenantId);
+
+      // ── Bookings (LIVE ile aynı — public read/create + callable update) ──────
+      match /bookings/{docId} {
+        allow read: if true;
+        allow create: if isSuperAdmin() || isTenantAny(tenantId) || (
+          request.resource.data.status in ['PENDING', 'CONFIRMED']
+        );
+        allow update: if isSuperAdmin() || isTenantAny(tenantId) || (
+          resource.data.clientEmail != null &&
+          resource.data.clientEmail != '' &&
+          request.resource.data.clientEmail == resource.data.clientEmail &&
+          request.resource.data.bookingId == resource.data.bookingId &&
+          request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['status', 'rescheduledTo', 'cancelledAt', 'cancelReason',
+                      'date', 'time', 'startTime', 'endTime', 'rescheduledAt',
+                      'barberName', 'barberId', 'updatedAt'])
+        );
+        allow delete: if isSuperAdmin() || isAdmin(tenantId);
+      }
+
+      // ── Public-readable collections (LIVE ile aynı) ─────────────────────────
+      match /services/{docId} {
+        allow read:  if true;
+        allow write: if isSuperAdmin() || isTenantAny(tenantId);
+      }
+      match /serviceCategories/{docId} {
+        allow read:  if true;
+        allow write: if isSuperAdmin() || isTenantAny(tenantId);
+      }
+      match /barbers/{docId} {
+        allow read:  if true;
+        allow write: if isSuperAdmin() || isTenantAny(tenantId);
+      }
+      match /gallery/{docId} {
+        allow read:  if true;
+        allow write: if isSuperAdmin() || isTenantAny(tenantId);
+      }
+      match /announcements/{docId} {
+        allow read:  if true;
+        allow write: if isSuperAdmin() || isTenantAny(tenantId);
+      }
+      match /public/{doc} {
+        allow read:  if true;
+        allow write: if false;
+      }
+
+      // ── Staff doc (LIVE ile aynı) ───────────────────────────────────────────
+      match /staff/{uid} {
+        allow read: if isAuth() && (
+          request.auth.uid == uid ||
+          isSuperAdmin() ||
+          isTenantAny(tenantId)
+        );
+        allow write: if isSuperAdmin() || isAdmin(tenantId);
+      }
+
+      // ── Parser tombstones (LIVE ile aynı) ───────────────────────────────────
+      match /parserTombstones/{docId} {
+        allow create: if isSuperAdmin() || isTenantAny(tenantId);
+        allow read:   if isSuperAdmin() || isTenantAny(tenantId);
+        allow update, delete: if isSuperAdmin();
+      }
+
+      // [P1-B] Tenant-içi recursive catch-all.
+      //   ÖNCE: match /{subcollection}/{docId}  → SADECE tek seviye kapsıyordu;
+      //   derin path'ler (ör. clients/{id}/campaignsSent) global fallback'e düşüyordu.
+      //   ŞİMDİ: {document=**} → tenant'ın TÜM derinliklerini kapsar, böylece
+      //   global fallback sıkılaşınca (P1-A) same-tenant derin erişim kırılmaz.
+      //   Kapsam LIVE ile aynı (isSuperAdmin || isTenantAny) → gevşeme yok.
+      match /{document=**} {
+        allow read:  if isSuperAdmin() || isTenantAny(tenantId);
+        allow write: if isSuperAdmin() || isTenantAny(tenantId);
+      }
+    }
+
+    // ── Super admin area (LIVE ile aynı) ──────────────────────────────────────
+    match /superAdmin/{document=**} {
+      allow read, write: if isSuperAdmin();
+    }
+
+    // [P1-A] GLOBAL FALLBACK — cross-tenant deliği burada kapanıyor.
+    //   ÖNCE: allow read, write: if isAuth()  → giriş yapan HERKES her tenant'ın
+    //         verisine erişebiliyordu (whitecross dahil). Asıl güvenlik açığı.
+    //   ŞİMDİ: if isSuperAdmin()  → top-level / kapsanmayan path'lere yalnızca
+    //         super-admin erişir. Tenant kullanıcıları kendi tenant'larına
+    //         yukarıdaki /tenants/{tenantId} kurallarıyla erişmeye devam eder.
+    match /{document=**} {
+      allow read, write: if isSuperAdmin();
+    }
+  }
+}

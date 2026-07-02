@@ -1,0 +1,3 @@
+release=projects/havuz-44f70/releases/cloud.firestore
+old_rulesetName=projects/havuz-44f70/rulesets/bab4886f-5fe3-4376-ba4b-b590217499f7
+# Geri dönmek için: PATCH projects/havuz-44f70/releases/cloud.firestore body {name, rulesetName=old_rulesetName}

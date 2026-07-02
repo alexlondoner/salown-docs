@@ -1,0 +1,102 @@
+#!/usr/bin/env python3
+# Firestore rules test — emulator/Java GEREKMEZ, Firebase Rules Test API kullanır.
+# Çalıştır:  python3 docs/test-firestore-rules.py [RULES_DOSYASI]
+# Varsayılan RULES dosyası: docs/firestore.rules.DRAFT
+# Token: firebase-tools login'inden (whitecrossbarbers@gmail.com) üretilir.
+import sys, json, os, urllib.request
+
+RULES_FILE = sys.argv[1] if len(sys.argv) > 1 else "salown-app/firestore.rules"
+CFG = os.path.expanduser("~/.config/configstore/firebase-tools.json")
+RT = json.load(open(CFG))["tokens"]["refresh_token"]
+tok_req = urllib.request.Request("https://oauth2.googleapis.com/token",
+    data=urllib.parse.urlencode({
+        "client_id":"563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.googleusercontent.com",
+        "client_secret":"j9iVZfS8kkCEFUPaAeJV0sAi","grant_type":"refresh_token","refresh_token":RT
+    }).encode())
+token = json.load(urllib.request.urlopen(tok_req))["access_token"]
+
+RULES = open(RULES_FILE).read()
+BASE = "/databases/(default)/documents"; T = "2026-06-21T12:00:00Z"
+def req(m,p,auth=None,indata=None):
+    r={"method":m,"path":BASE+p,"time":T}
+    if auth is not None: r["auth"]=auth
+    if indata is not None: r["resource"]={"data":indata}
+    return r
+# [G1] token'lar artık tenantRole taşır (null→admin fallback kaldırıldı). WX = genel admin üye.
+WX={"uid":"wx1","token":{"tenantId":"whitecross","tenantRole":"admin"}}
+WXSTAFF={"uid":"wxs","token":{"tenantId":"whitecross","tenantRole":"staff"}}
+WXNOROLE={"uid":"wxn","token":{"tenantId":"whitecross"}}  # claim'siz (ölü/test tenant senaryosu)
+HERO={"uid":"h1","token":{"tenantId":"herohairs","tenantRole":"admin"}}
+SUP={"uid":"s1","token":{"superAdmin":True,"tenantId":"whitecross"}}
+def case(n,e,r,res=None):
+    tc={"expectation":e,"request":r,"_name":n}
+    if res is not None: tc["resource"]={"data":res}
+    return tc
+cases=[
+ case("WX→HERO clients read","DENY",req("get","/tenants/herohairs/clients/c1",WX)),
+ case("WX→HERO clients write","DENY",req("update","/tenants/herohairs/clients/c1",WX,{"x":1}),{"x":0}),
+ case("WX→HERO deep campaignsSent","DENY",req("get","/tenants/herohairs/clients/c1/campaignsSent/x",WX)),
+ case("WX→HERO booking delete","DENY",req("delete","/tenants/herohairs/bookings/b1",WX),{"status":"CONFIRMED"}),
+ case("WX booking create","ALLOW",req("create","/tenants/whitecross/bookings/b1",WX,{"status":"CONFIRMED"})),
+ case("WX checkout(update)","ALLOW",req("update","/tenants/whitecross/bookings/b1",WX,{"paidAmount":50}),{"status":"CONFIRMED"}),
+ case("WX deep campaignsSent","ALLOW",req("get","/tenants/whitecross/clients/c1/campaignsSent/x",WX)),
+ case("WX clients write","ALLOW",req("update","/tenants/whitecross/clients/c1",WX,{"n":"a"}),{"n":"b"}),
+ case("WX tenant-root write(Settings)","ALLOW",req("update","/tenants/whitecross",WX,{"features":{}}),{"name":"WX"}),
+ case("UNAUTH public booking create","ALLOW",req("create","/tenants/whitecross/bookings/b2",None,{"status":"PENDING"})),
+ case("UNAUTH read services","ALLOW",req("get","/tenants/whitecross/services/s1",None)),
+ case("UNAUTH cancel update(only status)","ALLOW",req("update","/tenants/whitecross/bookings/b1",None,{"clientEmail":"a@b.com","bookingId":"WCB-1","status":"CANCELLED"}),{"clientEmail":"a@b.com","bookingId":"WCB-1","status":"CONFIRMED"}),
+ case("UNAUTH forbidden field update","DENY",req("update","/tenants/whitecross/bookings/b1",None,{"clientEmail":"a@b.com","bookingId":"WCB-1","paidAmount":999}),{"clientEmail":"a@b.com","bookingId":"WCB-1","paidAmount":0}),
+ case("SUPER→HERO clients write","ALLOW",req("update","/tenants/herohairs/clients/c1",SUP,{"x":1}),{"x":0}),
+ case("SUPER top-level fallback","ALLOW",req("get","/randomTop/x",SUP)),
+ case("WX top-level fallback","DENY",req("get","/randomTop/x",WX)),
+ # ── [G2] (2026-06-24) bookings read artık auth-only (GDPR PII deliği kapatıldı) ──
+ case("G2: UNAUTH booking read → DENY","DENY",req("get","/tenants/whitecross/bookings/b1",None)),
+ case("G2: WX kendi booking read → ALLOW (panel/staff)","ALLOW",req("get","/tenants/whitecross/bookings/b1",WX)),
+ case("G2: WX→HERO cross-tenant booking read → DENY","DENY",req("get","/tenants/herohairs/bookings/b1",WX)),
+ case("G2: SUPER booking read → ALLOW","ALLOW",req("get","/tenants/herohairs/bookings/b1",SUP)),
+ # ── [G3] (2026-06-24) public create money-field forge engellendi ──
+ case("G3: UNAUTH create + paidAmount → DENY","DENY",req("create","/tenants/whitecross/bookings/b3",None,{"status":"PENDING","paidAmount":999})),
+ case("G3: UNAUTH create + tip → DENY","DENY",req("create","/tenants/whitecross/bookings/b3",None,{"status":"PENDING","tip":50})),
+ case("G3: UNAUTH create + discount → DENY","DENY",req("create","/tenants/whitecross/bookings/b3",None,{"status":"PENDING","discount":10})),
+ case("G3: UNAUTH plain create (paymentState/Type ok) → ALLOW (whitecross-site)","ALLOW",req("create","/tenants/whitecross/bookings/b3",None,{"status":"PENDING","paymentState":"PENDING","paymentType":"DEPOSIT"})),
+ case("G3: WX(auth) create + paidAmount → ALLOW (panel walk-in/checkout)","ALLOW",req("create","/tenants/whitecross/bookings/b4",WX,{"status":"CONFIRMED","paidAmount":50})),
+ # ── [G1] rol-claim fallback kaldırıldı: claim'siz user artık admin DEĞİL ──
+ case("G1: WXNOROLE tenant-root write → DENY (admin değil)","DENY",req("update","/tenants/whitecross",WXNOROLE,{"features":{}}),{"name":"WX"}),
+ case("G1: WXNOROLE booking read → ALLOW (isTenantAny hâlâ yeter)","ALLOW",req("get","/tenants/whitecross/bookings/b1",WXNOROLE)),
+ # ── [G4] catch-all write kapatıldı: staff self-escalate + delete + P1-D artık bağlar ──
+ case("G4: staff kendi staff-doc permissions write → DENY (self-escalate kapandı)","DENY",req("update","/tenants/whitecross/staff/wxs",WXSTAFF,{"permissions":{"canViewRevenue":True}}),{"role":"staff"}),
+ case("G4: admin → staff-doc write → ALLOW","ALLOW",req("update","/tenants/whitecross/staff/u2",WX,{"permissions":{"canViewRevenue":True}}),{"role":"staff"}),
+ case("G4: staff tenant-root write → DENY (admin-only)","DENY",req("update","/tenants/whitecross",WXSTAFF,{"features":{}}),{"name":"WX"}),
+ case("G4: admin profileStatus write → DENY (P1-D korumalı)","DENY",req("update","/tenants/whitecross",WX,{"profileStatus":"published"}),{"name":"WX"}),
+ case("G4: staff booking delete → DENY (admin-only, catch-all artık vermiyor)","DENY",req("delete","/tenants/whitecross/bookings/b1",WXSTAFF),{"status":"CONFIRMED"}),
+ case("G4: admin booking delete → ALLOW","ALLOW",req("delete","/tenants/whitecross/bookings/b1",WX),{"status":"CONFIRMED"}),
+ case("G4: bilinmeyen koleksiyona write → DENY (catch-all write=false)","DENY",req("update","/tenants/whitecross/randomColl/x",WXSTAFF,{"a":1}),{"a":0}),
+ case("G4: bilinmeyen koleksiyona read → ALLOW (catch-all read açık)","ALLOW",req("get","/tenants/whitecross/randomColl/x",WXSTAFF)),
+ # ── [G4] enumerate edilen yazılır koleksiyonlar — üye (staff) yazabilmeli (eksik kalmadı kontrolü) ──
+ case("G4 col: settings write → ALLOW","ALLOW",req("update","/tenants/whitecross/settings/settings",WXSTAFF,{"a":1}),{"a":0}),
+ case("G4 col: campaigns write → ALLOW","ALLOW",req("create","/tenants/whitecross/campaigns/c1",WXSTAFF,{"a":1})),
+ case("G4 col: auditLogs write → ALLOW","ALLOW",req("create","/tenants/whitecross/auditLogs/a1",WXSTAFF,{"a":1})),
+ case("G4 col: notifications write → ALLOW","ALLOW",req("create","/tenants/whitecross/notifications/n1",WXSTAFF,{"a":1})),
+ case("G4 col: fcmTokens write → ALLOW","ALLOW",req("create","/tenants/whitecross/fcmTokens/t1",WXSTAFF,{"a":1})),
+ case("G4 col: products write → ALLOW","ALLOW",req("create","/tenants/whitecross/products/p1",WXSTAFF,{"a":1})),
+ case("G4 col: team write → ALLOW","ALLOW",req("create","/tenants/whitecross/team/t1",WXSTAFF,{"a":1})),
+ case("G4 col: finance write → ALLOW","ALLOW",req("create","/tenants/whitecross/finance/f1",WXSTAFF,{"a":1})),
+ case("G4 col: finance_expenses write → ALLOW","ALLOW",req("create","/tenants/whitecross/finance_expenses/e1",WXSTAFF,{"a":1})),
+ case("G4 col: finance_payments write → ALLOW","ALLOW",req("create","/tenants/whitecross/finance_payments/p1",WXSTAFF,{"a":1})),
+ case("G4 col: expenses write → ALLOW","ALLOW",req("create","/tenants/whitecross/expenses/e1",WXSTAFF,{"a":1})),
+ case("G4 col: advances write → ALLOW","ALLOW",req("create","/tenants/whitecross/advances/a1",WXSTAFF,{"a":1})),
+ case("G4 col: investment_transactions write → ALLOW","ALLOW",req("create","/tenants/whitecross/investment_transactions/i1",WXSTAFF,{"a":1})),
+ case("G4 col: clients deep campaignsSent write → ALLOW","ALLOW",req("create","/tenants/whitecross/clients/c1/campaignsSent/s1",WXSTAFF,{"a":1})),
+]
+url="https://firebaserules.googleapis.com/v1/projects/havuz-44f70:test"
+body={"source":{"files":[{"name":"firestore.rules","content":RULES}]},
+      "testSuite":{"testCases":[{k:v for k,v in c.items() if k!="_name"} for c in cases]}}
+r=urllib.request.Request(url,data=json.dumps(body).encode(),
+    headers={"Authorization":f"Bearer {token}","Content-Type":"application/json"})
+resp=json.load(urllib.request.urlopen(r))
+print(f"RULES: {RULES_FILE}")
+ok=0
+for c,res in zip(cases,resp.get("testResults",[])):
+    st=res.get("state","?"); m="✅" if st=="SUCCESS" else "❌"; ok+= st=="SUCCESS"
+    print(f"  {m} [{c['expectation']:5}] {c['_name']} → {st}")
+print(f"  ---- {ok}/{len(cases)} geçti ----")

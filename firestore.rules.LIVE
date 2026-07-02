@@ -1,0 +1,169 @@
+// SNAPSHOT — canli deploy edilmis ruleset (read-only referans)
+// Deploy: 2026-06-27, G1 (rol-claim fallback kaldirildi) + G4 (catch-all write kapatildi)
+// Cekildi: salown-app/firestore.rules (deploy ile birebir ayni), test 49/49
+// Canonical kaynak: salown-app/firestore.rules (firebase.json -> firestore.rules)
+
+rules_version = '2';
+// ╔══════════════════════════════════════════════════════════════════════════╗
+// ║  Canonical kaynak (firebase.json buna bağlı).                             ║
+// ║  PHASE 1: cross-tenant deliği kapatıldı. [P1-A/B/C/D] etiketli.           ║
+// ║  G2 (bookings read auth-only) + G3 (create financial forge) CANLIDA.       ║
+// ║  [G1]+[G4] (2026-06-27) CANLIDA: tenantRole==null fallback KALDIRILDI +    ║
+// ║     catch-all write→false + 14 koleksiyon explicit. staff self-escalate    ║
+// ║     KAPANDI, P1-D + booking-delete admin-gate BAĞLADI. Test 49/49.         ║
+// ║  ⚠️ HÂLÂ AÇIK: G5 (tek ruleset blast radius — yapısal).                    ║
+// ║  Rollback: docs/firestore.rules.ROLLBACK.txt                              ║
+// ╚══════════════════════════════════════════════════════════════════════════╝
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Helper functions (LIVE ile aynı) ──────────────────────────────────────
+    function isAuth()        { return request.auth != null; }
+    function isSuperAdmin()  { return isAuth() && request.auth.token.superAdmin == true; }
+    function isTenant(tid)   { return isAuth() && request.auth.token.tenantId == tid; }
+    // [G1] (2026-06-27) `tenantRole == null → admin` backwards-compat fallback KALDIRILDI.
+    //   Önce: claim'i olmayan herkes admin sayılıyordu (permission sistemi rules düzeyinde ölüydü).
+    //   Audit (scripts/backfillTenantRoles.cjs dry-run + auth.listUsers): tüm canlı tenant
+    //   kullanıcıları (whitecross+herohairs, 6 kişi) doğru tenantRole claim'ine SAHİP.
+    //   tenantId claim'i olup tenantRole'ü olmayan 3 user yalnız ölü/test tenant'larında
+    //   (ee-kurt-barbers / the-hair-lab / the-test-lab) → canlıyı etkilemez.
+    function isAdmin(tid)    { return isTenant(tid) && request.auth.token.tenantRole in ['owner', 'admin']; }
+    function isStaff(tid)    { return isTenant(tid) && request.auth.token.tenantRole in ['owner', 'admin', 'staff']; }
+    function isTenantAny(tid){ return isTenant(tid); }
+
+    // ── Tenant root doc (LIVE ile aynı) ───────────────────────────────────────
+    match /tenants/{tenantId} {
+      allow read:  if true;                                  // public booking siteleri okuyor
+      allow create, delete: if isSuperAdmin() || isAdmin(tenantId);
+      // [P1-D] Publication-control fields (profileStatus / profileSelfManaged / …)
+      // gate whether the public site is live. Only super-admin — or the
+      // salownPublishProfile / salownReviewProfile callables, which use the Admin
+      // SDK and bypass rules — may change them. Tenant admins edit everything else.
+      allow update: if isSuperAdmin() || (isAdmin(tenantId)
+        && !request.resource.data.diff(resource.data).affectedKeys()
+             .hasAny(['profileStatus','profileSelfManaged','profilePublishedAt','profileSubmittedAt','profileReviewNotes','profileCheckIssues']));
+
+      // ── Bookings (public CREATE + callable update; read artık auth-only) ─────
+      match /bookings/{docId} {
+        // [G2] (2026-06-24) ÖNCE: read: if true → giriş yapmamış herkes TÜM müşteri
+        //   booking'lerini (ad/telefon/email/saat) okuyabiliyordu (GDPR PII dump).
+        //   ŞİMDİ: yalnız super-admin veya o tenant'ın authenticated üyesi.
+        //   Doğrulandı: salown-app/herohairs public hiçbir yer bookings okumuyor (busy slot
+        //   salownGetBusySlots callable=Admin SDK); panel/staff authenticated → çalışır.
+        //   whitecross-site 3 unauth read DENY olur ama: dup-check fails-open, grup-confirm
+        //   zaten webhook'ta, Stripe-back iptal salownCleanupExpiredPending'e (15dk) düşer.
+        allow read: if isSuperAdmin() || isTenantAny(tenantId);
+        // [G3] Public (unauth) create kısıtı (2026-06-24). Money-received alanları forge edilemez.
+        //   Doğrulandı: ne BookingPage.jsx (salown.com/book, herohairs) ne whitecross-site/script.js
+        //   create'te paidAmount/discount/tip YAZMIYOR — bunları yalnız authenticated panel checkout
+        //   yazar (üstteki isTenantAny dalı, kısıttan muaf). status zaten PENDING/CONFIRMED ile sınırlı.
+        //   paymentState/paymentType BİLEREK serbest: whitecross-site create'te bunları yazıyor.
+        allow create: if isSuperAdmin() || isTenantAny(tenantId) || (
+          request.resource.data.status in ['PENDING', 'CONFIRMED'] &&
+          !request.resource.data.keys().hasAny(['paidAmount', 'discount', 'tip'])
+        );
+        allow update: if isSuperAdmin() || isTenantAny(tenantId) || (
+          resource.data.clientEmail != null &&
+          resource.data.clientEmail != '' &&
+          request.resource.data.clientEmail == resource.data.clientEmail &&
+          request.resource.data.bookingId == resource.data.bookingId &&
+          request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['status', 'rescheduledTo', 'cancelledAt', 'cancelReason',
+                      'date', 'time', 'startTime', 'endTime', 'rescheduledAt',
+                      'barberName', 'barberId', 'updatedAt'])
+        );
+        allow delete: if isSuperAdmin() || isAdmin(tenantId);
+      }
+
+      // ── Public-readable collections (LIVE ile aynı) ─────────────────────────
+      match /services/{docId} {
+        allow read:  if true;
+        allow write: if isSuperAdmin() || isTenantAny(tenantId);
+      }
+      match /serviceCategories/{docId} {
+        allow read:  if true;
+        allow write: if isSuperAdmin() || isTenantAny(tenantId);
+      }
+      match /barbers/{docId} {
+        allow read:  if true;
+        allow write: if isSuperAdmin() || isTenantAny(tenantId);
+      }
+      match /gallery/{docId} {
+        allow read:  if true;
+        allow write: if isSuperAdmin() || isTenantAny(tenantId);
+      }
+      match /announcements/{docId} {
+        allow read:  if true;
+        allow write: if isSuperAdmin() || isTenantAny(tenantId);
+      }
+      match /public/{doc} {
+        allow read:  if true;
+        allow write: if false;
+      }
+
+      // ── Staff doc (LIVE ile aynı) ───────────────────────────────────────────
+      match /staff/{uid} {
+        allow read: if isAuth() && (
+          request.auth.uid == uid ||
+          isSuperAdmin() ||
+          isTenantAny(tenantId)
+        );
+        allow write: if isSuperAdmin() || isAdmin(tenantId);
+      }
+
+      // ── Parser tombstones (LIVE ile aynı) ───────────────────────────────────
+      match /parserTombstones/{docId} {
+        allow create: if isSuperAdmin() || isTenantAny(tenantId);
+        allow read:   if isSuperAdmin() || isTenantAny(tenantId);
+        allow update, delete: if isSuperAdmin();
+      }
+
+      // [G4] (2026-06-27) Tenant üyesinin YAZDIĞI koleksiyonlar — explicit, recursive.
+      //   ÖNCE: tek catch-all {document=**} write: isTenantAny → daha spesifik TÜM kuralları
+      //     eziyordu (Firestore OR'lar, en geniş kazanır): staff kendi permissions'ını yazıp
+      //     self-escalate edebiliyordu, P1-D profil koruması + bookings delete admin-gate ölüydü.
+      //   ŞİMDİ: yazılan her koleksiyon tek tek listelendi (isTenantAny), catch-all WRITE kapatıldı.
+      //     Böylece staff/{uid} (admin-only) + tenant-root (P1-D) + bookings delete gerçekten bağlar.
+      //   Liste 3 kod tabanı taranarak çıkarıldı (salown-app/src + whitecross-site + barber-panel,
+      //     template + ${TENANT} + virgül path stilleri). functions/ Admin SDK = rules bypass (dahil değil).
+      //   Storage (logo/cover/barbers/*/photo) Firestore değil → hariç. emailOptOuts/config = functions/read.
+      //   ⚠️ YENİ bir client-yazma koleksiyonu eklenince buraya da satır eklenmeli (yoksa write DENY).
+      match /clients/{document=**}                { allow read, write: if isSuperAdmin() || isTenantAny(tenantId); } // + clients/{id}/campaignsSent
+      match /settings/{document=**}               { allow read, write: if isSuperAdmin() || isTenantAny(tenantId); }
+      match /campaigns/{document=**}              { allow read, write: if isSuperAdmin() || isTenantAny(tenantId); }
+      match /notifications/{document=**}          { allow read, write: if isSuperAdmin() || isTenantAny(tenantId); }
+      match /fcmTokens/{document=**}              { allow read, write: if isSuperAdmin() || isTenantAny(tenantId); }
+      match /auditLogs/{document=**}              { allow read, write: if isSuperAdmin() || isTenantAny(tenantId); }
+      match /products/{document=**}               { allow read, write: if isSuperAdmin() || isTenantAny(tenantId); }
+      match /team/{document=**}                   { allow read, write: if isSuperAdmin() || isTenantAny(tenantId); }
+      match /finance/{document=**}                { allow read, write: if isSuperAdmin() || isTenantAny(tenantId); }
+      match /finance_expenses/{document=**}       { allow read, write: if isSuperAdmin() || isTenantAny(tenantId); }
+      match /finance_payments/{document=**}       { allow read, write: if isSuperAdmin() || isTenantAny(tenantId); }
+      match /expenses/{document=**}               { allow read, write: if isSuperAdmin() || isTenantAny(tenantId); }
+      match /advances/{document=**}               { allow read, write: if isSuperAdmin() || isTenantAny(tenantId); }
+      match /investment_transactions/{document=**} { allow read, write: if isSuperAdmin() || isTenantAny(tenantId); }
+
+      // [G4] Catch-all: READ same-tenant'a açık kalır (kaçan salt-okunur koleksiyon kırılmasın);
+      //   WRITE kapalı → staff/{uid}, tenant-root, bookings yalnız kendi spesifik kurallarından yazılır.
+      match /{document=**} {
+        allow read:  if isSuperAdmin() || isTenantAny(tenantId);
+        allow write: if false;
+      }
+    }
+
+    // ── Super admin area (LIVE ile aynı) ──────────────────────────────────────
+    match /superAdmin/{document=**} {
+      allow read, write: if isSuperAdmin();
+    }
+
+    // [P1-A] GLOBAL FALLBACK — cross-tenant deliği burada kapanıyor.
+    //   ÖNCE: allow read, write: if isAuth()  → giriş yapan HERKES her tenant'ın
+    //         verisine erişebiliyordu (whitecross dahil). Asıl güvenlik açığı.
+    //   ŞİMDİ: if isSuperAdmin()  → top-level / kapsanmayan path'lere yalnızca
+    //         super-admin erişir. Tenant kullanıcıları kendi tenant'larına
+    //         yukarıdaki /tenants/{tenantId} kurallarıyla erişmeye devam eder.
+    match /{document=**} {
+      allow read, write: if isSuperAdmin();
+    }
+  }
+}
