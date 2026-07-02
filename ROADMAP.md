@@ -2,7 +2,7 @@
 
 > Format: her iş bir **durum rozeti** taşır — ✅ Done · 🟡 Kısmen · 🔵 Sıradaki · 🟣 Vizyon · 🔴 Blocker.
 > Tarih vermiyoruz (eskir) — istisna: canlı doğrulama/deploy kayıtları. Test maddeleri iş listesine karışmaz → [TESTS.md](TESTS.md).
-> **Son revizyon: 2026-07-02** (yeniden yapılandırıldı 07-01; C2/C2b/C2c/C5 + H teması eklendi 07-02; **G1-G4 gerçek deploy durumuna düzeltildi + SSOT protokolü eklendi 07-02**; **I teması (Güvenilirlik & Teknik Borç) + Tier 2 read:true yüzeyi eklendi 07-02, kaynak [ARCHITECTURE_REVIEW_2026-07-02.md](ARCHITECTURE_REVIEW_2026-07-02.md)**).
+> **Son revizyon: 2026-07-02** (yeniden yapılandırıldı 07-01; C2/C2b/C2c/C5 + H teması eklendi 07-02; **G1-G4 gerçek deploy durumuna düzeltildi + SSOT protokolü eklendi 07-02**; **I teması (Güvenilirlik & Teknik Borç) + Tier 2 read:true yüzeyi eklendi 07-02, kaynak [ARCHITECTURE_REVIEW_2026-07-02.md](ARCHITECTURE_REVIEW_2026-07-02.md); H1 early-access intake ✅ CANLI `a2689f9` 07-02**).
 
 ---
 
@@ -210,9 +210,12 @@ Bkz memory `feedback-delete-superadmin-only`, `feedback-firestore-rules-safety`.
 
 > **Durum netliği (2026-07-02):** Self-onboarding (`/signup` → `provisionTenant`) **AÇIK ve çalışıyor** — kapatılmadı. Davetiye = üstüne konan **geçici ek kapı**. Memory `keep-self-onboarding-active` hâlâ geçerli. **✅ G1 rol-claim KAPANDI** (`0f8de7e`) → onboarding otomasyonunun asıl blokajı kalktı; kalan blokaj = `AppRouter.jsx:104` `isAdmin=true` hardcode (yukarıda **T-a**) + davet formu/mail'in hiç kurulmamış olması (H2).
 
-**H1 — Early-access başvuru intake (inbound)** · 🔴 **KIRIK — başvuru kayboluyor**
-Landing "Apply for early access" formu → `fetch(addToWaitlist)` **ama fonksiyon YOK** → 404 → `.catch(()=>{})` yutuyor → müşteri "başvuruldu" görür ama **hiçbir yere yazılmaz, kimse bilmez.** `Infrastructure.jsx` `addToWaitlist`'i "ok" gösteriyor (hardcoded, yanıltıcı).
-- **MVP (ihtiyaç):** `addToWaitlist` fonksiyonunu yaz → `applications`/`waitlist` koleksiyonuna `{email, source, ts, status:'new'}` + **bildirim** (Telegram/email) → "request geldiğinde bilelim" karşılanır.
+> **✅ H1 KAPANDI (2026-07-02, `a2689f9`)** — başvuru artık kaybolmuyor. Kalan blokaj = H2 (davet formu/mail) + super-admin Applications reader.
+
+**H1 — Early-access başvuru intake (inbound)** · ✅ **DONE (2026-07-02, CANLI · commit `a2689f9` + functions deploy)**
+Landing formu var olmayan fonksiyona POST edip 404'ü `.catch` ile yutuyordu → başvuru kayboluyordu. **Çözüldü:** `addToWaitlist` onRequest (`functions:salown:addToWaitlist`, europe-west2, cors:true) → başvuruyu **önce** `superAdmin/waitlist/entries`'e yazar (`{email, source, status:'new', createdAt}`, email-dedup) → **sonra** best-effort Brevo bildirimi `info@salown.com`'a (mail patlasa bile kayıt durur). Frontend değişmedi (form zaten doğru URL'ye gidiyordu). Canlı test: GET→405, invalid→400, CORS preflight→204, valid→`{ok:true}`, dedup→`{duplicate:true}` ✅.
+- **Küçük temizlik:** `h1-deploy-test@salown.com` (source `deploy-test`) test doc'u `superAdmin/waitlist/entries`'te duruyor — Firebase console'dan sil ya da H3 Applications sekmesi gelince yönet.
+- **Sıradaki (H2):** başvuruyu okuyup onaylayan super-admin Applications sekmesi + davet-link maili.
 
 **H2 — Davetiyeli onboarding (outbound)** · 🔴 **YOK — davet formu + email hiç kurulmamış**
 Super-admin'de davet gönderen form/fonksiyon/mail **yok**. `provisionTenant` = self-signup (caller uid/email kullanır, davet mekanizması değil). "Davetiye gönderince email gelmiyor" = gönderen bir şey olmadığı için. **Gerekli:**
