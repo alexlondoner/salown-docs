@@ -84,9 +84,12 @@ Finance/partnerConfig · Muhamed wage · workingDays — tenant'ın kendi verisi
 `plan`/`trial` alanları artık dekoratif değil. **Canlı (2026-06-30):** planLimits.js config (`0a31141`) + super-admin Plan&Trial editörü (`e2cd4b4`, admin.salown.com) + Settings.jsx FeatureLock (`8189df4`: loyalty=Pro, parsers=Pro+) + booking/ay usage nudge (`2723220`, capped planda 50-cap bar). Hepsi SOFT + pilot Pro+ muaf.
 **Kalan:** Faz 4 **stylist cap** (`Barbers.jsx` — başka session'da başlandı) + hard-gate kararı (para alımı başlayınca soft→hard).
 
-**A2 — Stripe Connect (ödeme)** · 🟡 **Altyapı canlı, Connect kaldı**
-whitecross-site Stripe akışı **canlı ve doğrulandı** (2026-06-26: web booking→ödeme→confirmation email geldi). Webhook/cleanup/email-trigger parçaları ✅ LIVE.
-**Yön (2026-06-24):** salown.com/book için **Stripe Connect Standard + Checkout Session** (sabit £ deposit, per-tenant policy, ödeme tarafında sıfır sorumluluk). **Kalan:** Connect onboarding + create-session + webhook upgrade. Tam plan: [STRIPE_CONNECT_PLAN.md](STRIPE_CONNECT_PLAN.md). ⚠️ `features.stripe`/`websiteDepositsEnabled` Phase 5'e kadar AÇMA.
+**A2 — Stripe Connect (ödeme)** · 🟡 **Faz 0 backend YAZILDI (deploy bekliyor) · Faz 1+ kaldı**
+whitecross-site Stripe akışı **canlı ve doğrulandı** (2026-06-26). Webhook/cleanup/email-trigger parçaları ✅ LIVE (ama o ESKİ Payment Link modeli — Connect emekliye ayırıyor).
+**Yön (2026-06-24):** salown.com/book için **Stripe Connect Standard + Direct charge** (sabit £ deposit, per-tenant policy, ödeme tarafında sıfır sorumluluk). Tam plan: [STRIPE_CONNECT_PLAN.md](STRIPE_CONNECT_PLAN.md).
+- 🟡 **Faz 0 — Connect onboarding (backend yazıldı, deploy edilmedi):** `salownConnectStart`/`salownConnectCallback`/`salownConnectDisconnect`/`salownConnectStatus` (OAuth; tenant secret key HİÇ tutulmaz, sadece `acct_` id). **Deploy öncesi:** kullanıcı Stripe Dashboard TEST mode → `client_id`+platform `sk_test`; secret'lar set; hedefli deploy. UI = **başka session**. Test: [TESTS.md](TESTS.md) §3b.
+- 🔵 **Faz 1+ — kaldı:** `salownCreateCheckoutSession` (tutar SUNUCUDA) + webhook Connect-model upgrade (`event.account`'tan tenant çöz) + policy/deposit + refund/komisyon.
+- ⚠️ `features.stripe`/`websiteDepositsEnabled` gerçek para başlayana kadar AÇMA; hepsi TEST mode.
 
 ---
 

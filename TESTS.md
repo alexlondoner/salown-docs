@@ -88,10 +88,12 @@ otomatik test 49/49. Aşağıdaki manuel smoke case'leri **deploy sonrası bir k
 
 ---
 
-## 3. Stripe Canlı Test (whitecross) — yapılacak
+## 3. Stripe Canlı Test (whitecross) — 🗄️ LEGACY (yapılmadı, GEREKMİYOR)
 
-> ⚠️ Mevcut Payment Link akışı; yön Connect'e dönecek (bkz STRIPE_CONNECT_PLAN.md). Bu test
-> mevcut kodun canlı doğrulaması.
+> **SUPERSEDED (2026-07-02):** Bu, eski **Payment Link + elle secret-key + `salownStripeWebhook`**
+> modelinin testiydi — Stripe **Connect**'e geçtiğimiz için o akış emekliye ayrılıyor. Bu testi
+> **yapma**; yerine **Bölüm 3b (Stripe Connect)** geldi. Aşağısı arşiv/referans olarak duruyor.
+> (Not: whitecross-site'ın KENDİ Stripe akışı ayrı ve canlı — bkz [STRIPE_CONNECT_PLAN.md](STRIPE_CONNECT_PLAN.md) satır 18; o dokunulmuyor.)
 
 **Hazırlık (bir kez):**
 - [ ] Stripe Dashboard → Webhooks → Add endpoint:
@@ -113,6 +115,34 @@ otomatik test 49/49. Aşağıdaki manuel smoke case'leri **deploy sonrası bir k
 
 **Test C — Cleanup:**
 - [ ] PENDING booking 30dk (salown) / 15dk (whitecross-site) bekle → `CANCELLED`
+
+---
+
+## 3b. Stripe Connect Test (yeni yön) — yapılacak
+
+> Standard Connect + Direct charge. Plan: [STRIPE_CONNECT_PLAN.md](STRIPE_CONNECT_PLAN.md).
+> **Hepsi TEST mode** (`sk_test_` platform key) + `features.stripe` KAPALI → gerçek para yok.
+
+**Hazırlık (bir kez, kullanıcı — Stripe Dashboard TEST mode):**
+- [ ] Connect → Settings → application oluştur → **`client_id`** (`ca_...`)
+- [ ] Redirect URI ekle: `https://europe-west2-havuz-44f70.cloudfunctions.net/salownConnectCallback`
+- [ ] Developers → API keys → **platform Secret key** (`sk_test_...`)
+- [ ] Secret'lar: `firebase functions:secrets:set STRIPE_SECRET_KEY` + `STRIPE_CONNECT_CLIENT_ID`
+- [ ] Deploy: `firebase deploy --only functions:salown:salownConnectStart,salownConnectCallback,salownConnectDisconnect,salownConnectStatus`
+
+**Faz 0 — Onboarding (backend ✅ yazıldı, deploy+test bekliyor):**
+- [ ] Settings → Integrations → **"Connect with Stripe"** → OAuth sayfası açılıyor
+- [ ] whitecross **mevcut** Stripe hesabıyla login + Authorize → Salown'a döner (callback success sayfası)
+- [ ] `tenants/whitecross/settings/integrations.stripeAccountId` = `acct_...` yazıldı (tenant secret key YOK)
+- [ ] `salownConnectStatus` → `{connected:true, stripeChargesEnabled:true}` → Settings'te "✓ Connected" rozeti
+- [ ] `superAdmin/auditLog` → `stripe_connected` kaydı
+- [ ] **Disconnect** → `stripeAccountId` temizlendi, rozet gitti
+
+**Faz 1 — Checkout (henüz YAZILMADI — `salownCreateCheckoutSession` gelince):**
+- [ ] Booking → `salownCreateCheckoutSession` (tutar **sunucuda** servis doc'undan) → Stripe Checkout
+- [ ] `4242 4242 4242 4242` ile öde → `checkout.session.completed` → booking CONFIRMED + `paidAmount`/`remaining`/`paymentState` yazıldı + email
+- [ ] Tutarı client'tan forge etme denemesi → sunucu reddediyor (SYSTEM_ARCHITECTURE.md:75)
+- [ ] Cleanup: ödenmemiş PENDING 30dk → CANCELLED
 
 ---
 

@@ -1,6 +1,6 @@
 # STRIPE_CONNECT_PLAN.md
 
-Salown platform ödeme (deposit/full) mimarisi planı. **Durum: TASARIM — `features.stripe` admin master toggle KAPALI, future roadmap. Acil aksiyon yok.**
+Salown platform ödeme (deposit/full) mimarisi planı. **Durum (2026-07-02): Faz 0 (Connect onboarding) backend YAZILDI — deploy + UI bekliyor. `features.stripe` KAPALI, TEST mode. Faz 1+ (Checkout Session/charge) tasarım.**
 
 İlgili: [BUSINESS_RULES.md](BUSINESS_RULES.md) (deposit flow), [FEATURE_FLAGS.md](FEATURE_FLAGS.md) (`stripe` flag), memory `project-salown-payments-vision`.
 
@@ -29,7 +29,7 @@ Salown platform ödeme (deposit/full) mimarisi planı. **Durum: TASARIM — `fea
 - `functions/index.js:3756-3787` `salownCleanupExpiredPending` — PENDING>expiresAt iptal ✅
 - `functions/index.js:3894-3906` `salownBookingConfirmedEmailTrigger` — `stripeSessionId` varsa email ✅
 - `Settings.jsx:1122-1136,630-636` — elle secret key girişi; `features.stripe = !!stripeSecretKey` ⚠️
-- **Connect kodu HİÇ yok.** Tenant canlı secret key Firestore'da = yükümlülük.
+- ~~**Connect kodu HİÇ yok.**~~ **GÜNCELLENDİ 2026-07-02:** Faz 0 Connect backend YAZILDI (deploy bekliyor) — `salownConnectStart`/`salownConnectCallback`/`salownConnectDisconnect`/`salownConnectStatus` (OAuth; sadece `acct_` id saklanır, tenant secret key değil). Bkz aşağıda "Yapılacaklar → A". Eski elle secret-key input'u (`Settings.jsx`) hâlâ duruyor (Faz 0'da silinmedi; Faz 1 sonrası kalkacak).
 
 ### Neden Payment Link çıkmaz
 Statik tek-tutarlı URL: her servis×fiyat×(deposit/full) için ayrı link gerekir (ölçeklenmez), booking'e özel tutar açamaz, optional seçim yok, refund otomatize edilemez. → Gerçek `checkout.sessions.create` API'si şart.
@@ -93,13 +93,13 @@ Hedef: tenant için **tek buton + Stripe login + mod seç + kaydet.** Secret key
 
 ## Yapılacaklar — bileşenler
 
-### A. Connect Onboarding (YENİ) — elle key yerine OAuth
-- `salownConnectStart` (callable) → Standard OAuth authorize URL üretir (state=tenantId+csrf).
-- `salownConnectCallback` (onRequest) → `?code` exchange → `stripeAccountId` yaz → Settings'e redirect.
-- `salownConnectDisconnect` (callable) → `oauth/deauthorize`.
-- `account.updated` webhook → `chargesEnabled`/`payoutsEnabled`/`detailsSubmitted` güncelle.
-- Settings UI: "Connect with Stripe" butonu + bağlı durum rozeti; **mevcut secret key input'larını kaldır**.
-- Detaylı akış: yukarıdaki "Onboarding Flow" bölümü.
+### A. Connect Onboarding (YENİ) — elle key yerine OAuth · 🟡 backend YAZILDI (2026-07-02), deploy+UI bekliyor
+- ✅ `salownConnectStart` (callable) → Standard OAuth authorize URL üretir (CSRF nonce `superAdmin/oauthStates/{nonce}`, 10dk TTL).
+- ✅ `salownConnectCallback` (onRequest) → `?code` exchange (`stripe.oauth.token`) → `stripeAccountId` yaz → HTML success sayfası → Settings linki.
+- ✅ `salownConnectDisconnect` (callable) → `oauth.deauthorize` + acctId temizle.
+- ✅ `salownConnectStatus` (callable) → `stripe.accounts.retrieve` → `{connected,chargesEnabled,payoutsEnabled,detailsSubmitted}` döner+mirror. **NOT:** `account.updated` webhook yerine bu **canlı-fetch** kullanıldı (Faz 0 için yeterli; webhook Faz 1 webhook-upgrade'iyle eklenebilir).
+- 🔵 **Settings UI:** "Connect with Stripe" butonu + rozet + Disconnect → **başka session yapıyor**. (Eski secret-key input'u Faz 0'da silinmedi.) Kontrat: Start→url'ye git, dönüşte Status→rozet.
+- ⏳ **Deploy:** secret'lar (`STRIPE_SECRET_KEY`+`STRIPE_CONNECT_CLIENT_ID`) set + hedefli functions deploy.
 
 ### B. Ödeme politikası config (YENİ)
 - `settings/integrations.paymentMode`: `off|deposit|full|optional|pay_at_venue`.
@@ -144,7 +144,7 @@ bookings/{id} (webhook yazar):
 ---
 
 ## Faz sırası
-0. **Connect onboarding** (A) — hesap bağla, secret key riskini kaldır. (Ödeme hâlâ kapalı.)
+0. **Connect onboarding** (A) — hesap bağla, secret key riskini kaldır. (Ödeme hâlâ kapalı.) → 🟡 **backend ✅ yazıldı 2026-07-02, deploy+UI kaldı.**
 1. **Session + webhook** (C+D) — tek serviste full payment uçtan uca (test mode).
 2. **Policy + deposit** (B+E) — deposit/full/optional, servis bazlı sabit £.
 3. **Refund/iptal** (F) + komisyon (`application_fee`).
