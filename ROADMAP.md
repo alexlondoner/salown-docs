@@ -99,6 +99,12 @@ whitecross-site Stripe akışı **canlı ve doğrulandı** (2026-06-26). Webhook
 - 🔵 **Faz 2+ — kaldı:** policy/deposit config UI + refund/komisyon (`application_fee` altyapısı kablolandı, %0).
 - ⚠️ `features.stripe`/`websiteDepositsEnabled` gerçek para başlayana kadar AÇMA; hepsi TEST mode.
 
+**A3 — Product inventory / stok takibi** · 🔵 **Planlandı (temel atıldı 2026-07-03)**
+Retail ürünlerde numerik stok tut, satılan üründen düş — **nereden satılırsa satılsın aynı stoğu düşer.**
+- **Temel HAZIR (2026-07-03, CANLI):** "ürün satıldı"nın **tek gerçek kaynağı = `soldProducts`** (her booking taşır); `source==='Product Sale'` sadece giriş biçimi. Görünürlük hizalandı: Staff Sales ürün kartı/rozeti (`84635ed`) + Panel Sales (`Bookings.jsx`) satır rozeti + 🛍️ Products pill (`b5cebac`); Reports → products zaten sayıyordu. Böylece raporlama ↔ (gelecek) stok-hareketi **aynı alandan** beslenir, uyuşmazlık/shrinkage-denetimi mümkün.
+- **Kalan iş:** (1) Product doc'a numerik `stockQty` alanı (şu an sadece `inStock` boolean — `Products.jsx`). (2) Tek `applyStockDelta(soldProducts, sign)` helper — hem `checkoutBooking` hem `createProductSale` ORTAK çağırır (kaynak fark etmez, stok her durumda düşer). (3) Geri-alma: booking edit / iade / ürün çıkarma → eski vs yeni `soldProducts` diff'le, farkı stoğa iade et (helper diff üzerine kurulursa bedava). (4) `soldProducts` satırlarında `productId` **her zaman dolu** garantisi (join key; boşsa isimle fallback riskli — bkz memory `barber-name-matching` mantığı). (5) Düşük-stok uyarısı + "out of stock" satış-anı guard'ı (opsiyonel).
+- Bkz memory `salown-pos`, `reset-services`; POS/Tap-to-Pay ile aynı retail temasında.
+
 ---
 
 ### B · Booking deneyimi (📅)
@@ -291,6 +297,7 @@ Tüm test kayıtları tek yerde. Kapsam: 1) Firestore Rules (otomatik, `test-fir
 | **Online profil header (cover) — resize + focal-point** | `7d06c33` + `895a30a` (push→CI hosting + functions deploy). Yükleme sırasında canvas otomatik downscale (`src/utils/imageResize.js`, ~2000px/JPEG); dikey konum kaydırıcısı (`coverPosition`, projeksiyona + auto-republish); limit 2→4 MB; landing rehber "yatay/landscape". ⚠️ Tam functions deploy STRIPE_CONNECT_CLIENT_ID secret 404 (başka session) yüzünden bloktu → yalnız 3 profil fonksiyonu deploy edildi (`salownPublishProfile`/`ReviewProfile`/`RepublishProfileOnEdit`). |
 | **Booking akışı reorder — tarih/saat önce, barber opsiyonel** | `94b11f9` (push→CI). `BookingPage.jsx` Servis→**Tarih→Saat→Barber(ops)**→Bilgiler (Fresha "any professional"). Müsaitlik tüm ekibin birleşimi (bir barber off olsa takvim boş görünmez); "No preference" default, atanan isim müşteriye gösterilmez ("Best available barber"). Bkz **B**. |
 | **Barber "chosen vs auto-assigned" izleme + salon rozeti** | Booking doc'a `barberSelection`/`barberAutoAssigned`. salOWN (`BookingPage`) + whitecross ana site (`script.js` website tekli+grup, `ff654dff`→GitHub Pages). Salon: `BookingDetailPanel` + staff `BookingDetailSheet`'te ♥ "Requested by client" vs "Auto-assigned · free to reassign" (auto=salon serbestçe reassign edebilir). Eski booking'lerde alan yok→rozet yok. whitecross client-app DEPRECATED (kullanılmıyor, atlandı). |
+| **Product-sale görünürlüğü — `soldProducts` SSOT hizalaması** | Walk-in içine satılan ürün booking'in `soldProducts`'ına yazılıyordu ama yalnız `source==='Product Sale'` yüzeyleri gösteriyordu → walk-in ürünü görünmezdi. **Staff Sales** (`84635ed`, staff.salown.com): Products stat kartı + "Products sold" kırılımı + transaction 🛍️ rozeti. **Panel Sales** (`b5cebac`, salown.com, `Bookings.jsx`): satır 🛍️ rozeti + soldProducts-bazlı "🛍️ Products" filtre pill'i. Reports→products zaten doğruydu; Dashboard denemesi geri alındı. Inventory'nin temeli (bkz **A3**). İki commit LOCAL—push edilmedi (firebase ile doğrudan deploy). |
 
 ### 🗓️ 2026-07-02 — CANLI
 | İş | Detay |
