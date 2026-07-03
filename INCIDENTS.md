@@ -33,6 +33,19 @@ Her olay `## YYYY-MM-DD — kısa başlık` ile açılır, hemen altına **metad
 
 ---
 
+## 2026-07-03 — Checkout özet paneli add-on'ları göstermiyordu (Subtotal eksik, Total doğru)
+
+**Severity:** 🟢 Low · **Owner:** Claude (Opus 4.8) · **Status:** ✅ Resolved
+
+**Impact:** Owner checkout'ta servise "Nose Wax £6" add-on ekledi; sağdaki özet panelinde **Subtotal £28** (add-on'suz) kalıyor, add-on satırı hiç görünmüyordu — ama **Total £40 doğruydu**. Subtotal+Tip (£28+£6) ≠ Total (£40) → tutarsız/yanıltıcı göründü ("eklediğim extra breakdown'a girmiyor"). **Veri ve receipt HER ZAMAN doğruydu** (booking `soldAddOns`, Service total £34, receipt "Nose Wax Add-on £6" hepsi doğru); sorun yalnızca checkout ekranındaki canlı gösterim.
+**Root Cause:** `CheckoutPanel.jsx` `SummaryPanel`'e `localExtras` (add-on'lar) **hiç geçilmiyordu**. Panel yalnız `localProducts`'ı topluyor, `Subtotal = basePrice + productsTotal` — `addOnsTotal` eksik. `total` prop'u ise parent'ta add-on dahil hesaplandığı için (`startingTotal = basePrice + productsTotal + addOnsTotal`, `:687`) doğru geliyordu → Subtotal ile Total arasında add-on kadar fark. Latent bug (ürünler gösteriliyordu, add-on'lar hiç eklenmemişti).
+**Resolution:** `CheckoutPanel.jsx` (+13/−2): `SummaryPanel`'e `localExtras` prop'u geçirildi; `addOnsTotal = getProductsTotal(localExtras)`; ürün bloğunun altına amber add-on bloğu (isim·£) eklendi; `Subtotal = basePrice + productsTotal + addOnsTotal`. Build sıfır-hata (`CheckoutPanel-Ck-OpAyi.js`). Deploy: salown.com `npm run deploy:panel` (staff app AYRI checkout, etkilenmedi).
+**Prevention:** Bir para özeti hem "kalem listesi" hem "Subtotal" gösteriyorsa, ikisi de **aynı kaynaktan** (products **+ extras + service**) türemeli; Total ayrı formülden gelip kalem toplamıyla uyuşmuyorsa gösterim eksik demektir. Add-on = ürünle aynı `getProductsTotal` şekli, unutulması kolay ikinci dizi.
+
+**Dersler / Lessons Learned:**
+- "Total doğru ama breakdown yanlış" = neredeyse her zaman **gösterim** bug'ı, veri değil — önce persistan doc + receipt'e bak (ikisi de doğruysa panik yok).
+- `soldProducts` ve `soldAddOns` İKİ ayrı dizi; bir yüzey ürünü gösterip add-on'u unutabiliyor (bkz aynı gün Staff/Panel Sales görünürlük işi — kalıp aynı: add-on/product ikinci diziyi kaçırmak).
+
 ## 2026-07-03 — Mesai-dışı "Busy" quick-block grid'de görünmedi → silinemeyen hayalet kayıt
 
 **Severity:** 🟡 Medium · **Owner:** Claude (Opus 4.8) · **Status:** ✅ Resolved
