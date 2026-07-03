@@ -138,11 +138,16 @@ otomatik test 49/49. Aşağıdaki manuel smoke case'leri **deploy sonrası bir k
 - [ ] `superAdmin/auditLog` → `stripe_connected` kaydı
 - [ ] **Disconnect** → `stripeAccountId` temizlendi, rozet gitti
 
-**Faz 1 — Checkout (henüz YAZILMADI — `salownCreateCheckoutSession` gelince):**
-- [ ] Booking → `salownCreateCheckoutSession` (tutar **sunucuda** servis doc'undan) → Stripe Checkout
-- [ ] `4242 4242 4242 4242` ile öde → `checkout.session.completed` → booking CONFIRMED + `paidAmount`/`remaining`/`paymentState` yazıldı + email
-- [ ] Tutarı client'tan forge etme denemesi → sunucu reddediyor (SYSTEM_ARCHITECTURE.md:75)
-- [ ] Cleanup: ödenmemiş PENDING 30dk → CANCELLED
+**Faz 1 — Checkout (backend ✅ YAZILDI `863e3db`, deploy+test bekliyor):**
+> Ek hazırlık (bir kez): Stripe Dashboard → Connect application → **Webhooks** → endpoint ekle:
+> `https://europe-west2-havuz-44f70.cloudfunctions.net/salownConnectWebhook`
+> events: `checkout.session.completed` + `checkout.session.async_payment_succeeded` → signing secret `whsec_...` → `firebase functions:secrets:set STRIPE_CONNECT_WEBHOOK_SECRET`.
+> Hedefli deploy'a `salownCreateCheckoutSession,salownConnectWebhook` ekle (salownInboundEmail'i DAHİL ETME → ayrı secret ister).
+- [ ] `paymentMode` (deposit/full) + `stripeAccountId` set tenant'ta booking → BookingPage `salownCreateCheckoutSession` çağırır → Stripe Checkout açılır (tutar **sunucuda** servis doc'undan)
+- [ ] `4242 4242 4242 4242` ile öde → `salownConnectWebhook` `checkout.session.completed` → booking CONFIRMED + `paidAmount`/`remaining`/`paymentState`(`PAID`/`DEPOSIT_PAID`) yazıldı + email
+- [ ] Tutarı client'tan forge etme denemesi → sunucu reddediyor (amount servis doc'undan, `SYSTEM_ARCHITECTURE.md:75`)
+- [ ] **İzolasyon:** webhook `event.account` ≠ tenant'ın stored `stripeAccountId` → `account_mismatch`, yazma YOK
+- [ ] Cleanup: ödenmemiş PENDING 30dk → CANCELLED (`salownCleanupExpiredPending`)
 
 ---
 
