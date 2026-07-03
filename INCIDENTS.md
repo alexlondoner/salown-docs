@@ -33,6 +33,23 @@ Her olay `## YYYY-MM-DD — kısa başlık` ile açılır, hemen altına **metad
 
 ---
 
+## 2026-07-03 — Mesai-dışı "Busy" quick-block grid'de görünmedi → silinemeyen hayalet kayıt
+
+**Severity:** 🟡 Medium · **Owner:** Claude (Opus 4.8) · **Status:** ✅ Resolved
+
+**Impact:** Whitecross'ta owner tüm takıma **23:44'te bir "Busy" quick-block** attı (scope 'all' → alex/arda/muhamed, 23:44→ertesi 00:44 gece-yarısı geçen). Kayıtlar Calendar Day grid'inde görünmedi → tıklanıp silinemediler. Owner ayrıca "Alex'e off veremiyorum, booking var diyor" sandı.
+**Root Cause:** `TimeGrid.jsx` görünür pencereyi `GRID_START = açılış−2s`, `GRID_END = kapanış+2s` ile sabitliyordu. 23:44'lük block, kapanış+2s (~21:00) penceresinin altına düşünce `top = (startMins − GRID_START*60)*…` ekranın altında konumlanıp görünmez oldu ("data valid, UI invalid" — INC 2026-06-29 hayalet-booking ailesi, farklı sebep: off-day değil, **mesai-dışı saat**). İkincil: `Barbers.jsx` "Off today" `_todayCount` uyarısı BLOCKED holdleri de sayıyordu → busy block "reassign manually" dedi (ama `markOffToday` ENGELLEMİYOR; off yine verilebilir).
+**Resolution:** (1) 3 hayalet block salt-okunur admin sorguyla bulunup **imza-doğrulamalı** silindi (yalnız `status:BLOCKED·blockKind:busy·note:Busy·02Tem23:44`). (2) `TimeGrid.jsx` (+17/−2): `GRID_START/END` artık `OPEN/CLOSE` ile seed'lenip o günün gerçek kayıtlarını (CANCELLED hariç) kapsayacak şekilde **sadece dışarı** genişliyor — mesai-dışı hiçbir kayıt bir daha görünmez kalmaz. (3) `Barbers.jsx` (+2/−1): `_todayCount` BLOCKED'ı atlar. Commit `7d06c33` PUSHED→CI hosting deploy (tüm tenant Calendar). functions'a dokunulmadı.
+**Prevention:** Grid penceresi artık **veriyi izler** (statik saat kutusu değil) → mesai-dışı kayıt yapısal olarak erişilebilir kalır. Normal günlerde byte-identical (pencere yalnız büyür, `OPEN_MINS/CLOSE_MINS` header/popup için gerçek mesai olarak korunur).
+
+**Ne oldu / Teşhis / Fix:** Owner "dün bir walk-in ya da busy attım, grid'in görünmediği saate, silemiyorum" dedi. Kural #7 gereği önce bu dosya + KNOWN_QUIRKS/INVARIANTS okundu → INC 2026-06-29 "off-day hayalet booking" kalıbı ("grid'de yok = DISPLAY sorunu; önce Firestore'da doc'u DOĞRULA") uygulandı. `firebase-admin` + ADC ile `tenants/whitecross/bookings` 30Haz–6Tem sorgulandı → 3 BLOCKED/busy kaydı 02Tem 23:44'te bulundu. Off-day değil (kolonlar çiziliyor), **saat penceresi** sebebi doğrulandı. Silme imza-guard'lı script'le yapıldı; fix build sıfır-hata doğrulandı.
+
+**Dersler / Lessons Learned:**
+- **Grid gibi "görünür pencere" hesapları statik olmamalı, veriyi kapsamalı.** Kayıt penceresinin dışına düşerse UI'da erişilemez ("ghost") olur — off-day (kolon yok) ve mesai-dışı-saat (kart pencere dışında) iki ayrı görünmezlik sebebi, ikisi de aynı "data valid, UI invalid" sonucunu verir.
+- **"Grid'de yok = create değil DISPLAY sorunu" (INC 2026-06-29 & 2026-06-26 ile aynı ders):** teşhise kod okumakla değil, **Firestore'da doc'u salt-okunur doğrulayarak** başla; sebep (off-day mı, saat mi, barber-eşleşme mi) veriden çıkar.
+- **Production tekil silme = imza-guard'lı script.** Silmeden önce doc'un beklenen imzasını (status/kind/note/tarih) doğrula, uymuyorsa DURDUR — yanlış kaydı silmektense hiç silme.
+- **Uyarı ≠ engel:** `markOffToday` sadece `_todayCount>0` uyarısı gösteriyordu, işlemi bloklamıyordu; "yapamıyorum" şikâyetinde önce gerçekten bloklanıyor mu diye kodu teyit et.
+
 ## 2026-07-02 — Demo başvurusu approve'u, mevcut bir tenant'ın (eekurt) auth hesabının claim'ini ezdi
 
 **Severity:** 🟠 High · **Owner:** Claude (Opus 4.8) · **Status:** ✅ Resolved
