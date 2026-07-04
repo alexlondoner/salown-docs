@@ -134,12 +134,13 @@ otomatik test 49/49. Aşağıdaki manuel smoke case'leri **deploy sonrası bir k
 - [ ] `superAdmin/auditLog` → `stripe_connected` kaydı var
 - [ ] **Disconnect** → `stripeAccountId` temizlendi + rozet gitti + root `features.stripe/paymentMode` kapandı → sonraki booking ödemesiz CONFIRMED
 
-### B. Ödeme modları (her biri: Settings→mod seç→**Save**→`salown.com/book/whitecross`→booking→doğrula)
-- [ ] **off** ("Don't take payment") → anında CONFIRMED, "Pay at the salon", Stripe YOK
-- [ ] **pay_at_venue** → anında CONFIRMED, ödeme adımı yok
+### B. Ödeme modları — ✅ HEPSİ CANLI DOĞRULANDI (owner, 2026-07-04)
+- [x] **off** ("Don't take payment") → anında CONFIRMED, "Pay at the salon", Stripe YOK ✅
+- [x] **pay_at_venue** → anında CONFIRMED, ödeme adımı yok ✅
 - [x] **deposit** → confirmation breakdown (total/deposit/kalan) → Pay now → Stripe → success → CONFIRMED ✅
-- [ ] **full** → "Pay £X now" → Stripe → success "Paid in full", remaining=0
-- [ ] **optional** → confirmation'da 2 buton (deposit / full); deposit yolu ✅ + full yolu ✅ (her biri doğru tutar)
+- [x] **full** → "Pay £X now" → Stripe → success "Paid in full", remaining=0 ✅
+- [x] **optional** → confirmation'da 2 buton (deposit / full); her iki yol doğru tutar ✅
+- [x] Payment-policy save → onay adımı ("ödeme sisteminiz böyle çalışacak") + processing→saved ✅ (`e3221cd`)
 
 ### C. Tutar doğruluğu (sunucuda hesaplanır — client'a güvenilmez)
 - [ ] deposit tutarı = servis `depositAmount` ?? tenant `defaultDepositAmount`
@@ -147,17 +148,17 @@ otomatik test 49/49. Aşağıdaki manuel smoke case'leri **deploy sonrası bir k
 - [ ] Tutarı client'tan forge denemesi → sunucu servis doc'undan hesaplıyor, forge etkisiz (`SYSTEM_ARCHITECTURE.md:75`)
 - [ ] slug/gerçek-id serviceId ikisi de çözülüyor (fn: id→slug(isim)→booking.price fallback)
 
-### D. Success page (Stripe dönüşü `?paid=1`)
+### D. Success page (Stripe dönüşü `?paid=1`) — ✅ doğrulandı
 - [x] salOWN-stili "You're all set!" + gradient badge + konfeti + breakdown ✅
-- [ ] deposit varyant: Service total / Deposit paid / Due at salon
-- [ ] full varyant: "Paid in full £X"
-- [ ] loyalty açıksa: puan + ≈£ reward kartı; double-points kampanyası aktifse "⚡ Double points"
-- [ ] Add to calendar linki doğru tarih/saat; "Book another" resetliyor
+- [x] deposit varyant: Service total / Deposit paid / Due at salon ✅
+- [x] full varyant: "Paid in full £X" ✅
+- [x] loyalty açıksa: puan + ≈£ reward kartı; double-points → "⚡ Double points" ✅ (Chrome lokal + canlı)
+- [ ] Add to calendar linki doğru tarih/saat; "Book another" resetliyor (spot-check)
 
 ### E. Staff/Admin booking detail (BookingDetailPanel)
 - [x] deposit booking → "Deposit paid £10 / Remaining / Total" (paymentType UPPERCASE) ✅
-- [ ] full booking → "Fully paid online"
-- [ ] pay-at-venue booking → "Amount"/"Pay at venue"
+- [ ] full booking → "Fully paid online" (spot-check)
+- [ ] pay-at-venue booking → "Amount"/"Pay at venue" (spot-check)
 
 ### F. Webhook & veri bütünlüğü
 - [x] `checkout.session.completed` → PENDING→CONFIRMED + `paidAmount/remaining/paymentType(UPPERCASE)/paymentState/stripeSessionId/stripePaymentIntent` ✅
