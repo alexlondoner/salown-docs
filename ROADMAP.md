@@ -2,7 +2,7 @@
 
 > Format: her iş bir **durum rozeti** taşır — ✅ Done · 🟡 Kısmen · 🔵 Sıradaki · 🟣 Vizyon · 🔴 Blocker.
 > Tarih vermiyoruz (eskir) — istisna: canlı doğrulama/deploy kayıtları. Test maddeleri iş listesine karışmaz → [TESTS.md](TESTS.md).
-> **Son revizyon: 2026-07-02** (yeniden yapılandırıldı 07-01; C2/C2b/C2c/C5 + H teması eklendi 07-02; **G1-G4 gerçek deploy durumuna düzeltildi + SSOT protokolü eklendi 07-02**; **I teması (Güvenilirlik & Teknik Borç) + Tier 2 read:true yüzeyi eklendi 07-02, kaynak [ARCHITECTURE_REVIEW_2026-07-02.md](ARCHITECTURE_REVIEW_2026-07-02.md); H1 early-access intake ✅ CANLI `a2689f9` 07-02; H2 vetted-onboarding (demo funnel + Applications approve→provision) ✅ CANLI 07-02, INCIDENTS 2026-07-02 (claim clobber guard) eklendi**).
+> **Son revizyon: 2026-07-02** (yeniden yapılandırıldı 07-01; C2/C2b/C2c/C5 + H teması eklendi 07-02; **G1-G4 gerçek deploy durumuna düzeltildi + SSOT protokolü eklendi 07-02**; **I teması (Güvenilirlik & Teknik Borç) + Tier 2 read:true yüzeyi eklendi 07-02, kaynak [ARCHITECTURE_REVIEW_2026-07-02.md](ARCHITECTURE_REVIEW_2026-07-02.md); H1 early-access intake ✅ CANLI `a2689f9` 07-02; H2 vetted-onboarding (demo funnel + Applications approve→provision) ✅ CANLI 07-02, INCIDENTS 2026-07-02 (claim clobber guard) eklendi**; **I2 `index.js` split planı zenginleştirildi + GATE=sonraki feature'dan ÖNCE, blocker=index.js commit'siz, 07-04**).
 
 ---
 
@@ -275,8 +275,18 @@ Analytics sayfası gerçek veriyi düzgün yansıtıyor (doğrulandı 2026-07-02
 **I1 — Parser sessiz-kırılma canary'si** · 🟡 YAZILDI (`863e3db`, deploy edilmedi)
 `salownParseEmails` cron API entegrasyonu değil — salon Gmail'ini IMAP+regex ile okur. Booksy/Fresha email formatını değiştirirse parser **exception atmaz, sadece 0 booking import eder** → en güçlü özellik sessizce ölür, kimse fark etmez. **Yapıldı:** `recordParserRun` her kaynağın (Booksy/Fresha/Treatwell ayrı) günlük import sayısını `tenants/{tid}/parserStats/{source}`'a yazar; yeni günün ilk run'ında ÖNCEKİ tam gün 0 import ederken son geçmiş sağlıklıysa (3-gün ort ≥2) `notifyTenant` ile **alarm** verir (per-gün bir kez). Parser'ın **dönüş değerini** okur — parse davranışını DEĞİŞTİRMEZ. Deploy: functions batch ile.
 
-**I2 — `functions/index.js` split (4541 satır)** · 🔵 (ucuz borç, ilk ödenecek)
-v2 functions → her export bağımsız redeploy, yani refactor **mekanik/düşük riskli**. Öneri klasörleme: `bookings/ · marketing/ · notifications/ · parsers/ · stripe/ · ai/ · staff/ · clients/`. Korkulacak borç değil; ucuz + okunabilirliği hemen açar, sonraki her iş kolaylaşır.
+**I2 — `functions/index.js` split (5562 satır, 50 export)** · 🔵 **GATE: testler/mevcut iş bitince, SONRAKİ feature'dan ÖNCE yapılır** (owner kararı 2026-07-04)
+v2 functions → her export bağımsız redeploy; refactor **saf taşıma, düşük risk** — ama 2 şart var.
+
+**🔴 Altın kural:** Firebase export **adına** göre eşler → `exports.X` isimleri + config'leri (region/secrets/schedule) **birebir aynı kalmalı**. Ad/konum değişirse Firebase "sil+yeniden ekle" sanar → trigger düşer, scheduler sıfırlanır, webhook URL kopar. Refactor'a "hazır girmişken şunu düzelteyim" KARIŞTIRMA (bug tam oradan girer; saf taşıma = sıfır davranış değişikliği).
+
+**Plan (2 faz):**
+- **Faz 1 — helper'lar → `utils/`** (düşük risk, deploy'a görünmez): tepedeki ~230 satır paylaşılan helper (telegram/email/ical/profile/bookingClass) modüllere; 50 export kıpırdamaz → Firebase'de fonksiyonlar aynı, deploy no-op-ish. Modül desenini kurar.
+- **Faz 2 — fonksiyonlar → domain modülleri** (per-domain, Boy Scout): `exports.X = require('./domain/X')` (ad+config AYNI). Sıra STABİL→aktif: **ilk `ai/askAI.js`** (taşırken auth guard + tenant-scope de eklenir → tek taşta refactor+güvenlik, bkz [[project_salown_ai]] + SECURITY askAI açığı), sonra parsers/notifications/marketing; **stripe/bookings EN SON** (şu an aktif düzenleniyorlar, birinin işini bozma). Klasörleme: `bookings/ · marketing/ · notifications/ · parsers/ · stripe/ · ai/ · staff/ · clients/ · utils/`.
+
+**Operasyon:** tek TEMİZ pencerede (index.js `git status` temizken) → diğer session'lara "commit'leyip ~30 dk durun" → tek commit → deploy **codebase-prefix'li** (`firebase deploy --only functions:salown`, ASLA blanket `--only functions` = 27 us-central1 orphan siler) → doğrula: 50 fn ACTIVE + booking-confirmation + Telegram testi.
+
+**🔴 BLOKER (2026-07-04):** index.js şu an working-tree'de "M" (backend + başka session işi karışık, commit'siz) → refactor başlayamaz. Önce onu YAZAN session commit+push etsin (`git restore` risk'ini de kapatır). Ucuz borç ama okunabilirliği hemen açar; sonraki her iş (askAI dahil) kolaylaşır.
 
 **I3 — Reporting pre-aggregation** · 🔵 (~100 salon, 1000'i beklemez)
 `Reports.jsx` client-side aggregation yapıyor (Firestore'dan çekip tarayıcıda `reduce`). Tenant × aylık booking büyüdükçe **~100 salonda tarayıcıda çöker** (1000'e kalmaz). **Yön:** `tenants/{id}/stats/{period}` pre-aggregated doc (booking trigger'ı veya scheduled job günceller) → Reports önce onu okur. Finance (Whitecross-only, contained) bu kapsamda değil.
