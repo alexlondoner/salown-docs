@@ -1,6 +1,6 @@
 # STRIPE_CONNECT_PLAN.md
 
-Salown platform ödeme (deposit/full) mimarisi planı. **Durum (2026-07-02): Faz 0 (Connect onboarding) backend YAZILDI — deploy + UI bekliyor. `features.stripe` KAPALI, TEST mode. Faz 1+ (Checkout Session/charge) tasarım.**
+Salown platform ödeme (deposit/full) mimarisi planı. **Durum (2026-07-04): Faz 0 + Faz 1 backend ✅ DEPLOYED (europe-west2, TEST mode) — 6 fonksiyon canlı + 3 secret set + Stripe TEST Connect app/webhook kuruldu (`ca_Uov4x…`, sandbox "Turquoise Swing"). KALAN: Settings UI (Connect butonu/rozet/policy alanları — henüz yazılmadı) + Faz 2+ (policy/refund). `features.stripe` KAPALI.**
 
 İlgili: [BUSINESS_RULES.md](BUSINESS_RULES.md) (deposit flow), [FEATURE_FLAGS.md](FEATURE_FLAGS.md) (`stripe` flag), memory `project-salown-payments-vision`.
 
@@ -93,13 +93,13 @@ Hedef: tenant için **tek buton + Stripe login + mod seç + kaydet.** Secret key
 
 ## Yapılacaklar — bileşenler
 
-### A. Connect Onboarding (YENİ) — elle key yerine OAuth · 🟡 backend YAZILDI (2026-07-02), deploy+UI bekliyor
+### A. Connect Onboarding (YENİ) — elle key yerine OAuth · ✅ backend DEPLOYED (2026-07-04, TEST mode) · UI kaldı
 - ✅ `salownConnectStart` (callable) → Standard OAuth authorize URL üretir (CSRF nonce `superAdmin/oauthStates/{nonce}`, 10dk TTL).
 - ✅ `salownConnectCallback` (onRequest) → `?code` exchange (`stripe.oauth.token`) → `stripeAccountId` yaz → HTML success sayfası → Settings linki.
 - ✅ `salownConnectDisconnect` (callable) → `oauth.deauthorize` + acctId temizle.
 - ✅ `salownConnectStatus` (callable) → `stripe.accounts.retrieve` → `{connected,chargesEnabled,payoutsEnabled,detailsSubmitted}` döner+mirror. **NOT:** `account.updated` webhook yerine bu **canlı-fetch** kullanıldı (Faz 0 için yeterli; webhook Faz 1 webhook-upgrade'iyle eklenebilir).
-- 🔵 **Settings UI:** "Connect with Stripe" butonu + rozet + Disconnect → **başka session yapıyor**. (Eski secret-key input'u Faz 0'da silinmedi.) Kontrat: Start→url'ye git, dönüşte Status→rozet.
-- ⏳ **Deploy:** secret'lar (`STRIPE_SECRET_KEY`+`STRIPE_CONNECT_CLIENT_ID`) set + hedefli functions deploy.
+- 🔴 **Settings UI:** "Connect with Stripe" butonu + rozet + Disconnect → **HÂLÂ YOK** (`src/`'de sıfır referans; başka session yapacaktı, olmamış). (Eski secret-key input'u da silinmedi.) Kontrat: Start→url'ye git, dönüşte Status→rozet.
+- ✅ **Deploy (2026-07-04):** 3 secret set (`STRIPE_SECRET_KEY`+`STRIPE_CONNECT_CLIENT_ID`+`STRIPE_CONNECT_WEBHOOK_SECRET`) + 6 fonksiyon hedefli deploy. ⚠️ Filtre codebase-prefix'li: `firebase deploy --only functions:salown:<fn>,...` (prefix'siz "No function matches" verir). Endpoint smoke: callback+webhook HTTP 400 = canlı.
 
 ### B. Ödeme politikası config (YENİ)
 - `settings/integrations.paymentMode`: `off|deposit|full|optional|pay_at_venue`.
@@ -144,8 +144,8 @@ bookings/{id} (webhook yazar):
 ---
 
 ## Faz sırası
-0. **Connect onboarding** (A) — hesap bağla, secret key riskini kaldır. (Ödeme hâlâ kapalı.) → 🟡 **backend ✅ yazıldı 2026-07-02, deploy+UI kaldı.**
-1. **Session + webhook** (C+D) — tek serviste full payment uçtan uca (test mode).
+0. **Connect onboarding** (A) — hesap bağla, secret key riskini kaldır. (Ödeme hâlâ kapalı.) → ✅ **backend DEPLOYED 2026-07-04 (TEST); Settings UI kaldı.**
+1. **Session + webhook** (C+D) — tek serviste full payment uçtan uca (test mode). → ✅ **backend DEPLOYED 2026-07-04 (`salownCreateCheckoutSession`+`salownConnectWebhook`); UI'dan uçtan uca test için Settings Connect butonu + BookingPage denemesi lazım.**
 2. **Policy + deposit** (B+E) — deposit/full/optional, servis bazlı sabit £.
 3. **Refund/iptal** (F) + komisyon (`application_fee`).
 4. **Aç:** önce herohairs (kendi sitesi yok = asıl ihtiyaç), sonra opsiyonel whitecross.
