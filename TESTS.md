@@ -167,10 +167,11 @@ otomatik test 49/49. Aşağıdaki manuel smoke case'leri **deploy sonrası bir k
 - [ ] Cleanup: ödenmemiş PENDING 30dk → CANCELLED (`salownCleanupExpiredPending`)
 - [ ] Confirmation email CONFIRMED'de gidiyor (`salownBookingConfirmationTrigger`)
 
-### G. İptal / Refund
-- [ ] Deposit-ödenmiş booking'i **pencere DIŞINDA** onay-mail linkinden iptal → Stripe refund atıldı (Dashboard'da görünür) + booking `paymentState=REFUNDED`+`refundedAmount`
-- [ ] **Pencere İÇİNDE** iptal → `salownCancelByToken` reddediyor ("at least X hours before")
-- [ ] Stripe Dashboard'dan elle refund → `charge.refunded` webhook → booking'e yansıdı (collectionGroup index)
+### G. İptal / Refund — ✅ TEST DONE (2026-07-04, sentetik gerçek-charge testi)
+- [x] Deposit-ödenmiş booking'i **pencere DIŞINDA** iptal → `salownCancelByToken` `{cancelled:true,refunded:true,refundedAmount:10}`; Firestore `status=CANCELLED`+`paymentState=REFUNDED`+`refundedAmount=10`+`stripeRefundId`; Stripe `charge.refunded=true`, `amount_refunded=£10` ✅
+- [x] **Pencere İÇİNDE** (2h) iptal → reddedildi: *"Cancellations must be made at least 8 hours before the appointment"* (refund YOK) ✅
+- [x] Staff panel refunded booking → **"Refunded £10 · Card (online)"** (`01b8342`) ✅
+- [ ] Stripe Dashboard'dan elle refund → `charge.refunded` webhook → booking'e yansıdı (collectionGroup index) — henüz test edilmedi
 
 ### H. İptal/erteleme pencereleri (Settings → General → Booking policy)
 - [ ] `cancellationWindowHours` değiştir (örn 8→2) → iptal sınırı yeni değere göre
