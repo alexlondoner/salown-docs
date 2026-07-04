@@ -122,19 +122,20 @@ otomatik test 49/49. Aşağıdaki manuel smoke case'leri **deploy sonrası bir k
 
 > Standard Connect + Direct charge. Plan: [STRIPE_CONNECT_PLAN.md](STRIPE_CONNECT_PLAN.md).
 > **Hepsi TEST mode** (`sk_test_` platform key, Stripe sandbox "Turquoise Swing") → gerçek para YOK.
-> **Durum:** Faz 0–3 backend + UI CANLI. Onboarding + deposit-checkout uçtan uca owner tarafından doğrulandı ✅ (2026-07-04). Aşağısı tam regresyon/kabul matrisi — yeni tenant onboarding'inden ÖNCE hepsi ✅ olmalı.
+> **Durum:** Faz 0–3 backend + UI CANLI. **A + B + D + E ✅ TEST DONE** (owner tüm modları uçtan uca doğruladı 2026-07-04). Kalan: G (refund), H (pencereler), F (webhook edge), I/J (güvenlik/izolasyon), K (barber müsaitlik retest).
 > Test kartı: `4242 4242 4242 4242` · ileri tarih · herhangi CVC/postcode. İptal-refund testinde Stripe Dashboard → Payments'ta refund'ı doğrula.
+> **İşaret:** `✅ TEST DONE` = owner canlı doğruladı · `[x]` doğrulandı · `[ ]` bekliyor.
 
 **Kurulum (bir kez) — ✅ TAMAM:** `client_id ca_Uov4x…` + redirect URI + platform `sk_test` + webhook (`salOWN-connect`, Connected-accounts scope, `checkout.session.completed`+`charge.refunded`) + 3 secret set + 6 fn deploy (`functions:salown:<fn>` codebase-prefix'li).
 
-### A. Onboarding (Settings → Integrations → Online payments)
+### A. Onboarding (Settings → Integrations → Online payments) — ✅ TEST DONE
 - [x] "Connect with Stripe" → OAuth → Authorize → dönüşte `?tab=integrations` + "✓ Connected" rozeti ✅
 - [x] `integrations.stripeAccountId=acct_…` yazıldı (tenant secret key YOK) ✅
 - [x] `salownConnectStatus` → charges/payouts durumu rozete yansıyor ✅
 - [ ] `superAdmin/auditLog` → `stripe_connected` kaydı var
 - [ ] **Disconnect** → `stripeAccountId` temizlendi + rozet gitti + root `features.stripe/paymentMode` kapandı → sonraki booking ödemesiz CONFIRMED
 
-### B. Ödeme modları — ✅ HEPSİ CANLI DOĞRULANDI (owner, 2026-07-04)
+### B. Ödeme modları — ✅ TEST DONE (owner tüm modları doğruladı, 2026-07-04)
 - [x] **off** ("Don't take payment") → anında CONFIRMED, "Pay at the salon", Stripe YOK ✅
 - [x] **pay_at_venue** → anında CONFIRMED, ödeme adımı yok ✅
 - [x] **deposit** → confirmation breakdown (total/deposit/kalan) → Pay now → Stripe → success → CONFIRMED ✅
@@ -148,14 +149,14 @@ otomatik test 49/49. Aşağıdaki manuel smoke case'leri **deploy sonrası bir k
 - [ ] Tutarı client'tan forge denemesi → sunucu servis doc'undan hesaplıyor, forge etkisiz (`SYSTEM_ARCHITECTURE.md:75`)
 - [ ] slug/gerçek-id serviceId ikisi de çözülüyor (fn: id→slug(isim)→booking.price fallback)
 
-### D. Success page (Stripe dönüşü `?paid=1`) — ✅ doğrulandı
+### D. Success page (Stripe dönüşü `?paid=1`) — ✅ TEST DONE (owner + Chrome lokal)
 - [x] salOWN-stili "You're all set!" + gradient badge + konfeti + breakdown ✅
 - [x] deposit varyant: Service total / Deposit paid / Due at salon ✅
 - [x] full varyant: "Paid in full £X" ✅
 - [x] loyalty açıksa: puan + ≈£ reward kartı; double-points → "⚡ Double points" ✅ (Chrome lokal + canlı)
 - [ ] Add to calendar linki doğru tarih/saat; "Book another" resetliyor (spot-check)
 
-### E. Staff/Admin booking detail (BookingDetailPanel)
+### E. Staff/Admin booking detail (BookingDetailPanel) — ✅ TEST DONE (deposit)
 - [x] deposit booking → "Deposit paid £10 / Remaining / Total" (paymentType UPPERCASE) ✅
 - [ ] full booking → "Fully paid online" (spot-check)
 - [ ] pay-at-venue booking → "Amount"/"Pay at venue" (spot-check)
@@ -184,6 +185,12 @@ otomatik test 49/49. Aşağıdaki manuel smoke case'leri **deploy sonrası bir k
 ### J. İzolasyon / regresyon
 - [ ] **whitecross-site (whitecrossbarbers.com)** kendi ödeme akışı ETKİLENMEDİ (ayrı fn/key, `source:'Website'`)
 - [ ] Walk-in / diğer source booking'ler + checkout normal çalışıyor
+
+### K. Barber müsaitlik (bug fix `0ffabf4`, retest) + booking celebration (`890c481`)
+- [ ] Off-günde barber **seçilemiyor** (barber adımı listesinde yok) — tüm tenant'lar
+- [ ] Off-günde barber **auto-assign edilmiyor** (No preference → sadece o gün çalışan)
+- [ ] Boş günde (o gün booking yok) da off-barber düşmüyor (fast-path fix)
+- [ ] Booking submit → "Securing your spot…" processing → "You're all booked!" animasyon (pay-at-venue/off); paying-mod → Stripe'a gider
 
 ---
 
