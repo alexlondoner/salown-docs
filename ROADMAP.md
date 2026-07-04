@@ -135,9 +135,18 @@ Design handoff'a göre 2 aşama deploy edildi (gönderim/merge/sender-pick/birth
 - **Aşama 1** (`3e26610`): landing zone A-D (Hero + Recommended-for-you + Your campaigns geçmişi + Running automatically) + Templates library drawer.
 - **Aşama 2** (`2ce03b1`): Compose 4-adım (①Who ②Write+template ③Offer ④When) + per-client drawer step-1 restyle (client-context kartı).
 Detay: memory `campaigns-redesign` + `edit_log_salown`.
+**✅ Re-engagement attribution (first cut) — DONE (2026-07-04, `ef7f751`):** Campaigns tab "Re-engagement results" zone — `reengagementSentAt` damgalı müşterilerden kaç kişi damga-sonrası CHECKED_OUT (döndü), return rate, revenue, kullanılan indirim + dönen-müşteri listesi. Pure client+booking join (yeni fetch yok). Zone C'nin "what came back" vaadini karşılar.
+
+**✅ Discount codes — DONE (2026-07-04, 4 faz CANLI):** Self-managed kod sistemi, salon-içi + online AYNI kod.
+- Faz1 (`3c6c81d`): `discountCodes` koleksiyonu (%/£, expiry, usageLimit, usedCount, oncePerCustomer) + `DiscountCodesPanel` (Marketing) + rules (deploy'lu, additive).
+- Faz2 (`e3841f7`): salon-içi checkout promo input (`src/utils/discountCodes.js` ortak validator) → booking'e `discountCode` + usedCount++ + redemption.
+- Faz3 (`c932ccf`): online — `salownCreateCheckoutSession` `promoCode` sunucuda doğrular + full price'ı düşürür; webhook redemption'ı işler. BookingPage: ödemeli modlar artık confirmation→Pay (auto-redirect kalktı, kod girişi için).
+- Faz4 (`fe875aa`): `BulkCampaignPanel` gerçek-kod picker (typo-safe; e-postadaki kod garanti çalışır). Per-code "Used N" = kampanya attribution.
+- ⚠️ Kalan: kod uçtan uca canlı test (oncePerCustomer/limit/expiry) + %100-off online edge (£0 Stripe session kuramaz).
+
 **Kalan → C2/C4 (backend, faz-2, gated):**
 - **Scheduling (send later)** — Compose ④ `SCHEDULING_ENABLED=false` ile kapalı; cron/queue trigger gerektiriyor (→ **C3.1** ile aynı altyapı).
-- **Stats (opened% / booked back)** — hero pill'leri + geçmiş kartları; open-tracking pixel + booking-attribution gerektiriyor (→ **C3.3**). `sent/skipped/failed` zaten dönüyor.
+- **Open-tracking pixel** — opened% için; booking-attribution first-cut ✅ yapıldı (yukarıda), open-tracking hâlâ kaldı (→ **C3.3**).
 - **Suggestion ranking engine** — sayılar türetiliyor; ranking/dismiss/telemetri sonra (→ **C4** vizyon).
 
 **C2 — Premium campaign email şablonu** · ✅ **DONE (2026-07-02, CANLI · commit `82e86d6` + functions deploy)**
