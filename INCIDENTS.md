@@ -33,6 +33,20 @@ Her olay `## YYYY-MM-DD — kısa başlık` ile açılır, hemen altına **metad
 
 ---
 
+## 2026-07-04 — Off-day barber bookable (empty-day fast path skipped schedule)
+
+**Severity:** 🟠 High · **Owner:** Claude (Opus 4.8) · **Status:** ✅ Resolved
+
+**Impact:** Müşteri, o gün **off olan** bir barber'a online booking yapabildi (Alex Salı çalışmıyor ama 7 Tem Salı 10:15'e Alex'e CONFIRMED booking düştü — üstelik ödemeli). Yanlış barber'a randevu = operasyonel karışıklık.
+**Root Cause:** `BookingPage.getAvailableSlots` iki yollu: **busy-day yolu** (o gün booking varsa) `getBarberSchedule` ile working-days/hours doğru filtreliyordu; ama **empty-day fast path** (`existingBookings.length === 0`) HİÇ program kontrolü yapmadan TÜM eligible barber'ları "free" işaretliyordu → boş günde (Salı, o gün booking yok) off-barber hem auto-assign'e hem seçim listesine giriyordu. Ek: `handleSubmit` fallback `barbers[0]`'a düşüyordu (program-kör).
+**Resolution:** `0ffabf4` (push→CI). Fast path artık `getBarberSchedule(b, date)` + slot-saati ile filtreliyor (busy-day yolunun aynısı); off/aralık-dışı barber `free` sayılmıyor, slot'ta çalışan yoksa `available:false`. `handleSubmit` fallback = o gün çalışan ilk barber (`barbers.find(b => getBarberSchedule(b, selectedDate))`), asla `barbers[0]`. Tenant-agnostic (her barber'ın `workingDays`/`shiftChanges`'i).
+**Prevention:** Availability'nin İKİ yolu (fast/busy) da AYNI kuralları uygulamalı — "boş gün = herkes müsait" kısayolu working-days'i atlar. Kural: barber müsaitliği = shop-open ∧ barber-working-day ∧ barber-hours ∧ slot-boş; hiçbir yol bunlardan birini atlamamalı. Aynı desen reschedule/manage'de de var (bkz 2026-06-29 off-day ghost booking) — tekrar eden kalıp.
+
+**Dersler / Lessons Learned:**
+- "Boş veri = her şey serbest" fast-path'leri tehlikeli: doğru yolun tüm guard'larını taşımalı, yoksa yalnız-boş-durumda sessiz açık.
+- Barber auto-assign SADECE o gün+saat çalışan barber'lara atamalı; display-list (freeBarbers) = auto-assign havuzu = aynı filtre.
+- 2. kez benzer off-day bug (önce reschedule/manage `5476238`, şimdi booking) → availability mantığı tek helper'a (`getBarberSchedule`) dayanmalı, her call-site onu kullanmalı.
+
 ## 2026-07-04 — "Connect with Stripe" internal error (Firestore odd-path)
 
 **Severity:** 🟠 High · **Owner:** Claude (Opus 4.8) · **Status:** ✅ Resolved
