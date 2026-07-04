@@ -118,36 +118,71 @@ otomatik test 49/49. Aşağıdaki manuel smoke case'leri **deploy sonrası bir k
 
 ---
 
-## 3b. Stripe Connect Test (yeni yön) — yapılacak
+## 3b. Stripe Connect — UÇTAN UCA TEST PLANI (2026-07-04)
 
 > Standard Connect + Direct charge. Plan: [STRIPE_CONNECT_PLAN.md](STRIPE_CONNECT_PLAN.md).
-> **Hepsi TEST mode** (`sk_test_` platform key) + `features.stripe` KAPALI → gerçek para yok.
+> **Hepsi TEST mode** (`sk_test_` platform key, Stripe sandbox "Turquoise Swing") → gerçek para YOK.
+> **Durum:** Faz 0–3 backend + UI CANLI. Onboarding + deposit-checkout uçtan uca owner tarafından doğrulandı ✅ (2026-07-04). Aşağısı tam regresyon/kabul matrisi — yeni tenant onboarding'inden ÖNCE hepsi ✅ olmalı.
+> Test kartı: `4242 4242 4242 4242` · ileri tarih · herhangi CVC/postcode. İptal-refund testinde Stripe Dashboard → Payments'ta refund'ı doğrula.
 
-**Hazırlık (bir kez, kullanıcı — Stripe Dashboard TEST mode):**
-- [ ] Connect → Settings → application oluştur → **`client_id`** (`ca_...`)
-- [ ] Redirect URI ekle: `https://europe-west2-havuz-44f70.cloudfunctions.net/salownConnectCallback`
-- [ ] Developers → API keys → **platform Secret key** (`sk_test_...`)
-- [ ] Secret'lar: `firebase functions:secrets:set STRIPE_SECRET_KEY` + `STRIPE_CONNECT_CLIENT_ID`
-- [ ] Deploy: `firebase deploy --only functions:salown:salownConnectStart,salownConnectCallback,salownConnectDisconnect,salownConnectStatus`
+**Kurulum (bir kez) — ✅ TAMAM:** `client_id ca_Uov4x…` + redirect URI + platform `sk_test` + webhook (`salOWN-connect`, Connected-accounts scope, `checkout.session.completed`+`charge.refunded`) + 3 secret set + 6 fn deploy (`functions:salown:<fn>` codebase-prefix'li).
 
-**Faz 0 — Onboarding (backend ✅ yazıldı, deploy+test bekliyor):**
-- [ ] Settings → Integrations → **"Connect with Stripe"** → OAuth sayfası açılıyor
-- [ ] whitecross **mevcut** Stripe hesabıyla login + Authorize → Salown'a döner (callback success sayfası)
-- [ ] `tenants/whitecross/settings/integrations.stripeAccountId` = `acct_...` yazıldı (tenant secret key YOK)
-- [ ] `salownConnectStatus` → `{connected:true, stripeChargesEnabled:true}` → Settings'te "✓ Connected" rozeti
-- [ ] `superAdmin/auditLog` → `stripe_connected` kaydı
-- [ ] **Disconnect** → `stripeAccountId` temizlendi, rozet gitti
+### A. Onboarding (Settings → Integrations → Online payments)
+- [x] "Connect with Stripe" → OAuth → Authorize → dönüşte `?tab=integrations` + "✓ Connected" rozeti ✅
+- [x] `integrations.stripeAccountId=acct_…` yazıldı (tenant secret key YOK) ✅
+- [x] `salownConnectStatus` → charges/payouts durumu rozete yansıyor ✅
+- [ ] `superAdmin/auditLog` → `stripe_connected` kaydı var
+- [ ] **Disconnect** → `stripeAccountId` temizlendi + rozet gitti + root `features.stripe/paymentMode` kapandı → sonraki booking ödemesiz CONFIRMED
 
-**Faz 1 — Checkout (backend ✅ YAZILDI `863e3db`, deploy+test bekliyor):**
-> Ek hazırlık (bir kez): Stripe Dashboard → Connect application → **Webhooks** → endpoint ekle:
-> `https://europe-west2-havuz-44f70.cloudfunctions.net/salownConnectWebhook`
-> events: `checkout.session.completed` + `checkout.session.async_payment_succeeded` → signing secret `whsec_...` → `firebase functions:secrets:set STRIPE_CONNECT_WEBHOOK_SECRET`.
-> Hedefli deploy'a `salownCreateCheckoutSession,salownConnectWebhook` ekle (salownInboundEmail'i DAHİL ETME → ayrı secret ister).
-- [ ] `paymentMode` (deposit/full) + `stripeAccountId` set tenant'ta booking → BookingPage `salownCreateCheckoutSession` çağırır → Stripe Checkout açılır (tutar **sunucuda** servis doc'undan)
-- [ ] `4242 4242 4242 4242` ile öde → `salownConnectWebhook` `checkout.session.completed` → booking CONFIRMED + `paidAmount`/`remaining`/`paymentState`(`PAID`/`DEPOSIT_PAID`) yazıldı + email
-- [ ] Tutarı client'tan forge etme denemesi → sunucu reddediyor (amount servis doc'undan, `SYSTEM_ARCHITECTURE.md:75`)
-- [ ] **İzolasyon:** webhook `event.account` ≠ tenant'ın stored `stripeAccountId` → `account_mismatch`, yazma YOK
+### B. Ödeme modları (her biri: Settings→mod seç→**Save**→`salown.com/book/whitecross`→booking→doğrula)
+- [ ] **off** ("Don't take payment") → anında CONFIRMED, "Pay at the salon", Stripe YOK
+- [ ] **pay_at_venue** → anında CONFIRMED, ödeme adımı yok
+- [x] **deposit** → confirmation breakdown (total/deposit/kalan) → Pay now → Stripe → success → CONFIRMED ✅
+- [ ] **full** → "Pay £X now" → Stripe → success "Paid in full", remaining=0
+- [ ] **optional** → confirmation'da 2 buton (deposit / full); deposit yolu ✅ + full yolu ✅ (her biri doğru tutar)
+
+### C. Tutar doğruluğu (sunucuda hesaplanır — client'a güvenilmez)
+- [ ] deposit tutarı = servis `depositAmount` ?? tenant `defaultDepositAmount`
+- [ ] full tutarı = servis (veya variation) fiyatı
+- [ ] Tutarı client'tan forge denemesi → sunucu servis doc'undan hesaplıyor, forge etkisiz (`SYSTEM_ARCHITECTURE.md:75`)
+- [ ] slug/gerçek-id serviceId ikisi de çözülüyor (fn: id→slug(isim)→booking.price fallback)
+
+### D. Success page (Stripe dönüşü `?paid=1`)
+- [x] salOWN-stili "You're all set!" + gradient badge + konfeti + breakdown ✅
+- [ ] deposit varyant: Service total / Deposit paid / Due at salon
+- [ ] full varyant: "Paid in full £X"
+- [ ] loyalty açıksa: puan + ≈£ reward kartı; double-points kampanyası aktifse "⚡ Double points"
+- [ ] Add to calendar linki doğru tarih/saat; "Book another" resetliyor
+
+### E. Staff/Admin booking detail (BookingDetailPanel)
+- [x] deposit booking → "Deposit paid £10 / Remaining / Total" (paymentType UPPERCASE) ✅
+- [ ] full booking → "Fully paid online"
+- [ ] pay-at-venue booking → "Amount"/"Pay at venue"
+
+### F. Webhook & veri bütünlüğü
+- [x] `checkout.session.completed` → PENDING→CONFIRMED + `paidAmount/remaining/paymentType(UPPERCASE)/paymentState/stripeSessionId/stripePaymentIntent` ✅
+- [ ] **İzolasyon:** `event.account` ≠ stored `stripeAccountId` → `account_mismatch`, yazma YOK
 - [ ] Cleanup: ödenmemiş PENDING 30dk → CANCELLED (`salownCleanupExpiredPending`)
+- [ ] Confirmation email CONFIRMED'de gidiyor (`salownBookingConfirmationTrigger`)
+
+### G. İptal / Refund
+- [ ] Deposit-ödenmiş booking'i **pencere DIŞINDA** onay-mail linkinden iptal → Stripe refund atıldı (Dashboard'da görünür) + booking `paymentState=REFUNDED`+`refundedAmount`
+- [ ] **Pencere İÇİNDE** iptal → `salownCancelByToken` reddediyor ("at least X hours before")
+- [ ] Stripe Dashboard'dan elle refund → `charge.refunded` webhook → booking'e yansıdı (collectionGroup index)
+
+### H. İptal/erteleme pencereleri (Settings → General → Booking policy)
+- [ ] `cancellationWindowHours` değiştir (örn 8→2) → iptal sınırı yeni değere göre
+- [ ] `rescheduleWindowHours` değiştir → erteleme sınırı yeni değere göre; `0` = serbest
+- [ ] Reschedule sonrası `paidAmount`/deposit korunuyor (sıfırlanmıyor)
+
+### I. Güvenlik / kenar durumlar
+- [ ] non-PENDING booking için checkout denemesi → reddediliyor
+- [ ] charges-enabled=false hesapta paying-mod → gate açılmıyor (booking ödemesiz CONFIRMED, "Pay at salon")
+- [ ] `integrations` doc public okunamıyor (sır yok); yalnız `paymentMode`/`defaultDepositAmount` root'ta public
+
+### J. İzolasyon / regresyon
+- [ ] **whitecross-site (whitecrossbarbers.com)** kendi ödeme akışı ETKİLENMEDİ (ayrı fn/key, `source:'Website'`)
+- [ ] Walk-in / diğer source booking'ler + checkout normal çalışıyor
 
 ---
 
