@@ -33,6 +33,19 @@ Her olay `## YYYY-MM-DD — kısa başlık` ile açılır, hemen altına **metad
 
 ---
 
+## 2026-07-04 — "Connect with Stripe" internal error (Firestore odd-path)
+
+**Severity:** 🟠 High · **Owner:** Claude (Opus 4.8) · **Status:** ✅ Resolved
+
+**Impact:** Owner Settings→Integrations'ta "Connect with Stripe"e basınca `internal` hatası — Stripe Connect onboarding hiç başlamıyordu (hem local hem salown.com).
+**Root Cause:** `salownConnectStart` CSRF nonce'unu `superAdmin/oauthStates/${nonce}` yoluna yazıyordu = **3 segment** (odd). Firestore `.doc()` çift-segment ister; 3 segment koleksiyon yolu → `Value for argument "documentPath" must point to a document ... does not contain an even number of components` → unhandled → callable `internal`.
+**Resolution:** yol `superAdmin/oauthStates/nonces/${nonce}` (4 segment) yapıldı; yazan (`salownConnectStart`) + okuyan (`salownConnectCallback`) İKİSİ de düzeltildi + targeted deploy (`functions:salown:salownConnectStart,salownConnectCallback`).
+**Prevention:** Firestore `.doc(path)` string'lerinde segment sayısı **çift** olmalı (collection/doc/collection/doc…); `.collection()` tek. Yeni path yazarken say. Faz 0 kodu deploy edilmiş ama HİÇ çalıştırılmamıştı → "deployed ≠ tested"; secret/happy-path'i deploy sonrası bir kez tetikle.
+
+**Dersler / Lessons Learned:**
+- Odd/even segment kuralı: `.doc()` çift, `.collection()` tek. Nested state için `col/doc/col/doc` (örn. `superAdmin/oauthStates/nonces/{id}`), `col/doc/{id}` değil.
+- Deploy edilmiş ama tetiklenmemiş kod = test edilmemiş kod. Faz 0 haftalar önce yazıldı, ilk gerçek tık bugün → bug bugün çıktı. Kritik happy-path'i deploy günü smoke'la.
+
 ## 2026-07-03 — Checkout özet paneli add-on'ları göstermiyordu (Subtotal eksik, Total doğru)
 
 **Severity:** 🟢 Low · **Owner:** Claude (Opus 4.8) · **Status:** ✅ Resolved
