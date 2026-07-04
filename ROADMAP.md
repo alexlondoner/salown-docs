@@ -130,6 +130,10 @@ Direkt Firestore yazımı → double-booking race window. HeroHairs trafiği art
 
 ### C · Marketing & Retention (📣)
 
+**✅ Marketing Performance card — DONE (2026-07-04, `5218d91`):** Campaigns tab headline (son 30g): recovered revenue + customers returned + coupons redeemed + avg return value + top-performing codes (redeemed/discount/net). Booking marketing-attributed sayılır (kod kullandı VEYA ziyaret öncesi re-engage maili almış); revenue = gerçek paidAmount. Vanity yok. → salOWN "email sender" değil **revenue-recovery** tarafına geçti.
+
+**🔵 SIRADAKI — Marketing ↔ Analytics ayrımı** (owner kararı 2026-07-04): Marketing modülü önce "piyasanın en iyisi" olmalı; sonra analytics/reporting'i ayrı bir bölüme ayır (şu an Marketing tab'inde karışık: occupancy/weekday/top-clients analytics + campaigns/attribution marketing). Faz 2 marketing derinleştirme: open-tracking pixel + click (→ C3.3, full journey timeline), scheduling (C3.1). Önce marketing perfect, sonra analytics ayrımı.
+
 **C1 — Campaigns tab REDESIGN** · ✅ **DONE (2026-07-01, CANLI)**
 Design handoff'a göre 2 aşama deploy edildi (gönderim/merge/sender-pick/birthday-guard mantığı AYNEN korundu):
 - **Aşama 1** (`3e26610`): landing zone A-D (Hero + Recommended-for-you + Your campaigns geçmişi + Running automatically) + Templates library drawer.
