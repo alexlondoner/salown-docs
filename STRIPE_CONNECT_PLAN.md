@@ -1,6 +1,6 @@
 # STRIPE_CONNECT_PLAN.md
 
-Salown platform ödeme (deposit/full) mimarisi planı. **Durum (2026-07-04): Faz 0 + Faz 1 backend ✅ DEPLOYED (europe-west2, TEST mode) — 6 fonksiyon canlı + 3 secret set + Stripe TEST Connect app/webhook kuruldu (`ca_Uov4x…`, sandbox "Turquoise Swing"). KALAN: Settings UI (Connect butonu/rozet/policy alanları — henüz yazılmadı) + Faz 2+ (policy/refund). `features.stripe` KAPALI.**
+Salown platform ödeme (deposit/full) mimarisi planı. **Durum (2026-07-04): Faz 0–3 UÇTAN UCA CANLI (europe-west2, TEST mode). Backend 6 Connect fn + refund/configurable-window fn'leri deployed; Settings UI ("Online payments" kartı + "Booking policy" kartı) DEPLOYED (`8747fea`→CI hosting); Stripe TEST Connect app/webhook kuruldu (`ca_Uov4x…`, sandbox "Turquoise Swing"). KALAN: komisyon (%0 kablolu), canlı-mode açılışı, opsiyonel servis-bazlı deposit editör alanı. `features.stripe` yalnız connected+charges-enabled+ödemeli-modda açılır; canlı-mode henüz KAPALI.**
 
 İlgili: [BUSINESS_RULES.md](BUSINESS_RULES.md) (deposit flow), [FEATURE_FLAGS.md](FEATURE_FLAGS.md) (`stripe` flag), memory `project-salown-payments-vision`.
 
@@ -146,9 +146,9 @@ bookings/{id} (webhook yazar):
 ## Faz sırası
 0. **Connect onboarding** (A) — hesap bağla, secret key riskini kaldır. (Ödeme hâlâ kapalı.) → ✅ **backend DEPLOYED 2026-07-04 (TEST); Settings UI kaldı.**
 1. **Session + webhook** (C+D) — tek serviste full payment uçtan uca (test mode). → ✅ **backend DEPLOYED 2026-07-04 (`salownCreateCheckoutSession`+`salownConnectWebhook`); UI'dan uçtan uca test için Settings Connect butonu + BookingPage denemesi lazım.**
-2. **Policy + deposit** (B+E) — deposit/full/optional, servis bazlı sabit £.
-3. **Refund/iptal** (F) + komisyon (`application_fee`).
-4. **Aç:** önce herohairs (kendi sitesi yok = asıl ihtiyaç), sonra opsiyonel whitecross.
+2. **Policy + deposit** (B+E) — deposit/full/optional, servis bazlı sabit £. → ✅ **DEPLOYED 2026-07-04:** Settings "Online payments" kartı (mod seçici + default deposit); BookingPage zaten wire'lı. Servis-bazlı `depositAmount` backend'de destekli, editör alanı opsiyonel kaldı.
+3. **Refund/iptal** (F) + komisyon (`application_fee`). → ✅ **DEPLOYED 2026-07-04:** `salownCancelByToken` uygun iptalde refund; `salownConnectWebhook` `charge.refunded` yansıtma (collectionGroup index); iptal/erteleme pencereleri tenant-configurable (Settings "Booking policy"). Komisyon %0 kablolu.
+4. **Aç:** önce herohairs (kendi sitesi yok = asıl ihtiyaç), sonra opsiyonel whitecross. → ⏳ TEST mode'da uçtan uca denenebilir; canlı-mode açılışı gerçek para kararına bağlı.
 
 ## Riskler
 - Webhook secret modeli Connect'le zorunlu değişir (per-tenant → tek platform) — dikkatli migrate.

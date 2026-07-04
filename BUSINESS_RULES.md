@@ -2,8 +2,9 @@
 
 ## Cancel & Reschedule Policy
 
-- **Cancel**: 8 saat öncesine kadar ücretsiz. 8 saat sonrası → deposit el konur ama cancel izin verilir.
-- **Reschedule**: 2 saat öncesine kadar. 2 saat sonrası → hard block ("call us").
+- **Cancel**: pencere içinde (varsayılan 8 saat) ücretsiz + **deposit iade** (Stripe Connect ile ödendiyse `salownCancelByToken` otomatik refund atar). Pencere kapandıktan sonra `salownCancelByToken` cancel'ı **reddeder** (hard block, self-servis iptal yok — kod davranışı budur, "el koy" değil).
+- **Reschedule**: pencere içinde (varsayılan 2 saat) izinli. Sonrası → hard block ("call us").
+- ⚠️ **Pencereler tenant-configurable (2026-07-04):** `settings/settings.cancellationWindowHours` (default 8) + `rescheduleWindowHours` (default 2), owner Settings→General→"Booking policy"'den düzenler. Fonksiyonlar bu değeri okur (hardcoded 8/2 kalktı); `0` = başlangıca kadar iptal/erteleme serbest.
 
 ## Slot Generation
 
