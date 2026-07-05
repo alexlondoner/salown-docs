@@ -33,6 +33,23 @@ Her olay `## YYYY-MM-DD — kısa başlık` ile açılır, hemen altına **metad
 
 ---
 
+## 2026-07-05 — Walk-in/booking client search: eşleşen ama link'lenmemiş müşteri = sessiz kopya kayıt
+
+**Severity:** 🟠 High · **Owner:** Claude (Opus 4.8 · Arda bildirdi) · **Status:** ✅ Resolved
+
+**Impact:** Panelden walk-in/booking eklerken staff (Arda) müşteriyi arayıp **buluyor** ama dropdown satırına **tıklamadan** devam edip kaydedince, booking mevcut client'a bağlanmıyordu: isim-only, telefon/email/docId'siz **kopya kayıt** yazılıyordu → ziyaret geçmişi + loyalty **kopuk**, duplicate client oluşuyordu. Sessizdi — ne hata ne uyarı.
+**Root Cause:** `WalkInForm.jsx` client search "dropdown satırına TIKLA" tipi autocomplete. Seçim (link) yalnız satır `onClick`'inde (`setSelectedClient`) gerçekleşiyor; her tuş vuruşu `setSelectedClient(null)`. Kaydetmede `name: selectedClient ? selectedClient.name : titleCase(search.trim())` — anonim walk-in için **meşru, load-bearing** fallback; AMA "eşleşme bulundu ama seçilmedi" durumunu da SESSİZCE aynı dala sokuyordu. İki farklı senaryo (yeni/anonim müşteri **vs** eşleşen-ama-linklenmemiş) tek dala çöktüğü için biri veriyi bozuyordu.
+**Resolution:** `07fb06c` (push→CI, salown.com panel). Dört guard (walk-in + booking sekmesi, paylaşılan `clientSearchBlock`+`resolveClientForSave`): (1) **exact tam-isim** → tek net eşleşme auto-link; (2) **klavye** ↑/↓ highlight + Enter yalnız highlighted VEYA **tek** eşleşme (birden fazlada tahmin yok — "B safer") + Esc; (3) **amber "Not linked — did you mean X? [Link]" banner** (`nearMatch`); (4) **save-time backstop** `resolveClientForSave()` → bağlantısız-ama-eşleşen isimle Save/Checkout'ta `window.confirm` (link-existing vs add-new). + dropdown satırlarına `onMouseDown preventDefault` (blur-timeout tıklamayı yutmasın). Staff `NewBookingSheet.jsx` bu tuzağa sahip DEĞİL (walk-in düz isim input, appointment `ClientSearch onSelect`) → dokunulmadı.
+**Prevention:** "Bul → seçmek için TIKLA" tipi autocomplete'lerde **kaydetme anında** bir backstop olmalı: yazılı değer mevcut bir kayda eşleşiyor ama link'lenmemişse SESSİZCE orphan yazma — sor ya da auto-link. **Load-bearing bir fallback ikinci bir meşru-olmayan durumu da yutuyorsa orası latent bug'dır.** Aynı "typed-but-unlinked" deseni başka arama yüzeylerinde de riskli: **Reschedule modal** client değişimi, **Clients merge-drag**, **campaign audience** arama → aynı guard'ı düşün.
+
+**Ne oldu / Teşhis / Fix:** Arda "arıyorum, buluyorum ama tıklamadan atamıyor" dedi. Teşhis: kod tip-doğruydu, çökme/exception yoktu; sorun `selectedClient=null` iken typed-name fallback'inin near-match'i de sessizce yutması (anonim-walk-in fallback'i near-match durumunu maskeliyordu). Lokal Chrome'da uçtan uca doğrulandı: isim yaz → tıklama → banner çıktı, [Link] → linked chip; **Total 13 sabit** = hiç test verisi yazılmadı. Sadece `WalkInForm.jsx` explicit-path commit; staff-bundle (başka session) + aerulas `b9c5b2e` (o sırada origin'e zaten push'lanmıştı) dokunulmadı → push YALNIZ kendi commit'i deploy etti. CI run #225 = success.
+
+**Dersler / Lessons Learned:**
+- **Latent _data_ bug ≠ UX pürüzü:** ölçüt = sessizce **kalıcı yanlış state** üretiyor mu? Kopya client + kopuk loyalty/geçmiş → evet, bug. Sadece "bir tık fazla, veri doğru" olsaydı saf UX'ti.
+- **Load-bearing fallback içine gizlenen bug:** anonim-walk-in fallback'i doğru bir quirk'ti ama ikinci bir senaryoyu da yutuyordu — "doğru görünen kodun ikinci işi". KNOWN_QUIRKS (kasıtlı) vs latent (kaza) ayrımı tam burada.
+- **TypeScript yakalamazdı:** `null` selectedClient geçerli state, fallback geçerli dal → tip değil **mantık/veri** hatası. TS'in kör noktası (bkz TS-geçiş kararı).
+- "Bul-ama-tıkla" autocomplete'lerinde **save-time guard + tek-net-eşleşme auto-link** kalıcı kalıp olsun; near-match'i sessizce yeni-kayıt yapma.
+
 ## 2026-07-04 — Off-day barber bookable (empty-day fast path skipped schedule)
 
 **Severity:** 🟠 High · **Owner:** Claude (Opus 4.8) · **Status:** ✅ Resolved
