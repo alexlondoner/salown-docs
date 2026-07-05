@@ -1,5 +1,19 @@
 # BUSINESS_RULES.md
 
+## Campaign & Email Sending Rules (salOWN'un yerleşik kuralları — GDPR + deliverability)
+
+> Bunlar **sabit kurallar** (per-tenant ayar DEĞİL — bilinçli). Amaç: spam klasörüne düşmemek + GDPR/consent'e uymak. Sonradan gerekirse dinamikleştirilebilir; şimdilik salOWN'un opinion'ı.
+
+- **Re-engagement suppress (30 gün):** Bir müşteriye "We miss you" gönderilince `clients/{id}.reengagementSentAt` damgalanır. **Son 30 günde** damgalanan müşteri tekrar re-engage EDİLMEZ:
+  - Home lapsed hatırlatıcısı → listeden gizler (30 gün).
+  - Bulk campaign lapsed segmentleri (lapsed30/60/90) → `reengagedAtMs` son 30 günse alıcıdan **çıkarır** (`BulkCampaignPanel`, `REENGAGE_SUPPRESS_MS`; audience `reengagedAtMs` taşır).
+- **Birthday suppress:** aynı yıl birthday campaign alan → `birthdaySentYear` ile tekrar gönderilmez.
+- **Opt-out / suppression (GDPR + spam-safety):** ASLA email gönderilmez eğer:
+  - `client.emailOptOut === true` (bizim unsubscribe linki → `salownEmailOptOut`), VEYA
+  - Brevo **unsubscribed/spam/blocked** event'i geldi → `salownBrevoWebhook` eşleşen client'ın `emailOptOut=true` + `emailOptOutReason`'ını yazar → tüm süzgeçler (audience + server `sendCampaignBulk` guard) otomatik saygı gösterir. **Tek suppression mekanizması.**
+- **Engagement:** Brevo native open/click `tenants/{id}/emailEvents/{emailKey}`'e (tenantId tag'iyle) düşer → funnel + "engaged but not returned".
+- **Sender:** transactional (Gmail veya `noreply@salown.com`), her gönderim List-Unsubscribe header + unsubscribe linki taşır.
+
 ## Cancel & Reschedule Policy
 
 - **Cancel**: pencere içinde (varsayılan 8 saat) ücretsiz + **deposit iade** (Stripe Connect ile ödendiyse `salownCancelByToken` otomatik refund atar). Pencere kapandıktan sonra `salownCancelByToken` cancel'ı **reddeder** (hard block, self-servis iptal yok — kod davranışı budur, "el koy" değil).
