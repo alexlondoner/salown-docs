@@ -33,6 +33,23 @@ Her olay `## YYYY-MM-DD — kısa başlık` ile açılır, hemen altına **metad
 
 ---
 
+## 2026-07-06 — Marketing listesi opt-out/suppressed kişileri gösteriyordu (liste ≠ gönderim)
+
+**Severity:** 🟡 Medium · **Owner:** Claude (Opus 4.8 · owner bildirdi) · **Status:** ✅ Resolved
+
+**Impact:** Owner, Marketing kampanya alıcı listesinde **unsubscribe / bounce / spam olmuş kişileri** görüyordu ("email gitmiş / opt-out kişi listede görünmemeli"). Gerçekte o kişilere email **gitmiyordu** (sunucu gönderim guard'ı doğru atlıyordu) — sorun **yalnız gösterim**di: liste, gerçek gönderimden daha gevşekti → yanıltıcı.
+**Root Cause:** Suppression verisi salOWN'da vardı ama **listeye bağlı değildi.** `salownBrevoWebhook` (`functions/index.js:4213`) Brevo event'lerini `tenants/{id}/emailEvents/{key}`'e `suppressed:true` olarak yazıyor + eşleşen client doc'a `emailOptOut` mirror'lıyor — AMA mirror yalnız **exact-email client doc'u olan** kişide çalışıyor (`:4253` `where email==`, limit 5). Client doc'u olmayan (walk-in/aggregator) veya email'i harf/boşluk uyumsuz kişide mirror atlanıyor; suppress bilgisi sadece `emailEvents`'te kalıyor. Liste ise (`buildAudience` → `BulkCampaignPanel`) `emailOptOut`'u **yalnız client doc'tan** okuyor, `emailEvents`'i hiç okumuyordu (`audienceUtils.js:114`). `emailEvents` frontend'e yükleniyordu (`Marketing.jsx:249`) ama sadece re-engagement STATS paneli için kullanılıyordu, gönderim listesi için değil.
+**Resolution:** `cf62f72` (push→CI, salown.com). `buildAudience(bookings, clients, emailEvents)` — 3. arg opt-in (default `[]`, diğer çağıranlar Overview/Customers değişmedi). `emailEvents`'ten normalize-email ile `suppressed` set'i kuruluyor, `emailOptOut`'a katlanıyor (`emailOptOut: clientDoc.emailOptOut || suppressedEmails.has(normEmail(email))`) + şeffaflık için `brevoSuppressed` alanı. `BulkCampaignPanel`'e dokunulmadı — mevcut `:178` opt-out filtresi artık Brevo-suppressed'leri de eliyor. Lokalde doğrulandı: liste render OK, "76 will receive · 1 unsubscribed (skipped)", walk-in kontaklar kapsamda. Yan fayda: "Unsubscribed" paneli de artık Brevo çıkışlılarını gösteriyor.
+**Prevention:** Bir suppression/opt-out mekanizması varsa, onu tüketen HER yüzey (gösterim + gönderim) **aynı kaynak(lar)dan** okumalı. Send guard `emailOptOut` + `emailOptOuts` koleksiyonu + (artık) `emailEvents.suppressed`'i kontrol ederken listenin yalnız client-doc bayrağına bakması = liste-gönderim tutarsızlığı. Kural: "kim email alır" tek bir predicate'ten türesin. **KALAN (#2):** "zaten gönderilmiş" suppression'ı hâlâ eksik — `all`/`haspoints` segmentlerinde hiç yok, bulk-send per-alıcı damga yazmıyor; öneri = gönderimde client-doc'a `lastMarketingSentAt` damgası + listede "son N günde gönderilen"i gizle. Bkz [[project-lapsed-dedup-limitation]].
+
+**Ne oldu / Teşhis / Fix:** Owner "email gitmiş + opt-out kişiler listede görünmemeli" dedi. İlk teşhiste liste ile gönderim guard'ı ayrı filtreler kullanıyor sanıldı; owner "biz Brevo hook'unu birkaç gün önce kurduk, detaylar içeride olmalı" deyince `salownBrevoWebhook` + `emailEvents` + `ROADMAP:135` bulundu → veri zaten toplanıyordu, sadece liste tüketmiyordu. Fix = mevcut veriyi bağlamak (sıfırdan tracking değil).
+
+**Dersler / Lessons Learned:**
+- **"Liste ≠ gönderim" = neredeyse her zaman gösterim bug'ı, veri değil.** Gönderim doğru atlıyordu; panik etmeden önce gerçek gönderim guard'ına bakınca kimseye yanlış mail gitmediği görüldü.
+- **Toplanan veri ≠ bağlanan veri.** `emailEvents` webhook'la doluyordu ve STATS panelinde kullanılıyordu ama gönderim listesine bağlı değildi — "içeride var" ≠ "doğru yerde kullanılıyor". Yeni veri kaynağı eklerken TÜM tüketicilerini de bağla.
+- **Suppression tek predicate.** Opt-out üç yere yazılabiliyor (client `emailOptOut`, `emailOptOuts` koleksiyonu, `emailEvents.suppressed`); her yüzey üçünü de okumalı yoksa yüzeyler ayrışır.
+- Owner'ın "biz bunu planlamıştık, hook'u kurmuştuk" hatırlatması kritikti — sıfırdan çözüm yerine mevcut altyapıyı bulmaya yönlendirdi.
+
 ## 2026-07-05 — Walk-in/booking client search: eşleşen ama link'lenmemiş müşteri = sessiz kopya kayıt
 
 **Severity:** 🟠 High · **Owner:** Claude (Opus 4.8 · Arda bildirdi) · **Status:** ✅ Resolved
