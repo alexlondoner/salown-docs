@@ -305,6 +305,8 @@ v2 functions → her export bağımsız redeploy; refactor **saf taşıma, düş
 
 **Operasyon:** tek TEMİZ pencerede (index.js `git status` temizken) → diğer session'lara "commit'leyip ~30 dk durun" → tek commit → deploy **codebase-prefix'li** (`firebase deploy --only functions:salown`, ASLA blanket `--only functions` = 27 us-central1 orphan siler) → doğrula: 50 fn ACTIVE + booking-confirmation + Telegram testi.
 
+**🟣 TypeScript geçişi (owner kararı 2026-07-05):** index.js split'i **TS'e geçiş fırsatı** — modüllere bölerken `.js`→`.ts`, tip tanımları (Booking, DiscountCode, PaymentType 'DEPOSIT'|'FULL', emailEvents, Stripe metadata) eklenir. **Neden:** bugün yaşadığımız bug'ların çoğu (paymentType casing 'deposit'≠'DEPOSIT', Brevo tag alan-adı, slug serviceId, Firestore odd-path) TS'te **compile-time** yakalanırdı → sistem "korumalı" olur. Kademeli: önce `utils/` + yeni modüller `.ts`, mevcut kod `allowJs` ile karışık kalır, zamanla migrate. Faz 2 modülleştirmeyle BİRLİKTE yapılır (iki kez dokunmamak için). Frontend (`src/`) de aynı yolla kademeli TS'e alınabilir (ayrı, sonraki).
+
 **🔴 BLOKER (2026-07-04):** index.js şu an working-tree'de "M" (backend + başka session işi karışık, commit'siz) → refactor başlayamaz. Önce onu YAZAN session commit+push etsin (`git restore` risk'ini de kapatır). Ucuz borç ama okunabilirliği hemen açar; sonraki her iş (askAI dahil) kolaylaşır.
 
 **I3 — Reporting pre-aggregation** · 🔵 (~100 salon, 1000'i beklemez)
