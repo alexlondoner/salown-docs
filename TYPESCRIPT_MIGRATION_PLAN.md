@@ -278,5 +278,30 @@ kalınmasın diye **önceden yazılı:**
 
 ---
 
+## 7. Faz 0 — kickoff notu (recon 2026-07-08, yeni oturuma devir)
+
+**Recon bulguları (repo yapısı):**
+- `alex/` bir **git repo DEĞİL** + kök `package.json` **YOK**.
+- `salown-app` = **kendi başına git root**; `functions/` onun içinde (ayrı deploy birimi).
+- Frontend: typescript kurulu **değil** (ama `@types/react`/`@types/react-dom` var); scripts'te `dev/build/lint/test(vitest)`.
+- functions: typescript **yok**, CommonJS, `main: index.js`.
+
+**⚠️ AÇIK YAPISAL KARAR (packages/shared'dan ÖNCE):** monorepo `packages/shared`'ın
+doğal bir evi yok (kök yok). Seçenekler:
+- **(a)** `alex/`'i monorepo kökü yap (kök `package.json` + npm workspaces + `git init`) — en temiz ama en çok yapısal dokunuş.
+- **(b)** `shared/`'ı `salown-app` içine koy; functions'a path/kopya ile ver — daha az yapısal, ama functions-tarafı çözümleme yine düşünülmeli.
+- **(c)** ayrı bir `salown-shared` repo/paket — bağımsız ama kurulum yükü.
+→ Bu karar **Milestone C'ye (shared types) ait**; Faz 0'ı bloklamamalı.
+
+**Faz 0'ın YAPISAL-KARAR GEREKTİRMEYEN güvenli kısmı (bunu yap):**
+1. `salown-app/tsconfig.json` (frontend): `allowJs, checkJs:false, noEmit, strict:false, jsx:"react-jsx"` — Vite build'i ETKİLEMEZ (Vite esbuild kullanır); bu config sadece `tsc --noEmit` tip-kontrolü + editör için.
+2. `salown-app/functions/tsconfig.json`: `allowJs, checkJs:false, noEmit, strict:false`.
+3. `typescript` devDep (frontend + functions) + `"typecheck": "tsc --noEmit"` script.
+4. **Doğrula:** `tsc --noEmit` yeşil (henüz .ts yok → kontrol edilecek şey yok, trivially geçer) · `npm run build` (Vite) değişmeden yeşil · deploy YOK · hiçbir davranış değişmedi.
+> Bu adım pipeline'ı DEĞİŞTİRMEZ, prod kodu TAŞIMAZ, deploy GEREKTİRMEZ. `packages/shared`
+> standup'ı yukarıdaki (a/b/c) kararına kadar bekler (Milestone C).
+
+---
+
 *Bu plan yaşayan bir belge — her faz bitince DoD'yi ✅ işaretle, sapma olursa
 "planda yok, ekleyelim" diyerek bilinçli ekle (ROADMAP disiplini).*
