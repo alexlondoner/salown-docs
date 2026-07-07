@@ -41,6 +41,7 @@
 |----------|----------------------|-----------|--------|
 | Treatwell booking **per-booking** prepaid VEYA pay-at-venue olabilir (global ayar değil) — `twPaymentMode` email `Status`'tan gelir | Gerçek dünyada ikisi karışık | Tek global `paymentType` gösterirsen yanlış (çift-tahsilat riski) → "Both" modu | INC 2026-06-26 |
 | Aggregator barber adı formatı tenant ile aynı **olmayabilir** (Treatwell tam ad, sistem ilk ad) | Platformlar tam ad gönderir | Matcher'a fuzzy ekleme → parser'da kanonik isme map'le | INC 2026-06-26 |
+| `salownIcalFeed` **source=`Treatwell`** booking'leri feed'e KOYMAZ (bilerek atlar) | Treatwell o randevuya zaten sahip; feed'e koyarsak Treatwell'de **çift** görünür (kendi randevusu + bizim blok) | "Treatwell booking'leri feed'de yok, ekleyeyim" deme → çift-görüntü geri gelir. Diğer TÜM source (walk-in/web/Booksy/Fresha/BLOCKED/busy-time) feed'de kalır, Treatwell çift-booking yapmaz | `index.js` salownIcalFeed; edit_log 2026-07-07(c) |
 | `checkDuplicateInFirestore` (whitecross-site) locked rules altında **fails-open** | Booking'i düşürmemek > mükemmel dedup | "Neden hep true dönüyor" diye kırma; kabul edilebilir, booking devam eder | INCIDENTS §Notlar |
 | Whitecross Stripe hâlâ `whitecross-site/functions` (**us-central1**), salown-app'te değil | Migration henüz Phase 5 değil | salown-app'e Stripe eklerken whitecross akışını karıştırma | CLAUDE §Related repos |
 
