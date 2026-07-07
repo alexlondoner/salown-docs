@@ -21,6 +21,7 @@
 7. [Deploy](#7-deploy)
 8. [Multi-tenant](#8-multi-tenant)
 9. [Parser](#9-parser)
+10. [Kanal Senkronizasyonu (iCal OUT)](#10-kanal-senkronizasyonu-ical-out)
 
 ---
 
@@ -120,6 +121,15 @@
 | INV-PAR-4 | Refactor-orphan: bir değişkenin tanımını/adını değiştirince TÜM kullanımlarını grep'le (`node -c` runtime ReferenceError'ı yakalamaz) | Öksüz değişken → sessiz ReferenceError → booking düşmez (11 gün kayıp örneği) | 🟠 | INC 2026-06-24 |
 | INV-PAR-5 | Bir parser'da bug bulunca diğer İKİsinde de aynı satırı grep'le (Booksy/Fresha/Treatwell aynı kalıbı tekrarlar). "Benzer yorum var" ≠ "aynı davranış" | Yarım fix; bug diğer parser'da yaşar | 🟠 | INC 2026-06-24 · [PARSER_NOTES.md](PARSER_NOTES.md) |
 | INV-PAR-6 | Parser değişikliği yalnız `firebase deploy --only functions` ile yayına girer | Değişiklik canlıya inmez | 🟡 | CLAUDE §Email parsers |
+
+---
+
+## 10. Kanal Senkronizasyonu (iCal OUT)
+
+| ID | Değişmez | Bozulursa | 🔴 | Kaynak |
+|----|----------|-----------|----|--------|
+| INV-SYNC-1 | İki-yönlü takvim feed'i (`salownIcalFeed`) bir booking'i **geldiği platforma geri yansıtmaz** → tüketici-başına `?exclude=<Source>` ile o abone kendi source'unu filtreler (param yoksa Treatwell default, back-compat). Diğer TÜM source (walk-in/website/Booksy/Fresha/BLOCKED/busy-time) feed'de KALIR | Platform kendi randevusunu **çift** sayar (Treatwell'de çift görüntü) | 🟡 | `index.js` salownIcalFeed · edit_log 2026-07-07(c) |
+| INV-SYNC-2 | "Tek paylaşılan feed'de tüm aggregator source'ları hariç tut" **YAPILMAZ** — her tüketici yalnız **kendi** source'unu hariç tutmalı (Treatwell, Booksy/Fresha booking'lerini görüp o slotları bloklamalı) | Cross-platform **çift-booking** (Treatwell, Booksy'nin dolu slotunu boş sanır) | 🟠 | `index.js` salownIcalFeed |
 
 ---
 
