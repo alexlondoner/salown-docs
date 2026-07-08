@@ -38,6 +38,8 @@ Bu 8 madde, "planı değil kodu okumaya başlayanlar" için referans. İhlal = d
 7. **Her faz rollback edilebilir** (git revert + release tag + smoke).
 8. **Production davranışı REFERANS implementasyondur** — eski JS = spec. Şüphede kalınca
    "TS ne yapmalı?" değil, "bugünkü JS ne yapıyor?" sorulur. Parity bu maddeden doğar.
+9. **Dokümantasyon implementasyondan ÖNCE güncellenir** — karar önce burada/ROADMAP'te
+   yazılır, sonra kod. (Bu planın ta kendisi bunun kanıtı; kararsızlıkları azaltır.)
 
 ## 📏 Migration Rules (ekip disiplini — bugün 1 kişi+Claude, yarın 2+ mühendis)
 Migration'ın yarıda kalmamasını sağlayan kurallar:
@@ -45,10 +47,13 @@ Migration'ın yarıda kalmamasını sağlayan kurallar:
 - **Yeni feature TS gelir.**
 - **Eski JS yalnızca bugfix için değişir** (fırsattan refactor YOK).
 - **Refactor yalnız migration PR'ında** yapılır (feature PR'ına karışmaz).
+- **One concern per PR** — bir PR ya migration ya feature ya bugfix; karışım yok.
+- **Behavior parity before optimization** — önce birebir aynı davranış, iyileştirme sonra.
 
-## 📊 KPI — ilerleme panosu (yönsel, deadline DEĞİL)
+## 📊 KPI — ilerleme panosu (yönsel, deadline DEĞİL · **otomatik sayılır**)
 > Bu sayılar *yön* gösterir, tarih değil (bkz §0.6 parity-driven). "0 JS" bir hedef
-> yönü; kapı değil. Her hafta/faz güncellenir.
+> yönü; kapı değil. **Manuel güncellenmez** → `npm run migration:stats` üretir (spec §7),
+> böylece dokümandaki sayılar her zaman gerçek.
 
 | Metric | Başlangıç (2026-07-08) | Hedef yönü |
 |--------|------------------------|-----------|
@@ -56,8 +61,10 @@ Migration'ın yarıda kalmamasını sağlayan kurallar:
 | Frontend TS/TSX dosya | **0** | → 104 |
 | Functions JS dosya | **5** (index.js 5759 satır dahil) | → 0 (split + .ts) |
 | Functions TS | **0%** | → 100% |
-| `strict` hataları | 0 (henüz kapalı) | 0 (strict açılınca temiz) |
-| `any` kullanımı | 0 | mümkün olduğunca az |
+| Shared models | **0 / 8** | → 8 / 8 |
+| `any` kullanımı | 0 | → mümkün olduğunca 0 |
+| `@ts-ignore` | 0 | → 0 (sıfır kalır) |
+| `strict` hataları | N/A (kapalı) | → 0 (Faz 4 sonunda) |
 
 ## Neden şimdi
 İlk 3-4 ay "çabuk çalışan ürün" doğru hedefti. Bugün: multi-tenant, Stripe
@@ -223,7 +230,8 @@ olduğu için onu kullanan taraf onu bundle'lar. Ayrım ileride çok rahat ettir
 Ortak union/enum'lar tek yerde → frontend + functions + admin + marketing **aynı dili**
 konuşur: `BookingStatus`, `BookingSource`, `PaymentType`, `CampaignType`, `CampaignStatus`,
 `CouponType`, `LoyaltyReason` (`LoyaltyAdjustmentReason`), `EmailEventType`,
-`StripePaymentMode`. Bunlar bugün string literal olarak dağınık (casing bug'ının kaynağı)
+`StripePaymentMode`, `TenantRole` (owner/admin/staff — bkz güvenlik/permissions).
+Bunlar bugün string literal olarak dağınık (casing bug'ının kaynağı)
 → tek union type = compile-time koruma. Bu "domain vocabulary" zamanla onlarca yerde
 kullanılacak → tek kaynak şart.
 
@@ -336,7 +344,11 @@ doğal bir evi yok (kök yok). Seçenekler:
 1. `salown-app/tsconfig.json` (frontend): `allowJs, checkJs:false, noEmit, strict:false, jsx:"react-jsx"` — Vite build'i ETKİLEMEZ (Vite esbuild kullanır); bu config sadece `tsc --noEmit` tip-kontrolü + editör için.
 2. `salown-app/functions/tsconfig.json`: `allowJs, checkJs:false, noEmit, strict:false`.
 3. `typescript` devDep (frontend + functions) + `"typecheck": "tsc --noEmit"` script.
-4. **Doğrula:** `tsc --noEmit` yeşil (henüz .ts yok → kontrol edilecek şey yok, trivially geçer) · `npm run build` (Vite) değişmeden yeşil · deploy YOK · hiçbir davranış değişmedi.
+4. **`npm run migration:stats`** — küçük read-only dev script (`scripts/migration-stats.mjs`):
+   JS/JSX + TS/TSX dosya sayısı, functions TS %, shared models N/8, `any` + `@ts-ignore`
+   grep sayısı, tarih → konsola basar. KPI tablosunu (§KPI) **elle değil bu** besler.
+   Prod'a dokunmaz, deploy'a girmez (sadece geliştirici aracı).
+5. **Doğrula:** `tsc --noEmit` yeşil (henüz .ts yok → kontrol edilecek şey yok, trivially geçer) · `npm run build` (Vite) değişmeden yeşil · deploy YOK · hiçbir davranış değişmedi.
 > Bu adım pipeline'ı DEĞİŞTİRMEZ, prod kodu TAŞIMAZ, deploy GEREKTİRMEZ. `packages/shared`
 > standup'ı yukarıdaki (a/b/c) kararına kadar bekler (Milestone C).
 
