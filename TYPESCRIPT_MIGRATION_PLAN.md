@@ -386,6 +386,29 @@ shared, diğer sayılar baseline'da sabit (104 js/jsx, 5 fn js, index.js 5759, a
 @ts-ignore 0) · deploy YOK · davranış bit-bit aynı. Sıradaki: **Faz 2** — ilk gerçek modül
 `clients/identity` (`.js`+JSDoc, parite testi + temiz-pencere deploy ile).
 
+### 🟡 Faz 2 — hazırlık TAMAM, deploy owner penceresi bekliyor (gece 2026-07-08→09)
+**Taşı + tiple + parite testi ✅ · temiz-pencere deploy ⏳ (owner kararı: sabah birlikte).**
+- **`functions/clients/identity.js`** (INERT, `91eb3d5`): `_resolveClientDocId` (:3818) +
+  `_redemptionKey` (:4811) verbatim; `@ts-check`+JSDoc→shared tipler. Quirk'ler bilinçli
+  korundu (loose telefon normalizasyonu ülke-prefix'i KATLAMAZ; email match trim'siz;
+  yalnız-telefon probe null döner). Parite: node:test, eski impl index.js kaynağından test
+  anında dilimlenip eval edilir → old===new, fixture + seeded sweep, 6/6. Server
+  `_redemptionKey` === frontend `discountCodes.js redemptionKey` aynası da kanıtlandı.
+- **`functions/utils/{emailText,parserTime,campaignMerge}.js`** (INERT, `6de0bf9`):
+  parser/campaign plumbing 16 helper verbatim (QP/RFC2047/multipart decode, UK-DST tarih
+  matematiği, parseTwTime, merge fields). Parite 6/6 — bozuk tarih girdisinde THROW
+  paritesi dahil (eski kod da fırlatıyor). Testler wiring sonrası kendini skip eder
+  (karakterizasyon pinleri kalıcı bekçi).
+- **ESLint type-only guard ✅** (§2 DoD maddesi, `6de0bf9`): `typescript-eslint` +
+  `packages/shared` scope'lu `consistent-type-imports` + firebase/stripe/zod import BAN'ı.
+- **Bağlama (wiring) hazır, UYGULANMADI:** index.js diff'i scratchpad'de
+  (`phase2/identity-wiring.patch` 92 satır + `identity-plus-utils-wiring.patch` 326 satır,
+  kümülatif). Sandbox provası: patch'li index.js `node --check` + `require()` OK; test
+  takımı wiring-sonrası 6 pass / 6 self-skip. Deploy planı (owner onaylı, sabah):
+  1) identity wire → hedefli `functions:salown` deploy → smoke (etki: sendMarketingEmail,
+  salownSetEmailConsent), 2) utils wire → deploy → sonraki parser koşusunu izle (etki:
+  salownParseEmails + iCal + campaign yolları). Rollback: git revert + redeploy.
+
 **Faz 0'ın YAPISAL-KARAR GEREKTİRMEYEN güvenli kısmı (bunu yap):**
 1. `salown-app/tsconfig.json` (frontend): `allowJs, checkJs:false, noEmit, strict:false, jsx:"react-jsx"` — Vite build'i ETKİLEMEZ (Vite esbuild kullanır); bu config sadece `tsc --noEmit` tip-kontrolü + editör için.
 2. `salown-app/functions/tsconfig.json`: `allowJs, checkJs:false, noEmit, strict:false`.
