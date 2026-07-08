@@ -497,6 +497,23 @@ Not: `packages/shared` bilinçli olarak KURULMADI (yapısal a/b/c kararı → Mi
 
 ---
 
+## 9. Release Candidate disiplini (teknik-lider tavsiyesi, 2026-07-08 — KABUL)
+Bundan sonra ilerleme commit'le değil RELEASE ile anlatılır. Duraklar:
+
+| Tag | Kapı | Durum |
+|---|---|---|
+| `v0.9.0-rc1` | Faz 2 tamam (functions split, 6 dalga canlı) | ✅ 2026-07-08 |
+| `v0.9.0-rc2` | Frontend TS ≥ %50 | ⏳ |
+| `v0.9.0-rc3` | Functions TS build (`src→lib`, `main` değişimi) | ⏳ |
+| `v1.0.0` | `strict: true` + `any`=0 + ARCHITECTURE_V2.md | ⏳ |
+
+**Her RC'nin DEĞİŞMEZ checklist'i** (annotated tag mesajına yazılır):
+- ✅ Type coverage (TYPE_COVERAGE.md güncel, panodan sayılar)
+- ✅ Test sayısı (functions npm test + vitest, 0 fail)
+- ✅ Production smoke (§5b — o fazın etkilediği yollar canlıda doğrulanmış)
+- ✅ Rollback doğrulanmış (önceki tag'den dönüş yolu yazılı + denenebilir)
+- ✅ Dokümantasyon güncel (bu plan + TESTS.md + edit log)
+
 ## 8. Migration-sonrası teslimat: `docs/ARCHITECTURE_V2.md` (teknik-lider tavsiyesi, 2026-07-08)
 Migration bittiğinde (Faz 4 sonrası) bu doküman YAZILACAK — "sistem bugün nasıl çalışıyor"
 sorusunun cevabı. İçerik: repository yapısı · packages/shared neden var (type-only kuralı)
