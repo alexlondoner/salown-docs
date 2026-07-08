@@ -408,6 +408,41 @@ olurdu) ve fonksiyon İLK KEZ canlıya çıktı (staging-only davranış, secret
 15 ts · functions 11 js (index.js 5582) · shared 8/8. Kalan Faz 2 sırası: parsers →
 notifications → marketing → (EN SON) checkout/stripe/bookings.
 
+### ✅ Faz 2 TAMAMLANDI — functions split bitti, TÜM dalgalar CANLI (2026-07-08 öğleden sonra)
+Aynı gün 5 dalga daha, her biri ayrı test + owner-onaylı deploy (`--only functions:salown`):
+| Dalga | Commit | Modüller | index.js |
+|---|---|---|---|
+| parsers | `c8196ac` | parsers/{shared,booksy,fresha,treatwell,ical} | 5582→4395 |
+| notifications | `37f1bcd` | notifications/ (Telegram+in-app+FCM) | →4250 |
+| emails | `1eb1e45` | emails/ (transporter/Brevo/confirmation/reschedule) | →4001 |
+| marketing | `764e074` | marketing/ (campaign render+sender routing) | →3950 |
+| misc | `a74de84` | utils/ical + tenants/ + bookings/shared + inbound/ | →3719 |
+| **money (SON)** | `fde49bd` + tag `pre-money-modules-20260708` | checkout/ + finance/exit | **→3597** |
+
+**Yöntem (tüm dalgalar):** script'li BAYT-VERBATIM taşıma → test katmanı 1: git HEAD'e karşı
+bayt-eşitlik (wiring sonrası self-skip) → katman 2: fake IMAP/Firestore ile davranış pinleri
+→ tsc + require → deploy → smoke. Suite toplamı **47 test: 36 pass / 0 fail / 11 self-skip**.
+Öne çıkan pinler: inbound ADR-015 izolasyonu (body'deki token ASLA yönlendirmez; bilinmeyen
+token karantina) · checkout paymentMode matrisi (off/pay_at_venue reddi, optional seçimi,
+deposit→full fallback, deposit≤indirimli-full cap, over-discount THROW = bedava checkout
+Stripe'a ulaşamaz) · EXIT_TERMS rakamları pinli (sessiz drift imkânsız).
+
+**Smoke:** her deploy sonrası iCal feed birebir + parser cron sağlıklı (13:02 koşusu yeni
+parser modülleriyle doğrulandı) · inbound gate 401 · **money smoke:** whitecross'a geçici
+görünmez PENDING doc ile canlı `salownCreateCheckoutSession` çağrısı → yeni checkout
+modülünün kendi hatası ("Online payment is not enabled") prod'da döndü = taşınan para kodu
+canlıda yürüyor; artefakt silindi. Pozitif-yol tam ödeme smoke'u: Stripe TEST modda; whitecross
+paymentMode=pay_at_venue olduğundan gerçek session ancak mod geçici açılırsa/demo Connect'e
+bağlanırsa atılabilir — owner ile ayrıca (matris zaten tüm dalları pinliyor).
+
+**tsc'nin taşımada yakaladıkları** (migration'ın varlık sebebi): INBOUND_TOKEN_RE,
+extractSubjectFromRaw, isUkDst — üç eksik bağımlılık compile-time'da yakalandı.
+
+**index.js kalan içerik (~3597):** 52 export (trigger/callable orchestrator'ları) + Stripe
+Connect fonksiyonları + AI (askAI). Bunların modüllere inmesi Faz 3'ün functions build'iyle
+(src→lib) birlikte ele alınacak. **Kalan büyük iş:** Faz 3 frontend (89 js/jsx), Faz 3
+functions build, Faz 4 strict.
+
 ### 🗄️ Arşiv — gece hazırlık notu (2026-07-08→09)
 **Taşı + tiple + parite testi ✅ · temiz-pencere deploy ⏳ (owner kararı: sabah birlikte).**
 - **`functions/clients/identity.js`** (INERT, `91eb3d5`): `_resolveClientDocId` (:3818) +
