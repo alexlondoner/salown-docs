@@ -503,7 +503,7 @@ Bundan sonra ilerleme commit'le değil RELEASE ile anlatılır. Duraklar:
 | Tag | Kapı | Durum |
 |---|---|---|
 | `v0.9.0-rc1` | Faz 2 tamam (functions split, 6 dalga canlı) | ✅ 2026-07-08 |
-| `v0.9.0-rc2` | Frontend TS ≥ %50 | ⏳ |
+| `v0.9.0-rc2` | Frontend TS ≥ %50 | ✅ 2026-07-09 (52 ts / 52 js) |
 | `v0.9.0-rc3` | Functions TS build (`src→lib`, `main` değişimi) | ⏳ |
 | `v1.0.0` | `strict: true` + `any`=0 + ARCHITECTURE_V2.md | ⏳ |
 
