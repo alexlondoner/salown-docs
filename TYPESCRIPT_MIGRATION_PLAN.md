@@ -495,5 +495,16 @@ Not: `packages/shared` bilinçli olarak KURULMADI (yapısal a/b/c kararı → Mi
 
 ---
 
+---
+
+## 8. Migration-sonrası teslimat: `docs/ARCHITECTURE_V2.md` (teknik-lider tavsiyesi, 2026-07-08)
+Migration bittiğinde (Faz 4 sonrası) bu doküman YAZILACAK — "sistem bugün nasıl çalışıyor"
+sorusunun cevabı. İçerik: repository yapısı · packages/shared neden var (type-only kuralı)
+· functions build zinciri (src→lib) · frontend-functions tip paylaşımı · deployment akışı
+(CI hosting + hedefli functions) · domain boundary'leri (modül haritası) · alınan kararların
+gerekçeleri (DECISIONS.md'ye pointer'larla). Bu plan migration'ın belgesi; V2 mimarinin belgesi.
+Ayrıca test sınıflandırması TESTS.md'ye işlendi (parity/pin/money/integration/cross-mirror/smoke)
+ve tüm bilinçli `any`'ler `TODO(ts-migration)` etiketli (grep'lenebilir).
+
 *Bu plan yaşayan bir belge — her faz bitince DoD'yi ✅ işaretle, sapma olursa
 "planda yok, ekleyelim" diyerek bilinçli ekle (ROADMAP disiplini).*

@@ -294,6 +294,21 @@ Tasarım: [BUSY_SLOT_V2.md](BUSY_SLOT_V2.md) · birim test: `salown-app/src/util
 
 ---
 
+## TS Migration test suite — SINIFLANDIRMA (2026-07-08, teknik-lider tavsiyesi)
+Koşum: `cd salown-app/functions && npm test` (node:test, dep yok) + `cd salown-app && npm test` (vitest).
+Toplam **47 (functions) + 25 (frontend conflictUtils)**. Kategoriler:
+
+| Kategori | Ne kanıtlar | Dosyalar |
+|---|---|---|
+| **Parity** (old-vs-new) | Taşınan kod eski inline implementasyonla aynı davranır; eski kaynak test anında index.js/git-HEAD'den dilimlenir. Wiring sonrası SELF-SKIP (görevi biter, pinler kalır) | clients/identity.test.js, utils/parity.test.js + tüm dalgaların HEAD bayt-eşitlik testleri |
+| **Contract/Characterization (pin)** | Kritik davranış kalıcı sabitlenir: redemptionKey formatı, UK-DST, emailable gate = source-bazlı, formatBookingLine, EXIT_TERMS rakamları | her modülün "characterization pins" testleri |
+| **Money** | paymentMode matrisi (off/pay_at_venue reddi · optional seçim · deposit→full fallback · deposit≤indirimli-full · over-discount THROW) + indirim doğrulama redleri | checkout/parity.test.js |
+| **Integration (fake IMAP/Firestore)** | Parser'lar uçtan uca: boş kutu = 0 yazma; çöp mesaj = 0 booking; inbound izolasyon (body token yönlendirmez, bilinmeyen token karantina) | parsers/parity.test.js, inbound/parity.test.js |
+| **Cross-mirror** | Server ↔ frontend kopya tutarlılığı (redemptionKey) | clients/identity.test.js |
+| **Smoke (canlı, test-dışı)** | Deploy sonrası: iCal feed birebir, parser cron koşusu, inbound gate 401, checkout negatif-yol ("not enabled" yeni modülden) | manuel — bkz TYPESCRIPT_MIGRATION_PLAN.md §5b |
+
+Not: `any` kullanımı bilinçli ve etiketli — `grep -rn "TODO(ts-migration)" salown-app/src` (Faz 4 strict'te sıfırlanır).
+
 ## İlgili
 - [SECURITY.md](SECURITY.md) — rules/güvenlik (test edilen davranışların kaynağı)
 - [ROADMAP.md](ROADMAP.md) — iş listesi (testler buraya taşındı, orada yalnız pointer)
