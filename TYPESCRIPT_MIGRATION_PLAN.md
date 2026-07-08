@@ -386,7 +386,29 @@ shared, diğer sayılar baseline'da sabit (104 js/jsx, 5 fn js, index.js 5759, a
 @ts-ignore 0) · deploy YOK · davranış bit-bit aynı. Sıradaki: **Faz 2** — ilk gerçek modül
 `clients/identity` (`.js`+JSDoc, parite testi + temiz-pencere deploy ile).
 
-### 🟡 Faz 2 — hazırlık TAMAM, deploy owner penceresi bekliyor (gece 2026-07-08→09)
+### ✅ Faz 2 (ilk dalga: identity + utils) — CANLI (2026-07-09 sabah, owner "go" ile)
+**Taşı ✅ tiple ✅ parite ✅ deploy ✅ smoke ✅.** İki ayrı deploy (`--only functions:salown`):
+1. **identity wiring** (`cedc677`): index.js `./clients/identity`'yi require ediyor; inline
+   `_resolveClientDocId`/`_redemptionKey` silindi, 4 çağrı noktası modüle döndü.
+2. **utils wiring** (`aab2e73`): `./utils/{emailText,parserTime,campaignMerge}` require;
+   16 inline helper silindi. **index.js 5759 → 5582 satır (−177).**
+
+Doğrulama: parite suite bağlama sonrası 6 pass / 6 self-skip (tasarlandığı gibi) · tsc +
+require-smoke yeşil · 57 fn ACTIVE · iCal feed deploy öncesi/sonrası birebir (whitecross
+137, herohairs 2 VEVENT) · salownInboundEmail gate'i yanlış key'e 401 · loglarda çökme yok.
+
+**Deploy'un ortaya çıkardığı bagaj (migration-dışı, çözüldü):** `salownInboundEmail`
+index.js'e eklenmiş ama HİÇ deploy edilmemişti; istediği `INBOUND_WEBHOOK_SECRET`
+Secret Manager'da yoktu → full-codebase deploy pre-flight'ta durdu. Owner onayıyla
+rastgele güçlü secret oluşturuldu (`functions:secrets:set`, boş secret = gate AÇIK
+olurdu) ve fonksiyon İLK KEZ canlıya çıktı (staging-only davranış, secret'la kilitli).
+
+**Faz 3 dilim-1 de CANLI:** 15 `src/utils` dosyası → TypeScript (`9bd50df` rename +
+`b2da067` anotasyon; bundle bayt-aynı kanıtlı → hosting no-op). KPI: frontend 89 js/jsx +
+15 ts · functions 11 js (index.js 5582) · shared 8/8. Kalan Faz 2 sırası: parsers →
+notifications → marketing → (EN SON) checkout/stripe/bookings.
+
+### 🗄️ Arşiv — gece hazırlık notu (2026-07-08→09)
 **Taşı + tiple + parite testi ✅ · temiz-pencere deploy ⏳ (owner kararı: sabah birlikte).**
 - **`functions/clients/identity.js`** (INERT, `91eb3d5`): `_resolveClientDocId` (:3818) +
   `_redemptionKey` (:4811) verbatim; `@ts-check`+JSDoc→shared tipler. Quirk'ler bilinçli
