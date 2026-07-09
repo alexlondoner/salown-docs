@@ -507,6 +507,12 @@ Bundan sonra ilerleme commit'le değil RELEASE ile anlatılır. Duraklar:
 | `v0.9.0-rc3` | Functions TS build (`src→lib`, `main` değişimi) | ⏳ |
 | `v1.0.0` | `strict: true` + `any`=0 + ARCHITECTURE_V2.md | ⏳ |
 
+**⚠️ rc3 GÜNÜ KURALI (teknik-lider, 2026-07-09 — BAĞLAYICI):** rc3 (functions
+`src→lib`, `main` değişimi) bütün migration'da runtime modelini değiştiren TEK adımdır.
+O gün BAŞKA HİÇBİR büyük iş yapılmaz — günün tek hedefi: *pipeline değişti · deploy
+başarılı · smoke geçti · rollback doğrulandı* — ve gün biter. "Bir iki şey daha
+yapalım" günü DEĞİLDİR. Frontend dilimi, feature, refactor → başka güne.
+
 **Her RC'nin DEĞİŞMEZ checklist'i** (annotated tag mesajına yazılır):
 - ✅ Type coverage (TYPE_COVERAGE.md güncel, panodan sayılar)
 - ✅ Test sayısı (functions npm test + vitest, 0 fail)
