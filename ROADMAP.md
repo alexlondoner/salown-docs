@@ -126,6 +126,9 @@ Backend hazır (`salownCancelByToken` + `salownRescheduleByToken`). Email link'l
 **B3 — `salownCreateBooking` transactional** · 🔵 Sıradaki (Tier 2)
 Direkt Firestore yazımı → double-booking race window. HeroHairs trafiği artınca risk.
 
+**B4 — Telefon girişi: ülke kodu standardizasyonu** · 🔵 Planlandı (TS migration bitince; **salon sahibi feedback'i var**, 2026-07-09)
+**Bağlam:** Ülke kodu dropdown'u SADECE `BookingForm.tsx`'te var (19 ülke, **İrlanda +353 YOK** — owner sinirlenip elle girişe dönmüştü). Diğer TÜM giriş noktaları serbest metin `tel` input (+44 placeholder): BookingPage (müşteri sitesi!), WalkInForm, staff NewBookingSheet, AddClientModal. **Neden önemli:** telefon client-identity eşleşmesinin ana anahtarı (NORMALIZATION.md, son-10-hane) — tutarsız/eksik ülke kodu aynı müşteriyi ikiye böler (duplicate client → loyalty/marketing/history kopar). **İş:** (1) tek paylaşılan `COUNTRY_CODES` kaynağı (İrlanda +353 dahil; UK/IE üste pinli, arama kutulu tam liste); (2) 5 giriş noktasına aynı component; (3) mevcut serbest-metin numaralar için normalize stratejisi (E.164 migration DEĞİL — sadece giriş standardı; lookup zaten last-10 toleranslı). Owner ile UI gözden geçirilecek.
+
 ---
 
 ### C · Marketing & Retention (📣)
