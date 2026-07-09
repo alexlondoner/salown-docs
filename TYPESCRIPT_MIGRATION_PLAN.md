@@ -545,6 +545,33 @@ başına yetmez → izolasyonu zaman ekseninde firebreak sağlar. Son 8 dosya ik
 Küçük/orta dosyalar (bayt-aynı kanıtlı) için firebreak GEREKMEZ — mevcut
 dilim-başına tsc+lint+bundle-diff+vitest zinciri yeterli.
 
+## 11. "Migration = Type-only" kuralı (teknik-lider tavsiyesi, 2026-07-09 — KABUL, BAĞLAYICI)
+
+**TS migration commit'i bir davranış commit'i DEĞİLDİR.** Bir güven sözleşmesi:
+takımdaki herkes "migration commit'i görüyorsam davranış değişmemiştir" diyebilmeli —
+6 ay sonra "LoginScreen neden değişmiş?" sorusunun cevabı tek cümle olmalı: *"type
+migration."* Regresyon avında migration commit'leri otomatik elenir → araştırma alanı
+küçülür (Finance'te yanlış hesap çıktığında son 15 commit'ten refactor(ts)'ler anında
+düşer).
+
+**Kurallar:**
+1. Migration dilimi içinde davranış iyileştirmesi/UX değişikliği/iş kuralı değişikliği
+   YAPILMAZ. İçerik: rename + interface/type/generic/`import type`/ref-event tipleri.
+2. Migration sırasında GERÇEK BUG bulunursa (ör. eksik import → ReferenceError):
+   **ayrı commit** olarak, `fix(...)` prefix'iyle ve commit mesajında açıkça
+   belirtilerek düzeltilir. Dilim commit'ine karıştırılmaz.
+3. Ölü kod / kullanılmayan binding gibi davranış-nötr temizlikler de dilime girmez:
+   dilimde satır-bazlı eslint-disable ile işaretlenir, temizlik AYRI takip commit'inde
+   yapılır. (Örnek: ProfileBar `activeSocials`/`isAdmin`, slice 2z.)
+4. Lint'in ZORLADIĞI mikro-dönüşümler (ternary-statement→if/else, unused catch
+   binding→`catch {}`) dilimde kalabilir AMA commit mesajında tek tek listelenir ve
+   bundle bayt-eşitliği ile davranışsızlığı kanıtlanır.
+5. Commit mesaj konvansiyonu: dilimler `refactor(ts): migrate X to TypeScript`
+   (slice etiketiyle) · bug'lar `fix(scope): ...` · davranış `feat(scope): ...`.
+
+**Retro not:** e66a5bf (ProfileView signOut import fix'i dilim içindeydi) bu kuraldan
+ÖNCE idi; commit mesajında belirtilmişti ama bundan sonra ayrı fix commit'i şart.
+
 ## 8. Migration-sonrası teslimat: `docs/ARCHITECTURE_V2.md` (teknik-lider tavsiyesi, 2026-07-08)
 Migration bittiğinde (Faz 4 sonrası) bu doküman YAZILACAK — "sistem bugün nasıl çalışıyor"
 sorusunun cevabı. İçerik: repository yapısı · packages/shared neden var (type-only kuralı)
