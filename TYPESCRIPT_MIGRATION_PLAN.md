@@ -520,6 +520,31 @@ yapalım" günü DEĞİLDİR. Frontend dilimi, feature, refactor → başka gün
 - ✅ Rollback doğrulanmış (önceki tag'den dönüş yolu yazılı + denenebilir)
 - ✅ Dokümantasyon güncel (bu plan + TESTS.md + edit log)
 
+## 10. Firebreak kuralı (teknik-lider tavsiyesi, 2026-07-09 — KABUL, BAĞLAYICI)
+
+Faz 3'ün son %20'si "kontrollü iniş"tir, maraton değil. **Amaç bu noktadan sonra
+coverage artırmak değil, teşhis hızı: bir regresyon çıkarsa hata aralığı = 1 commit.**
+
+**Kural:** Birbirine bağlı yüksek-risk domain dosyaları (**Clients, Marketing,
+CheckoutPanel, BookingPage, Finance, Settings, firestoreActions.js** — hepsi
+Booking→Client→Payment→Firestore→Marketing→Finance zincirine dokunur) aynı çalışma
+penceresinde ardışık migrate EDİLMEZ. Her kritik migration'dan sonra **firebreak**:
+
+1. Coverage güncellenir (pano/TYPE_COVERAGE.md).
+2. Production smoke yapılır (§5b — o dosyanın etkilediği canlı yollar).
+3. En az bir gözlem penceresi bırakılır (tercihen 1 gece).
+4. Bir sonraki kritik dosyaya ANCAK önceki commit üretimde temiz kaldıysa geçilir.
+
+**Gerekçe — bayt-aynı kanıtının sınırı:** bundle-eşitlik kanıtı "surgical dilim"
+varsayımına dayanır. Küçük/orta dosyalarda çok güçlüdür; canavarlarda ise lint
+zorlamaları (ternary→if/else, catch binding), implicit-return değişimleri, prop
+default'ları, type-narrowing refactor'ları kaçınılmaz olur ve bundle equality tek
+başına yetmez → izolasyonu zaman ekseninde firebreak sağlar. Son 8 dosya iki günde
+çevrilirse regresyonda 8 aday olur; firebreak'le her zaman 1.
+
+Küçük/orta dosyalar (bayt-aynı kanıtlı) için firebreak GEREKMEZ — mevcut
+dilim-başına tsc+lint+bundle-diff+vitest zinciri yeterli.
+
 ## 8. Migration-sonrası teslimat: `docs/ARCHITECTURE_V2.md` (teknik-lider tavsiyesi, 2026-07-08)
 Migration bittiğinde (Faz 4 sonrası) bu doküman YAZILACAK — "sistem bugün nasıl çalışıyor"
 sorusunun cevabı. İçerik: repository yapısı · packages/shared neden var (type-only kuralı)
