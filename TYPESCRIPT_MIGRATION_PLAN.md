@@ -520,6 +520,16 @@ yapalım" günü DEĞİLDİR. Frontend dilimi, feature, refactor → başka gün
 - ✅ Rollback doğrulanmış (önceki tag'den dönüş yolu yazılı + denenebilir)
 - ✅ Dokümantasyon güncel (bu plan + TESTS.md + edit log)
 
+## 10-11. Çerçeve: **Evidence-driven migration** (isim: 2026-07-09)
+
+Migration'ın omurgası üç güvenlik katmanı — hiçbiri tek başına yeterli, birlikte
+güçlü: **(1) Type-only rule** (§11, niyet kanıtı: commit davranış değiştiremez) →
+**(2) Bundle equality** (yöntem, davranış kanıtı: değişmediğini bayt-diff'le
+ispatla) → **(3) Firebreak** (§10, teşhis kanıtı: yine de bir şey kaçarsa hata
+aralığı tek commit). Destek katmanları: production smoke (üretim kanıtı, §5b) +
+rollback tag (kurtarma kanıtı, §5c/§9). İlke: *"sanırım bozmadık" değil,
+"bozmadığımıza dair elimizde şu kanıtlar var."*
+
 ## 10. Firebreak kuralı (teknik-lider tavsiyesi, 2026-07-09 — KABUL, BAĞLAYICI)
 
 Faz 3'ün son %20'si "kontrollü iniş"tir, maraton değil. **Amaç bu noktadan sonra
