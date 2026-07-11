@@ -33,6 +33,23 @@ Her olay `## YYYY-MM-DD — kısa başlık` ile açılır, hemen altına **metad
 
 ---
 
+## 2026-07-11 — Client edit'ten sonra walk-in picker aynı kişiyi ikiye böldü → kontaksız booking, loyalty maili gitmedi
+
+**Severity:** 🟠 High · **Owner:** Alish + Claude · **Status:** ✅ Resolved
+
+**Impact:** Owner isim-only kayıtlı bir müşterinin ("Alex Software Dev") client doc'una Clients edit'ten email ekledi; ardından grid'den walk-in girdi — booking **email/telefon/manualId'siz** yazıldı, confirmation/loyalty maili GİTMEDİ, client doc'a puan/ziyaret işlenmedi. Owner "kopya kayıt açıldı" sandı ama Firestore'da tek client doc vardı — kopya yalnız WalkInForm dropdown'ında yaşıyordu.
+**Root Cause:** `WalkInForm` client listesi **booking'lerden ÖNCE** kuruluyor ve birleştirme anahtarı `phone||email||name`. Doc kontak kazanınca anahtarı isimden email'e taşındı; eski isim-only booking'ler isim anahtarında kaldı → aynı kişi dropdown'da İKİ satır oldu. Kontaksız hayalet satır önce eklendiği için `nearMatch`/banner/save-onayı hep ONU önerdi; auto-link de "tam isim + TEK eşleşme" istediğinden (2 eşleşme var) devreye girmedi → hangi yoldan seçilirse seçilsin hayalet linklendi → booking `email:'' phone:''`. Zincirleme: `salownSendLoyaltyEmail` boş `clientEmail` görüp erken döndü (flag `sendLoyaltyEmail:true` TAKILI kaldı, reset edilmeden çıkıyor); `checkoutBooking`'in client-doc güncellemesi `if (phone || email)` arkasında → puan/stats doc'a hiç yazılmadı (booking'e yazıldı: earned 38 / total 66, doc 28'de kaldı).
+**Resolution:** (1) **Veri onarımı** (admin script, owner onaylı): booking'e `clientEmail`+`clientManualId`; client doc'a atlanan stats birebir (loyaltyPoints 28→66, totalSpent +£41.80, totalVisits +1, lastVisit/lastBarber/lastService); loyalty maili `sendLoyaltyEmail` false→true geçişiyle ateşlendi → `loyaltyEmailSent:true` 4 sn'de teyit. (2) **Kalıcı fix** `540db5a` (push→CI, salown.com panel): client doc'lar canonical olarak ÖNCE işlenir; booking'ler exact phone/email ile, kontaksız booking'ler ise YALNIZ belirsiz-olmayan normalize isimle doc satırına merge olur (aynı isimli 2 doc → merge yok; NORMALIZATION "kontak varken isim-eşleşme yok" kuralı korunur). Doc'suz müşteri + docs-fetch-hata yolu eski davranış. 4 vaka simülasyonla + tsc/eslint/vitest 25/25/build ile doğrulandı.
+**Prevention:** Kimlik birleştiren HER yüzeyde canonical kaynak (client doc) önce gelir; booking-türevi kayıt ancak MERGE olur, asla canonical'ın önüne satır açamaz. `phone||email||name` tekli anahtar, kişi kontak kazandığında kimliği böler — çoklu-index (phone + email + guarded name) kullan. Ayrıca trigger'lar guard'dan erken dönerken talep bayraklarını (`sendLoyaltyEmail`) resetlemeli ya da durumu işaretlemeli — takılı `true` sonraki tetiklemeyi de bloklar (bugün ikinci yazımda `false→true` gerekti).
+
+**Ne oldu / Teşhis / Fix:** Owner "edit'ten telefon+email girdim, walk-in attım, detayda kontak yok, mail gitmedi; kopya kayıt da göremiyorum" dedi. Kural #7 → INCIDENTS'ta 2026-07-05 "eşleşen-ama-linklenmemiş müşteri" emsali bulundu (aynı dosya, komşu akış). Admin SDK read-only sorguyla kanıt toplandı: doc'ta email VAR/telefon YOK; bugünkü + 22 May booking'leri isim-only. Kod izinde `WalkInForm` map kurulum sırası + anahtar seçimi kök neden çıktı. Onarım script'i safety re-check'lerle (state drift guard) yazıldı; email teyidi booking'teki `loyaltyEmailSent` marker'ı poll'lanarak alındı. Not: owner telefon girdiğini söylüyor ama doc'ta `phone:""` (alan var, boş) — telefon hiç kaydolmamış; Clients edit telefon alanı ayrı takip (tek gözlemle repro yok).
+
+**Dersler / Lessons Learned:**
+- **"Kopya kayıt yok ama davranış kopya-kayıt gibi" = kimlik bölünmesi UI katmanında olabilir.** Firestore temizken dropdown/liste kurulum mantığına bak — kimlik anahtarı zamanla değişen kişiyi böler.
+- **Kontak kazanmak bir kimlik-geçiş anıdır:** `phone||email||name` gibi tekli-anahtar şemalarda kişinin anahtarı değişir; eski kayıtlar eski anahtarda kalır. Birleştirme çoklu-index ister.
+- **Erken-dönen trigger talep bayrağını temizlemeli** — `sendLoyaltyEmail:true` takılı kalınca hem durum yanıltıcı ("gönderilecek" görünür) hem yeniden tetikleme iki yazım ister.
+- **TS migration davranış bug'ı düzeltmez (bilerek):** type-only anayasası gereği migration dilimleri mantığa dokunmaz; "TS geçince düzelir" beklentisi bu sınıf hatalar için geçersiz — ayrı `fix:` commit'i gerekir.
+
 ## 2026-07-06 — Marketing listesi opt-out/suppressed kişileri gösteriyordu (liste ≠ gönderim)
 
 **Severity:** 🟡 Medium · **Owner:** Claude (Opus 4.8 · owner bildirdi) · **Status:** ✅ Resolved
