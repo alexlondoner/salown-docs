@@ -576,6 +576,13 @@ Finance ve Settings'te her zaman 1.
 
 Bir pencerenin gecesi temiz çıkmadan sonraki pencereye GEÇİLMEZ (madde 4 aynen).
 
+**KPI değişimi (owner, 2026-07-11):** Son %8'de başarı metriği artık "bugün kaç
+dosya çevirdik?" DEĞİL — **"bugün riski kontrollü tuttuk mu?"** Teknik risk satır
+sayısından değil etki alanından geliyor (firestoreActions = merkezi bağımlılık,
+Finance = para akışı merkezi, Settings = davranış konfigürasyon merkezi). Ölçü:
+**dört pencerenin dördünün de temiz kapanması** — dördü temizse rc3'e sağlam
+zeminde varılmış demektir.
+
 ## 11. "Migration = Type-only" kuralı (teknik-lider tavsiyesi, 2026-07-09 — KABUL, BAĞLAYICI)
 
 **TS migration commit'i bir davranış commit'i DEĞİLDİR.** Bir güven sözleşmesi:
