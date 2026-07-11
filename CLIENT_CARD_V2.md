@@ -52,6 +52,42 @@ Yön (Campaigns redesign diliyle aynı ruh — per-client drawer kalıbı zaten 
 - **Quick actions satırı:** New booking · Send email · Adjust points ·
   (super-admin: merge/delete — mevcut yetki gate'leri DEĞİŞMEZ).
 
+## 3b. Campaign geçmişi görünürlüğü (owner ek istek, aynı gece)
+
+**Tespit: veri + UI zaten VAR ama gömülü.** History sekmesi açılınca
+`tenants/{id}/clients/{manualId}/campaignsSent` subcollection'ı yükleniyor ve
+listeleniyor (`Clients.tsx:250-262` load, `:834+` render) — owner fark
+etmemiş = keşfedilebilirlik sorunu. Yapılacak:
+- **Overview'a "Last campaign" satırı:** Quick-info bloğuna (Last visit /
+  Favourite service yanına) son kampanya adı + tarihi (campaignsSent'in ilk
+  kaydı; History'ye zaten sıralı geliyor).
+- **Hero/drawer'da rozet:** "📣 3 campaigns received · last: Birthday Treat,
+  2 Jul" tarzı tek satır — tıklayınca History sekmesine götürür.
+- Sınır: sadece `manualId`'li client'larda çalışır (subcollection client
+  doc'a bağlı) — manualId yoksa satır gizlenir, mevcut davranış.
+- İleride (C7 ile birleşir): opened/clicked durumu da satıra eklenebilir
+  (emailEvents zaten tenant'ta var; email eşleşmesi yeterli).
+
+## 3c. Trusted client (owner ek istek — Booksy paritesi, İLK KEZ listeye giriyor)
+
+Kökeni: Anthony vakası (memory `project_parser_priority`) — Booksy'de
+"trusted client" deposit'ten muaf; bizim parser Booksy'ye sabit £10 deposit
+varsayınca trusted müşteride yanlış "ödendi" yazdı. O gün konuşuldu ama
+hiçbir listeye girmemişti; bu spec'le resmileşiyor.
+- **Faz 1 (kart alanı):** client doc'a `trusted: boolean` (+ `trustedAt`,
+  `trustedBy`) — kartta rozet (🤝 Trusted) + toggle (owner/admin yetkisi;
+  super-admin gate GEREKMEZ, silme değil). Salt görsel/operasyonel işaret:
+  personel "bu müşteriden deposit isteme / sözüne güven" bilgisini görür.
+- **Faz 2 (davranış, Stripe Connect ile):** per-tenant ödeme policy'sine
+  (STRIPE_CONNECT_PLAN) client-düzeyi istisna: `trusted=true` → deposit
+  atlanır (policy 'deposit' olsa bile). Booking sayfası + BookingPage
+  policy çözümlemesine tek koşul. **Deposit canlı değilken davranış etkisi
+  SIFIR** — o yüzden Faz 1 güvenle önce gidebilir.
+- **Parser bağı (ayrı iş, C9 kapsamı DIŞI ama bağlantılı):** Booksy parser'ı
+  deposit'i asla hardcode etmesin; trusted/no-deposit'te £0/bilinmiyor
+  işaretlesin (project_parser_priority'deki plan). Trusted flag'i bu
+  yanlış-pozitifleri işaretlemeyi de kolaylaştırır.
+
 ## 4. Korunacaklar (dokunma)
 
 - Delete/merge = super-admin gate'leri (`useAuth().isSuperAdmin`) AYNEN.
