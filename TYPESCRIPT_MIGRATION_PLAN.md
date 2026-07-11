@@ -555,6 +555,27 @@ başına yetmez → izolasyonu zaman ekseninde firebreak sağlar. Son 8 dosya ik
 Küçük/orta dosyalar (bayt-aynı kanıtlı) için firebreak GEREKMEZ — mevcut
 dilim-başına tsc+lint+bundle-diff+vitest zinciri yeterli.
 
+### §10 REVİZYON — risk-kümeli pencere gruplaması (owner, 2026-07-11 — BAĞLAYICI)
+
+"Her dosyaya ayrı gün" temposu, kalan 7 firebreak dosyası için **risk kümesine göre
+pencerelere** gevşetildi. Her dilim yine tam kanıt zinciriyle (tsc + lint +
+bundle-diff + vitest + smoke) gider; değişen şey gözlem penceresinin granülaritesi:
+
+```
+Gün 1: firestoreActions → Clients → Marketing        (─ gece: ortak gözlem)
+Gün 2: CheckoutPanel → BookingPage                   (─ gece: ortak gözlem)
+Gün 3: Finance                                        (─ gece: TEK BAŞINA)
+Gün 4: Settings                                       (─ gece: TEK BAŞINA)
+```
+
+**Gerekçe:** Finance = para tarafının merkezi; Settings = sistem davranışını
+değiştirebilen merkez. **İki farklı risk kümesi — asla aynı gözlem penceresinde
+üretimde bırakılmaz.** İlk beş dosya ise komşu domain'ler; gruplama, regresyon
+aday sayısını gün-1'de en fazla 3, gün-2'de 2 ile sınırlar (kabul edilen ödün),
+Finance ve Settings'te her zaman 1.
+
+Bir pencerenin gecesi temiz çıkmadan sonraki pencereye GEÇİLMEZ (madde 4 aynen).
+
 ## 11. "Migration = Type-only" kuralı (teknik-lider tavsiyesi, 2026-07-09 — KABUL, BAĞLAYICI)
 
 **TS migration commit'i bir davranış commit'i DEĞİLDİR.** Bir güven sözleşmesi:
