@@ -513,6 +513,15 @@ O gün BAŞKA HİÇBİR büyük iş yapılmaz — günün tek hedefi: *pipeline 
 başarılı · smoke geçti · rollback doğrulandı* — ve gün biter. "Bir iki şey daha
 yapalım" günü DEĞİLDİR. Frontend dilimi, feature, refactor → başka güne.
 
+**⚠️ rc3+1 ÜRÜN-DOĞRULAMA GÜNÜ (teknik-lider önerisi, owner 2026-07-11 — BAĞLAYICI):**
+rc3'ün ertesi günü HİÇBİR migration/refactor yapılmaz. Gün, ürünü KULLANARAK geçer:
+gerçek booking al · checkout yap · loyalty kullan · discount code işlet · Stripe
+refund dene · marketing kampanyası gönder · Finance raporuna bak. Doğrulanan şey
+kod değil ÜRÜN. **Başarı metriği tek soru:** *"Bu sistemi kullanan salon, migration
+yapıldığını hiç fark etti mi?"* Cevap HAYIR ise migration ürün düzeyinde de bitmiştir;
+EVET ise fark edilen her şey rc3 regresyonu olarak ele alınır (v1.0.0 o gün kapanmadan
+taglenmez).
+
 **Her RC'nin DEĞİŞMEZ checklist'i** (annotated tag mesajına yazılır):
 - ✅ Type coverage (TYPE_COVERAGE.md güncel, panodan sayılar)
 - ✅ Test sayısı (functions npm test + vitest, 0 fail)
