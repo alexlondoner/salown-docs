@@ -35,6 +35,25 @@ hepsi client-side türetilebilir:
 3. **Stats satırı (üst):** `Points` kutusuna ikinci satır: "£X used lifetime"
    (veya 4'lü kutuya 5. kutu "£ saved" — tasarım kararı).
 
+## 2b. Kapsam netleşmesi (owner, 2026-07-11 ikinci konuşma)
+
+**LİSTE DEĞİŞMİYOR** — tablo/arama/segment/sıralama aynen kalır. Redesign kapsamı
+= client **paneli** üçlüsü: (1) müşteri **ekleme**, (2) **düzenleme**,
+(3) müşteri hakkında **bilgi tutma/gösterme** (detail drawer).
+
+Mevcut durum envanteri (Claude Design'a girdi):
+
+| Parça | Bugünkü hâli | Not |
+|---|---|---|
+| **Add** — `AddClientModal.tsx` (ayrı component, 540px Drawer) | Zaten modern: ikonlu inputlar, +prefix telefon, DD/Ay/YYYY doğum günü, nickname/reminder notu, GDPR+loyalty ipuçları, celebrate() | Üçlünün en yenisi; redesign'da dil buradan türeyebilir |
+| **Edit** — `Clients.tsx:1047` (inline, 420px ortalanmış modal) | EN ESKİ parça: düz input listesi (name/phone/email/birthday/notes), Add ile görsel dil tutmuyor (native date input, +prefix yok, ipuçları yok) | Davranış zinciri korunur: `_aliases` arrayUnion + `_origName` + booking rename (`:421-447`) |
+| **Detail drawer** — `Clients.tsx:599-1045` (440px Drawer) | Avatar(barber-renk halka)+VIP/tier/pts rozetleri, tel/mail+unsubscribe toggle, 4 aksiyon (Book/WhatsApp/Email/Campaign), 4'lü stats, 3 sekme (overview/history/loyalty), notes blur-save | Owner şikayeti "çok küçük" buraya; 440px dar, bilgi yoğun |
+| **Bilgi tutulan alanlar** (client doc) | Sadece: name, phone, email, birthday, notes (+sistem: loyaltyPoints, isMember/membershipTier, emailOptOut, \_aliases, reengagementSentAt...) | Açık soru (owner karar verir): yeni alanlar eklenecek mi — adres, cinsiyet/pronoun, referral source, **trusted** (§3c), emergency contact vb. Fresha/Booksy paritesi düşünülebilir |
+
+Add zaten Drawer olduğundan asıl iş: **edit'i Add'in diliyle hizalamak**
+(veya §3'teki inline-edit'e geçmek) + detail drawer'ı büyütüp zenginleştirmek
++ tutulan alan setini genişletmek (owner kararı).
+
 ## 3. Faz 2 — Premium kart redesign (owner: "çok küçük görünüyor")
 
 > ⚠️ **TASARIM SAHİBİ = OWNER (2026-07-11):** kartın görsel redesign'ını owner
