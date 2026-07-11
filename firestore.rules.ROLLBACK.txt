@@ -1,3 +1,7 @@
-release=projects/havuz-44f70/releases/cloud.firestore
-old_rulesetName=projects/havuz-44f70/rulesets/bab4886f-5fe3-4376-ba4b-b590217499f7
-# Geri dönmek için: PATCH projects/havuz-44f70/releases/cloud.firestore body {name, rulesetName=old_rulesetName}
+# Rollback notu (güncel: 2026-07-11 — E1b owner-delete)
+# CANLI ruleset: 1a818130-0383-40e9-bf1e-765ba805a254 (E1b: delete = super-admin || same-tenant owner, test 81/81)
+# ÖNCEKİ ruleset: a55f2e8c-3b72-4a30-9c7f-43e4d1cc3b70 (delete = super-admin only, test 65/65)
+# Geri dönüş: git'te firestore.rules'ı 8670051 öncesine çek (git show 8670051~1:firestore.rules > firestore.rules)
+# → python3 docs/test-firestore-rules.py salown-app/firestore.rules (65/65 beklenir)
+# → firebase deploy --only firestore:rules --project havuz-44f70
+# Daha eski geçmiş: git log --oneline -- firestore.rules (salown-app repo)

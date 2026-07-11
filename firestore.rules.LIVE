@@ -23,6 +23,8 @@ service cloud.firestore {
     //   tenantId claim'i olup tenantRole'ü olmayan 3 user yalnız ölü/test tenant'larında
     //   (ee-kurt-barbers / the-hair-lab / the-test-lab) → canlıyı etkilemez.
     function isAdmin(tid)    { return isTenant(tid) && request.auth.token.tenantRole in ['owner', 'admin']; }
+    // [E1b] (2026-07-11) tenant-scoped owner: kendi salonunun VERİSİNİ silebilir (staff/barbers/finance/settings HARİÇ)
+    function isOwner(tid)    { return isTenant(tid) && request.auth.token.tenantRole == 'owner'; }
     function isStaff(tid)    { return isTenant(tid) && request.auth.token.tenantRole in ['owner', 'admin', 'staff']; }
     function isTenantAny(tid){ return isTenant(tid); }
 
@@ -69,19 +71,19 @@ service cloud.firestore {
                       'date', 'time', 'startTime', 'endTime', 'rescheduledAt',
                       'barberName', 'barberId', 'updatedAt'])
         );
-        allow delete: if isSuperAdmin();   // [DEL] önce isAdmin de silebiliyordu → yalnız super-admin
+        allow delete: if isSuperAdmin() || isOwner(tenantId);   // [DEL→E1b 2026-07-11] owner kendi tenant'ında silebilir
       }
 
       // ── Public-readable collections (LIVE ile aynı) ─────────────────────────
       match /services/{docId} {
         allow read:  if true;
         allow create, update: if isSuperAdmin() || isTenantAny(tenantId);
-        allow delete: if isSuperAdmin();   // [DEL] delete = super-admin only
+        allow delete: if isSuperAdmin() || isOwner(tenantId);   // [DEL→E1b 2026-07-11]
       }
       match /serviceCategories/{docId} {
         allow read:  if true;
         allow create, update: if isSuperAdmin() || isTenantAny(tenantId);
-        allow delete: if isSuperAdmin();   // [DEL] delete = super-admin only
+        allow delete: if isSuperAdmin() || isOwner(tenantId);   // [DEL→E1b 2026-07-11]
       }
       match /barbers/{docId} {
         allow read:  if true;
@@ -91,16 +93,42 @@ service cloud.firestore {
       match /gallery/{docId} {
         allow read:  if true;
         allow create, update: if isSuperAdmin() || isTenantAny(tenantId);
-        allow delete: if isSuperAdmin();   // [DEL] delete = super-admin only
+        allow delete: if isSuperAdmin() || isOwner(tenantId);   // [DEL→E1b 2026-07-11]
       }
       match /announcements/{docId} {
         allow read:  if true;
         allow create, update: if isSuperAdmin() || isTenantAny(tenantId);
-        allow delete: if isSuperAdmin();   // [DEL] delete = super-admin only
+        allow delete: if isSuperAdmin() || isOwner(tenantId);   // [DEL→E1b 2026-07-11]
       }
       match /public/{doc} {
         allow read:  if true;
         allow write: if false;
+      }
+      // Email engagement (opened/clicked/blocked/unsub) — written only by the Brevo
+      // webhook (Admin SDK, bypasses rules). Staff read for the marketing funnel.
+      match /emailEvents/{emailKey} {
+        allow read:  if isSuperAdmin() || isTenantAny(tenantId);
+        allow write: if false;
+      }
+      // Explicit opt-out list — written only by salownEmailOptOut (Admin SDK) for contacts
+      // with no matching client doc (e.g. walk-ins who click unsubscribe). Staff READ so the
+      // campaign audience list can suppress them too (list must match the server send guard).
+      match /emailOptOuts/{email} {
+        allow read:  if isSuperAdmin() || isTenantAny(tenantId);
+        allow write: if false;
+      }
+      // Discount codes — NOT world-readable (codes stay semi-private; online checkout
+      // validates server-side via Admin SDK). Staff read+update (in-salon validate +
+      // usedCount increment); manage/create = tenant; delete = super-admin.
+      match /discountCodes/{codeId} {
+        allow read:  if isSuperAdmin() || isTenantAny(tenantId);
+        allow create, update: if isSuperAdmin() || isTenantAny(tenantId);
+        allow delete: if isSuperAdmin() || isOwner(tenantId);   // [E1b 2026-07-11]
+        match /redemptions/{rid} {
+          allow read:   if isSuperAdmin() || isTenantAny(tenantId);
+          allow create: if isSuperAdmin() || isTenantAny(tenantId);   // in-salon staff + server (Admin SDK)
+          allow update, delete: if isSuperAdmin();
+        }
       }
 
       // ── Staff doc (LIVE ile aynı) ───────────────────────────────────────────
@@ -135,13 +163,13 @@ service cloud.firestore {
       //     template + ${TENANT} + virgül path stilleri). functions/ Admin SDK = rules bypass (dahil değil).
       //   Storage (logo/cover/barbers/*/photo) Firestore değil → hariç. emailOptOuts/config = functions/read.
       //   ⚠️ YENİ bir client-yazma koleksiyonu eklenince buraya da satır eklenmeli (yoksa write DENY).
-      match /clients/{document=**}                { allow read, create, update: if isSuperAdmin() || isTenantAny(tenantId); allow delete: if isSuperAdmin(); } // + clients/{id}/campaignsSent
+      match /clients/{document=**}                { allow read, create, update: if isSuperAdmin() || isTenantAny(tenantId); allow delete: if isSuperAdmin() || isOwner(tenantId); } // + clients/{id}/campaignsSent
       match /settings/{document=**}               { allow read, create, update: if isSuperAdmin() || isTenantAny(tenantId); allow delete: if isSuperAdmin(); }
-      match /campaigns/{document=**}              { allow read, create, update: if isSuperAdmin() || isTenantAny(tenantId); allow delete: if isSuperAdmin(); }
+      match /campaigns/{document=**}              { allow read, create, update: if isSuperAdmin() || isTenantAny(tenantId); allow delete: if isSuperAdmin() || isOwner(tenantId); }
       match /notifications/{document=**}          { allow read, create, update: if isSuperAdmin() || isTenantAny(tenantId); allow delete: if isSuperAdmin(); }
       match /fcmTokens/{document=**}              { allow read, create, update: if isSuperAdmin() || isTenantAny(tenantId); allow delete: if isSuperAdmin(); }
       match /auditLogs/{document=**}              { allow read, create, update: if isSuperAdmin() || isTenantAny(tenantId); allow delete: if isSuperAdmin(); }
-      match /products/{document=**}               { allow read, create, update: if isSuperAdmin() || isTenantAny(tenantId); allow delete: if isSuperAdmin(); }
+      match /products/{document=**}               { allow read, create, update: if isSuperAdmin() || isTenantAny(tenantId); allow delete: if isSuperAdmin() || isOwner(tenantId); }
       match /team/{document=**}                   { allow read, create, update: if isSuperAdmin() || isTenantAny(tenantId); allow delete: if isSuperAdmin(); }
       match /finance/{document=**}                { allow read, create, update: if isSuperAdmin() || isTenantAny(tenantId); allow delete: if isSuperAdmin(); }
       match /finance_expenses/{document=**}       { allow read, create, update: if isSuperAdmin() || isTenantAny(tenantId); allow delete: if isSuperAdmin(); }

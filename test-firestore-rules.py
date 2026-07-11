@@ -28,6 +28,8 @@ WXSTAFF={"uid":"wxs","token":{"tenantId":"whitecross","tenantRole":"staff"}}
 WXNOROLE={"uid":"wxn","token":{"tenantId":"whitecross"}}  # claim'siz (ölü/test tenant senaryosu)
 HERO={"uid":"h1","token":{"tenantId":"herohairs","tenantRole":"admin"}}
 SUP={"uid":"s1","token":{"superAdmin":True,"tenantId":"whitecross"}}
+WXOWNER={"uid":"wo1","token":{"tenantId":"whitecross","tenantRole":"owner"}}
+HEROOWNER={"uid":"ho1","token":{"tenantId":"herohairs","tenantRole":"owner"}}
 def case(n,e,r,res=None):
     tc={"expectation":e,"request":r,"_name":n}
     if res is not None: tc["resource"]={"data":res}
@@ -106,6 +108,23 @@ cases=[
  case("G4 col: advances write → ALLOW","ALLOW",req("create","/tenants/whitecross/advances/a1",WXSTAFF,{"a":1})),
  case("G4 col: investment_transactions write → ALLOW","ALLOW",req("create","/tenants/whitecross/investment_transactions/i1",WXSTAFF,{"a":1})),
  case("G4 col: clients deep campaignsSent write → ALLOW","ALLOW",req("create","/tenants/whitecross/clients/c1/campaignsSent/s1",WXSTAFF,{"a":1})),
+ # ── E1b (2026-07-11): delete = super-admin VEYA aynı-tenant OWNER ──
+ case("E1b: owner own-tenant booking delete → ALLOW","ALLOW",req("delete","/tenants/herohairs/bookings/b1",HEROOWNER,None),{"clientName":"x"}),
+ case("E1b: owner own-tenant client delete → ALLOW","ALLOW",req("delete","/tenants/herohairs/clients/c1",HEROOWNER,None),{"name":"x"}),
+ case("E1b: owner own-tenant service delete → ALLOW","ALLOW",req("delete","/tenants/herohairs/services/s1",HEROOWNER,None),{"name":"x"}),
+ case("E1b: owner own-tenant product delete → ALLOW","ALLOW",req("delete","/tenants/herohairs/products/p1",HEROOWNER,None),{"name":"x"}),
+ case("E1b: owner own-tenant gallery delete → ALLOW","ALLOW",req("delete","/tenants/herohairs/gallery/g1",HEROOWNER,None),{"u":"x"}),
+ case("E1b: owner own-tenant campaign delete → ALLOW","ALLOW",req("delete","/tenants/herohairs/campaigns/k1",HEROOWNER,None),{"name":"x"}),
+ case("E1b: owner own-tenant discountCode delete → ALLOW","ALLOW",req("delete","/tenants/herohairs/discountCodes/d1",HEROOWNER,None),{"code":"X"}),
+ case("E1b: owner CROSS-tenant booking delete → DENY","DENY",req("delete","/tenants/whitecross/bookings/b1",HEROOWNER,None),{"clientName":"x"}),
+ case("E1b: ADMIN (Arda) own-tenant booking delete → DENY","DENY",req("delete","/tenants/whitecross/bookings/b1",WX,None),{"clientName":"x"}),
+ case("E1b: STAFF own-tenant booking delete → DENY","DENY",req("delete","/tenants/whitecross/bookings/b1",WXSTAFF,None),{"clientName":"x"}),
+ case("E1b: owner STAFF-doc delete → DENY (staff mgmt super-only)","DENY",req("delete","/tenants/whitecross/staff/u1",WXOWNER,None),{"role":"staff"}),
+ case("E1b: owner BARBER delete → DENY (team mgmt super-only)","DENY",req("delete","/tenants/whitecross/barbers/br1",WXOWNER,None),{"name":"x"}),
+ case("E1b: owner TENANT ROOT delete → DENY","DENY",req("delete","/tenants/whitecross",WXOWNER,None),{"name":"x"}),
+ case("E1b: owner FINANCE delete → DENY","DENY",req("delete","/tenants/whitecross/finance/f1",WXOWNER,None),{"a":1}),
+ case("E1b: owner SETTINGS delete → DENY","DENY",req("delete","/tenants/whitecross/settings/settings",WXOWNER,None),{"a":1}),
+ case("E1b: owner AUDITLOG delete → DENY","DENY",req("delete","/tenants/whitecross/auditLogs/a1",WXOWNER,None),{"a":1}),
 ]
 url="https://firebaserules.googleapis.com/v1/projects/havuz-44f70:test"
 body={"source":{"files":[{"name":"firestore.rules","content":RULES}]},
