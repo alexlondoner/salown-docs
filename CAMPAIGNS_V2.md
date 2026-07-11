@@ -58,7 +58,7 @@ Her kampanyaya tek alan: **`audienceScope: 'clients' | 'members' | 'everyone'`**
 2. **`functions/index.js` `sendCampaignBulk`** — `audienceScope` param (whitelist, default `clients`) + server-side member email set + sendOne'da skip + `campaignRuns.audience`. (`where('isMember','==',true)` single-field → index gerekmez.)
 3. **`SendCampaignPanel.tsx`** — member rozeti + clients-only template uyarısı.
 4. **Kampanya geçmişi** — audience chip.
-5. **(Bağımsız latent fix — owner kararı 2026-07-10: freeze'den muaf DEĞİL, C8 ile birlikte)** `salownSendLoyaltyEmail` member lookup'ını güçlendir: lowercase email + phone fallback (`functions/index.js:585`). Not: bu makbuz maili transactional'dır, audience scope kampanya katmanını kapsar — o yüzden scope'la kendiliğinden çözülmez, bu dilim ayrıca gerekli.
+5. ✅ **KAPANDI (2026-07-11, `b38d820` PUSHED — owner talimatıyla freeze'den muaf tutuldu, explicit worktree ile).** `salownSendLoyaltyEmail` member lookup güçlendirildi: exact email sorgusu ıskalarsa `matchesClient` fallback (normalize telefon + lowercase email, isim probe yok); opt-out kontrolü de aynı zinciri kullanır. Migration'a dokunmadı (backend JS, ana working tree'ye yazılmadı). ⏳ Canlı değil — targeted functions deploy bekliyor. Not: bu makbuz maili transactional'dır, audience scope kampanya katmanını kapsar — o yüzden ayrı dilimdi.
 6. **Kategori kütüphanesi + founding-clients segmenti + sakin-gün paket şablonları** — ayrı dilim (Faz-2 backend dalgasıyla: scheduling cron C3.1 + open-tracking C3.3 + C7 metrikleri).
 
 Not: 2026-07-10'da dilim 1 başlatılıp owner talimatıyla geri alındı (working tree temiz);
