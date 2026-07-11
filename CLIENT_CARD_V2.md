@@ -37,6 +37,12 @@ hepsi client-side türetilebilir:
 
 ## 3. Faz 2 — Premium kart redesign (owner: "çok küçük görünüyor")
 
+> ⚠️ **TASARIM SAHİBİ = OWNER (2026-07-11):** kartın görsel redesign'ını owner
+> **Claude Design ile kendisi yaptıracak** — hiçbir session kendi kafasına göre
+> mockup/tasarım ÜRETMESİN. Aşağıdaki yön notları Claude Design'a girdi
+> malzemesidir; nihai görsel karar owner'dan gelecek. (Faz 1 = veri
+> görünürlüğü bundan BAĞIMSIZ, kod serbest kalınca yapılabilir.)
+
 Mevcut: orta boy panel; 4'lü stats; 3 sekme (overview/history/loyalty);
 edit = basit ortalanmış modal (`Clients.tsx:1047`, düz input listesi).
 
