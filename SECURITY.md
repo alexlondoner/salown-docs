@@ -342,16 +342,18 @@ tek tek doğrula (G5 blast radius mantığı).
 ### Hedef yetki matrisi (interim — dinamik tasarıma kadar)
 | Rol | Kapsam |
 |-----|--------|
-| **superadmin** | HER ŞEY + **silme** (delete). **Silme YALNIZ superadmin.** Cross-tenant. |
+| **superadmin** | HER ŞEY, cross-tenant. Tenant root/staff/settings/auditLogs/finance silme YALNIZ superadmin. |
+| **owner** | Kendi tenant'ında her şey + **kendi VERİSİNİ silme** (E1b, 2026-07-11): bookings/services/serviceCategories/gallery/announcements/discountCodes/clients/campaigns/products/**barbers** (barbers UI'da güçlü onay modallı). Cross-tenant HİÇBİR ŞEY. |
 | **admin** | Her şeyi görür + değiştirir (create/update), **silemez**. |
 | **manager** | (ileride tasarlanacak — admin/staff arası) |
 | **staff** | Sınırlı; `permissions` objesiyle izinler (canCreateBookings/canCheckOut/... toggles) |
 
-> ⚠️ **Mevcut rules silme'yi `isSuperAdmin() || isAdmin()` veriyor** (bookings `delete` + tenant-root
-> `delete` + koleksiyonların `write` kuralı delete'i kapsıyor). Hedef = **delete yalnız `isSuperAdmin()`**.
-> Bu, her koleksiyonun `write`'ını create/update (tenant) vs delete (superadmin) diye ayırmayı
-> gerektiren KAPSAMLI bir refactor (G4 enumerasyonuyla aynı yüzeyler) → dinamik rol tasarımıyla
-> birlikte ele alınacak. Bkz memory `feedback-delete-superadmin-only`, ROADMAP #9.
+> ✅ **E1b CANLI (2026-07-11, ruleset test 83/83):** delete = `isSuperAdmin() || isOwner(tenantId)`
+> (yukarıdaki owner satırındaki koleksiyonlarda). `isOwner(tid)` = tenantId eşleşir + tenantRole=='owner'.
+> Admin/staff/cross-tenant delete DENY — testli. Super-only kalanlar: tenant root, staff, settings,
+> auditLogs, finance ailesi, Clients merge-drag. "Silme YALNIZ superadmin" dönemi (2026-07-02→07-11)
+> pilot politikasıydı; E1b onu tenant-scoped owner'a genişletti (durum kaydı: ROADMAP E1b).
+> Bkz memory `feedback-delete-superadmin-only`.
 
 ### Mevcut kullanıcılar (2026-06-24, canlı = whitecross + herohairs)
 | Email | Tenant | Rol (staff doc) | superAdmin claim | Not |

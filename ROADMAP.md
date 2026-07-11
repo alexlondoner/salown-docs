@@ -240,7 +240,7 @@ Politika: `owner > admin > staff`. **Silme SADECE super-admin** (`isSuperAdmin` 
 - **Rules** (`694a762`, DEPLOYED, test 65/65): tüm tenant koleksiyonlarında `write`→`create,update`+`delete`; `delete: isSuperAdmin()`. staff create/update/delete de super-admin only.
 - **UI** (`7e95d40`/`643c8ce`/`851fd43`/`b20f105`): tüm delete butonları + Clients merge (drag) + Settings Staff/Danger tab'ları `isSuperAdmin` arkasına alındı. "Register me as owner" da super-admin.
 - Doğrulandı: yalnız `aerulas@`=superAdmin:True → tek silebilen/atayabilen. Arda + diğer admin/owner (herohairs dahil) kaybetti (pilot kararı Seçenek a).
-**✅ E1b — SİLME owner'a tenant-scoped AÇILDI (2026-07-11, CANLI · rules `8670051` deploy ruleset `1a818130`, test 81/81 + UI aynı commit push→CI):** delete = `isSuperAdmin() || isOwner(tenantId)` — 9 koleksiyonda (bookings/services/serviceCategories/gallery/announcements/discountCodes/clients/campaigns/products). Owner YALNIZ kendi tenant'ında siler (cross-tenant/admin/staff DENY, testli); herohairs owner'ları (durvezek@ + alex2ayyildiz3@) silme kazandı, Arda (admin) KAZANMADI. Super-admin-only kalanlar: tenant root, barbers, staff, settings, auditLogs, finance ailesi, Clients merge-drag. Gerekçe: superAdmin claim'i platform-geneli/cross-tenant — tenant owner'ına verilemezdi; review'ın "~3. salonda delete darboğazı" öngörüsü herohairs'te gerçekleşti.
+**✅ E1b — SİLME owner'a tenant-scoped AÇILDI (2026-07-11, CANLI · rules `8670051` deploy ruleset `1a818130`, test 81/81 + UI aynı commit push→CI):** delete = `isSuperAdmin() || isOwner(tenantId)` — 9 koleksiyonda (bookings/services/serviceCategories/gallery/announcements/discountCodes/clients/campaigns/products). Owner YALNIZ kendi tenant'ında siler (cross-tenant/admin/staff DENY, testli); herohairs owner'ları (durvezek@ + alex2ayyildiz3@) silme kazandı, Arda (admin) KAZANMADI. Super-admin-only kalanlar: tenant root, staff, settings, auditLogs, finance ailesi, Clients merge-drag. **E1b+ (aynı gün):** barbers silme de owner'a açıldı (`2af303c`, test 83/83) — UI'da sonuç-listeli GÜÇLÜ onay modalı (tüm tenant'lar; 'Set passive' alternatifi önerilir, geçmiş korunur) + pasif üyede yeşil '✓ Activate' (`25e6407`). Gerekçe: superAdmin claim'i platform-geneli/cross-tenant — tenant owner'ına verilemezdi; review'ın "~3. salonda delete darboğazı" öngörüsü herohairs'te gerçekleşti.
 **Kalan (scale):** (b-devam) owner kendi staff'ını/barber'larını yönetsin (staff-atama hâlâ super-only); (c) super-admin panelden cross-tenant staff izin yönetimi; (d) nihai: delete butonlarını tamamen kaldır. Staff App (staff.salown.com) delete parity ayrıca kontrol edilmeli.
 Bkz memory `feedback-delete-superadmin-only`, `feedback-firestore-rules-safety`. *(Not: E1'in temeli olan G2/G3/G4 rules açıkları ✅ KAPANDI (`851efeb`+`0f8de7e`) — kalan E1 işi = delete'leri super-admin gate'i + owner→admin yetki UI, yukarıdaki Pre-Scale değil.)*
 
@@ -264,6 +264,17 @@ Bkz memory `feedback-delete-superadmin-only`, `feedback-firestore-rules-safety`.
 - EeKurt legacy site → salown subdomain redirect
 - `categoryId` migration
 - Dead `isStaff` Firestore rule
+
+**G3 — Unsaved-changes guard'ları (kayıp-veri UX)** · 🔵 Planlandı (2026-07-11 envanteri, owner istedi)
+Backdrop/Esc/✕ ile kapanan formlarda yazılan her şey sessizce gidiyor (owner'ın vakası: Products ekleme).
+Altın standart WalkInForm'da var (dirtyRef + Discard modalı) → ortak bileşene çıkar (paylaşılan
+ConfirmDiscard + Drawer'a opsiyonel dirtyRef prop'u; Esc+backdrop birlikte). **Fazlar:**
+- **F1 (non-firebreak, 6 yüzey):** Products modal · AddClientModal · Clients edit modalı ·
+  BookingForm (Dashboard overlay dahil) · BulkCampaignPanel Compose (4 adım metin!) · SendCampaignPanel.
+- **F2 (migration pencereleri SONRASI):** CheckoutPanel (Pencere 2 sonrası) · Settings (Pencere 4 sonrası).
+- **F3:** staff app Sheet'leri (mobilde yanlış dokunma).
+Düşük risk/bilinçli: merge modal, TemplatesLibrary (state parent'ta), Services editor + OnlineProfile
+announcements (açık Discard butonlu). Envanter detayı: memory `edit_log_salown` 2026-07-11.
 
 **G2 — SalownHub DNS** · 🔵 Phase 4
 `salown.web.app/app` → `hub.salown.com`. (`salown-staff.web.app` → `staff.salown.com` ✅ aktif.)

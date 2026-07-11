@@ -33,6 +33,21 @@ Her olay `## YYYY-MM-DD — kısa başlık` ile açılır, hemen altına **metad
 
 ---
 
+## 2026-07-11 — Products sayfası panel redesign'da "öksüz" kaldı — route canlı, hiçbir menüden ulaşılamıyor
+
+**Severity:** 🟡 Medium · **Owner:** Alish + Claude · **Status:** ✅ Resolved
+
+**Impact:** Owner ürün eklemek istedi, Products'ı sidebar'da bulamadı — sayfa aylardır yalnız `/app/products` URL'i elle yazılırsa açılıyordu (veri modeli canlıydı: satışlar `soldProducts` üzerinden akmaya devam etti, yalnız YÖNETİM ekranına giden yol yoktu).
+**Root Cause:** Legacy panelde (salown-panel) Products, **Online Profile'ın bir TAB'ıydı**; salown-app redesign'ında OnlineProfile yeni tab setiyle (profile/gallery/team/announce/seo) yeniden yazılırken products tab'ı taşınmadı, Sidebar'a da hiç eklenmedi — route (`AppRouter.tsx`) taşındığı için sayfa "çalışır ama ulaşılamaz" kaldı. İlgili ama AYRI katman: `settings.products.enabled` (public shop gate'i) Settings'e düzgün taşınmıştı → "ayar var, sayfa yok" karışıklığı.
+**Resolution:** `7cb698c` (push→CI) — Sidebar CONFIG bölümüne Services yanına `products` girişi (owner+admin görür; OWNER_ONLY seti). Public-shop gate'ine dokunulmadı.
+**Prevention:** **Redesign'da route↔nav paritesi kontrol edilmeli:** router'da kayıtlı her sayfanın en az bir UI girişi (nav/tab/buton) olduğu, redesign PR'ının checklist'inde doğrulanmalı. "Route çalışıyor" ≠ "özellik erişilebilir".
+
+**Dersler / Lessons Learned:**
+- Bir özellik "kayboldu" dendiğinde üç katmanı AYRI kontrol et: veri modeli (çalışıyor muydu?) → route (kayıtlı mı?) → nav girişi (linki var mı?). Burada yalnız üçüncüsü kopuktu.
+- Legacy'deki bir özelliğin "özel ayarı" iki farklı şey olabilir: yönetim UI'ı (panel) vs public gate (website). İkisini karıştırmadan haritala.
+
+---
+
 ## 2026-07-11 — Client edit'ten sonra walk-in picker aynı kişiyi ikiye böldü → kontaksız booking, loyalty maili gitmedi
 
 **Severity:** 🟠 High · **Owner:** Alish + Claude · **Status:** ✅ Resolved
