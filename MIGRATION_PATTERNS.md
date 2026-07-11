@@ -133,6 +133,12 @@ Excess-property varyantı: alıcı komponente gevşek `: Rec` prop kontratı ver
 (4a/4c — legacy fazla prop'lar type-legal kalır).
 *İlk: Dashboard (4c) · 2026-07-11 · Şiddet: düşük · Geçerlilik: 🔁 migration (Faz 4'te any'ler gerçek tiplere döner)*
 
+**Kalıp 22 — Lint'in davranışlı rewrite istekleri REDDEDİLİR:** `no-unused-expressions`
+ternary-statement'ı (`mq.addEventListener ? ... : mq.addListener(...)` gibi legacy-compat
+kalıpları) if/else'e çevirtmek ister — çevirmek BAYT DEĞİŞTİRİR (§10'un birebir uyarısı).
+Çözüm: satıra eslint-disable + gerekçe yorumu; rewrite Faz 4 temizliğine.
+*İlk: BookingPage (5e) · 2026-07-11 · Şiddet: ORTA (dalgınlıkla rewrite = bayt sızıntısı) · Geçerlilik: 🔁 migration*
+
 ---
 
 ## 🔴 Kalıp 20 — TS'in unused-import elision'ı module graph'ı değiştirir (EN SİNSİ)
