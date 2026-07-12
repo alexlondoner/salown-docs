@@ -270,6 +270,7 @@ Bkz memory `feedback-delete-superadmin-only`, `feedback-firestore-rules-safety`.
 - `categoryId` migration
 - Dead `isStaff` Firestore rule
 - **Barbers `cycleStatus` leave koruması + barber-audit** (2026-07-12, Muhamed vakası — INCIDENTS): on-leave üyenin kartındaki yeşil "✓ Activate" tek tıkla leave'i sessizce siliyor (`Barbers.tsx:358` — status'u ne olursa olsun active/passive'e çevirir + `leaveFrom/leaveUntil:null`, onay yok); barber status/leave değişiklikleri auditLogs'a YAZILMIYOR (kim/ne zaman izlenemedi). İş: (1) leave'deki üyede toggle'a confirm ("Muhamed is on leave until X — end leave and activate?"), (2) `BARBER_STATUS_CHANGED` audit kaydı. Gate: TS freeze sonrası (2026-07-14+).
+- **BookingDetailPanel "Send Finish your booking" butonuna confirm + görsel ayrım** (2026-07-12, Guru vakası — INCIDENTS): mail gönderen buton, salt-okunur "Why no payment?" teşhis sonucunun hemen altında onaysız+sessiz (sadece toast) duruyor → teşhis sırasında istemeden müşteriye mail gitti. İş: confirm modal ("Send recovery email to X?") + `ABANDONED_CART_SENT` audit kaydı + teşhis bloğundan ayrıştır. Aynı ders: Muhamed/cycleStatus. Gate: TS freeze sonrası.
 
 **G3 — Unsaved-changes guard'ları (kayıp-veri UX)** · 🔵 Planlandı (2026-07-11 envanteri, owner istedi)
 Backdrop/Esc/✕ ile kapanan formlarda yazılan her şey sessizce gidiyor (owner'ın vakası: Products ekleme).
