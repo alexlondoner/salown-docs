@@ -12,6 +12,48 @@ repo'dan doğrulandı.
 
 ---
 
+## ✅ SONUÇ — GERÇEKLEŞEN (2026-07-12 gece, 00:15–01:30)
+
+Durum SSOT: ROADMAP.md. Buradaki blok = uygulama kaydı (ne planlandı → ne oldu).
+
+- **Strateji B onaylandı ve uygulandı** (owner, gece penceresi — salon kapalı).
+- **Commit `73ce8f8` + tag `v0.9.0-rc3` (LOKAL, push bekliyor):** src/ kopya (22
+  dosya), `tsconfig.build.json` **salt-emit** (`noCheck`+`noResolve` — §not),
+  `main: lib/index.js`, predeploy hook, `.gitignore` lib/, blanket `npm run
+  deploy` script'i kilitlendi (echo+exit 1).
+- **Plandan sapmalar (3):** (1) `identity.js` başındaki `// @ts-check`
+  `checkJs:false`'u eziyor → JSDoc shared-tip import'u önce TS2307, path
+  düzeltilince TS6059 (rootDir dışı emit girdisi) verdi; çözüm = build'i
+  salt-emit yapmak + src kopyasında typedef path'ini `../../../`e almak
+  (yorum satırı, runtime'a sıfır etki). Tip denetimi `npm run typecheck`'te
+  (0 hata). (2) İlk hatalı build `packages/shared/src/*.js` artıkları emit
+  etti — silindi (frontend .ts import'larını gölgeleyebilirdi). (3) tsc emit'i
+  JS'i pretty-print ediyor (bayt-aynı DEĞİL; boşluk/brace/tek-satır-if) —
+  parite kanıtı bayt yerine: 52/52 export + tam modül graf yüklemesi + testler.
+- **Kanarya:** `salownCleanupExpiredPending` deploy OK ama `functions:log`
+  penceresi gecikmeli/güvenilmez çıktı → gözlemlenebilir 2. kanarya
+  `salownBrevoWebhook` (curl 200 + doğru handler cevabı). Sonra 9 sıralı grup
+  (parsers→emails→notifications→marketing→bookings→tenant→admin→exit→
+  **money/stripe EN SON**) — sıfır silme önerisi, sıfır hata; us-central1 27
+  legacy yerinde.
+- **Smoke:** brevo 200 · `salownGetBusySlots` canlı cevap (param adı `dateStr`)
+  · salown.com/book/login/staff 200 · **hayalet-booking loyalty trigger uçtan
+  uca PASS** (2020 tarihli + `testMode:true` [gece 1'de Telegram/FCM
+  susturuldu] + gmail plus-alias → `loyaltyEmailSent` marker + flag reset,
+  yan etki 0, kayıt silindi). Script: scratchpad `rc3-ghost-smoke.cjs`
+  (Admin SDK, salown-panel serviceAccountKey).
+- **Telegram'lı gerçek-akış bilinçli 13'e bırakıldı** (rc3+1 ürün-doğrulama
+  zaten gerçek booking ile başlıyor).
+- **Rollback provası (§7) iki yönlü:** main→`index.js` redeploy 88 sn,
+  ileri-sarma 104 sn; her ikisinde webhook 200. Gerçek olay MTTR ≈ **90 sn**.
+- **Push bilinçli ERTELENDİ:** CI `npm run build` (ana app) + `deploy --only
+  hosting` (tümü) koşuyor ama `build:staff` KOŞMUYOR → staff-bundle committed
+  (eski) hâliyle giderdi; başka session'ın staff-bundle'ı working-tree'de
+  uncommitted. Push = o session commit'leyince / owner onayıyla.
+- **13'ü temiz geçince:** kök `.js` kopyaları + tag push + cleanup commit.
+
+---
+
 ## 0. Mevcut durum fotoğrafı (2026-07-11 doğrulandı)
 
 | Gerçek | Değer |

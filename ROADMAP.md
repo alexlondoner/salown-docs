@@ -345,6 +345,8 @@ v2 functions → her export bağımsız redeploy; refactor **saf taşıma, düş
 
 **✅ BLOKER KALKTI (2026-07-08):** index.js working-tree'de artık **temiz** (o session commit+push etmiş; `git diff` boş, unpushed yok). Refactor/TS başlayabilir. Sıra: TYPESCRIPT_MIGRATION_PLAN Faz 0 (sıfır-risk zemin) → Faz 1 modeller → Faz 2 split (stripe/bookings/checkout EN SON).
 
+**✅ rc3 CANLI (2026-07-12 gece, commit `73ce8f8` + tag `v0.9.0-rc3`):** functions src→lib pipeline-first (strateji B) — 52/52 fonksiyon yeni `lib/` runtime'ından deploy edildi (kanarya `salownCleanupExpiredPending` + `salownBrevoWebhook` → 9 sıralı grup, money/stripe en son; sıfır silme önerisi, us-central1 27 legacy dokunulmadı). Smoke: webhook 200, busy-slots callable, frontend 200'ler, hayalet-booking loyalty trigger uçtan uca (Brevo send + marker). Rollback provası iki yönlü, **MTTR ~88 sn**. Kod içeriği değişmedi; kök `.js` orijinalleri anında-rollback için yerinde (13'ü temiz geçince cleanup commit'i). Gerçekleşen kayıt: [RC3_RUNBOOK.md](RC3_RUNBOOK.md) sonuç bloğu. ⚠️ Commit+tag LOKAL — push bekliyor (staff-bundle uncommitted çakışması, owner kararı). KALAN: rc3+1 ürün-doğrulama (2026-07-13) → kök kopya cleanup → `.js→.ts` dosya-dosya (lib-diff kanıtlı) → v1.0.0.
+
 **I3 — Reporting pre-aggregation** · 🔵 (~100 salon, 1000'i beklemez)
 `Reports.jsx` client-side aggregation yapıyor (Firestore'dan çekip tarayıcıda `reduce`). Tenant × aylık booking büyüdükçe **~100 salonda tarayıcıda çöker** (1000'e kalmaz). **Yön:** `tenants/{id}/stats/{period}` pre-aggregated doc (booking trigger'ı veya scheduled job günceller) → Reports önce onu okur. Finance (Whitecross-only, contained) bu kapsamda değil.
 
