@@ -226,6 +226,14 @@ iOS'ta web push çalışmıyor → barberlar push alamıyor.
 npm install @capacitor/core @capacitor/cli @capacitor/ios && npx cap init && npx cap add ios
 ```
 
+**D3 — Staff App mobil stabilite: ekran sağa-sola kayıyor** · 🔵 Planlandı (2026-07-12, owner: "sabit durmuyor")
+Telefonda yatay drift var — muhtemelen geniş bir eleman (grid/tablo/uzun satır) body'yi taşırıyor.
+İş: (1) `src/staff/staff.css`'e `html,body{overflow-x:hidden}` + `#root` genişlik disiplini,
+(2) taşan elemanı DevTools ile bul (`* {outline}` tekniği ya da document.scrollWidth>innerWidth
+avcısı) ve kaynağında fix (max-width:100% / min-width:0), (3) gerçek cihazda doğrula.
+Viewport meta zaten doğru (`staff.html:5`, viewport-fit=cover). Deploy: `npm run build:staff` +
+`hosting:salown-staff` hedefli. Gate: freeze sonrası (2026-07-14+).
+
 **D2 — Staff App: Google/Apple sign-in + onboarding routing** · 🔵 Planlandı
 Login redesign ✅ canlı (animated hub); Google/Apple butonları **görsel var ama "coming soon"**. **Parçalar:**
 1. **Google provider** — Firebase Auth enable → `signInWithPopup(GoogleAuthProvider)`.
@@ -284,6 +292,13 @@ ConfirmDiscard + Drawer'a opsiyonel dirtyRef prop'u; Esc+backdrop birlikte). **F
 - **F3:** staff app Sheet'leri (mobilde yanlış dokunma).
 Düşük risk/bilinçli: merge modal, TemplatesLibrary (state parent'ta), Services editor + OnlineProfile
 announcements (açık Discard butonlu). Envanter detayı: memory `edit_log_salown` 2026-07-11.
+
+**G6 — salown.com landing mobile optimizasyonu** · 🔵 Planlandı (2026-07-12, owner istedi)
+Mevcut durum: viewport meta ✓, 10 adet @media (726 satır) — kısmen responsive ama sistematik mobil
+geçişi yok. İş: Chrome DevTools/gerçek cihaz görsel audit (hero, story-grid, demo, pricing, CTA,
+footer bölüm bölüm) → tap-target/font-scale/overflow fix listesi → uygula. ⚠️ TEK canlı kaynak
+`salown-app/hosting/index.html` (salown-site ÖLÜ/eski — orada düzenleme YAPMA); push=CI auto-deploy
+olduğundan freeze sonrası (2026-07-14+) ve tek commit'te.
 
 **G2 — SalownHub DNS** · 🔵 Phase 4
 `salown.web.app/app` → `hub.salown.com`. (`salown-staff.web.app` → `staff.salown.com` ✅ aktif.)
