@@ -269,6 +269,7 @@ Bkz memory `feedback-delete-superadmin-only`, `feedback-firestore-rules-safety`.
 - EeKurt legacy site → salown subdomain redirect
 - `categoryId` migration
 - Dead `isStaff` Firestore rule
+- **Barbers `cycleStatus` leave koruması + barber-audit** (2026-07-12, Muhamed vakası — INCIDENTS): on-leave üyenin kartındaki yeşil "✓ Activate" tek tıkla leave'i sessizce siliyor (`Barbers.tsx:358` — status'u ne olursa olsun active/passive'e çevirir + `leaveFrom/leaveUntil:null`, onay yok); barber status/leave değişiklikleri auditLogs'a YAZILMIYOR (kim/ne zaman izlenemedi). İş: (1) leave'deki üyede toggle'a confirm ("Muhamed is on leave until X — end leave and activate?"), (2) `BARBER_STATUS_CHANGED` audit kaydı. Gate: TS freeze sonrası (2026-07-14+).
 
 **G3 — Unsaved-changes guard'ları (kayıp-veri UX)** · 🔵 Planlandı (2026-07-11 envanteri, owner istedi)
 Backdrop/Esc/✕ ile kapanan formlarda yazılan her şey sessizce gidiyor (owner'ın vakası: Products ekleme).

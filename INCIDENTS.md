@@ -28,6 +28,22 @@ Her olay `## YYYY-MM-DD — kısa başlık` ile açılır, hemen altına **metad
 ```
 
 **Severity lejantı:** 🔴 Critical (canlı kesinti / veri-para / güvenlik) · 🟠 High (özellik kırık, geçici çözüm var) · 🟡 Medium (yanlış gösterim / kısmi) · 🟢 Low (tek ekran / kozmetik).
+
+## 2026-07-12 — Muhamed'in on-leave kaydı sessizce silindi (tek-tık "Activate")
+
+**Severity:** 🟡 Medium · **Owner:** Claude (gece session) · **Status:** 🟡 Open (veri düzeltilecek; guard fix TS-freeze sonrası, ROADMAP G1)
+
+**Impact:** Whitecross'ta Muhamed on-leave yapılmıştı; owner fark etti ki leave kaybolmuş (doc: `status:'active'`, `leaveFrom/leaveUntil:null`) — barber tekrar bookable göründü.
+**Root Cause:** `Barbers.tsx:358 cycleStatus` — durum ne olursa olsun (leave dahil) tek tıkla active/passive'e çevirir ve **her seferinde `leaveFrom/leaveUntil:null` yazar**; onay yok. Üstelik `_status!=='active'` üyelerde buton bilerek "unmissable yeşil ✓ Activate" (passive-karışıklığı fix'inin yan etkisi) → on-leave kartında da davetkâr tek-tık leave-silici. Alternatif yol (editörde status değiştirip kaydetme, `:313`) aynı sonucu verir.
+**Resolution:** Leave verisi owner'ın vereceği tarihlerle yeniden set edilecek (veri düzeltmesi). Kod fix'i freeze gereği 2026-07-14+ (ROADMAP G1).
+**Prevention:** (1) on-leave üyede toggle'a confirm modal ("X is on leave until Y — end leave?"), (2) `BARBER_STATUS_CHANGED` auditLogs kaydı — bu olayda **kim/ne zaman bulunamadı çünkü barber değişiklikleri loglanmıyor** (auditLogs sadece booking/finans).
+
+**Ne oldu / Teşhis:** Kural #7 gereği INCIDENTS tarandı (benzer yok). Admin SDK read-only ile doc fotoğrafı alındı: leave alanları null + status active = süre dolması DEĞİL (expiry doc'u yeniden yazmaz, status 'leave' kalırdı) → aktif üzerine-yazma. Yazan yollar grep'lendi: panel `cycleStatus` + editör kaydı; staff app barbers'a yazmıyor (tek updateDoc'u RescheduleSheet=bookings); functions barbers'a yazmıyor. rc3 ile İLGİSİZ (aynı gece ama kod içeriği değişmedi, functions barbers'a dokunmaz, panel push'u da bekliyor). auditLogs son 25 kayıt tarandı — barber olayı yok (loglanmıyor).
+
+**Dersler / Lessons Learned:**
+- "Görünür olsun" diye vurgulanan buton (yeşil Activate) yanlış durumda **davetkâr yıkıcı** olur — vurgu, durumun anlamına göre değişmeli (leave'de "End leave" de, Activate deme).
+- Tek tıkla durum + veri silen aksiyonlara (tarih alanı sıfırlama) confirm şart; toggle ≠ zararsız.
+- auditLogs kapsam boşluğu teşhisi kör bırakıyor: personel/rota değişiklikleri de loglanmalı.
 **Status lejantı:** ✅ Resolved · 🟡 Open (kısmi/takip var) · 🔴 Regressed (geri geldi — recurrence).
 **Owner:** düzeltmeyi yapan/sorumlu kişi. Bilinmiyorsa `—`, ama yeni kayıtlarda ZORUNLU (multi-session repo, "kime sorarım" cevabı).
 
