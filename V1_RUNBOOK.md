@@ -10,13 +10,10 @@
 
 ## FAZ A — Kapanış vidaları (yarım gün, önce bu)
 
-1. **Push + tag** (owner GO ile): working tree fotoğrafı → `73ce8f8` (rc3
-   pipeline) main'e push + `v0.9.0-rc3` tag push. Staff-bundle endişesi
-   ÇÖZÜLDÜ: CI predeploy iki bundle'ı da kaynaktan yeniden build ediyor
-   (firebase.json:6,63) → push staff'ı regress EDEMEZ. Working tree'deki
-   staff-bundle artifact kirini (D CyIL0mgg.js / ?? sBQBfyg0.js / M index.html)
-   O session commit'lemeli ya da owner "at gitsin" demeli — bizim commit'lerimiz
-   explicit-path, dokunmuyoruz.
+1. ✅ **Push + tag BİTTİ (12'si akşam, başka session):** rebase sonrası rc3
+   commit'i **`df08b9c`** (73ce8f8 geçersiz), tag `v0.9.0-rc3` yeni hash'te,
+   CI yeşil, tüm yüzeyler 200. Staff-bundle artifact kiri hâlâ working tree'de
+   (başka session'ın — DOKUNMA; CI predeploy sayesinde risk yok).
 2. **Testleri src'a taşı:** `*.test.js` 8 dosya şu an KÖK kopyaların yanında
    ve onları import ediyor — kök silinince kırılırlar. `git mv` ile
    `src/<modül>/` altına (relative import'lar aynen çalışır; build zaten
