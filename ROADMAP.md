@@ -402,6 +402,20 @@ Bugünkü kapsam SADECE booking-ops + finans + manuel puan (~25 tip; `logAudit` 
 
 ---
 
+### J · Marketplace & Discovery (🏪 · uzak ufuk, vizyon kilitli)
+
+**J1 — Trust Score: outcome-based salon ranking** · 🕓 Vizyon kilitli (ADR-016, 2026-07-12) — marketplace fazı başlayınca açılır
+salown.com consumer marketplace'inde salon sıralaması **iç Trust Score** ile: verified CHECKOUT
+(booking sayısı DEĞİL) · repeat-client oranı · no-show/cancel davranışı · rating tutarlılığı ·
+response güvenilirliği · calendar accuracy · longevity · profil tamlığı. İlke: **"reward outcomes,
+not activity"** — Fresha'nın sahte-booking gaming'ine yapısal panzehir (sahte checkout = sahte ciro
+= vergi + bozuk P/L → kendi cebini yakar; booking sistemi = muhasebe sistemi). Anti-gaming: client-identity
+dedup + ticket-size ağırlığı + zaman tutarlılığı; **cold-start rampası** (yeni salon gün-1
+sinyalleriyle başlar). Skor iç kullanım, public rozet DEĞİL. Öncül canlı örnek: converted-client
+metriği (channel-grabber). Tam spec: [DECISIONS.md ADR-016](DECISIONS.md).
+
+---
+
 ## 🧪 Test Listeleri → [TESTS.md](TESTS.md)
 Tüm test kayıtları tek yerde. Kapsam: 1) Firestore Rules (otomatik, `test-firestore-rules.py`, son ✅ **49/49** — G1-G4 dahil), 2) Güvenlik gate manuel (G1–G4 ✅ CANLI), 3) Stripe canlı, 4) Staff App, 5) Post-Class-A, 6) Busy-slot v2.
 
