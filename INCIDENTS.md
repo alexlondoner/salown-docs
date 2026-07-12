@@ -29,6 +29,23 @@ Her olay `## YYYY-MM-DD — kısa başlık` ile açılır, hemen altına **metad
 
 **Severity lejantı:** 🔴 Critical (canlı kesinti / veri-para / güvenlik) · 🟠 High (özellik kırık, geçici çözüm var) · 🟡 Medium (yanlış gösterim / kısmi) · 🟢 Low (tek ekran / kozmetik).
 
+## 2026-07-12 — Guru 3× "Payment setup failed" (whitecrossbarbers.com) — Stripe session hiç yaratılamadı
+
+**Severity:** 🟠 High (müşteri 3 kez ödeyemedi; kendi kendine çözüldü) · **Owner:** Claude (rc3 session) + owner · **Status:** 🟡 Open (kök neden = en-olası istemci-ortam; kesinleştirme log körlüğüne takıldı)
+
+**Impact:** Gerçek müşteri (Guru) whitecrossbarbers.com'dan 09:56–09:59 BST arası 3 kez book etmeye çalıştı (1×DEPOSIT, 2×FULL) — üçünde de ödeme ekranına hiç ulaşamadı. 4. deneme (~10:29, dükkanda, owner yanında) sorunsuz: ödedi, CHECKED_OUT £34.
+**Root Cause (en olası):** İstemci-ortam — akışın 3 aşamasından ilk ikisi çalıştı (race-check fail-open; **PENDING doc'ları Firestore'a yazıldı**), 3.sü düştü: `fetch('https://createcheckoutsession-…-uc.a.run.app')`. Kanıt: 3 doc'ta da `stripeSessionId` YOK (fonksiyon session yaratınca best-effort yazıyor) + Stripe dashboard'da session yok = fonksiyona hiç ulaşılamadı ya da anında hata. Aynı backend (rc3-sonrası, değişmeden) 30 dk sonra hem owner testinde hem Guru'nun dükkandaki denemesinde çalıştı → değişken ortam/ağ (ev wifi DNS filtresi/VPN/in-app browser `*.run.app` engeli tipik şüpheliler).
+**rc3 İLGİSİZ (kanıtlı):** source=Website → us-central1 legacy `createCheckoutSession` (rc3 europe-west2 salown codebase'ini değiştirdi, us-central1'e dokunmadı). Akıştaki tek salown fonksiyonu (`salownGetBusySlots` race-check) `.catch(()=>null)` ile fail-open VE başarılı 4. deneme aynı deploy'la çalıştı.
+**Resolution:** Kendiliğinden (ortam değişince). 3 PENDING, `salownCleanupExpiredPending` ile 15 dk'da `expired_pending` CANCELLED — sistem tasarlandığı gibi temizledi.
+**Prevention (freeze sonrası):** (1) `createCheckoutSession` catch'i booking doc'una `stripeSessionError:{ts,msg}` yazsın — "neden session yok" veriden okunur (bugün sessionId-yokluğundan çıkarsadık); (2) **log körlüğü giderilmeli:** `firebase functions:log` bu ortamda ~1-2 gün geride sayfa döndürüyor, Logging API'de salown-panel SA'ya izin yok (`roles/logging.viewer` verilebilir) — canlı olay anında fonksiyon logu OKUNAMIYOR; (3) popup zaten telefon numarası veriyor (iyi); retry-with-backoff eklenebilir.
+
+**Yan bulgular (aynı inceleme):** (a) **Cancel'lı 3 booking'e PUAN İŞLENMEDİ** — owner şüphesi kontrol edildi, loyalty alanları üçünde de yok; Guru 123 puan = 55 (21 Haz Booksy) + 68 (bugünkü gerçek checkout £34). Panelde farklı görünüyorsa display konusu, veri temiz. (b) **"Your spot is still warm" emaili OTOMATİK DEĞİL** — `sendAbandonedCart` onCall'ını çağıran tek yer panel `BookingDetailPanel.sendFinishBooking` (manuel recovery butonu); unpaid booking panelinde biri basmış. Gerçek otomasyonu ROADMAP C3'te zaten planlı. (c) Hazır teşhis aracı var: `checkBookingPayment` (kart reddi vs sayfa terki) — staff-auth'lu, session'ı OLAN unpaid'lerde kullanılır.
+
+**Dersler / Lessons Learned:**
+- Success-path marker (`stripeSessionId`) sayesinde "session hiç yaratılmadı"yı veriden kanıtlayabildik — failure-path marker'ı da olsaydı kök neden kesinleşirdi. İkisi birlikte tasarlanmalı.
+- Canlı müşteri olayında log erişimi = teşhis hızı. CLI'a güvenme; SA'ya logging.viewer ver.
+- PENDING→expired_pending→CANCELLED zinciri + fail-open race-check bugün doğru çalıştı — dokunma.
+
 ## 2026-07-12 — Muhamed'in on-leave kaydı sessizce silindi (tek-tık "Activate")
 
 **Severity:** 🟡 Medium · **Owner:** Claude (gece session) · **Status:** 🟡 Open (veri düzeltilecek; guard fix TS-freeze sonrası, ROADMAP G1)
