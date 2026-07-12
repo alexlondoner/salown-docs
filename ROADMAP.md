@@ -285,6 +285,17 @@ announcements (açık Discard butonlu). Envanter detayı: memory `edit_log_salow
 **G2 — SalownHub DNS** · 🔵 Phase 4
 `salown.web.app/app` → `hub.salown.com`. (`salown-staff.web.app` → `staff.salown.com` ✅ aktif.)
 
+**G4 — Haftalık Staff Wages Ledger (Finance, whitecross)** · 🔵 Planlandı (2026-07-12, owner istedi)
+Mevcut STAFF WAGES tablosu aylık; owner haftalık (Pzt–Paz, Pazar payday) devirli defter istiyor:
+her hafta = gün×wage hakediş | o hafta ödenen | önceki haftadan devir | kalan bakiye (running).
+Örnek doğrulandı (Arda): 29 Haz–5 Tem 4g £400 − £313 = £87 devir → 9 Tem £87 ödeme devri kapattı;
+6–12 Tem 6g £600 − £63.95 = £536.05 bakiye. **Veri modeli değişikliği YOK** — workingDays +
+shiftChanges + finance_payments + partnerConfig.startDate'ten türetilir; running balance olduğu
+için aylık/haftalık uyuşmazlığı da kalkar. UI: staff satırına expand (▼ haftalık breakdown,
+partner aylık breakdown kalıbı) + üstte toplam bakiye; Record Payment aynen. Edge: fazla ödeme →
+negatif devir ("peşin"), devam eden hafta "in progress" (bugün dahil, `dk<=today`).
+Gate: TS freeze sonrası (2026-07-14+). Kod: `Finance.tsx` (staff bloğu ~418-441 + kart ~1327).
+
 ---
 
 ### H · Onboarding & Super-Admin (🎫)
