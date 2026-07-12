@@ -29,6 +29,7 @@
 | [ADR-013](#adr-013--incident-kayıt-standardı-8-alan-template) | Incident kayıt standardı (8-alan template) | ✅ | 2026-07-02 |
 | [ADR-014](#adr-014--ask-salown--claude-haiku-45) | Ask salOWN = Claude Haiku 4.5 | ✅ | — |
 | [ADR-015](#adr-015--parser-mail-girişi--parse-inbox-hybrid-per-tenant-token-izolasyon) | Parser mail girişi = parse-inbox hybrid + per-tenant token izolasyon | ✅ | 2026-07-03 |
+| [ADR-016](#adr-016--marketplace-ranking--outcome-based-trust-score-aktivite-değil) | Marketplace ranking = outcome-based Trust Score, aktivite değil | 🕓 | 2026-07-12 |
 
 ---
 
@@ -161,6 +162,32 @@
 **Sonuç:** App-password'ü opsiyonel fallback'e indirir, parse-inbox tenant'larında **sıfır kimlik tutulur** → seçildikçe **T-b buharlaşır** (bkz ROADMAP T-b notu). Cross-tenant misroute **yapısal olarak imkânsız** (opak token + fail-closed). Gerçek-zamanlı parse (cron'dan iyi). ⚠️ Yeni tradeoff: tek inbound pipe = tek arıza noktası → **I1 parser canary** + sağlam servis şart. Sub-processor (mail servisi) GDPR listesine eklenir. İlk deneme: whitecross + herohairs (her biri ayrı token). Parser mantığı zaten raw-email string üzerinde çalışıyor (`extractPlainText`, `functions/index.js`) → IMAP yerine webhook'a bağlamak orta refactor.
 
 ---
+
+## ADR-016 — Marketplace ranking = outcome-based Trust Score (aktivite DEĞİL)
+**Durum:** 🕓 Proposed (gelecek — marketplace/discovery fazı) · **Tarih:** 2026-07-12
+
+**Bağlam:** Fresha benzeri pazaryerlerinde salonlar sıralamayı sahte booking'lerle game'liyor
+(aktivite sinyali ödüllendirilince proxy optimize ediliyor — Goodhart's Law). Owner, salOWN
+discovery'si için eBay/Amazon Buy Box felsefesini seçti: popülerlik değil birikmiş güven.
+**Karar:** Salon sıralaması **outcome tabanlı iç Trust Score** ile yapılır; ham booking sayısı
+ASLA sinyal olmaz. Sinyaller: verified completed appointment (CHECKOUT, booking değil) ·
+repeat-client oranı · no-show/cancel davranışı · rating tutarlılığı (zaman içinde) · response
+güvenilirliği · calendar accuracy · longevity · profil tamlığı. Skor İÇ kullanım (public
+"92/100" rozeti değil).
+**Salown'un yapısal avantajı:** OS olduğumuz için tam yolculuğu görüyoruz (booked→confirmed→
+arrived→checkout→loyalty→6 hafta sonra dönüş) — sadece booking gören platform bunu ölçemez.
+Ayrıca **sahte outcome kendi cebini yakar**: sahte checkout = sahte ciro = vergi + bozuk kâr/zarar
++ kayan wage hesabı (booking sistemi = muhasebe sistemi). Gaming'in cezası platformdan değil
+gerçeklikten gelir. Converted-client metriği (channel-grabber, 2026-07-07) aynı omurganın canlı
+ilk örneği.
+**Anti-gaming nüansları:** düşük-ticket sahte checkout'lara karşı distinct client identity
+(telefon/email dedup) + ticket-size ağırlığı + zaman-tutarlılığı; **cold-start adaleti** — yeni
+salon outcome'suz başlar → gün-1 kontrol edilebilir sinyallerle (profil, calendar accuracy,
+response) başlangıç rampası, yoksa zengin daha zengin olur.
+**Alternatifler:** Aktivite/recency ağırlıklı ranking (Fresha modeli) — sahte booking teşvik
+eder, elendi. Public trust rozeti — gaming hedefi yaratır, iç skor olarak kaldı.
+**Sonuç:** İlke: **"Reward outcomes, not activity."** Marketplace fazı başlarken bu ADR açılış
+spec'idir.
 
 ## Bakım
 - Yeni önemli karar → yeni ADR (bir sonraki numara). Bağlam/Karar/Alternatifler/Sonuç doldur, İçindekiler tablosuna satır ekle.
