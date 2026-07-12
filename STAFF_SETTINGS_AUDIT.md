@@ -23,7 +23,7 @@ Muhamed'in doc'u DOĞRU (`barber-1781007454543`: `status:'leave'`, `leaveFrom:'2
 | Yüzey | Neye bakar | Muhamed için sonuç (leave 14 Tem–19 Ağu) |
 |---|---|---|
 | **Dashboard grid** (`Dashboard.tsx:406`) | workingDays + shiftChanges + dayHours | ❌ Leave boyunca da GÖRÜNÜR (owner'ın şikayeti) |
-| **Panel formları** WalkIn/Booking/BlockTime (`getAvailableBarbersForDate`, `bookingUtils.ts:163`) | + status/leave tarih aralığı ✅ | ✅ TEK DOĞRU: 13 Tem'e kadar bookable, aralıkta gizli, 20 Ağu'da döner |
+| **Panel formları** WalkIn/Booking/BlockTime (`getAvailableBarbersForDate`, `bookingUtils.ts:163`) | status/leave tarih aralığı ✅ ama **shiftChanges'i OKUMAZ** | ⚠️ Leave aralığını doğru sayar AMA per-date override'lardan habersiz: off-gününde çalışmaya getirilen barber (örn. Muhamed 13 Tem `{open,close}` override'ı) form dropdown'larında GÖRÜNMEZ; markOffToday ile kapatılan barber formlarda görünmeye devam eder |
 | **Public BookingPage** (`BookingPage.tsx:396` `where('active','==',true)`) | sadece `active` boolean | ⚠️ İKİ YÖNLÜ YANLIŞ: leave girildiği AN online'dan düştü (14'ünü beklemedi) + 19 Ağu geçince de **kendiliğinden GERİ GELMEZ** (biri status'u elle 'active' yapana kadar; `active:false` doc'ta kalır) |
 | **Server reschedule** (`functions/src/index.js:1238` off-day guard) | shiftChanges + workingDays + dayHours | ❌ Leave sırasında müşteri email-linkiyle Muhamed'e RESCHEDULE EDEBİLİR (hayalet booking, 2026-06-29 incident'ının leave versiyonu) |
 | **Finance staff wages** (`Finance.tsx:425-432`) | workingDays + shiftChanges + startDate | 🔴 **PARA BUG'I:** leave'i bilmez → 14 Tem–19 Ağu arası Muhamed'e günlük £41.60 hakediş SAYMAYA DEVAM EDER. ~32 planlı gün ≈ **£1,331 hayalet maaş** tahakkuk eder |
@@ -55,6 +55,15 @@ Barber doc + çevresi, üst üste binen/yarışan alanlar:
    auditLogs'a yazılmıyor** (kim/ne zaman izlenemiyor).
 7. Ayarların COĞRAFYASI dağınık: müsaitlik Barbers sayfasında, wage/startDate Finance ⚙'de,
    izinler Settings'te, renk/sıra Barbers'ta — "bir çalışanın her şeyi" tek yerde görünmüyor.
+8. **Formlar shiftChanges'ten habersiz (2026-07-13 vakasıyla kanıtlandı):** `getAvailableBarbersForDate`
+   (`bookingUtils.ts:163`) yalnız status/leave/workingDays/dayHours okur — `shiftChanges` YOK. Oysa
+   Barbers sayfasının kendi quick-action'ları ("bring in today" `Barbers.tsx:383` / "mark off today"
+   `:371`) tam da bu override'ları yazıyor: **ürünün kendi özelliği, kendi formları tarafından
+   görülmüyor.** Grid + Finance override'ı sayar, formlar saymaz → aynı barber grid'de var,
+   walk-in dropdown'ında yok. Resolver (madde 4A) bunu da kapsamalı: öncelik `shiftChanges > leave > ...`.
+9. **İKİ ayrı "members" ekranı:** Team Members (Barbers sayfası, roster+quick actions) vs
+   Settings → Members (per-date shift override editörü). Owner 2026-07-13 rotasını girmek için
+   ikisi arasında gidip geldi; hangi ayar nerede belli değil. Staff hub (4F) bunu tek ekrana indirir.
 
 ## 4 · Hedef model (öneri)
 
