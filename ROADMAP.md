@@ -36,8 +36,11 @@
 
 **Tek gerçek kapı:** aşağıdaki **Pre-Scale Hardening Gate**. Tenant #4'ü almadan önce Tier 1 kapanmalı — pilotta zararsız kısayollar, ölçekte platform politikası olur.
 
-### 🎯 Sıradaki oturum — ÖNCELİK (2026-07-03 sonu)
-> **H4 — Parser mail girişi (parse-inbox)** öncelikli işaretlendi (kullanıcı kararı 2026-07-03). Karar verildi (ADR-015); yarın uygulamaya başlanacak.
+### 🎯 Sıradaki oturum — ÖNCELİK (2026-07-12 sonu, TS migration kapanışı)
+> **rc3 ✅ CANLI (2026-07-12 gece) + rc3+1 ürün-doğrulama ✅ GEÇTİ (2026-07-12):** owner uçtan uca test etti (online booking→push→email→reschedule→cancel "sağlam"), gerçek gün operasyonu sorunsuz (walk-in/checkout/payday), loyalty email gerçek müşteriye gitti (Guru, `loyaltyEmailSent:true`), function loglarında sıfır hata. **"Salon fark etti mi?" → HAYIR.** Parser'a Pazar günü iş düşmedi — ilk aggregator booking'i geldiğinde kendiliğinden doğrulanır (scheduler temiz).
+> **Salı 14 Tem sırası:** (1) **v1.0.0 tag** — migration kapanış; (2) **G5 adım 1** Finance leave filtresi (Muhamed izni 14'ünde başlıyor; 19 Tem payday'den önce ŞART); (3) **G1 hızlı üçlü** (email CTA butonları · week-view source etiketi · push'a tarih); (4) **G6+D3 mobil paketi** (landing + staff app). Sonrası: H4'e dönüş.
+>
+> *(Önceki öncelik, 2026-07-03):* **H4 — Parser mail girişi (parse-inbox)** — karar ADR-015, webhook yazıldı (`863e3db`), parse dispatch kaldı. TS freeze bitince fix paketinin ardından kaldığı yerden.
 > **Başlangıç noktası (net):** ben `salownInboundEmail` webhook'unu yazıp deploy → kullanıcıya 3 değer (webhook URL + Brevo inbound MX host + whitecross/herohairs token adresleri) → kullanıcı GoDaddy'de 1 MX (`parse.salown.com`) + Brevo Inbound Parsing + whitecross bildirim adresini token'a çevirir → whitecross'ta test.
 > **Güvence:** EKLEME, değiştirme değil — eski `salownParseEmails` IMAP cron'a dokunulmaz, paralel çalışır, `externalId`+tombstone dedup çakışmayı önler, downstream trigger'lar (email/FCM/telegram) ingestion yolunu umursamaz. Deploy anında sıfır davranış değişikliği. Tenant-tenant kademeli + geri alınabilir. **I1 canary ile birlikte** kurulmalı (tek pipe = tek arıza).
 > Detay: **H4** (aşağıda) + [DECISIONS.md](DECISIONS.md) ADR-015.
