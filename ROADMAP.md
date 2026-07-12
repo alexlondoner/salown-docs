@@ -266,6 +266,7 @@ Bkz memory `feedback-delete-superadmin-only`, `feedback-firestore-rules-safety`.
 ### G · Küçük işler & Altyapı
 
 **G1 — Minor** · 🔵
+- **Staff app push notification'da TARİH yok** (2026-07-12 rc3+1 testinde owner fark etti): FCM body `notifications/index.js:133` `[client, time, service]` — saat var, gün yok → ileri tarihli booking'de hangi gün belli değil. Fix: `startTime`'dan Europe/London kısa tarih ("Mon 14 Jul") ekle (⚠️ walk-in'lerde `date` field'ı YOK, startTime'dan türet — FIRESTORE_SCHEMA quirk); bugünse tarihsiz bırakılabilir. Deploy hedefli `functions:salown:...`.
 - **whitecross-site `parseBookingEmails` bounce-checker DOĞUŞTAN KIRIK** (2026-07-12 rc3+1 log taramasında bulundu): `parseBounceEmails` (2026-06-07, `4d529b12`) `fetchRecentMessages`/`extractPlainText`/`extractHtmlAsText` kullanıyor ama bunlar `emailParsers.js`'ten hiç export/import edilmemiş → scheduler 5 dk'da bir `ReferenceError`, loyalty bounce flag'leri HİÇ yazılmadı. Fix: 3 helper'ı export + require'a ekle; deploy HEDEFLİ (`functions:parseBookingEmails`, us-central1 legacy — blanket deploy YASAK). rc3 ile İLGİSİZ (ayrı codebase, hata 5 haftadır var).
 - EeKurt legacy site → salown subdomain redirect
 - `categoryId` migration
