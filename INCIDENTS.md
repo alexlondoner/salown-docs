@@ -51,7 +51,9 @@ Her olay `## YYYY-MM-DD — kısa başlık` ile açılır, hemen altına **metad
 
 ## 2026-07-12 — Muhamed'in on-leave kaydı sessizce silindi (tek-tık "Activate")
 
-**Severity:** 🟡 Medium · **Owner:** Claude (gece session) · **Status:** 🟡 Open (veri düzeltilecek; guard fix TS-freeze sonrası, ROADMAP G1)
+**Severity:** 🟡 Medium · **Owner:** Claude (gece session) · **Status:** 🟡 Open (veri ✅ yeniden set edildi 2026-07-12: status:'leave', 14 Tem–19 Ağu; guard fix TS-freeze sonrası, ROADMAP G1 → G5 şemsiyesi)
+
+**Güncelleme (2026-07-12 öğleden sonra):** Owner leave'i yeniden girdi ama Muhamed grid'de görünmeye devam etti → tam denetim yapıldı: müsaitlik mantığı 5 yüzeyde 5 farklı — grid leave'i hiç okumuyor, BookingPage `active` boolean'ına takılı (izin bitince otomatik dönmez), server reschedule leave'e izin veriyor, **Finance leave günlerini saymaya devam ediyor (~£1,331 hayalet maaş riski, 14 Tem'den önce fix önerilir)**. Envanter + hedef model + sıra: [STAFF_SETTINGS_AUDIT.md](STAFF_SETTINGS_AUDIT.md), ROADMAP G5.
 
 **Impact:** Whitecross'ta Muhamed on-leave yapılmıştı; owner fark etti ki leave kaybolmuş (doc: `status:'active'`, `leaveFrom/leaveUntil:null`) — barber tekrar bookable göründü.
 **Root Cause:** `Barbers.tsx:358 cycleStatus` — durum ne olursa olsun (leave dahil) tek tıkla active/passive'e çevirir ve **her seferinde `leaveFrom/leaveUntil:null` yazar**; onay yok. Üstelik `_status!=='active'` üyelerde buton bilerek "unmissable yeşil ✓ Activate" (passive-karışıklığı fix'inin yan etkisi) → on-leave kartında da davetkâr tek-tık leave-silici. Alternatif yol (editörde status değiştirip kaydetme, `:313`) aynı sonucu verir.

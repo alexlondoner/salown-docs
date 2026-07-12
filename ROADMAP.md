@@ -286,6 +286,17 @@ announcements (açık Discard butonlu). Envanter detayı: memory `edit_log_salow
 **G2 — SalownHub DNS** · 🔵 Phase 4
 `salown.web.app/app` → `hub.salown.com`. (`salown-staff.web.app` → `staff.salown.com` ✅ aktif.)
 
+**G5 — Staff Availability & Settings Overhaul** · 🔴 Öncelikli (2026-07-12 denetimi, owner: "staff settings tam bir kaos")
+Muhamed on-leave vakası denetimi: "barber X gününde müsait mi?" sorusuna **5 yüzey 5 farklı cevap**
+veriyor (Dashboard grid leave'i HİÇ okumaz → izindeki barber görünür; BookingPage `active` boolean'a
+takılı → leave girilince ERKEN düşer + izin bitince GERİ GELMEZ; server reschedule leave'e izin verir
+→ hayalet booking; **Finance leave günlerini saymaya devam eder ≈ £1,331 hayalet maaş riski**; staff
+app habersiz). Tam envanter + hedef model (tek `getBarberAvailability` resolver her yüzeyde + `active`'in
+kaynaklıktan çıkması + Finance leave filtresi + leave lifecycle + Staff hub UX) + 6 adımlı uygulama
+sırası: **[STAFF_SETTINGS_AUDIT.md](STAFF_SETTINGS_AUDIT.md)**. ⚠️ **Adım 1 (Finance leave filtresi, S boy)
+Muhamed'in izni başlamadan (14 Tem) alınmalı — para bug'ı.** G1 (leave-silme guard) ve G4 (haftalık
+ledger) bu şemsiyenin altına oturur.
+
 **G4 — Haftalık Staff Wages Ledger (Finance, whitecross)** · 🔵 Planlandı (2026-07-12, owner istedi)
 Mevcut STAFF WAGES tablosu aylık; owner haftalık (Pzt–Paz, Pazar payday) devirli defter istiyor:
 her hafta = gün×wage hakediş | o hafta ödenen | önceki haftadan devir | kalan bakiye (running).
