@@ -322,7 +322,7 @@ sırası: **[STAFF_SETTINGS_AUDIT.md](STAFF_SETTINGS_AUDIT.md)**. ⚠️ **Adım
 Muhamed'in izni başlamadan (14 Tem) alınmalı — para bug'ı.** G1 (leave-silme guard) ve G4 (haftalık
 ledger) bu şemsiyenin altına oturur.
 
-**G4 — Haftalık Staff Wages Ledger (Finance, whitecross)** · 🔵 Planlandı (2026-07-12, owner istedi)
+**G4 — Haftalık Staff Wages Ledger (Finance, whitecross)** · ✅ CANLI (2026-07-13, `1405020` → CI). Staff adına tık → all-time haftalık defter (Pzt–Paz; gün×wage | ödenen | devir | running balance; in-progress haftası işaretli; negatif=PREPAID; izin günleri G5.1 kuralıyla hariç). Matematik canlı veriyle kuruşuna doğrulandı (Arda £87-devir örneği birebir). Veri modeli değişmedi — salt türetim.
 Mevcut STAFF WAGES tablosu aylık; owner haftalık (Pzt–Paz, Pazar payday) devirli defter istiyor:
 her hafta = gün×wage hakediş | o hafta ödenen | önceki haftadan devir | kalan bakiye (running).
 Örnek doğrulandı (Arda): 29 Haz–5 Tem 4g £400 − £313 = £87 devir → 9 Tem £87 ödeme devri kapattı;
