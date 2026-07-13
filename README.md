@@ -47,7 +47,7 @@ Today, salOWN runs live in London salons and is improved continuously using real
 
 ## Technology
 
-* Frontend: React + Vite (`.jsx`)
+* Frontend: React + Vite — **TypeScript, strict** (v1.0.0, 2026-07-13; see [ARCHITECTURE_V2](ARCHITECTURE_V2.md))
 * Backend: Firebase (Auth + Firestore + Functions, `havuz-44f70`, `europe-west2`)
 * Multi-tenant architecture — all tenant data under `tenants/{tenantId}/...`; `tenantId` in the Firebase custom claim
 
