@@ -320,6 +320,7 @@ olduğundan freeze sonrası (2026-07-14+) ve tek commit'te.
 `salown.web.app/app` → `hub.salown.com`. (`salown-staff.web.app` → `staff.salown.com` ✅ aktif.)
 
 **G5 — Staff Availability & Settings Overhaul** · 🔴 Öncelikli (2026-07-12 denetimi, owner: "staff settings tam bir kaos")
+**2. GERÇEK KURBAN (2026-07-13, HeroHairs):** owner Salı'yı "her yerden" açtı (workingDays ✓ + shift-override ✓) ama `dayHours.Tuesday.closed:true` hiçbir yüzeyden temizlenmedi → walk-in "no barbers available" (`bookingUtils.ts:171` eler). Tek-alan veri düzeltmesiyle çözüldü (closed→false, admin SDK). Adım 2'ye ek kural: **workingDays'e gün eklenince dayHours[gün].closed OTOMATİK temizlenmeli** (çelişkili durum yazılamaz olmalı) — resolver'la birlikte.
 Muhamed on-leave vakası denetimi: "barber X gününde müsait mi?" sorusuna **5 yüzey 5 farklı cevap**
 veriyor (Dashboard grid leave'i HİÇ okumaz → izindeki barber görünür; BookingPage `active` boolean'a
 takılı → leave girilince ERKEN düşer + izin bitince GERİ GELMEZ; server reschedule leave'e izin verir
