@@ -29,6 +29,20 @@ Her olay `## YYYY-MM-DD — kısa başlık` ile açılır, hemen altına **metad
 
 **Severity lejantı:** 🔴 Critical (canlı kesinti / veri-para / güvenlik) · 🟠 High (özellik kırık, geçici çözüm var) · 🟡 Medium (yanlış gösterim / kısmi) · 🟢 Low (tek ekran / kozmetik).
 
+## 2026-07-13 — dailyFirestoreBackup her gece sessizce fail — günlük yedek hiç alınmamış
+
+**Severity:** 🟠 High (veri-kaybı senaryosunda yedek YOKTU; canlı etki yok) · **Owner:** Claude + owner onayı · **Status:** ✅ Resolved (2026-07-13 akşam — IAM verildi + canlı export doğrulandı)
+
+**Impact:** Scheduled 03:00 Londra backup'ı deploy edildiğinden beri her gece "The caller does not have permission" ile düşüyordu → `firestore-backups/` altında hiçbir gece yedeği yoktu. Sessiz risk: Firestore'da toplu veri kazası olsaydı dönülecek nokta yoktu.
+**Root Cause:** İki IAM izni hiç verilmemişti: (1) fonksiyonun runtime SA'sı (`1050766582653-compute@developer.gserviceaccount.com`) `datastore.exportDocuments` çağıramıyordu — proje-seviyesi `roles/datastore.importExportAdmin` yoktu; (2) export'u fiilen yazan Firestore service agent'ın (`service-1050766582653@gcp-sa-firestore.iam.gserviceaccount.com`) hedef bucket'ta yazma izni yoktu. Kod doğruydu (koddaki yorum zaten izni belgeliyordu) — kurulum adımı hiç yapılmamıştı.
+**Resolution:** Owner onayıyla ("hallet hemen") iki izin REST API üzerinden verildi (gcloud yok — firebase CLI OAuth token'ı ile `cloudresourcemanager` `setIamPolicy` + Storage bucket IAM PUT; script scratchpad `fix_backup_iam.py`). Doğrulama: Cloud Scheduler job'ı (`firebase-schedule-dailyFirestoreBackup-europe-west2`) elle `:run` edildi → ~10 sn'de `gs://havuz-44f70.firebasestorage.app/firestore-backups/2026-07-13/` doldu, `overall_export_metadata` yazıldı = export TAMAM. Kod değişikliği yok.
+**Prevention:** (1) Bir sonraki gece cron'u aynı izinlerle geçer — 14 Tem sabahı `firestore-backups/2026-07-14/` var mı kontrol et; (2) fonksiyona failure-alarm eklenebilir (catch→`notifyTenant`/mail — bugüne kadar sessiz ölmesinin nedeni alarmsızlık); (3) 30-gün lifecycle silme kuralı hâlâ kurulmadı (koddaki yoruma rağmen) — yedekler birikir, ayrı küçük iş.
+
+**Dersler / Lessons Learned:**
+- "Scheduled fonksiyon deploy edildi" ≠ "çalışıyor" — IAM gerektiren fonksiyonlar deploy sonrası EN AZ BİR başarılı run kanıtıyla kapatılmalı (rc3 smoke listesine scheduled fn'ler dahil edilmeli).
+- Sessizce fail eden gece işleri log taramasına kadar görünmez — kritik cron'lara failure-path alarmı şart (Guru olayındaki success/failure-marker dersiyle aynı sınıf).
+- gcloud kurulu olmasa da firebase CLI OAuth token'ı ile GCP REST API'leri (IAM/Scheduler/Storage) tam çalışıyor — read-logs-oauth deseninin yazma-tarafı eşi.
+
 ## 2026-07-12 — Guru 3× "Payment setup failed" (whitecrossbarbers.com) — Stripe session hiç yaratılamadı
 
 **Severity:** 🟠 High (müşteri 3 kez ödeyemedi; kendi kendine çözüldü) · **Owner:** Claude (rc3 session) + owner · **Status:** ✅ Resolved (2026-07-12 ~13:00: owner GH Pages **Enforce HTTPS**'i açtı; curl doğrulandı — apex+www `http://` → **301** → https 200. Hata sınıfı kalıcı kapandı.)
