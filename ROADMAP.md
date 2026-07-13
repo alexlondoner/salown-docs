@@ -367,6 +367,7 @@ Vetted huni: millet self-signup yerine **demo talep etsin → biz bakıp onaylay
 
 **H3 — super-admin panel genel** · 🟡 Kısmen
 Sayfalar: Overview · **Applications** (✅ H2 P3 — başvuru onay/red + tenant maintenance) · Tenants (yayın-onayı ✅ `salownReviewProfile`) · Analytics · AuditLog · Infrastructure · OnboardImport (`salownManualImport`) · Settings. **Kalan:** cross-tenant user/izin yönetimi (= **E1**), tenant metrik derinleştirme, Billing sayfası (placeholder).
+- ✅ **H3b — Owner login/aktivasyon görünürlüğü CANLI (2026-07-13, `salown-admin.web.app`).** Karar: login-log YAZMIYORUZ (mükerrer + write maliyeti) — Firebase Auth'un yerleşik `createdAt`/`lastSignInTime`/`lastRefreshTime`/`passwordHash` metadata'sını yüzeye çıkarıyoruz. Yeni super-admin-only callable **`adminGetOwnerActivity`** (`functions/src/index.ts`, Salown `5fb26e9`, `auth.listUsers()`; deploy `firebase deploy --only functions:salown:adminGetOwnerActivity`). salownadmin `Tenants.jsx` (JSX): "Owner Login" sütunu/rozet (`f4aee2b`) + tenant çekmecesinde aktivasyon zaman çizelgesi + Tenants üstünde "X owner hiç giriş yapmadı" özeti/filtre (`b424aeb`). ⚠️ super-admin ayrı repo → adminGetOwnerActivity Salown functions'ta yaşar. Bkz [[edit-log-salown]].
 
 **H3a — Analytics doğruluk pass'i** · ✅ **DONE (2026-06-30, CANLI · admin.salown.com)**
 Analytics sayfası gerçek veriyi düzgün yansıtıyor (doğrulandı 2026-07-02: kaynak dosyalarla senkron).
