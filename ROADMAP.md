@@ -292,6 +292,7 @@ Bkz memory `feedback-delete-superadmin-only`, `feedback-firestore-rules-safety`.
 - ✅ **Week-view source etiketi sağ ALTA alındı** (2026-07-13, `0d974f3` CANLI): `Dashboard.tsx` etiket `top:4`→`bottom:4`, isimle çakışma bitti (G1 hızlı üçlü).
 - ✅ **Staff push'a Londra kısa tarihi eklendi** (2026-07-13, `0d974f3` CANLI): FCM body'ye `startTime`'dan Europe/London "Mon 14 Jul" (walk-in'de `date` field'ı yok → startTime'dan türetildi) (G1 hızlı üçlü).
 - **whitecross-site `parseBookingEmails` bounce-checker DOĞUŞTAN KIRIK** (2026-07-12 rc3+1 log taramasında bulundu): `parseBounceEmails` (2026-06-07, `4d529b12`) `fetchRecentMessages`/`extractPlainText`/`extractHtmlAsText` kullanıyor ama bunlar `emailParsers.js`'ten hiç export/import edilmemiş → scheduler 5 dk'da bir `ReferenceError`, loyalty bounce flag'leri HİÇ yazılmadı. Fix: 3 helper'ı export + require'a ekle; deploy HEDEFLİ (`functions:parseBookingEmails`, us-central1 legacy — blanket deploy YASAK). rc3 ile İLGİSİZ (ayrı codebase, hata 5 haftadır var).
+- **salOWN terms & privacy sayfaları YOK** (2026-07-13 loyalty-terms denetiminde bulundu): landing footer'daki Terms/Privacy linkleri `hosting/index.html:648-649` `href="#"` (ölü) + cookie banner "Learn more" da `#`. Whitecross tenant tarafı çözüldü (terms.html Loyalty Programme bölümü) ama platform olarak salOWN'un kendi ToS/Privacy sayfası yok — tenant onboarding ölçeklenmeden yazılmalı (SaaS ToS + GDPR privacy policy + loyalty programı çerçeve şartları).
 - EeKurt legacy site → salown subdomain redirect
 - `categoryId` migration
 - Dead `isStaff` Firestore rule
@@ -438,6 +439,11 @@ Tüm test kayıtları tek yerde. Kapsam: 1) Firestore Rules (otomatik, `test-fir
 ---
 
 ## ✅ Tamamlananlar (arşiv)
+
+### 🗓️ 2026-07-13 — CANLI
+| İş | Detay |
+|----|-------|
+| **Loyalty programı yasal şartları (no-cash-value)** | Denetim bulgusu: hiçbir yerde "puanlar nakde çevrilemez / sadece hizmetlerde" ibaresi yoktu. (1) `emailTemplates.ts` (`2636d24`, push + `salownSendLoyaltyEmail`+`salownSendManualLoyaltyAdjustmentEmail` targeted deploy): loyalty receipt + points-update maillerine "Points have no cash value, are non-transferable and can only be redeemed against services at {salon}" satırı — tenant-agnostic. (2) whitecross-site (`5fc48b42`→rebase `204c88bd`, saas hosting deploy, canlı doğrulandı): `terms.html`'e ⭐ Loyalty Programme bölümü (no cash value, services-only, devredilemez, tip'ler puan kazandırmaz, hata/refund'da geri alma, programı değiştirme hakkı + "points do not currently expire" — maildeki "never expire" ile tutarlı), `loyalty.html` How It Works altına terms linkli not. **AÇIK KALAN:** salOWN landing footer'daki Terms/Privacy linkleri hâlâ `href="#"` (salOWN'un kendi terms sayfası yok) — bkz G. |
 
 ### 🗓️ 2026-07-03 — CANLI
 | İş | Detay |

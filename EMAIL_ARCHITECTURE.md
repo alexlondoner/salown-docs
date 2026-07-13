@@ -24,6 +24,15 @@ hepsi kapsanır. Geri almak için tenantId'yi sabitten çıkar.
 > okunur. (İstisna: `sendMarketingEmail` marketing kampanyaları hâlâ tenant Gmail'inden gider,
 > ROADMAP #7b tasarımı.)
 
+### Loyalty maillerinde no-cash-value şartı (2026-07-13)
+Loyalty receipt (`buildLoyaltyReceiptHtml`) ve manuel puan güncellemesi (`buildLoyaltyUpdateHtml`)
+şablonlarının earn-rate şeridi altında sabit satır: *"Points have no cash value, are
+non-transferable and can only be redeemed against services at {salonName}."* (`2636d24`).
+Tenant-agnostic — link yok (tenant'a özel terms URL'i şablonda bilinmiyor). Whitecross'un
+insan-okur şartları: whitecrossbarbers.com/terms.html ⭐ Loyalty Programme bölümü.
+⚠️ Tutarlılık kuralı: cancel maili "your points are safe and never expire" diyor → terms'te
+"points do not currently expire" yazıldı; expiry eklenecekse İKİSİ birden değişmeli.
+
 ### Member → double-points campaign GÖSTERİLMEZ (2026-06-25)
 `client.isMember === true` olan müşteriye giden hiçbir mailde double-points/campaign bloğu çıkmaz
 (zaten standing discount alıyorlar). Bastırma data seviyesinde: confirmation trigger
