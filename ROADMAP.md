@@ -237,13 +237,12 @@ Owner "app yavaş + haftalık/dün göremiyorum + emojiler güzel değil" → te
 - Doğrulama: strict typecheck + `build:all` temiz; `main`'e rebase (diğer session strict migration üstüne çakışmasız); staff-bundle commit'li (deploy.yml onu rebuild etmiyor).
 - **AYRI kalan:** D3 (yatay drift/overflow bug) bu iş kapsamında DEĞİL — hâlâ açık. D1 (Capacitor native push) sıradaki.
 
-**D3 — Staff App mobil stabilite: ekran sağa-sola kayıyor** · 🔵 Planlandı (2026-07-12, owner: "sabit durmuyor")
-Telefonda yatay drift var — muhtemelen geniş bir eleman (grid/tablo/uzun satır) body'yi taşırıyor.
-İş: (1) `src/staff/staff.css`'e `html,body{overflow-x:hidden}` + `#root` genişlik disiplini,
-(2) taşan elemanı DevTools ile bul (`* {outline}` tekniği ya da document.scrollWidth>innerWidth
-avcısı) ve kaynağında fix (max-width:100% / min-width:0), (3) gerçek cihazda doğrula.
-Viewport meta zaten doğru (`staff.html:5`, viewport-fit=cover). Deploy: `npm run build:staff` +
-`hosting:salown-staff` hedefli. Gate: freeze sonrası (2026-07-14+).
+**D3 — Staff App mobil stabilite: ekran sağa-sola kayıyor** · ✅ CANLI `4f1bd13` (2026-07-13, owner: "sabit durmuyor")
+Kök neden: root'ta (`html,body,#staff-root`) ve app kabuğunda yatay taşma kısıtı yoktu → herhangi bir çocuk eleman body'yi taşırıp drift üretebiliyordu. **Kabuk seviyesinde 3-katman clamp** (belirli tek elemanı avlamak yerine — daha dayanıklı):
+- `staff.css` `html,body,#staff-root` → `width/max-width:100%` + `overflow-x:hidden`
+- `StaffRouter` app shell `<div>` + `<main>` → `overflowX:hidden` + width clamp
+- Stat kartları hâlâ **kendi** `overflowX:auto` satırlarında kayıyor (özellik bozulmadı); header + BottomNav zaten `left:0;right:0` viewport-sabit (taşma kaynağı değil).
+Deploy: `build:staff` + staff-bundle commit'li (`staff-Bsdo45HX.js`), main push → CI hosting deploy. Gerçek cihaz doğrulaması owner'a bırakıldı.
 
 **D2 — Staff App: Google/Apple sign-in + onboarding routing** · 🔵 Planlandı
 Login redesign ✅ canlı (animated hub); Google/Apple butonları **görsel var ama "coming soon"**. **Parçalar:**
