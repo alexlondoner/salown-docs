@@ -68,14 +68,20 @@ firebase deploy --only firestore:rules
 
 ## whitecross-site Deploy
 
+**⚠️ 2026-07-12'den beri whitecrossbarbers.com = Firebase Hosting** (`whitecrossbarbers-saas`
+sitesi; GH Pages KAPALI, repo private, GitHub push siteyi GÜNCELLEMEZ). DNS GoDaddy →
+apex A `199.36.158.100`, www CNAME `whitecrossbarbers-saas.web.app`, Enforce eşdeğeri
+http→301 Firebase'de otomatik. Public site deploy:
 ```bash
 cd ~/Desktop/alex/whitecross-site
-# deploy.sh mevcut
+firebase deploy --config firebase.saas.json --only hosting --project havuz-44f70
 ```
+Panel/staff/owner siteleri için `deploy.sh` (interaktif seçim) durur.
 
-Whitecross functions deploy:
+Whitecross functions deploy — **ASLA blanket `--only functions` YAZMA** (salown
+codebase'inin 52 fonksiyonunu silmeyi önerir; bkz functions-deploy-gotcha):
 ```bash
-firebase deploy --only functions --project havuz-44f70
+firebase deploy --only functions:FN_ADI --project havuz-44f70
 ```
 
 ## Kritik Kural: Veri Silme
