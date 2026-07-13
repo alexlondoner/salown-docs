@@ -240,6 +240,16 @@ iOS'ta web push çalışmıyor → barberlar push alamıyor.
 npm install @capacitor/core @capacitor/cli @capacitor/ios && npx cap init && npx cap add ios
 ```
 
+**D5 — Staff App walk-in redesign: Booksy-tarzı sepet + kalıcı state + iOS drift kök-neden fix** · ✅ CANLI `7f46858` (2026-07-14 push→CI, staff.salown.com yeni bundle doğrulandı)
+Spec: `salown-app/docs/STAFF-CHECKOUT-BOOKSY-REDESIGN.md`. Owner referansı Fresha screenshot'ları — birebir kopya DEĞİL ("salOWN akışı bozulmasın"). Bkz [[edit-log-salown]].
+- **State kaybı fix:** yeni `WalkInFlow.tsx` — NewBookingSheet İÇİNDE `cart→pay` iki adım, hiçbir şey unmount olmaz (tab değişiminde de `display:none` ile mounted kalır); client+kalemler+saat+berber navigasyonda korunur.
+- **Orphan booking fix:** booking SADECE Confirm payment'ta yazılır (`createWalkIn`→`checkoutBooking`); abandon = sıfır yazma. "Save without payment" eski kaydet-sonra-öde yolu olarak durur. Checkout create'ten sonra patlarsa "saved unpaid" toast + duplicate-create koruması.
+- **Sepet:** çoklu kalem (Services+Extras+**Products** — ürünler staff walk-in'de ilk kez satılabiliyor), aranabilir picker, qty stepper. Base servis = `booking.price` (tek birim), fazlası `soldAddOns`/`soldProducts` → loyalty puanı çift saymaz. Products-only sepet → `createProductSale` (takvim bloklamaz).
+- **Saat:** default "Now" chip + 5dk hassas seçim; dokunulmadıysa ödeme yolunda eski süre-kadar-backdate kuralı aynen korunur.
+- **iOS "sağa-sola kayma" GERÇEK kök neden:** `staff.html` viewport'ta `maximum-scale` yoktu → <16px input focus'ta iOS zoom+yana pan (D3'ün overflow clamp'leri bunu çözemezdi). Fix: `maximum-scale=1, user-scalable=no` + Sheet `touch-action:pan-y`/`overscroll-behavior:contain` + drag yalnız scrollTop 0'da başlar.
+- Yan işler: `ClientSearch`/`BarberChip` → components/; `staff/lib/walkinTime.ts` + `staff/lib/bookingConflict.ts` (appointment yolu da kullanır); `createWalkIn` addOns qty sayar; `createProductSale` opsiyonel tip/discount/clientManualId kazandı (legacy davranış birebir). StaffRouter'dan NewBookingSheet `onCheckout` kalktı.
+- Gerçek cihaz doğrulaması owner'da (test listesi session'da verildi).
+
 **D4 — Staff App modernizasyon: hız + haftalık + ikon sistemi + gün-kaydırma** · ✅ CANLI `e3f3e9f` (2026-07-13, `salown-staff.web.app` doğrulandı)
 Owner "app yavaş + haftalık/dün göremiyorum + emojiler güzel değil" → tek pakette çözüldü. Bkz [[edit-log-salown]].
 - **Faz 1 (algılanan hız):** Firestore `persistentLocalCache` (soğuk açılışta IndexedDB'den anında paint), sekme **keep-alive** (`display:none`, listener+scroll korunur, ilk ziyaretten sonra unmount yok), **skeleton** yükleyiciler ("Loading…" metni yerine).
@@ -254,6 +264,7 @@ Kök neden: root'ta (`html,body,#staff-root`) ve app kabuğunda yatay taşma kı
 - `StaffRouter` app shell `<div>` + `<main>` → `overflowX:hidden` + width clamp
 - Stat kartları hâlâ **kendi** `overflowX:auto` satırlarında kayıyor (özellik bozulmadı); header + BottomNav zaten `left:0;right:0` viewport-sabit (taşma kaynağı değil).
 Deploy: `build:staff` + staff-bundle commit'li (`staff-Bsdo45HX.js`), main push → CI hosting deploy. Gerçek cihaz doğrulaması owner'a bırakıldı.
+**⚠️ Sonradan öğrenilen (2026-07-14):** owner cihazda kayma DEVAM etti — bu clamp'ler yatay *taşmayı* kilitliyordu ama asıl tetikleyici farklıymış: iOS input-focus zoom (viewport `maximum-scale` eksik). Gerçek kök neden D5'te kapatıldı; buradaki clamp'ler savunma katmanı olarak yerinde kalıyor.
 
 **D2 — Staff App: Google/Apple sign-in + onboarding routing** · 🔵 Planlandı
 Login redesign ✅ canlı (animated hub); Google/Apple butonları **görsel var ama "coming soon"**. **Parçalar:**
