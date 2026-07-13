@@ -132,6 +132,15 @@ Direkt Firestore yazımı → double-booking race window. HeroHairs trafiği art
 **B4 — Telefon girişi: ülke kodu standardizasyonu** · 🔵 Planlandı (TS migration bitince; **salon sahibi feedback'i var**, 2026-07-09)
 **Bağlam:** Ülke kodu dropdown'u SADECE `BookingForm.tsx`'te var (19 ülke, **İrlanda +353 YOK** — owner sinirlenip elle girişe dönmüştü). Diğer TÜM giriş noktaları serbest metin `tel` input (+44 placeholder): BookingPage (müşteri sitesi!), WalkInForm, staff NewBookingSheet, AddClientModal. **Neden önemli:** telefon client-identity eşleşmesinin ana anahtarı (NORMALIZATION.md, son-10-hane) — tutarsız/eksik ülke kodu aynı müşteriyi ikiye böler (duplicate client → loyalty/marketing/history kopar). **İş:** (1) tek paylaşılan `COUNTRY_CODES` kaynağı (İrlanda +353 dahil; UK/IE üste pinli, arama kutulu tam liste); (2) 5 giriş noktasına aynı component; (3) mevcut serbest-metin numaralar için normalize stratejisi (E.164 migration DEĞİL — sadece giriş standardı; lookup zaten last-10 toleranslı). Owner ile UI gözden geçirilecek.
 
+**B5 — 2-Way Sync / Auto-Block: salOWN doluluğu Booksy+Fresha'da OTOMATİK slot kapatsın** · 🔵 Planlandı (2026-07-13 gece, owner + dış fikir [ChatGPT]) · ⭐ differentiator — channel-grabber'ın eksik yarısı
+**Tez:** H4 ile mailler İÇERİ akıyor; bu iş bizim doluluğu DIŞARI yansıtır → salon "diğer platformları açık tut, ellemene gerek yok, salOWN oraları senin yerine kilitler" vaadini alır. PRO AGGREGATOR fiyatını 2×'leyen özellik; piyasada kusursuz yapan yok.
+**Mevcut durum:** Treatwell iki-yönlü ZATEN VAR (`salownIcalFeed` iCal OUT canlı; Quick Block yansıyor). Kalan cephe = Booksy + Fresha.
+**Fazlar (sıra bağlayıcı):**
+1. **Faz 0 — DOĞRULAMA DENEYİ (kod yok, ~10 dk, whitecross gerçek hesabıyla):** Booksy'de bir personele Google Calendar sync bağla → GCal'e elle etkinlik koy → Booksy o slotu müşteri tarafında kapatıyor mu? Aynısını Fresha'da. ChatGPT'nin "GCal'i dinler" varsayımı doğrulanmadan HİÇBİR kod yazılmaz (çoğu entegrasyon export-only'dir). Fresha'nın ayrıca iCal subscribe (URL ile takvim izleme) destekleyip desteklemediği de bakılır — destekliyorsa mevcut `salownIcalFeed` URL'ini vermek yeter (Treatwell modeli, sıfır yeni kod).
+2. **Faz 1 — GCal köprüsü (deney GEÇERSE):** booking/walk-in/Quick Block yazıldığında personelin Google Calendar'ına event push (Cloud Function + Google Calendar API, per-staff OAuth ya da tenant service-account takvimi; iptal/reschedule'da event güncelle/sil). Booksy/Fresha GCal'den slotu kapatır. İki yönde de dedup dikkat: bizim parser'ın import ettiği Booksy booking'ini GCal'e geri push etmemek (kaynak=Booksy ise atla — yankı döngüsü olmasın).
+3. **Faz 2 — Puppeteer/Playwright robotu (SON ÇARE, ayrı karar):** yalnız GCal yolu kapalıysa. ⚠️ Bedelleri açık yazılsın: salon panel şifresi emaneti (H4 tam bunu öldürdü — geri getirmek ciddi gerileme), platform ToS/hesap-kapatma riski, UI değişince kırılma + bakım yükü, CAPTCHA/2FA sürtünmesi. Girilecekse Secret Manager + izole runner + tenant başına açık rıza şart; owner ile ayrı ADR.
+**Gate:** Faz 0 sonucu görülmeden Faz 1'e başlanmaz. İlk pilot whitecross.
+
 ---
 
 ### C · Marketing & Retention (📣)
