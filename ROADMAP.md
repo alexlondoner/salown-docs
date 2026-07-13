@@ -229,6 +229,14 @@ iOS'ta web push çalışmıyor → barberlar push alamıyor.
 npm install @capacitor/core @capacitor/cli @capacitor/ios && npx cap init && npx cap add ios
 ```
 
+**D4 — Staff App modernizasyon: hız + haftalık + ikon sistemi + gün-kaydırma** · ✅ CANLI `e3f3e9f` (2026-07-13, `salown-staff.web.app` doğrulandı)
+Owner "app yavaş + haftalık/dün göremiyorum + emojiler güzel değil" → tek pakette çözüldü. Bkz [[edit-log-salown]].
+- **Faz 1 (algılanan hız):** Firestore `persistentLocalCache` (soğuk açılışta IndexedDB'den anında paint), sekme **keep-alive** (`display:none`, listener+scroll korunur, ilk ziyaretten sonra unmount yok), **skeleton** yükleyiciler ("Loading…" metni yerine).
+- **Faz 2 (haftalık/dün):** yeni `src/staff/lib/dateRange.ts` = **UK-tz TEK chokepoint** (`ukDayRange`/`ukWeekRange`, multi-timezone'a tek değişiklik noktası — bkz tenant.ts "hardcoded GBP/UK"). Yeni **"Week" sekmesi** (`WeekView`: gün-gün booking/ciro çubuk grafik, en yoğun gün, no-show, hafta nav). **TodayView gün-kaydırma:** sağ/sol swipe + ‹ › chevron ile dün/bugün/tarih (owner isteği); `data-hscroll` guard swipe'ı stat-scroll'da tetiklemez.
+- **İkon sistemi:** `components/Icon.tsx` = 28 inline-SVG stroke ikon (dependency yok, `currentColor`, CSP/offline/Capacitor-güvenli). **TÜM app emoji → SVG** (bottom nav, stat kartları, ödeme yöntemleri, tips/products, bell/search/logout, boş durumlar, ✓/✕/‹/›/→). Neden: emoji iOS≠Android render → **D1 Capacitor öncesi tutarlılık şart**.
+- Doğrulama: strict typecheck + `build:all` temiz; `main`'e rebase (diğer session strict migration üstüne çakışmasız); staff-bundle commit'li (deploy.yml onu rebuild etmiyor).
+- **AYRI kalan:** D3 (yatay drift/overflow bug) bu iş kapsamında DEĞİL — hâlâ açık. D1 (Capacitor native push) sıradaki.
+
 **D3 — Staff App mobil stabilite: ekran sağa-sola kayıyor** · 🔵 Planlandı (2026-07-12, owner: "sabit durmuyor")
 Telefonda yatay drift var — muhtemelen geniş bir eleman (grid/tablo/uzun satır) body'yi taşırıyor.
 İş: (1) `src/staff/staff.css`'e `html,body{overflow-x:hidden}` + `#root` genişlik disiplini,
