@@ -301,7 +301,7 @@ ConfirmDiscard + Drawer'a opsiyonel dirtyRef prop'u; Esc+backdrop birlikte). **F
 Düşük risk/bilinçli: merge modal, TemplatesLibrary (state parent'ta), Services editor + OnlineProfile
 announcements (açık Discard butonlu). Envanter detayı: memory `edit_log_salown` 2026-07-11.
 
-**G6 — salown.com landing mobile optimizasyonu** · 🔵 Planlandı (2026-07-12, owner istedi)
+**G6 — salown.com landing mobile optimizasyonu** · ✅ CANLI (2026-07-13, `288e566` → CI). 390px iframe-audit: TEK gerçek kusur footer'dı — 12 linkli .footer-links wrap etmiyor → sayfa scrollWidth 803px (yatay kaydırma!). Fix: flex-wrap + mobil stack/center + tap-target 16→39px + nav CTA nowrap ('Sign in' iki satıra kırılıyordu). Doğrulama: scrollWidth 385, sıfır taşan element. Hero/story/pricing/CTA zaten temizdi (10 @media işini yapıyormuş).
 Mevcut durum: viewport meta ✓, 10 adet @media (726 satır) — kısmen responsive ama sistematik mobil
 geçişi yok. İş: Chrome DevTools/gerçek cihaz görsel audit (hero, story-grid, demo, pricing, CTA,
 footer bölüm bölüm) → tap-target/font-scale/overflow fix listesi → uygula. ⚠️ TEK canlı kaynak
