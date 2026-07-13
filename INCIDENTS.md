@@ -51,7 +51,7 @@ Her olay `## YYYY-MM-DD — kısa başlık` ile açılır, hemen altına **metad
 
 ## 2026-07-12 — Muhamed'in on-leave kaydı sessizce silindi (tek-tık "Activate")
 
-**Severity:** 🟡 Medium · **Owner:** Claude (gece session) · **Status:** 🟡 Open (veri ✅ yeniden set edildi 2026-07-12: status:'leave', 14 Tem–19 Ağu; guard fix TS-freeze sonrası, ROADMAP G1 → G5 şemsiyesi)
+**Severity:** 🟡 Medium · **Owner:** Claude (gece session) · **Status:** ✅ Resolved (2026-07-13: guard CANLI `b582042` — leave'deki üyede toggle confirm soruyor + `BARBER_STATUS_CHANGED` audit yazıyor; veri zaten 12'sinde yeniden girilmişti [14 Tem–19 Ağu]. Ayrıca G5 adım 1 `c66320d` ile Finance izin günü SAYMIYOR — £1,331 riski kapandı. G5'in kalan adımları [grid/BookingPage/server resolver] ROADMAP'te açık.)
 
 **Güncelleme (2026-07-12 öğleden sonra):** Owner leave'i yeniden girdi ama Muhamed grid'de görünmeye devam etti → tam denetim yapıldı: müsaitlik mantığı 5 yüzeyde 5 farklı — grid leave'i hiç okumuyor, BookingPage `active` boolean'ına takılı (izin bitince otomatik dönmez), server reschedule leave'e izin veriyor, **Finance leave günlerini saymaya devam ediyor (~£1,331 hayalet maaş riski, 14 Tem'den önce fix önerilir)**. Envanter + hedef model + sıra: [STAFF_SETTINGS_AUDIT.md](STAFF_SETTINGS_AUDIT.md), ROADMAP G5.
 
