@@ -4,6 +4,33 @@
 > **Snapshot: 2026-07-14.** Tek gerçek durum kaynağı: [ROADMAP.md](ROADMAP.md).
 > Bu dosya eskir — büyük durum değişiminde güncelle veya ROADMAP'e yönlendir.
 
+## salOWN at a glance (30-second read)
+
+- **Multi-tenant salon/barber operating system** — booking, loyalty, staff mobile app,
+  finance, marketing, admin panel.
+- **Born inside a real barbershop.** We didn't set out to build salon software — we couldn't
+  run our own shop on existing tools, so we built our own system. Today the platform powers
+  the business that created it (Whitecross = premium pilot tenant).
+- **Running in production across 3 tenants** — real customers, daily operational use.
+- **Current focus: hardening, security and scale readiness.** Features still ship weekly, but
+  the strategic weight is on production maturity — closing security gates, tenant isolation,
+  operational safety — not feature count.
+
+## Production today
+
+*(Snapshot: 2026-07-14 — see header note; durum tek kaynağı ROADMAP.md)*
+
+- **3 live tenants** (`whitecross` · `herohairs` · `eekurt`), all full-feature ("Class A")
+- **Real customer bookings** — regular, often daily: website + external platforms
+  (Booksy/Fresha/Treatwell email ingestion) + walk-ins, all in one system
+- **Loyalty redemptions happening in production** (customers actually redeem points)
+- **Transactional + loyalty email system live** (`noreply@salown.com`, Brevo)
+- **Staff mobile app in daily operational use** by barbers
+- **Automated CI deployment** — push to `main` → Firebase Hosting (Whitecross public site
+  deployed separately, by design)
+- **Payments:** all Stripe Connect modes verified end-to-end in TEST mode; live mode (real
+  money) not yet enabled — pending owner decision
+
 ## 1. Ürün nedir
 **salOWN** — çok-kiracılı (multi-tenant) salon/barber yönetim SaaS'ı. Booking, ödeme, sadakat
 (loyalty), bildirimler, personel mobil uygulaması, admin panel, raporlama.
