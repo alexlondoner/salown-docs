@@ -61,6 +61,20 @@ Her olay `## YYYY-MM-DD — kısa başlık` ile açılır, hemen altına **metad
 - **"İki randevu üst üste, bölünmedi" şikâyeti = computeColumns onları çakışmıyor sanıyor.** İlk şüpheli: kartlardan birinin GERÇEK süresi çizilen boyundan kısa (erken checkout / min-taban), yani kolon hesabı ile görsel ayrışmış.
 - Kart geometrisi türetimleri (`duration → height`) tek bir yardımcıda toplanmalı ki render + computeColumns aynı fonksiyonu çağırsın; iki yere elle kopyalanan formül er geç ayrışıyor (bu üçüncü ayrışma).
 
+## 2026-07-14 — whitecross-site: izinli barber booking listesinde ismi görünmeye devam ediyordu (leave-hide, `active !== false` guard'ı erken dönüyordu)
+
+**Severity:** 🟡 Medium (yanlış gösterim; booking slotları zaten doğru bloke, veri/para etkisi yok) · **Owner:** Claude + owner · **Status:** ✅ Resolved (`cddf0d02` PUSHED + `firebase.saas.json` ile canlıya deploy; whitecrossbarbers-saas) · **Related:** G5 leave semantics unification
+
+**Impact:** Muhamed tatile çıktı (`status:'leave'`), premium sitede (whitecrossbarbers.com) booking barber seçicide **ismi hâlâ görünüyordu** — slot yok ama isim listede, 1 aylık izin boyunca listeyi dolduruyordu. Beklenen: izin süresince tamamen gizli, dönüşte otomatik geri gelsin.
+**Root Cause:** `whitecross-site/script.js` `_shouldShowBarber()` satır 138 `if (b.active !== false) return true;` — leave kontrolünden (satır 142) ÖNCE dönüyordu. İzne çıkma `status:'leave'` yapıyor ama `active`'i `true` bırakıyor → guard "göster" deyip alttaki `isBarberOnLeaveForKey` tarih kontrolünü hiç çalıştırmıyordu. Leave-hide mantığı yanlışlıkla "izinli barber `active===false`" varsayımıyla yazılmış (halbuki leave ile active bağımsız alanlar).
+**Resolution:** Fonksiyon başına `if (isBarberOnLeaveForKey(b, _barberTodayKey())) return false;` guard'ı — bugün `[leaveFrom, leaveUntil]` aralığındaysa isim dahil tamamen gizle; aralık dışında otomatik geri dönme (mevcut satır 142) korundu. Slot üretimi (`:1579`) zaten doğruydu, dokunulmadı. Normal off-günler leave DEĞİL (shiftChanges/dayHours) → etkilenmedi, "not available" davranışı aynı kaldı (owner onayı). salOWN online profile "Team" listesi bilinçli DOKUNULMADI (owner: tanıtım listesi, orada kalsın).
+**Prevention:** `active` (lifecycle) ile `status:'leave'` (tarih-aralıklı) BAĞIMSIZ alanlar — biri diğerini ima etmez. Leave/off gizleme guard'ları görünürlük fonksiyonunda `active` kısa-devresinden ÖNCE gelmeli. Aynı `barberStatusOf` + `isBarberOnLeaveForKey` yardımcıları salown-app (`isBarberOnLeaveForDate`) ile whitecross-site'ta ayrı kopyalar → biri düzelince diğerinde de aynı sıra hatası aranmalı.
+
+**Dersler / Lessons Learned:**
+- **`active` boolean ≠ leave/off durumu.** Bir barber izinliyken `active:true` kalır; görünürlük filtresi `active`'e bakıp erken dönerse tarih-aralıklı leave hiç değerlendirilmez. Guard sırası: önce "gizlenmeli mi" (leave/off), sonra "aktif mi".
+- **"Slot yok ama isim var" = filtre iki katmanda ayrışmış:** slot üretimi leave'i görüyor, isim listesi görmüyor. İki katman aynı `isBarberOnLeave*` yardımcısını kullanmalı.
+- whitecross-site public site CI ile deploy OLMAZ (`deploy.yml` yalnız `barber-panel/**`+`functions/**` path'lerinde, `firebase.admin.json`). Kök `script.js` değişikliği MANUEL `firebase.saas.json` deploy ister — push tek başına canlıya çıkarmaz.
+
 ## 2026-07-13 — dailyFirestoreBackup her gece sessizce fail — günlük yedek hiç alınmamış
 
 **Severity:** 🟠 High (veri-kaybı senaryosunda yedek YOKTU; canlı etki yok) · **Owner:** Claude + owner onayı · **Status:** ✅ Resolved (2026-07-13 akşam — IAM verildi + canlı export doğrulandı)
