@@ -29,6 +29,22 @@ Her olay `## YYYY-MM-DD — kısa başlık` ile açılır, hemen altına **metad
 
 **Severity lejantı:** 🔴 Critical (canlı kesinti / veri-para / güvenlik) · 🟠 High (özellik kırık, geçici çözüm var) · 🟡 Medium (yanlış gösterim / kısmi) · 🟢 Low (tek ekran / kozmetik).
 
+## 2026-07-14 — Dashboard week view "ekran titremesi" — iki useEffect'in sonsuz ping-pong render loop'u
+
+**Severity:** 🟡 Medium (week view kullanılamaz; day/month etkilenmedi, veri etkisi yok) · **Owner:** Claude + owner · **Status:** ✅ Resolved (`82490c1` PUSHED→CI deploy; owner canlıda test etti, titreme kesildi)
+
+**Impact:** Panel Dashboard'da week view'a geçince ekran sürekli titriyordu (shaking/flicker) — component her frame yeniden render oluyordu; week view fiilen kullanılamıyordu.
+**Root Cause:** İki useEffect birbirini sonsuz döngüde tetikliyordu. Effect A (`Dashboard.tsx:324`, view kontrolü YOKtu): seçili barber `selectedDate` gününde çalışmıyorsa (workingDays/dayHours.closed) `setBarberFilter('all')`. Effect B (`:335`, yalnız week view): filtre `'all'` ise `setBarberFilter(barbers[0].id)`. `barbers[0]` o gün off/closed ise A↔B ping-pong = sonsuz re-render.
+**Resolution:** Effect A'ya `if (view === 'week') return;` guard + `view` deps'e eklendi (`82490c1`, +4/-1 tek dosya). Gerekçe: week view 7 gün gösterir — tek-gün "bugün çalışmıyor" reset'i orada anlamsız, barber haftanın başka günlerinde çalışıyor olabilir. Build 0 error; owner canlıda doğruladı.
+**Prevention:** Aynı state'i yazan iki useEffect eklerken koşullarının kesişimi kontrol edilmeli — biri diğerinin yazdığı değeri geri alıyorsa döngü garantidir. "Ekran titriyor/shaking" semptomu görülürse ilk şüpheli: setState'li useEffect çiftlerinin ping-pong'u (React DevTools ile render sayısı patlaması teyit eder).
+
+**Ne oldu / Teşhis:** Semptom yalnız week view'da → week'e özgü state mantığı grep'lendi. `barberFilter` yazan iki effect bulundu: A gün-bazlı reset (view'suz), B week-view zorunlu-tek-barber. Koşullar çakışıyor: A `'all'`'a çeker, B geri barbers[0]'a; barbers[0]'ın off olduğu günlerde kapanmayan döngü. Kod okumasıyla kesin teşhis, canlı repro'ya gerek kalmadı.
+
+**Dersler / Lessons Learned:**
+- İki useEffect aynı state'i zıt yönde yazıyorsa deps üzerinden sonsuz döngü kurulabilir — yeni effect eklerken o state'i yazan DİĞER effect'lerin koşullarıyla kesişimi kontrol et.
+- "Sadece X view'da oluyor" tarzı semptomlarda o view'a koşullu effect'ler ilk bakılacak yer; döngünün yarısı koşullu olunca bug yalnız o view'da görünür.
+- Gün-bazlı iş kuralları (working days reset) çok-günlü view'larda (week/month) uygulanmadan önce "bu view'da anlamlı mı" diye sorulmalı.
+
 ## 2026-07-13 — dailyFirestoreBackup her gece sessizce fail — günlük yedek hiç alınmamış
 
 **Severity:** 🟠 High (veri-kaybı senaryosunda yedek YOKTU; canlı etki yok) · **Owner:** Claude + owner onayı · **Status:** ✅ Resolved (2026-07-13 akşam — IAM verildi + canlı export doğrulandı)
