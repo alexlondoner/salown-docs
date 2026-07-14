@@ -54,15 +54,25 @@ Yanlışlıkla kapatınca girilen tip/indirim/method uyarısız gider (diğer sh
 
 ## 🎨 TASARIM — owner kararı / mimari gerekir
 
-### T3-8 · Dış booking'lere işlem geri yazılmıyor (aggregator'ın çekirdek boşluğu)
-`firestoreActions.ts` cancel/reschedule/no-show + `RescheduleSheet.tsx` — barber Booksy/Fresha randevusunu iptal/erteleyince **dış platforma gitmiyor** (email-parse tek yönlü, yazma API'si yok) ve yeniden-parse gelince **geri ezilebilir** (cancel tombstone yazmıyor, delete yazıyor).
+### T3-8 · Dış senkron — KAYNAK-BAZLI (owner netleştirdi 2026-07-15)
+Denetimin "hiç geri-yazım yok" genellemesi YANLIŞTI. Gerçek durum kaynağa göre değişir:
 
-**Gerçekçi kapsam (yazma API'si olmadığı için "tam senkron" mümkün değil):**
-1. **UI göstergesi:** parsed booking'lerde "Booksy tarafından yönetiliyor" rozeti + işlem öncesi "bu değişiklik Booksy'ye yansımaz, oradan da güncelleyin" uyarısı.
-2. **Cancel tombstone:** `cancelBooking`'i delete gibi `parserTombstones`'a yazacak şekilde güçlendir → reschedule-email geri diriltmesin.
-3. **Karar (owner):** parsed booking'lerde reschedule'ı tamamen kapatalım mı, yoksa uyarıyla açık mı bırakalım?
+| Kaynak | Sync kanalı | Durum | Salown'daki güvenilirlik |
+|---|---|---|---|
+| **Treatwell** | **iCal import** (`functions/src/parsers/ical.ts`) | ✅ CANLI | Tam yaşam-döngüsü gelir — event `STATUS:CANCELLED` → Salown booking CANCELLED (ical.ts:98-107), reschedule de (`:179`). Treatwell tarafı Salown'a otomatik yansır. |
+| **Fresha** | iCal import | ⏳ YAKINDA | Aynı mekanizma gelince Treatwell gibi güvenilir olacak. |
+| **Booksy** | Sadece email-parse | ⚠️ KIRILGAN | Takvim/iCal feed'i YOK. Geri-yazım imkânsız. İki yol: **(a) köprü kur** (büyük iş) **veya (b) şimdilik BUFFER + MANUEL BLOK** ile çift-rezervasyonu önle. |
 
-> Bu madde D1'den bağımsız ama aggregator vaadinin (tek yerden yönet) sınırını netleştirir. Owner ile konuşulacak.
+**iCal not:** iCal INBOUND'dur (dış platform → Salown). Salown'dan Treatwell/Fresha'ya geri PUSH yoktur; ama o platformlar kendi kaynağı olduğu için orada yönetmek + Salown'un yansıtması doğru akış. Yani staff'ın Salown'da bir Treatwell/Fresha booking'ini editlemesi anlamsız (bir sonraki iCal pull ezer).
+
+**Booksy karar yönü (owner 2026-07-15):** köprü şimdilik YOK → **buffer + manuel blok** ile idare. Booksy = tek gerçek kırılgan kaynak.
+
+**Staff app'te önerilen somut adım (kaynak-farkındalıklı UI):**
+1. **Booksy booking'lerinde:** "Booksy'de yönetiliyor" rozeti + reschedule'ı **kapat/uyar** ("Salown'dan değiştirmek Booksy'ye yansımaz"). Kapasite için manuel blok/buffer akışına yönlendir.
+2. **Treatwell/Fresha:** "burada değil, {platform}'da yönetilir" notu (iCal ezeceği için local edit'i caydır).
+3. **Cancel tombstone:** `cancelBooking`'i delete gibi `parserTombstones`'a yaz → geç gelen reschedule-email cancelled booking'i geri diriltmesin. (Kaynaktan bağımsız güvenli.)
+
+> Bu, D1'den bağımsız; aggregator'ın "tek yerden yönet" vaadinin gerçek sınırını netleştirir. #1-2 küçük UI işi; buffer/manuel-blok operasyonel akış (Quick Block zaten var).
 
 ---
 
