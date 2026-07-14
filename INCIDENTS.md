@@ -47,7 +47,7 @@ Her olay `## YYYY-MM-DD — kısa başlık` ile açılır, hemen altına **metad
 
 ## 2026-07-14 — Calendar Day-view'da art arda iki walk-in üst üste bindi — kart min-yükseklik tabanı computeColumns'ta yoktu
 
-**Severity:** 🟡 Medium (yanlış gösterim; veri/para etkisi yok) · **Owner:** Claude + owner · **Status:** ✅ Resolved (`5b1c67f` PUSHED→CI; owner canlıda doğrulayacak) · **Related:** [[INC 2026-06-27 checked-out cascade]]
+**Severity:** 🟡 Medium (yanlış gösterim; veri/para etkisi yok) · **Owner:** Claude + owner · **Status:** ✅ Resolved (`5b1c67f` PUSHED→CI; owner canlıda doğruladı — art arda walk-in'ler artık yan yana kolona bölünüyor) · **Related:** [[INC 2026-06-27 checked-out cascade]]
 
 **Impact:** Owner Arda'nın gününde iki walk-in'i (6:15 + 6:35, ikisi Classic Short Back & Side) yan yana kolona bölünmek yerine üst üste binmiş gördü — 6:15 kartı 6:35 kartının üstüne oturmuştu.
 **Root Cause:** Render her kartı `Math.max(duration*slotHeight/15 − 4, slotHeight*2)` ile **min 30 dk** boyunda çiziyor; `computeColumns` bu tabanı GÖRMÜYORDU. Arda 6:15 walk-in'ini erken checkout etti → `actualDuration` kısaldı (min(scheduled, actual)) → kolon motoru kartı ~6:30-6:35'te bitmiş sayıp bir sonrakiyle "çakışmıyor" dedi (aynı kolon, tam genişlik), ama kart görselde 30 dk tabanına takılıp 6:45'e kadar çizildi → alttaki 6:35 kartını fiziksel olarak yuttu = sessiz görsel örtüşme.
