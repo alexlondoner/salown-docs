@@ -46,6 +46,16 @@ trailing `s` davranışını sabitlе. Henüz yapılmadı.
 `timeUtils.js:32` (kanonik), ama `Calendar.jsx:18`, `Home.jsx:15`, `Finance.jsx:43` kendi
 kopyasını tutuyor. Hepsi aynı mantık ama drift riski → `timeUtils`'ten import edilmeli.
 
+### settings/hours gün anahtarları = BÜYÜK harfli (kanonik) ✅ staff fix'lendi
+`Settings.tsx` `tenants/{id}/settings/hours`'u **Capitalized** gün anahtarlarıyla yazar
+(`Monday`…`Sunday` — canlı whitecross doc'unda doğrulandı 2026-07-14). Staff
+NewBookingSheet küçük harf (`monday`) arıyordu → `undefined` → "gün kapalı" sanıp
+**"outside opening hours" uyarısı HER booking'de yanıyordu**. Fix `c3111e0` (salown-app):
+Capitalized lookup + lowercase fallback; anahtar hiç yoksa artık uyarı YOK (sadece
+`closed:true` veya open..close dışı saat uyarır). Yeni kod `settings/hours` okurken
+Capitalized anahtar kullansın; `getAvailableBarbersForDate`'in `barber.dayHours`/
+`workingDays` anahtarları da Capitalized — aynı standart.
+
 ---
 
 ## 🎯 Parser Matching Standard (TASLAK — onay + ChatGPT önerileri bekliyor)
