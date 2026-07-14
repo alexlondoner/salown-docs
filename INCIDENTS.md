@@ -45,6 +45,22 @@ Her olay `## YYYY-MM-DD — kısa başlık` ile açılır, hemen altına **metad
 - "Sadece X view'da oluyor" tarzı semptomlarda o view'a koşullu effect'ler ilk bakılacak yer; döngünün yarısı koşullu olunca bug yalnız o view'da görünür.
 - Gün-bazlı iş kuralları (working days reset) çok-günlü view'larda (week/month) uygulanmadan önce "bu view'da anlamlı mı" diye sorulmalı.
 
+## 2026-07-14 — Calendar Day-view'da art arda iki walk-in üst üste bindi — kart min-yükseklik tabanı computeColumns'ta yoktu
+
+**Severity:** 🟡 Medium (yanlış gösterim; veri/para etkisi yok) · **Owner:** Claude + owner · **Status:** ✅ Resolved (`5b1c67f` PUSHED→CI; owner canlıda doğrulayacak) · **Related:** [[INC 2026-06-27 checked-out cascade]]
+
+**Impact:** Owner Arda'nın gününde iki walk-in'i (6:15 + 6:35, ikisi Classic Short Back & Side) yan yana kolona bölünmek yerine üst üste binmiş gördü — 6:15 kartı 6:35 kartının üstüne oturmuştu.
+**Root Cause:** Render her kartı `Math.max(duration*slotHeight/15 − 4, slotHeight*2)` ile **min 30 dk** boyunda çiziyor; `computeColumns` bu tabanı GÖRMÜYORDU. Arda 6:15 walk-in'ini erken checkout etti → `actualDuration` kısaldı (min(scheduled, actual)) → kolon motoru kartı ~6:30-6:35'te bitmiş sayıp bir sonrakiyle "çakışmıyor" dedi (aynı kolon, tam genişlik), ama kart görselde 30 dk tabanına takılıp 6:45'e kadar çizildi → alttaki 6:35 kartını fiziksel olarak yuttu = sessiz görsel örtüşme.
+**Resolution:** `computeColumns`'ta `end = Math.max(end, start + 30)` — render'ın 30 dk tabanı kolon matematiğine de eklendi; artık kısa kart da 30 dk sayılıp çakışma algılanıyor → yan yana kolona bölünüyor (`TimeGrid.tsx` +8/−0). Main build 0 error. Squeeze-in'e dokunulmadı (gap band'leri `getBusyIntervals`'tan, `actualDuration`/floor görmüyor).
+**Prevention:** Kart geometrisini etkileyen HER dönüşüm (üst cap `min(scheduled,actual)` VE alt taban `max(.., 30dk)`) hem render'da hem `computeColumns`'ta birebir uygulanmalı. 2026-06-27 dersi "aynı süre kaynağı" idi; eksik kalan yarısı = min taban. Kolon motoru "efektif çizilen yükseklik"i görmeli, ham süreyi değil.
+
+**Ne oldu / Teşhis / Fix:** Owner ekran görüntüsü paylaştı: art arda iki walk-in üst üste. Kural #7 gereği önce INCIDENTS okundu → 2026-06-27 "checked-out cascade" doğrudan ilgili çıktı (o zaman `actualDuration` kartı UZATIYORDU, fix `min(scheduled, actual)`; dersi "computeColumns ile kart yüksekliği aynı süre kaynağını kullanmalı"). Kod okundu: `TimeGrid.tsx` render (`:374`) `Math.max(.., slotHeight*2)` = 30 dk hard taban uyguluyor; `computeColumns` (`:159`) uygulamıyor → erken-checkout'la kısalan kart iki hesapta ayrışıyor. Aynı sınıf regresyon-komşusu bug: cap hizalanmıştı, taban değil. Tek satır clamp ile iki hesap yeniden eşitlendi.
+
+**Dersler / Lessons Learned:**
+- **Bir "efektif yükseklik" clamp'i (min VEYA max) render'a girdiyse, aynısı overlap/kolon motoruna da girmeli.** 2026-06-27'de max cap hizalandı ama min taban unutuldu — yarım hizalama, aynı "görünmez örtüşme" sonucunu diğer uçtan verdi.
+- **"İki randevu üst üste, bölünmedi" şikâyeti = computeColumns onları çakışmıyor sanıyor.** İlk şüpheli: kartlardan birinin GERÇEK süresi çizilen boyundan kısa (erken checkout / min-taban), yani kolon hesabı ile görsel ayrışmış.
+- Kart geometrisi türetimleri (`duration → height`) tek bir yardımcıda toplanmalı ki render + computeColumns aynı fonksiyonu çağırsın; iki yere elle kopyalanan formül er geç ayrışıyor (bu üçüncü ayrışma).
+
 ## 2026-07-13 — dailyFirestoreBackup her gece sessizce fail — günlük yedek hiç alınmamış
 
 **Severity:** 🟠 High (veri-kaybı senaryosunda yedek YOKTU; canlı etki yok) · **Owner:** Claude + owner onayı · **Status:** ✅ Resolved (2026-07-13 akşam — IAM verildi + canlı export doğrulandı)
