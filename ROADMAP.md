@@ -255,6 +255,9 @@ Nav ayrımı CANLI (`0b916ef`): Sidebar'da Marketing kendi **MARKETING** başlı
 
 ### D · Mobil (📱)
 
+**D0 — Staff App pre-Capacitor sağlamlaştırma** · 🟡 SÜRÜYOR — **📄 [STAFF_APP_HARDENING.md](STAFF_APP_HARDENING.md)** (tam tier'lı çalışma raporu, multi-device çekilebilir)
+3 paralel ajan denetimi → tutarsızlık/eksik listesi. D1 (native wrap) ÖNCESİ kapatılmalı (native'de her fix iki katman olur). **✅ Tier 1-2 çekirdeği CANLI `0df2beb`** (parsed-booking £0 checkout, Sales ham-statü, müşteri harcama net, "Today" sabit-tarih, Booksy boş-berber, Sales satır/gruplama). **🔧 Kalan:** push sessiz-hata (T2-7), boş-durum/erişim mesajı, reschedule saat-guard, sessiz-hata yutma. **🎨 Tasarım:** dış booking'e işlem geri-yazımı (T3-8, aggregator sınırı — owner kararı). Detay+statü dosyada.
+
 **D1 — Capacitor / App Store** · 🅿️ HAZIR BEKLİYOR (acele YOK — owner 2026-07-14: *"app'in üzerinden daha çok geçmemiz lazım, acele etmiyorum"*)
 iOS'ta web push çalışmıyor → barberlar push güvenilir alamıyor + "sil-yükle/cache" derdi. Native wrap bunu çözer ama **paketleme adımı** → ürün olgunlaşınca uygulanır.
 **📄 Tam detaylı plan ayrı belgede: [D1_CAPACITOR_NATIVE_PLAN.md](D1_CAPACITOR_NATIVE_PLAN.md)** — mevcut durum tespiti (Capacitor kurulu değil; staff-bundle = webDir; push web-FCM→native; backend `sendFcmPush` DEĞİŞMEZ), ön koşullar ($99/yıl Apple + Mac + APNs .p8 + Bundle ID), Faz 1 kabuk → Faz 2 native push → Faz 3 OTA (Capgo, sil-yükle derdini bitirir) → Faz 4 store, efor ~3–4 gün, riskler + açık kararlar (marka/bundle-id, guideline 4.2, Android?, D2 ile ortak Apple hesabı).
