@@ -254,10 +254,12 @@ Nav ayrımı CANLI (`0b916ef`): Sidebar'da Marketing kendi **MARKETING** başlı
 
 ### D · Mobil (📱)
 
-**D1 — Capacitor / App Store** · 🔵 Sıradaki (business-critical)
-iOS'ta web push çalışmıyor → barberlar push alamıyor.
+**D1 — Capacitor / App Store** · 🅿️ HAZIR BEKLİYOR (acele YOK — owner 2026-07-14: *"app'in üzerinden daha çok geçmemiz lazım, acele etmiyorum"*)
+iOS'ta web push çalışmıyor → barberlar push güvenilir alamıyor + "sil-yükle/cache" derdi. Native wrap bunu çözer ama **paketleme adımı** → ürün olgunlaşınca uygulanır.
+**📄 Tam detaylı plan ayrı belgede: [D1_CAPACITOR_NATIVE_PLAN.md](D1_CAPACITOR_NATIVE_PLAN.md)** — mevcut durum tespiti (Capacitor kurulu değil; staff-bundle = webDir; push web-FCM→native; backend `sendFcmPush` DEĞİŞMEZ), ön koşullar ($99/yıl Apple + Mac + APNs .p8 + Bundle ID), Faz 1 kabuk → Faz 2 native push → Faz 3 OTA (Capgo, sil-yükle derdini bitirir) → Faz 4 store, efor ~3–4 gün, riskler + açık kararlar (marka/bundle-id, guideline 4.2, Android?, D2 ile ortak Apple hesabı).
+- **Zaten yapılmış hazırlık:** D4 emoji→SVG ikon sistemi ("Capacitor-safe") + D5 iOS viewport/drift kök-neden fix. Zemin kademeli hazırlanıyor.
 ```bash
-npm install @capacitor/core @capacitor/cli @capacitor/ios && npx cap init && npx cap add ios
+npm i @capacitor/core @capacitor/cli @capacitor/ios && npx cap init "Salown Staff" com.salown.staff --web-dir hosting/staff-bundle && npx cap add ios
 ```
 
 **D5 — Staff App walk-in redesign: Booksy-tarzı sepet + kalıcı state + iOS drift kök-neden fix** · ✅ CANLI `7f46858` (2026-07-14 push→CI, staff.salown.com yeni bundle doğrulandı)
