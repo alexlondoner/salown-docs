@@ -80,6 +80,23 @@
 ### 🟢 Tier 3 — tenant-local, güvenli (pilot mantığı kalabilir)
 Finance/partnerConfig · Muhamed wage · workingDays — tenant'ın kendi verisi, ölçek riski yok.
 
+### 📊 Evidence Collection — kanıt programı (YENİ 2026-07-15)
+
+> **Amaç:** her önemli üretim iddiası veriyle desteklenebilsin — "çalıştığını düşünüyorum" değil,
+> "işte N aylık üretim verisi". Dış danışman önerisi (2026-07-15), PROJECT_BRIEF hattının devamı.
+> **Konumlandırma: pazarlama değil operasyonel altyapı.** Ağır stack YOK (Prometheus/Grafana/
+> BigQuery gerekmez) — Firestore telemetri + günlük aggregate + üretilen METRICS.md uzun süre yeter.
+>
+> **Zaman-duyarlılık:** Business katmanı geriye dönük her zaman hesaplanır (veri Firestore'da);
+> Platform + Reliability katmanları toplanmaya başlamadıkça BİRİKMEZ — bugün ölçülmeyen gün
+> sonsuza dek kayıp. Bu yüzden EV1/EV2 küçük ama erken; EV3 (raporlama) bekleyebilir.
+
+| # | İş | Durum |
+|---|----|-------|
+| **EV1** | **Parser telemetri** ⏱ zaman-duyarlı: her inbound email'in parse sonucu Firestore'a kalıcı yazılsın — başarı/başarısızlık+sebep, dedup sayısı, işleme gecikmesi (receivedAt→parsedAt). Şu an başarısızlıklar yalnız Cloud Logging'de (~30 gün retention) → tarih birikmiyor. Hedef cümle: "N bin email işlendi, parse başarısı %99.x". Küçük iş; I2'yi beklemek zorunda değil. | 🔵 Planlandı |
+| **EV2** | **Health check + uptime geçmişi** ⏱ zaman-duyarlı: scheduled fonksiyon kritik yüzeyleri yoklar (booking-create yolu, parser inbox, hosting 200), sonucu günlük doc'a yazar → aylık availability % zamanla kendiliğinden oluşur. [INCIDENTS.md](INCIDENTS.md)'nin sayısal kardeşi. | 🔵 Planlandı |
+| **EV3** | **Auto-generated METRICS.md:** script Firestore'dan business metrikleri (booking hacmi, repeat-customer oranı, loyalty redemption, kaynak dağılımı, aktif tenant, avg spend) + EV1/EV2 birikimini snapshot tarihiyle üretir; elle sayı güncellenmez (elle sayı çürür). **Sıra: I2 Faz 2 + Tier 2 🔴-1 sonrası.** | 🔵 Planlandı |
+
 ---
 
 ## 🔨 Sıradaki İş — temaya göre
