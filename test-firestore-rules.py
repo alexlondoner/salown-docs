@@ -127,6 +127,20 @@ cases=[
  case("E1b: owner FINANCE delete → DENY","DENY",req("delete","/tenants/whitecross/finance/f1",WXOWNER,None),{"a":1}),
  case("E1b: owner SETTINGS delete → DENY","DENY",req("delete","/tenants/whitecross/settings/settings",WXOWNER,None),{"a":1}),
  case("E1b: owner AUDITLOG delete → DENY","DENY",req("delete","/tenants/whitecross/auditLogs/a1",WXOWNER,None),{"a":1}),
+ # ── [S1] (2026-07-15) staffComp: comp verisi owner+super-only (STAFF_MANAGEMENT_DESIGN §1.3).
+ #    Catch-all READ staffComp'u dışlayacak şekilde daraltıldı (OR-semantiği) — admin/staff DENY şart.
+ case("S1: owner staffComp read → ALLOW","ALLOW",req("get","/tenants/whitecross/staffComp/br1",WXOWNER),{"barberId":"br1"}),
+ case("S1: owner staffComp write → ALLOW","ALLOW",req("update","/tenants/whitecross/staffComp/br1",WXOWNER,{"history":[]}),{"barberId":"br1"}),
+ case("S1: SUPER staffComp read → ALLOW","ALLOW",req("get","/tenants/whitecross/staffComp/br1",SUP),{"barberId":"br1"}),
+ case("S1: SUPER staffComp write → ALLOW","ALLOW",req("update","/tenants/whitecross/staffComp/br1",SUP,{"history":[]}),{"barberId":"br1"}),
+ case("S1: ADMIN staffComp read → DENY (finansal veri)","DENY",req("get","/tenants/whitecross/staffComp/br1",WX),{"barberId":"br1"}),
+ case("S1: ADMIN staffComp write → DENY","DENY",req("update","/tenants/whitecross/staffComp/br1",WX,{"history":[]}),{"barberId":"br1"}),
+ case("S1: STAFF staffComp read → DENY","DENY",req("get","/tenants/whitecross/staffComp/br1",WXSTAFF),{"barberId":"br1"}),
+ case("S1: UNAUTH staffComp read → DENY","DENY",req("get","/tenants/whitecross/staffComp/br1",None),{"barberId":"br1"}),
+ case("S1: CROSS-tenant owner staffComp read → DENY","DENY",req("get","/tenants/whitecross/staffComp/br1",HEROOWNER),{"barberId":"br1"}),
+ case("S1: catch-all regresyon — admin rastgele koleksiyon read hâlâ ALLOW","ALLOW",req("get","/tenants/whitecross/someRandomColl/x1",WX),{"a":1}),
+ case("S1: catch-all regresyon — admin derin path read hâlâ ALLOW","ALLOW",req("get","/tenants/whitecross/someColl/x1/sub/y1",WX),{"a":1}),
+ case("S1: catch-all write hâlâ kapalı — admin rastgele koleksiyon write DENY","DENY",req("update","/tenants/whitecross/someRandomColl/x1",WX,{"a":2}),{"a":1}),
 ]
 url="https://firebaserules.googleapis.com/v1/projects/havuz-44f70:test"
 body={"source":{"files":[{"name":"firestore.rules","content":RULES}]},
