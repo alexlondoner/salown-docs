@@ -2,7 +2,8 @@
 
 > **Tarih:** 2026-07-14 · **Kaynak:** [STAFF_MANAGEMENT_DESIGN_PROMPT.md](STAFF_MANAGEMENT_DESIGN_PROMPT.md) (owner yönü) ·
 > **Bağlam:** ROADMAP **tema S** · [STAFF_SETTINGS_AUDIT.md](STAFF_SETTINGS_AUDIT.md) (G5 denetimi) · INCIDENTS 2026-07-14 (leave)
-> **Durum:** 📐 TASARIM — kod yok. Satır atıfları 2026-07-14 `main` (`79d034a`) üzerinden doğrulandı.
+> **Durum:** 🟢 **FAZ B CANLI (2026-07-16)** — UI + staffComp rules deploy edildi (ruleset `1474907b`). Faz A veri modeli + Faz B UI/emniyet bu dokümana göre kodlandı; Faz C (Finance bağlama + accrual motoru + M1 göç) KALAN. Satır atıfları 2026-07-14 `main` (`79d034a`) üzerinden doğrulandı; kod sonrası kısımlar edit_log_salown + ROADMAP S2'de.
+> **Owner kararı 2026-07-15:** wage periyotları hour|day|week|month|year; tahakkuk HER ZAMAN fiilî çalışılan gün/saat (§2.1). paid-leave = owner-only toggle, default OFF ("çalışmadı→para yok"); yıllık-izin-zorunlu-ücretli çerçevesi YOK (barber'lar komisyon/self-employed). self_employed'da kira `pauseRentOnLeave`'e bağlı.
 > **Kapsam dışı:** vergi/VAT hesabı, payroll/bordro entegrasyonu, Stripe.
 
 ---

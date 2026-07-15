@@ -24,6 +24,7 @@
 | **G3** | Public create financial forge (`paidAmount/discount/tip`) | ✅ **CANLIDA** (ruleset `22bdc429`, 2026-06-24) | 🟢 Düşük |
 | **G4** | staff-doc recursive catch-all (staff self-escalate) | ✅ **CANLIDA** (2026-06-27, commit `0f8de7e`) — catch-all write→false + 14 koleksiyon explicit, test 49/49. ⚠️ Takip: `AppRouter.jsx:104` `isAdmin=true` hardcoded → yeni staff web panele girmeden önce gerçek role'e bağla | 🟠→✅ |
 | **G5** | Tek global ruleset blast radius | ⚠️ Kısmen (deploy disiplini var, yapısal çözüm yok) | 🟠 Orta |
+| **S1** | staffComp finansal veri koruması | ✅ **CANLIDA** (ruleset `1474907b`, 2026-07-16) — `match /staffComp/{barberId}` read/write=`isSuperAdmin()\|\|isOwner(tenantId)` (admin/staff comp GÖREMEZ, Finance gate parity). Catch-all READ `{coll}/{document=**}`+`coll!='staffComp'` ile daraltıldı — OR-semantiği gereği explicit blok tek başına yetmezdi (G4 dersi). Comp world-readable barbers'a ASLA yazılmaz. Test 95/95 (12 S1 vakası + catch-all regresyon), deploy öncesi canlı-çek+diff, deploy sonrası byte-aynı doğrulandı | 🟢 Düşük |
 
 > **2026-06-24 ilerlemesi:**
 > - **G2 + G3 CANLIYA ALINDI** — `firestore.rules` main'e merge+push (`851efeb`), `firebase deploy
