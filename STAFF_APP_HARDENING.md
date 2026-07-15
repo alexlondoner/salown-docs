@@ -65,14 +65,17 @@ Denetimin "hiç geri-yazım yok" genellemesi YANLIŞTI. Gerçek durum kaynağa g
 
 **iCal not:** iCal INBOUND'dur (dış platform → Salown). Salown'dan Treatwell/Fresha'ya geri PUSH yoktur; ama o platformlar kendi kaynağı olduğu için orada yönetmek + Salown'un yansıtması doğru akış. Yani staff'ın Salown'da bir Treatwell/Fresha booking'ini editlemesi anlamsız (bir sonraki iCal pull ezer).
 
-**Booksy karar yönü (owner 2026-07-15):** köprü şimdilik YOK → **buffer + manuel blok** ile idare. Booksy = tek gerçek kırılgan kaynak.
+**Owner iş modeli (2026-07-15, KRİTİK):** "Asıl toplanacak doğru yer BİZİZ (Salown master)." Booksy rastgele barber atıyor; seçilen barber müsait değilse **Salown'da hemen doğru barber'a çeviriyoruz.** Yani external booking editlemek İSTENİR — "editi kapat" YANLIŞ olur. Booksy'ye geri push zaten imkânsız/gereksiz (müşteri Booksy'de görür, dükkân Salown'da çalışır).
 
-**Staff app'te önerilen somut adım (kaynak-farkındalıklı UI):**
-1. **Booksy booking'lerinde:** "Booksy'de yönetiliyor" rozeti + reschedule'ı **kapat/uyar** ("Salown'dan değiştirmek Booksy'ye yansımaz"). Kapasite için manuel blok/buffer akışına yönlendir.
-2. **Treatwell/Fresha:** "burada değil, {platform}'da yönetilir" notu (iCal ezeceği için local edit'i caydır).
-3. **Cancel tombstone:** `cancelBooking`'i delete gibi `parserTombstones`'a yaz → geç gelen reschedule-email cancelled booking'i geri diriltmesin. (Kaynaktan bağımsız güvenli.)
+**Gerçek risk (kod-doğrulandı):** `functions/src/parsers/booksy.ts:277-285` reschedule-apply → `existingRef.update({ startTime, ...(r.newBarber ? { barberId: r.newBarber } : {}) })`. Booksy reschedule email'i "with {barber}" taşıdığı için, **manuel yapılan barber düzeltmesini geri EZİYOR.** Koruyucu bayrak repo'da YOK. Ayrıca staff app'te barber yeniden-atama UI'ı YOK (`RescheduleSheet` sadece saat) → owner bunu şu an panelden yapıyor.
 
-> Bu, D1'den bağımsız; aggregator'ın "tek yerden yönet" vaadinin gerçek sınırını netleştirir. #1-2 küçük UI işi; buffer/manuel-blok operasyonel akış (Quick Block zaten var).
+**Doğru iş (owner modeline göre, "Salown master + editi koru"):**
+1. **🔴 Parser clobber guard (backend, en yüksek değer):** booking manuel editlenince `manualOverride`/`barberManuallySet` bayrağı yaz; parser reschedule-apply bu bayrakta `barberId`'yi (ve gerekiyorsa saati) EZMESİN. ⚠️ `booksy.ts` = canlı boru, en hassas (CLAUDE.md "parser en son") → karakterizasyon testiyle, hedefli deploy.
+2. **🟠 Staff app'e barber yeniden-atama:** RescheduleSheet'e (veya BookingDetail'e) barber seçici — owner telefondan da mis-assignment'ı düzeltsin (şu an panel-only). Yazınca #1'in bayrağını set etsin.
+3. **🟢 Cancel tombstone:** `cancelBooking`'i delete gibi `parserTombstones`'a yaz → geç gelen reschedule-email cancelled booking'i diriltmesin. Kaynaktan bağımsız güvenli.
+4. **Buffer + manuel blok:** Booksy takvim feed'i olmadığı için kapasite güvenliği operasyonel (Quick Block zaten var). Köprü = ileride.
+
+> ESKİ (yanlış) yön "Booksy reschedule'ı kapat/uyar" İPTAL — owner Salown'u master kabul ediyor, edit İSTENİR; korunması gereken şey edit'in kalıcılığı.
 
 ---
 
