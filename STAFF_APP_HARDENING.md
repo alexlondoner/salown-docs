@@ -10,6 +10,28 @@
 
 ---
 
+## 📌 OTURUM DURUMU — 2026-07-14/15 (son güncelleme snapshot'ı)
+
+### ✅ YAPILDI (hepsi canlı + push'lu)
+| İş | Commit | Durum |
+|---|---|---|
+| Sales/Week ciro `bookingNetWithoutTip` (panelle eşitlendi) | Salown `79d034a` | ✅ CANLI |
+| Today "Est. revenue" yakınsayan tahmin (checkout=net, gelmemiş=price) | Salown `b725434` | ✅ CANLI |
+| Pre-Capacitor Tier 1-2: parsed £0-checkout, ham-statü, müşteri-harcama net, "Today" sabit-tarih, Booksy boş-berber, Sales satır/gruplama | Salown `0df2beb` (bundle `staff-DJvCvRYK.js`) | ✅ CANLI |
+| D1 Capacitor native plan (hazır bekliyor, acele yok) | docs `fa25129` (`D1_CAPACITOR_NATIVE_PLAN.md`) | 🅿️ BEKLİYOR |
+| Bu rapor + ROADMAP D0/D1 + T3-8 kaynak-bazlı düzeltme | docs `ab1dc59`/`042da6c`/`ce9b9ff` | ✅ KAYITLI |
+
+### 🔜 KALAN — sıradaki (owner yönü: "Salown master, editi koru")
+1. **🟢 Cancel tombstone** — `cancelBooking` → `parserTombstones` (geç email iptal edileni diriltmesin). *En güvenli, önce bu.*
+2. **🔴 Parser clobber guard** — booking manuel editlenince alan-bazlı bayrak (`barberManuallySet`); `booksy.ts:280` reschedule-apply barber'ı ezmesin (saat gelebilir). ⚠️ canlı boru → testli+hedefli deploy.
+3. **🟠 Staff app'e barber yeniden-atama** — telefondan mis-assignment düzeltme (şu an panel-only); yazınca #2 bayrağını set eder.
+4. **🔧 UX kalanlar** (aşağıdaki tier'larda): push sessiz-hata banner (T2-7), boş-durum/erişim mesajı (T4-10), reschedule saat-guard (T4-11), sessiz-hata yutma (T4-12).
+5. **🅿️ D1 Capacitor** — ürün olgunlaşınca (owner acele etmiyor).
+
+**Sıradaki aksiyon önerisi:** #1 → (#2+#3 birlikte). Owner onayı bekliyor.
+
+---
+
 ## ✅ Bu turda düzeltildi — `Salown 0df2beb` (2026-07-15, CI staff deploy, bundle `staff-DJvCvRYK.js`)
 
 Hepsi paylaşılan yardımcıları kullanır (`bookingNetWithoutTip` / `normalizeBookingStatus` / `resolveBarber`) → ekranlar web panel ile uyuşur, geçmiş kayıtlar da doğru render olur.
