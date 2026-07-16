@@ -140,12 +140,27 @@ ile canlı davranış çelişik. On/off toggle yok.
 `paymentMode` + `websiteDepositsEnabled` + `defaultDepositAmount`'ı taşıyor ve premium site (public) okuyabilir.
 Plumbing'in yarısı hazır — geriye custom site'ın bunu OKUMASI + Settings toggle kaldı.
 
+**🔑 KANAL AYRIMI (owner kararı 2026-07-16, kritik):** İki booking kanalı **BAĞIMSIZ** ödeme ayarına sahip olmalı —
+tek toggle ikisini birden yönetmez. Owner: "kendi sitemden deposit/full alıp salown online-profil kısmında
+almak istemeyebilirim." İki kanal:
+1. **Salown-hosted** (`salown.com/s/{tenant}` profil + `/book/`) — mevcut `paymentMode` + `defaultDepositAmount` (BookingPage okur).
+2. **Premium custom site** (whitecrossbarbers.com tipi) — **AYRI** `sitePaymentMode` + `siteDefaultDepositAmount` (yeni; whitecross-site okur).
+- **Veri modeli:** salown-side alanları AYNEN kalır (rename YOK, kırma riski yok); premium-site için yeni ayrı alanlar
+  (`sitePaymentMode`/`siteDefaultDepositAmount`, veya `sitePayments:{mode,deposit}` bloğu). Her ikisi de
+  `public/booking` projeksiyonuna eklenir → BookingPage `paymentMode`'u, whitecross-site `sitePaymentMode`'u okur.
+- **Settings UI:** İKİ ayrı kontrol (veya kanal seçici) — owner her kanalı bağımsız ayarlar. Bir kanal deposit AÇIK
+  diğeri KAPALI olabilir. (Not: premium-site kontrolü yalnız custom-sitesi olan premium tenant'a görünür.)
+
 **Yapılacak:**
-1. **Settings** — "Deposit" toggle'ı (ayrı, owner isteği): `paymentMode` (off/deposit/full/optional/pay_at_venue)
-   + `defaultDepositAmount £`. Zaten "Booking policy" kartı var (B) — premium-site bağını netleştir/görünür kıl.
-2. **Premium site (whitecross-site `script.js`)** — hardcoded £10 → `public/booking`'ten oku: deposit KAPALI/
-   `pay_at_venue` → ödeme yok, direkt CONFIRMED; deposit AÇIK → config tutarı (grup için kişi-başı desteği korunur).
-3. **whitecross-site `createCheckoutSession`** (us-central1, kendi fn) → `unit_amount`'ı config'ten al (hardcode değil).
+1. **Settings** — İKİ AYRI ödeme kontrolü (kanal ayrımı): mevcut "Booking policy" kartı = salown-hosted
+   (`paymentMode` + `defaultDepositAmount`, B'de deployed). YENİ = premium-site kartı (`sitePaymentMode` +
+   `siteDefaultDepositAmount`), yalnız custom-sitesi olan premium tenant'a görünür. Her biri bağımsız.
+2. **Premium site (whitecross-site `script.js`)** — hardcoded £10 → `public/booking`'ten **`sitePaymentMode`/
+   `siteDefaultDepositAmount`** oku (salown-side `paymentMode`'u DEĞİL): kapalı/`pay_at_venue` → ödeme yok,
+   direkt CONFIRMED; deposit/full → config tutarı (grup için kişi-başı desteği korunur).
+3. **whitecross-site `createCheckoutSession`** (us-central1, kendi fn) → `unit_amount`'ı Firestore config'ten al
+   (client'ın gönderdiğine GÜVENME — server tutarın tek otoritesi; şu an `parseFloat(client) || 10` = client'a
+   güveniyor, düzeltilecek güvenlik noktası).
 
 **Açık sorular (owner):** (a) tutar kişi-başı mı toplam mı (whitecross şu an £10/kişi)? (b) servis-bazlı
 `depositAmount` override önceliği? (c) premium gating — bu Pro+ özelliği mi (planLimits)?
