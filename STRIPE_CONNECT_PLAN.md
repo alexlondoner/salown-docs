@@ -162,22 +162,32 @@ almak istemeyebilirim." İki kanal:
    (client'ın gönderdiğine GÜVENME — server tutarın tek otoritesi; şu an `parseFloat(client) || 10` = client'a
    güveniyor, düzeltilecek güvenlik noktası).
 
-**Owner cevapları (2026-07-16):**
-- **(a) Tutar:** group ise **kişi-başı** (sitedeki mevcut akış aynen — `groupDepositPerPerson`). Tekli booking = servis tutarı.
-- **(b) Servis-bazlı politika — Booksy modeli (KİLİT):** ödeme politikası (deposit / full / pay-at-venue / off)
-  **servis bazında** atanabilmeli — spesifik bir servise VEYA tüm servislere, isteğe göre. Örn: £200'lük servis →
-  ödeme iste (owner seçimi); £30'luk servis → deposit gerekmez. Yani salt global toggle değil, **servis başına
-  mode + tutar** (global default fallback ile).
-  - **Veri modeli:** servis doc'una `paymentMode` alanı eklenir (mevcut `depositAmount` yanına); kanal config'i
-    (`sitePaymentMode`/`siteDefaultDepositAmount`) = **default**. Öncelik: **servis-özel > kanal-default**.
-    Servisler ZATEN world-readable → site per-servis politikayı doğrudan okur (projeksiyona gerek yok; projeksiyon
-    yalnız kanal default'unu taşır).
-  - ⏳ **Booksy ekran görüntüsü bekleniyor** (owner atacak) → UX/alan yerleşimi ona göre netleşecek.
+**Owner cevapları + Booksy modeli (2026-07-16, ekran görüntüleriyle doğrulandı):**
+- **(a) Tutar:** group ise **kişi-başı** (sitedeki mevcut akış aynen — `groupDepositPerPerson`). Tekli = servis kuralı.
+- **(b) DEPOSIT RULE modeli — Booksy birebir (KİLİT):** ödeme politikası **kural bazlı**. Booksy'de: "No-Show
+  Protection → Deposits → Rules"; her kural = **% veya £ tutar** ("client pays £X / %Y of service price upfront,
+  deducted from total on checkout") + **Valid for: servis listesi** (spesifik servisler atanır; "+ Apply to
+  services"). Çok kural olabilir (£10 ucuz kesimlere, £30 premium'a); atanmayan servis → deposit yok (pay-at-venue).
+  - **Salown veri modeli — `tenants/{id}/depositRules/{ruleId}`** (yeni koleksiyon, world-readable, servisler gibi):
+    `{ type:'percent'|'fixed', value, mode:'deposit'|'full', serviceIds:[...] }`. `full` = %100 (Booksy'de %/£ 100'e
+    çekilince). Bir servis en fazla BİR kuralda (yeni kurala atama eskisinden çıkarır — Booksy davranışı).
+    **Çözümleme (booking anında):** servis → içeren kural → tutar; kural yoksa → deposit yok. Servisler+depositRules
+    zaten public → site **doğrudan okur** (join client'ta; ekstra projeksiyon gerekmez).
+  - **% opsiyonu → "sabit £ only" kararı (2026-06-24) revize:** Booksy hem % hem £ sunuyor; biz de ikisini destekleriz.
+  - **Kanal ayrımı ile birlikte:** kanal **master switch** (premium site açık/kapalı · salown-hosted açık/kapalı,
+    bağımsız — `public/booking` projeksiyonunda) kanalın deposit TOPLAYIP toplamayacağını belirler; **depositRules
+    PAYLAŞILIR** (aynı servis aynı tutar, kanaldan bağımsız). Kanal kapalı → o kanalda hiç deposit, kurallara bakılmaz.
 - **(c) Premium gating:** ⏳ owner henüz netleştirmedi (muhtemelen Pro+ / custom-site sahibi tenant).
 
-**Faz sırası (owner 2026-07-16):** ÖNCE premium custom site (whitecross-site); **SONRAKİ aşamada** aynı per-servis
-ödeme politikası **salown-hosted (online profil) booking'lerine** de uygulanır. İki kanal bağımsız kaldığı için
-(kanal ayrımı) ikinci faz birinciyi bozmadan eklenir.
+**UI (Booksy-benzeri):** Settings'te "Deposits" bölümü — kural listesi (`£10 · 22 Services` satırı gibi) + "Add Rule";
+edit ekranı: sol %/£ + tutar stepper, sağ "Valid for" servis seç/çıkar. (Mevcut `service.depositAmount` alanı bu
+modele göç eder veya kural referansı olur — geçiş kararı build'de.)
+
+**Faz sırası (owner 2026-07-16):** ÖNCE premium custom site (whitecross-site); **SONRAKİ aşamada** aynı depositRules
+**salown-hosted (online profil) booking'lerine** de. İki kanal bağımsız (master switch) → ikinci faz birinciyi bozmaz.
+
+**⚠️ Not (2026-07-16):** ROADMAP yeniden yapılandırıldı (Employment Model teması vb.); bu spec'in ROADMAP karşılığı
+tekrar bağlanmalı (S/A2 item ID'leri değişmiş olabilir).
 
 **⚠️ Risk (🔴 canlı gelir yolu):** whitecross-site CANLI, gerçek-para aktif Stripe akışı. Deposit mantığı değişimi
 = gelir yolunu değiştirmek → **owner test booking'i ŞART**, ayrı + dikkatli adım. Salown-side `features.stripe`
