@@ -162,8 +162,22 @@ almak istemeyebilirim." İki kanal:
    (client'ın gönderdiğine GÜVENME — server tutarın tek otoritesi; şu an `parseFloat(client) || 10` = client'a
    güveniyor, düzeltilecek güvenlik noktası).
 
-**Açık sorular (owner):** (a) tutar kişi-başı mı toplam mı (whitecross şu an £10/kişi)? (b) servis-bazlı
-`depositAmount` override önceliği? (c) premium gating — bu Pro+ özelliği mi (planLimits)?
+**Owner cevapları (2026-07-16):**
+- **(a) Tutar:** group ise **kişi-başı** (sitedeki mevcut akış aynen — `groupDepositPerPerson`). Tekli booking = servis tutarı.
+- **(b) Servis-bazlı politika — Booksy modeli (KİLİT):** ödeme politikası (deposit / full / pay-at-venue / off)
+  **servis bazında** atanabilmeli — spesifik bir servise VEYA tüm servislere, isteğe göre. Örn: £200'lük servis →
+  ödeme iste (owner seçimi); £30'luk servis → deposit gerekmez. Yani salt global toggle değil, **servis başına
+  mode + tutar** (global default fallback ile).
+  - **Veri modeli:** servis doc'una `paymentMode` alanı eklenir (mevcut `depositAmount` yanına); kanal config'i
+    (`sitePaymentMode`/`siteDefaultDepositAmount`) = **default**. Öncelik: **servis-özel > kanal-default**.
+    Servisler ZATEN world-readable → site per-servis politikayı doğrudan okur (projeksiyona gerek yok; projeksiyon
+    yalnız kanal default'unu taşır).
+  - ⏳ **Booksy ekran görüntüsü bekleniyor** (owner atacak) → UX/alan yerleşimi ona göre netleşecek.
+- **(c) Premium gating:** ⏳ owner henüz netleştirmedi (muhtemelen Pro+ / custom-site sahibi tenant).
+
+**Faz sırası (owner 2026-07-16):** ÖNCE premium custom site (whitecross-site); **SONRAKİ aşamada** aynı per-servis
+ödeme politikası **salown-hosted (online profil) booking'lerine** de uygulanır. İki kanal bağımsız kaldığı için
+(kanal ayrımı) ikinci faz birinciyi bozmadan eklenir.
 
 **⚠️ Risk (🔴 canlı gelir yolu):** whitecross-site CANLI, gerçek-para aktif Stripe akışı. Deposit mantığı değişimi
 = gelir yolunu değiştirmek → **owner test booking'i ŞART**, ayrı + dikkatli adım. Salown-side `features.stripe`
