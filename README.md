@@ -126,13 +126,14 @@ The project's "why / how / what happened" knowledge lives in 4 cross-linked file
 
 ## Conventions (everyone follows)
 
-**Source of truth (SSOT):** the *current status* of any work lives only in [ROADMAP.md](ROADMAP.md). Detail docs hold the technical content, not the status badge. Badges: ✅ Done · 🟡 Partial · 🔵 Next · 🟣 Vision · 🔴 Blocker.
+**Source of truth (SSOT):** the *current status* of any work lives only in [ROADMAP.md](ROADMAP.md). Detail docs hold the technical content, not the status badge. **ROADMAP is a company roadmap (restructured 2026-07-16), not a feature list:** priority-ordered business themes (Employment Model / Security & Scale / Payments / Evidence & Metrics / Onboarding & Parser / Booking / Marketing / AI / Mobile / Tech Debt / Themes / Marketplace), one-line active items, all completed detail moved to a bottom **Completed** section. Labels: ✅ Done · 🔄 In Progress · 🔵 Planned (committed, not started) · ⏸ Waiting (external dep / deliberate hold, e.g. Stripe Live, Capacitor) · 💡 Future (post-scale/vision). Item IDs (A1, B3, C8, G3, I2, S1…) are preserved, so cross-references still resolve.
 
 **Adding a new record:**
 - **Incident?** → the 8-field template at the top of [INCIDENTS.md](INCIDENTS.md) (Severity/Owner/Status + Impact/Root Cause/Resolution/Prevention + Lessons).
 - **Decision?** → the ADR format in [DECISIONS.md](DECISIONS.md) (Context/Decision/Alternatives/Outcome).
 - **Rule?** → [INVARIANTS.md](INVARIANTS.md); **intentional quirk?** → [KNOWN_QUIRKS.md](KNOWN_QUIRKS.md).
-- **New work appeared?** → add it to [ROADMAP.md](ROADMAP.md) with a status badge (don't drift off-road).
+- **New work appeared?** → add it to [ROADMAP.md](ROADMAP.md) under the right theme with a label (don't drift off-road).
+- **Marking something Done?** → find the *real feature commit* (`git log -S --follow`, not the migration commit); code-present ≠ working for behavior items — verify live if a field observation contradicts (see G1 in-app notif). Move the detail to the **Completed** section.
 
 **Before diagnosing a bug:** search [INCIDENTS.md](INCIDENTS.md) for a similar event — the same patterns keep recurring.
 
