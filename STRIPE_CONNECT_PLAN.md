@@ -86,7 +86,7 @@ Hedef: tenant için **tek buton + Stripe login + mod seç + kaydet.** Secret key
 **Kritik:** OAuth sonunda elimize sadece `acct_...` (hesap ID) geçer — tenant secret key'i DEĞİL. Charge açarken platform key + `Stripe-Account: acct_...` header yeterli → Firestore'da secret key tutma riski tamamen kalkar.
 
 ### whitecross vs herohairs
-- **whitecross:** Zaten Stripe hesabı var (whitecross-site'tan). OAuth'ta sadece login + Authorize → mevcut hesap bağlanır (yeni açmaz). 2 tık. NOT: bu yalnızca whitecross'un **Salown booking'leri** için; kendi sitesi eski akışında kalır (dokunulmaz), iki kanal aynı Stripe hesabını kullanır.
+- **whitecross:** Zaten Stripe hesabı var (whitecross-site'tan). OAuth'ta sadece login + Authorize → mevcut hesap bağlanır (yeni açmaz). 2 tık. NOT: bu yalnızca whitecross'un **Salown booking'leri** için; kendi sitesi eski akışında kalır (~~dokunulmaz~~ → **kısmen revize 2026-07-16: deposit config'i panelden okuyacak, bkz G**), iki kanal aynı Stripe hesabını kullanır.
 - **herohairs:** Hesap yok → "Connect with Stripe" → Stripe inline sign-up + KYC → biter. Salown'dan çıkmadan.
 
 ---
@@ -125,6 +125,34 @@ Hedef: tenant için **tek buton + Stripe login + mod seç + kaydet.** Secret key
 
 ### F. İptal/Refund
 - `salownCancelByToken` + 8h kuralı (BUSINESS_RULES.md) → deposit el koy / refund (`{ stripeAccount }`).
+
+### G. Premium custom-site deposit toggle (YENİ — owner kararı 2026-07-16) · 🔵 Planlandı
+> **Karar revizyonu:** Yukarıdaki "whitecross-site DOKUNULMAZ" (2026-06-24) **kısmen revize edildi.** Rails aynı
+> kalır (premium tenant kendi Stripe hesabı/kanalı, us-central1, kendi key'leri) — AMA custom site artık deposit
+> **on/off + tutarını hardcode etmek yerine panelden/Firestore'dan OKUYACAK.** Owner yönü: "premium üyenin zaten
+> sitesi var; deposit tam OnlineProfile'ın ayarlandığı gibi tek yerden ayarlanmalı ve Stripe otomatik şekillenmeli."
+
+**Sorun (bugünkü):** whitecross-site `script.js` deposit'i **HARDCODED** (`depositTotal = totalPeople * 10`,
+`groupDepositPerPerson = 10`); Firestore `paymentMode`'u (whitecross'ta = `pay_at_venue`) **yok sayıyor** → ayar
+ile canlı davranış çelişik. On/off toggle yok.
+
+**Köprü HAZIR:** `public/booking` projeksiyonu (Tier 2 Faz 1, `2db8721` CANLI 2026-07-16) zaten
+`paymentMode` + `websiteDepositsEnabled` + `defaultDepositAmount`'ı taşıyor ve premium site (public) okuyabilir.
+Plumbing'in yarısı hazır — geriye custom site'ın bunu OKUMASI + Settings toggle kaldı.
+
+**Yapılacak:**
+1. **Settings** — "Deposit" toggle'ı (ayrı, owner isteği): `paymentMode` (off/deposit/full/optional/pay_at_venue)
+   + `defaultDepositAmount £`. Zaten "Booking policy" kartı var (B) — premium-site bağını netleştir/görünür kıl.
+2. **Premium site (whitecross-site `script.js`)** — hardcoded £10 → `public/booking`'ten oku: deposit KAPALI/
+   `pay_at_venue` → ödeme yok, direkt CONFIRMED; deposit AÇIK → config tutarı (grup için kişi-başı desteği korunur).
+3. **whitecross-site `createCheckoutSession`** (us-central1, kendi fn) → `unit_amount`'ı config'ten al (hardcode değil).
+
+**Açık sorular (owner):** (a) tutar kişi-başı mı toplam mı (whitecross şu an £10/kişi)? (b) servis-bazlı
+`depositAmount` override önceliği? (c) premium gating — bu Pro+ özelliği mi (planLimits)?
+
+**⚠️ Risk (🔴 canlı gelir yolu):** whitecross-site CANLI, gerçek-para aktif Stripe akışı. Deposit mantığı değişimi
+= gelir yolunu değiştirmek → **owner test booking'i ŞART**, ayrı + dikkatli adım. Salown-side `features.stripe`
+canlı-mode açılışıyla KARIŞTIRMA (o europe-west2 Connect, ayrı). Tier 2 Faz 2/3'ten bağımsız; owner önceliğine göre.
 
 ---
 
