@@ -1,6 +1,6 @@
 # STRIPE_CONNECT_PLAN.md
 
-Salown platform ödeme (deposit/full) mimarisi planı. **Durum (2026-07-04): Faz 0–3 UÇTAN UCA CANLI (europe-west2, TEST mode). Backend 6 Connect fn + refund/configurable-window fn'leri deployed; Settings UI ("Online payments" kartı + "Booking policy" kartı) DEPLOYED (`8747fea`→CI hosting); Stripe TEST Connect app/webhook kuruldu (`ca_Uov4x…`, sandbox "Turquoise Swing"). KALAN: komisyon (%0 kablolu), canlı-mode açılışı, opsiyonel servis-bazlı deposit editör alanı. `features.stripe` yalnız connected+charges-enabled+ödemeli-modda açılır; canlı-mode henüz KAPALI.**
+Salown platform ödeme (deposit/full) mimarisi planı. **Durum (2026-07-04): Faz 0–3 UÇTAN UCA CANLI (europe-west2, TEST mode). Backend 6 Connect fn + refund/configurable-window fn'leri deployed; Settings UI ("Online payments" kartı + "Booking policy" kartı) DEPLOYED (`8747fea`→CI hosting); Stripe TEST Connect app/webhook kuruldu (`ca_Uov4x…`, sandbox "Turquoise Swing"). KALAN: komisyon (%0 kablolu), canlı-mode açılışı, opsiyonel servis-bazlı deposit editör alanı. `features.stripe` yalnız connected+charges-enabled+ödemeli-modda açılır; canlı-mode henüz KAPALI. → test→live geçişi için aşağıda "Go-Live Runbook (test→live)" (2026-07-17); ilk canlı deneme whitecross online profili.**
 
 İlgili: [BUSINESS_RULES.md](BUSINESS_RULES.md) (deposit flow), [FEATURE_FLAGS.md](FEATURE_FLAGS.md) (`stripe` flag), memory `project-salown-payments-vision`.
 
@@ -216,6 +216,63 @@ bookings/{id} (webhook yazar):
 2. **Policy + deposit** (B+E) — deposit/full/optional, servis bazlı sabit £. → ✅ **DEPLOYED 2026-07-04:** Settings "Online payments" kartı (mod seçici + default deposit); BookingPage zaten wire'lı. Servis-bazlı `depositAmount` backend'de destekli, editör alanı opsiyonel kaldı.
 3. **Refund/iptal** (F) + komisyon (`application_fee`). → ✅ **DEPLOYED 2026-07-04:** `salownCancelByToken` uygun iptalde refund; `salownConnectWebhook` `charge.refunded` yansıtma (collectionGroup index); iptal/erteleme pencereleri tenant-configurable (Settings "Booking policy"). Komisyon %0 kablolu.
 4. **Aç:** önce herohairs (kendi sitesi yok = asıl ihtiyaç), sonra opsiyonel whitecross. → ⏳ TEST mode'da uçtan uca denenebilir; canlı-mode açılışı gerçek para kararına bağlı.
+
+---
+
+## Go-Live Runbook (test→live) — 2026-07-17
+
+**Bağlam (owner 2026-07-17):** Connect kodu TEST/sandbox key'iyle uçtan uca canlı. **Mimari Connect KALIR** —
+sadece deploy edilen secret'ları test→live çeviririz (kod key-agnostic). İlk gerçek live deneme =
+**whitecross'un Salown online profilinden.** whitecross-site'ın kendi us-central1 ödeme kanalı bundan
+BAĞIMSIZ, **dokunulmaz.** Premium site `paymentMode` deposit/full/pay-at-venue seçimi (bölüm G) **EN SONA** bırakıldı.
+
+**Kod durumu (2026-07-17 kanıtlı):** Connect borusu TAM — onboarding (`salownConnectStart/Callback/Disconnect/Status`),
+checkout (`salownCreateCheckoutSession` server-side amount), webhook (`salownConnectWebhook` PENDING→CONFIRMED +
+`charge.refunded`). Mode deploy edilen `STRIPE_SECRET_KEY` önekinden türer (`index.ts:3095`). Tek eklenen kod:
+**mode-mismatch guard** — live key altında test `acct_` → cryptic Stripe hatası yerine net "reconnect" mesajı
+(`salownCreateCheckoutSession`; `salownConnectStatus` `modeMismatch` flag'i döner).
+
+### 1. Ön koşul — owner Stripe Dashboard'da (LIVE mode)
+1. Dashboard'u **live mode**'a al; Connect'i live'da aktifleştir.
+2. Connect application → **live `client_id`** (`ca_…`) al (test'inki `ca_Uov4x…` sandbox "Turquoise Swing").
+3. **Live platform secret key** (`sk_live_…`).
+4. Connect application → Webhooks → endpoint ekle (LIVE):
+   - URL: `https://europe-west2-havuz-44f70.cloudfunctions.net/salownConnectWebhook`
+   - Events: `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `charge.refunded`
+   - → live signing secret (`whsec_…`).
+   - OAuth redirect URI live app'te aynı olmalı: `…/salownConnectCallback`.
+
+### 2. Deploy (secret swap + HEDEFLİ functions deploy)
+```bash
+# 3 secret'ı live değerlerle set et:
+firebase functions:secrets:set STRIPE_SECRET_KEY --project havuz-44f70             # sk_live_…
+firebase functions:secrets:set STRIPE_CONNECT_CLIENT_ID --project havuz-44f70      # ca_… (live)
+firebase functions:secrets:set STRIPE_CONNECT_WEBHOOK_SECRET --project havuz-44f70 # whsec_… (live)
+
+# HEDEFLİ deploy — codebase prefix ŞART (blanket --only functions = us-central1 orphan siler):
+firebase deploy --project havuz-44f70 --only \
+functions:salown:salownConnectStart,functions:salown:salownConnectCallback,\
+functions:salown:salownConnectDisconnect,functions:salown:salownConnectStatus,\
+functions:salown:salownCreateCheckoutSession,functions:salown:salownConnectWebhook
+```
+Smoke: `salownConnectCallback` + `salownConnectWebhook` GET → HTTP 400 = canlı.
+
+### 3. Tenant re-onboard (whitecross İLK)
+- **Kritik:** test'te bağlanmış hesap test `acct_` tutar; live key ile çalışmaz. Mode-mismatch guard bunu
+  "reconnect" hatasıyla yakalar (sessiz çökme değil).
+- whitecross Settings → Integrations → **Disconnect** (varsa test bağı) → **Connect with Stripe** (artık live OAuth)
+  → login → `stripeConnectMode:'live'` yazılır.
+- `salownConnectStatus` → `chargesEnabled:true` doğrula.
+
+### 4. İlk canlı test + açılış
+1. whitecross online profilinden 1 gerçek booking → deposit/full öde (küçük tutar).
+2. Webhook PENDING→CONFIRMED çevirdi mi · `paidAmount`/`remaining` doğru mu · email gitti mi — doğrula.
+3. Refund testi: Stripe Dashboard'dan refund → booking `paymentState:'REFUNDED'` yansıdı mı.
+4. **Ancak hepsi ✅ ise** → `features.stripe` (super-admin) whitecross için AÇIK.
+
+### 5. Rollback
+- Sorun → `features.stripe` kapat (super-admin) → booking'ler ödemesiz CONFIRMED akışına döner.
+- Secret'ları test'e geri set + redeploy (kod aynı, key-agnostic).
 
 ## Riskler
 - Webhook secret modeli Connect'le zorunlu değişir (per-tenant → tek platform) — dikkatli migrate.
