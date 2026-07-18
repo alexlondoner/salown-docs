@@ -9,6 +9,45 @@
 
 ---
 
+## 0. 🔥 ÖNCELİKLİ — Whitecross-site EKSTRA SERVİS go-live (2026-07-18)
+
+> **Bağlam:** whitecross-site'a tek-kişi çoklu-servis (ekstra) eklendi (client Faz 1). Şu an `EXTRAS_ENABLED=false` (uykuda). Açma adımı = flag `true` + `firebase.saas.json` hosting redeploy. salOWN tüketen taraf hazır (`normalizeSoldAddOns` bookingUtils.ts, `CheckoutPanel` idOf=`productId||serviceId||id`, `TimeGrid` duration>0 zincirleme). Webhook'a DOKUNULMADI (client `soldAddOns`'ı PENDING'e yazar, webhook merge korur).
+> **Ortam:** `whitecrossbarbers.com/?testMode=1` (noindex + test Stripe), kart `4242 4242 4242 4242`. Kontrol: site + salOWN panel/takvim + staff app + Firestore.
+> **Sıra kuralı:** Bölüm 1 (regresyon) tamamen ✓ olmadan Bölüm 3'e geçme (sorun izole edilsin).
+> **Uyarı:** test booking Telegram/push tetikler (salOWN app functions, testMode muafiyeti yok).
+
+**1. 🔴 Regresyon — mevcut akış aynı mı (önce bu):**
+- [ ] Tek servis, ekstra YOK → slot → Book → Stripe **deposit** → success → salOWN CONFIRMED, süre/fiyat doğru.
+- [ ] Aynısı **tam ödeme (full)** ile.
+- [ ] **Grup booking** çalışıyor (2 kişi, ayrı slot, groupId).
+- [ ] Tek **Extras servisi ana servis olarak** (deposit'siz akış) çalışıyor.
+- [ ] Onay e-postası + Telegram/push geliyor.
+
+**2. Ekstra UI (yeni):**
+- [ ] Ana servis seçilince panel açılıyor; seçilmeden görünmüyor.
+- [ ] Chip'ler yalnız Extras kategorisi, seçili ana servis hariç.
+- [ ] Ekle/çıkar → sepet doğru (adet · +süre · +£).
+- [ ] Ana servis değişince geçersiz ekstra düşüyor.
+- [ ] Grup modu açılınca ekstra gizleniyor/temizleniyor.
+
+**3. 🔴 salOWN uyumu — "düşmesin/çakışmasın" (asıl):**
+- [ ] **Slot süresi:** ekstra ekleyince slotlar TOPLAM süreye göre daralıyor (ana+ekstra).
+- [ ] **🔴 Çakışma:** ekstralı booking → salOWN'da aynı berbere ekstranın kuyruğuna denk saat → **engelleniyor** (çift-rezervasyon yok).
+- [ ] Firestore PENDING: `duration`=toplam, `endTime`=start+toplam, `soldAddOns`={serviceId,name,price,qty,duration}.
+- [ ] CONFIRMED (Stripe sonrası): `soldAddOns` + toplam süre korundu (webhook ezmedi).
+- [ ] salOWN takvim: ekstra ana bloğun altında doğru süreyle zincirleniyor.
+- [ ] salOWN checkout: ekstra toplama geliyor, checkout tamamlanıyor, `paidAmount` ekstraları içeriyor.
+
+**4. Akıllı tarih (zaten canlı, aynı turda doğrula):**
+- [ ] Akşam/kapanış sonrası → sonraki açık gün; gündüz → bugün; kapalı gün atlanıyor; 6:45 son slot duruyor; elle bugün seçilebiliyor.
+
+**5. Kenar durumlar:**
+- [ ] Deposit+ekstra: deposit £10 sabit, kalan=toplam−10, ekstra pay-at-venue.
+- [ ] Onay e-postası ekstraları listeliyor.
+- [ ] Mobil (form+chip+sepet). İptal/reschedule linkleri çalışıyor.
+
+---
+
 ## 0. 🔥 ÖNCELİKLİ — Abandoned-cart "We've missed you" + Marketing email teslimatı (2026-06-26)
 
 > Kod hazır, build ✓. **A (app)** = `BookingDetailPanel.jsx` butonu (main push → CI hosting). **B (functions GDPR)** = `sendMarketingEmail` opt-out+unsubscribe (`firebase deploy --only functions`). Aşağıdaki opt-out/unsubscribe maddeleri **B deploy edilmeden geçmez**.
