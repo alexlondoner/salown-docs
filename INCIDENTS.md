@@ -8,17 +8,21 @@ Geçmiş kazalar ve çıkarılan dersler. Her kayıt: ne oldu, neden, nasıl dü
 
 ## 📋 Kayıt standardı (yeni olaylar bu şablonu doldurur)
 
-Her olay `## YYYY-MM-DD — kısa başlık` ile açılır, hemen altına **metadata satırı**, sonra detay + **Dersler / Lessons Learned**.
+Her olay `## YYYY-MM-DD — kısa başlık` ile açılır, hemen altına **metadata satırı**, sonra sabit alanlar + **Dersler / Lessons Learned**. **Bu alan seti bozulmaz** (2026-07-18 owner kararı) — tutarlılık kurumsal hafıza demek; her incident aynı alanları doldurur. Bilgi yoksa "yok"/"—" yaz, alanı atlama.
 
 ```
 ## 2026-XX-XX — kısa başlık
 
-**Severity:** 🔴 Critical / 🟠 High / 🟡 Medium / 🟢 Low · **Owner:** <kim> · **Status:** ✅ Resolved / 🟡 Open / 🔴 Regressed
+**Severity:** 🔴 Critical / 🟠 High / 🟡 Medium / 🟢 Low · **Owner:** <kim> · **Status:** ✅ Resolved / 🟡 Open / 🔴 Regressed · **Affected area:** <modül/akış — ör. checkout, delete, dashboard>
 
+**Discovery:** bug'ı kim/nasıl buldu — owner test / müşteri raporu / regression test / refactor sırasında / monitoring (yıllar sonra "bug'ları ne yakalıyor" = kalite metriği)
 **Impact:** kullanıcı/işletme ne yaşadı (bir cümle)
-**Root Cause:** asıl neden (kısa) — detay aşağıda
-**Resolution:** ne yapıldı + commit/deploy durumu
-**Prevention:** tekrarı nasıl engelleriz (kalıcı kural / test / guard)
+**Root Cause:** asıl neden — "bug'ı değil NEDEN'ini yaz" (ör. "create çalışıyor, update permission yüzünden patlıyor")
+**Bug Class:** tek satır sınıflandırma — Permission mismatch / State normalization (SSOT ihlali) / Race condition / Legacy compatibility / Timezone / Firestore transaction / … (yıllar sonra sayınca mimarinin zayıf noktaları çıkar)
+**Resolution:** ne yapıldı + deploy durumu
+**Prevention:** tekrarı nasıl engelleriz (kalıcı kural / guard)
+**Regression Tests:** hangi test bug'ı sabitledi (dosya::adı) — yoksa "yok (neden)"
+**Related:** commits <hash / uncommitted> · roadmap <ID/tema> · files <path'ler>
 
 **Ne oldu / Teşhis / Fix:** (serbest, uzun anlatım)
 
@@ -28,6 +32,65 @@ Her olay `## YYYY-MM-DD — kısa başlık` ile açılır, hemen altına **metad
 ```
 
 **Severity lejantı:** 🔴 Critical (canlı kesinti / veri-para / güvenlik) · 🟠 High (özellik kırık, geçici çözüm var) · 🟡 Medium (yanlış gösterim / kısmi) · 🟢 Low (tek ekran / kozmetik).
+
+## 2026-07-18 — Inbound parse: elle forward'lanan mailler "UNKNOWN_SOURCE" — hiç parse olmuyor
+
+**Severity:** 🟠 High (özellik kırık: manuel forward ile hiçbir booking/reschedule/cancel içeri girmiyor; sessiz düşer) · **Owner:** owner (sezgiyle kök nedeni buldu) + Claude · **Status:** ✅ Resolved & DEPLOYED 2026-07-18 (`functions:salown:salownInboundEmail` europe-west2, hedefli; `tsc` temiz + 7 regression testi + full suite 53/0) · **Affected area:** inbound email routing (`salownInboundEmail` → `parseInbox` → dispatch) / platform source-detection
+
+**Discovery:** Owner — natasha Gilbert'ın Treatwell booking'ini uçtan uca yeniden yaratma + reschedule zinciri testi sırasında; forward ettiği mailler booking'e dönüşmedi. Owner kök nedeni kendi tahmin etti ("noreply'dan gelmediği için yapmıyor"). `parseInbox` incelemesi 3 maili de `UNKNOWN_SOURCE` gösterdi.
+**Impact:** Salon bir Booksy/Fresha/Treatwell bildirimini **elle "Fwd:"** ile parse adresine yollayınca mail hiç parse edilmiyor — booking düşmüyor, reschedule uygulanmıyor, hata da görünmüyor (sessizce `parseInbox`'ta `UNKNOWN_SOURCE` olarak takılı kalıyor). Sadece Gmail **filtre auto-forward'ı** (Brevo üzerinden, orijinal `From` korunur) çalışıyordu.
+**Root Cause:** Kaynak (booksy/fresha/treatwell) **yalnızca gönderenden** tespit ediliyordu: `String(msg.from || msg.raw)` → `msg.from` dolu olduğunda `msg.raw`'a hiç düşmüyordu. Manuel forward'da `from` artık `noreply@treatwell.co.uk` değil **forward eden salon'un Gmail'i** → `/treatwell/` eşleşmez → `source='unknown'` → dispatch trigger'ı `UNKNOWN_SOURCE` yazıp bırakır. Yani "gerçek provider maili çalışıyor, forward patlıyor" — sinyal `from`'da kaybolduğu için.
+**Bug Class:** Source/identity detection — tek sinyale (sender) bağımlılık; forward gönderen kimliğini değiştirince tespit çöküyor (State/identity provenance kaybı). Kardeş kalıp: parser barber-ad eşleşmesi, client identity lookup.
+**Resolution:** `_detectInboundSource(msg)` saf fonksiyonuna çıkarıldı: **önce `from`** (mevcut öncelik + davranış AYNEN korunur — gerçek provider maili hiç etkilenmez), tanınmazsa **`subject` + `raw` gövdesine düş** (forward'da orijinal `From: noreply@treatwell...` ve marka adı gövdede duruyor). Öncelik `from`'da kaldığı için gövdede geçen bir marka adı gerçek maili asla yanlış sınıflamaz.
+**Prevention:** (1) Kaynak-tespit tek sinyalle değil `from → subject/raw` fallback zinciriyle. (2) Regression testi bug'ı sabitledi: manuel-forward (from=forwarder) → 'treatwell'; priority guard (from=booksy, gövdede 'treatwell' geçse de → 'booksy'); junk → 'unknown'. (3) **Not:** natasha'nın orijinal booking'i forward'la DEĞİL, tombstone silindikten sonra zamanlı IMAP taraması gerçek gelen kutusundaki `noreply@treatwell` mailinden re-import edildi — iki borunun (IMAP cron + inbound webhook) ayrı davrandığını gösteren teşhis ipucu.
+**Regression Tests:** `functions/src/inbound/source-detect.test.js` (7 test — genuine-from, manuel-forward-subject/body, body-only, priority guard, unknown, empty-no-throw); full functions suite 53 pass / 0 fail.
+**Related:** commits <uncommitted (owner onayı bekliyor)> · roadmap <parser/inbound> · files `functions/src/inbound/index.ts` (`_detectInboundSource` + export) · `functions/src/inbound/source-detect.test.js`
+
+**Ne oldu / Teşhis / Fix:** natasha testinde forward'lar düşmedi. `parseInbox`'a admin SDK ile bakınca 3 doc da `source:"unknown"`/`UNKNOWN_SOURCE` çıktı (2× natasha yeni-booking dup + 1× **Chloé Lopez** reschedule — takılı reschedule aslında natasha'nın değildi). `inbound/index.ts:127`'de `String(msg.from || msg.raw)` fallback'inin yalnız `from` boşken devreye girdiği görüldü; manuel forward'da `from` dolu olduğu için raw hiç okunmuyordu. Fix `from`-öncelikli + subject/raw fallback saf fonksiyonuna indirgedi, test edildi.
+
+**Dersler / Lessons Learned:**
+- **Kimlik/kaynak tespiti tek sinyale asılmamalı:** forward, gönderen adresini değiştirir; sinyal kaybolursa özellik sessizce çöker. `from → subject → body` gibi kademeli fallback + öncelik koruması doğru desen.
+- **Sessiz `UNKNOWN_SOURCE` bir alarm değil:** kullanıcı "olmadı" derken sistem hata da vermez. Teşhiste ilk durak ham stage tablosu (`parseInbox`) — orada durumu görünce kök neden 2 dakikada çıktı.
+- **İki boru = iki davranış:** aynı maili IMAP cron doğru (from=noreply) alır, inbound webhook forward'ta yanlış sınıflar. Bir boru çalışırken öbürü patlıyorsa, tam olarak nerede ayrıştıklarına bak.
+- Owner'ın "noreply'dan gelmiyor" sezgisi doğrudan kök nedendi — saha sezgisini ciddiye al.
+
+## 2026-07-18 — Checkout: ek servis (child) ana servise "merge" oluyor / kayboluyor
+
+**Severity:** 🟠 High (multi-servisli booking'lerde veri kaybı: ek servis satırı düşüyor, fiyatı parent'ta kalıyor; para/kayıt etkisi) · **Owner:** owner (yakaladı) + Claude · **Status:** ✅ Resolved (LOCAL; typecheck+lint+7 regression testi geçti; canlıda dev doğrulandı Alex+Ladies-Haircut £40 korundu; deploy owner onayı bekliyor) · **Affected area:** checkout (Save unpaid + Complete Checkout) / soldAddOns persist
+
+**Discovery:** Owner — HeroHairs'ta multi-servisli booking'i checkout / "Save unpaid" ederken fark etti (yeni inline "Extra services" işini test ederken).
+**Impact:** Bir booking'e ek servis (Beard/Facial gibi tam servis) eklenip **checkout** yapılınca ya da **"Save unpaid"** (veresiye) ile kaydedilince, ek servis(ler) **kayboluyordu**; toplam fiyat parent servisin fiyatında kaldığı için ek servis **ana servise "merge olmuş" gibi** görünüyordu (ör. HeroHairs "Highlights & Toner & Blowdry — …" £330 tek-servis, ADD-ONS boş; Alex Perry orijinali "Men Highlights"tı, eski akış Wash & Blow Dry'a kaydırmıştı).
+**Root Cause:** Checkout borusu ek servisleri **"Extras" kataloğuna filtreliyor** + `normalizeSoldProducts` ile normalize edip **serviceId + duration'ı düşürüyordu.** `CheckoutPanel.tsx` init (`localExtras = soldAddOns.filter(extrasList.find(...))`) → "Extras" kategorisinde olmayan tam-servis add-on'lar daha panel açılırken eleniyordu; `ProductSelector.setQty` her stepper dokunuşunda listeyi yeniden normalize edip yine düşürüyordu; `saveUnpaidBooking` + `checkoutBooking` yazımı da duration/serviceId'siz normalize ediyordu. Üç katman aynı yanlışı yapıyordu çünkü **draft "Save unpaid" ile "Complete Checkout" ek servisi AYRI AYRI normalize ediyordu** (tek doğru kaynak yoktu).
+**Bug Class:** State normalization — Single Source of Truth ihlali (aynı veriyi 3 yol ayrı normalize ediyordu) + yanlış-normalize (`normalizeSoldProducts` add-on'a uygulanmış → duration/serviceId düşürme).
+**Resolution:** Tek doğru kaynak `normalizeSoldAddOns` (`bookingUtils.ts`) — serviceId+duration+qty korur, katalog filtresi YOK, eksik qty→1 / açık 0→düşer. Her yol buradan geçer artık: CheckoutPanel init (filtre kaldırıldı), ProductSelector.setQty (raw value üzerinde çalışır, dokunulmayan/katalog-dışı item + duration korunur), `saveUnpaidBooking`, `checkoutBooking`, `createWalkIn`, BookingDetailPanel (local `normAddOns` silindi, import edildi). Products (retail) filtresine dokunulmadı (rapor add-on'du). **Regression testi:** `src/utils/soldAddOns.test.ts` (7 test) — Haircut+Beard+Facial senaryosu: add-on'lar düşmez, serviceId+duration korunur, qty default'ları, junk-input.
+**Prevention:** (1) `normalizeSoldAddOns` tek kaynak — ek servis persist eden HER yol bunu kullanmalı, ASLA `normalizeSoldProducts` (o duration/serviceId düşürür) ya da lokal ikinci bir normalize. (2) Regression testi bug'ı sabitledi (`npm test`). (3) **Mimari yön:** "Save unpaid" ile "Complete Checkout" tek bir `buildCheckoutPayload` üzerinden geçmeli (servis/add-on/ürün/ödeme tek yerde hazırlanır, draft/final sadece son adımda ayrışır) → ROADMAP'e. İki ayrı akış aynı payload'ı ayrı hazırladığı sürece bu sınıf bug tekrar eder.
+**Regression Tests:** `src/utils/soldAddOns.test.ts` (7 test — Haircut+Beard+Facial: düşmez, serviceId+duration korunur, qty default'ları, junk); full suite 66/66.
+**Related:** commits <uncommitted (owner onayı bekliyor)> · roadmap <Monetization/checkout — `buildCheckoutPayload` birleştirme> · files `bookingUtils.ts` (normalizeSoldAddOns) · `CheckoutPanel.tsx` · `firestoreActions.ts` (saveUnpaidBooking/checkoutBooking/createWalkIn) · `BookingDetailPanel.tsx` · `soldAddOns.test.ts`
+
+**Ne oldu / Teşhis / Fix:** Owner test ederken fark etti: ek servisli booking checkout/save-unpaid sonrası ek servisi kaybediyor, isim ikilenip fiyat şişiyor ("merge"). Audit log (Alex Perry) kök nedeni doğruladı: orijinal "Men Highlights (Short Hair variation)" → 10 Temmuz'da ESKİ BookingForm "Edit" popup'ının "eşleşmezse config.services[0] default" bug'ıyla Wash & Blow Dry'a kaymış (o form panelden ayrıca kaldırıldı). Asıl checkout-merge bug'ı ise `CheckoutPanel` init filtresi + 3-katman normalize'da. Fix tek doğru kaynağa indirgedi.
+
+**Dersler / Lessons Learned:**
+- Aynı veriyi (soldAddOns) persist eden **birden fazla yol** varsa (draft-save + checkout + walk-in create), MUTLAKA tek normalize fonksiyonundan geçir — yoksa biri düzelir öbürü düşürür.
+- `normalizeSoldProducts` add-on'lara UYGULANMAZ: retail ürün için tasarlı (qty önemli, duration yok); ek servis serviceId+duration taşır. Yanlış normalize = sessiz veri kaybı.
+- "Katalog filtresi" ile persist listesi karıştırılmamalı: filtre GÖSTERİM içindir; **save listesi hiçbir zaman katalog eşleşmesine göre kırpılmamalı** (yoksa katalog-dışı item silinir).
+- Owner'ın refleksi doğruydu: "sadece fix etme, regression testi yaz" — bu sınıf (multi-akış payload) tam da test edilmesi gereken yer.
+
+## 2026-07-18 — Owner walk-in silemiyor: "insufficient permissions" (delete tombstone yazımı bloklu)
+
+**Severity:** 🟡 Medium (fonksiyon kırık — owner aynı slotta ikinci silmede takılıyor; veri kaybı yok) · **Owner:** owner (yakaladı) + Claude · **Status:** ✅ Resolved (LOCAL frontend fix; typecheck+lint temiz; canlıda dev doğrulandı — owner sildi; hard-refresh yeter, deploy gerekmez) · **Affected area:** delete (deleteBooking / parserTombstones)
+
+**Discovery:** Owner — HeroHairs'ta bir walk-in silmeye çalışırken (unpaid-checkout regression testine hazırlanırken).
+**Impact:** HeroHairs OWNER bir walk-in'i silmeye çalışınca "insufficient permissions" alıyordu; booking silinmiyordu. İlk silme çalışıyor, aynı slottaki ikinci silme patlıyordu (owner "ama normalde silme yetkim var" dedi — haklı).
+**Root Cause:** `deleteBooking` (`firestoreActions.ts`) walk-in'de `deleteDoc`'tan ÖNCE re-import koruması için `parserTombstones/SLOT-{source}-{date}-{time}` `setDoc` yazıyor. `parserTombstones` rules (`firestore.rules:159-161`): create=tenant-üyesi (owner ✅) AMA **update=super-admin-only.** `setDoc` doc yoksa create, VARSA update → aynı slotta önceki silmeden kalan tombstone varsa `setDoc`=UPDATE → owner denied → hata `deleteDoc`'tan önce fırlıyor, silme hiç olmuyor. UNPAID/status ile ilgisiz.
+**Bug Class:** Permission mismatch — create-vs-update rule farkı + `setDoc` (create-or-update) belirsizliği; ayrıca yan-etki-yazımı asıl işlemi bloklamış (best-effort ihlali).
+**Resolution:** İki tombstone `setDoc`'u `try/catch` ile best-effort yapıldı — tombstone yazımı (re-import koruması) silmeyi ASLA bloklamamalı; tombstone zaten varsa yeniden yazmaya gerek yok, yoksa create zaten owner'a açık. Frontend fix, functions/rules deploy gerekmez.
+**Prevention:** Bir "yan-etki yazımı" (tombstone/audit/projeksiyon) asıl işlemi (delete) bloklamamalı → best-effort/try-catch. Açık kalan (ayrı, rules deploy + güvenlik kararı): `parserTombstones` update'i `isTenantAny(tenantId)`'e açmak (owner kendi tenant'ında tombstone güncelleyebilsin).
+**Regression Tests:** yok — saf-fonksiyon değil (Firestore rules + setDoc etkileşimi); guard try/catch ile kod içinde. İleride: emulator entegrasyon testi.
+**Related:** commits <uncommitted (owner onayı bekliyor)> · roadmap <SECURITY — parserTombstones update rule> · files `firestoreActions.ts` (deleteBooking) · `firestore.rules:159-161` (parserTombstones)
+
+**Dersler / Lessons Learned:**
+- "İlk sefer çalışıyor, ikinci sefer 'permission' hatası" kalıbı → neredeyse her zaman create-vs-update rule farkı + `setDoc` (create-or-update) kullanımı.
+- Asıl işlemden ÖNCE yapılan yardımcı yazımlar (tombstone, audit) fırlarsa asıl işlem hiç olmaz — bunları try/catch veya işlemden SONRA yap.
 
 ## 2026-07-14 — Dashboard week view "ekran titremesi" — iki useEffect'in sonsuz ping-pong render loop'u
 
