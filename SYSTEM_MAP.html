@@ -1,0 +1,281 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>salOWN — Sistem Haritası</title></head><body>
+<style>
+  :root{
+    --brand:#5546e6; --brand-2:#7c6ff2; --brand-tint:#efedfc; --brand-line:#d9d4f7;
+    --ink0:#171430; --ink1:#3b3760; --muted:#6f6c8c; --faint:#9a97b5;
+    --bg:#f5f4fb; --card:#ffffff; --border:#e7e4f3; --band:#faf9fe;
+    --booksy:#185FA5; --fresha:#993C1D; --treatwell:#0F6E56; --website:#534AB7;
+    --ok:#0f8a5f; --warn:#c77d17; --hard:#b23a5b;
+    --mono:'SF Mono',ui-monospace,'JetBrains Mono',Menlo,Consolas,monospace;
+    --sans:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--ink0);font-family:var(--sans);
+       -webkit-font-smoothing:antialiased;line-height:1.45;
+       background-image:radial-gradient(circle at 15% 0%, #efeafc 0, transparent 45%),radial-gradient(circle at 90% 4%, #eef6f2 0, transparent 40%);}
+  .wrap{max-width:1140px;margin:0 auto;padding:34px 20px 70px;}
+
+  header{margin-bottom:22px;}
+  h1{font-size:34px;font-weight:800;letter-spacing:-1.2px;margin:0;color:var(--ink0);}
+  h1 b{color:var(--brand);}
+  .tagline{font-size:14.5px;color:var(--muted);margin:8px 0 0;max-width:62ch;font-weight:500;}
+  .thesis{margin-top:16px;background:linear-gradient(100deg,var(--brand),#6a5cf0);color:#fff;border-radius:16px;
+          padding:15px 20px;font-size:15.5px;font-weight:700;letter-spacing:-.2px;line-height:1.45;
+          box-shadow:0 14px 30px -14px var(--brand);}
+  .thesis span{opacity:.8;font-weight:600;font-size:12.5px;display:block;margin-top:3px;}
+  .meta{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;}
+  .pill{font-size:11.5px;font-weight:700;padding:4px 11px;border-radius:999px;background:var(--card);border:1px solid var(--border);color:var(--ink1);}
+  .pill.b{background:var(--brand);color:#fff;border-color:transparent;}
+
+  .band{background:var(--band);border:1px solid var(--border);border-radius:22px;padding:18px 20px 22px;margin-bottom:14px;position:relative;}
+  .band-h{display:flex;align-items:center;gap:10px;margin-bottom:15px;}
+  .band-n{width:24px;height:24px;border-radius:8px;background:var(--brand);color:#fff;font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .band-t{font-size:16px;font-weight:800;color:var(--ink0);letter-spacing:-.3px;}
+  .band-s{font-size:12.5px;font-weight:600;color:var(--faint);margin-left:auto;text-align:right;}
+  .flow{display:flex;align-items:center;justify-content:center;gap:8px;margin:-3px 0 5px;color:var(--faint);font-size:11.5px;font-weight:600;}
+  .flow b{color:var(--brand-line);font-size:16px;}
+
+  .grid{display:grid;gap:12px;}
+  .g5{grid-template-columns:repeat(5,1fr);} .g4{grid-template-columns:repeat(4,1fr);}
+  .g3{grid-template-columns:repeat(3,1fr);} .g2{grid-template-columns:repeat(2,1fr);}
+  @media(max-width:820px){.g5,.g4{grid-template-columns:repeat(2,1fr);}}
+  @media(max-width:560px){.g5,.g4,.g3,.g2{grid-template-columns:1fr;}}
+
+  .card{background:var(--card);border:1px solid var(--border);border-radius:15px;padding:13px 14px;}
+  .card.accent{border-left:3px solid var(--brand);}
+  .card h3{font-size:13.5px;font-weight:800;margin:0 0 3px;color:var(--ink0);letter-spacing:-.2px;}
+  .card .url{font-family:var(--mono);font-size:10.5px;color:var(--brand);font-weight:600;word-break:break-all;}
+  .card p{font-size:11.5px;color:var(--muted);margin:7px 0 0;font-weight:500;line-height:1.5;}
+
+  .chips{display:flex;flex-wrap:wrap;gap:6px;}
+  .chip{font-size:11px;font-weight:700;padding:4px 9px;border-radius:8px;background:var(--brand-tint);color:var(--brand);border:1px solid var(--brand-line);font-family:var(--mono);letter-spacing:-.2px;}
+  .chip.m{background:#f3f2f8;color:var(--ink1);border-color:var(--border);}
+  .chip.data{background:#fff;}
+
+  .pipe{display:flex;align-items:stretch;gap:0;flex-wrap:wrap;}
+  .stage{flex:1;min-width:145px;background:var(--card);border:1px solid var(--border);border-radius:13px;padding:11px 12px;}
+  .stage .lab{font-size:10px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;color:var(--faint);}
+  .stage .val{font-size:12.5px;font-weight:700;color:var(--ink0);margin-top:4px;line-height:1.4;}
+  .stage .sub{font-size:10px;color:var(--muted);margin-top:4px;font-family:var(--mono);}
+  .arrow{display:flex;align-items:center;justify-content:center;padding:0 4px;color:var(--brand);font-size:17px;font-weight:700;flex-shrink:0;}
+  @media(max-width:640px){.arrow{width:100%;transform:rotate(90deg);padding:6px 0;}}
+
+  .src{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;padding:4px 9px;border-radius:999px;background:#fff;border:1px solid var(--border);}
+  .dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  @media(max-width:640px){.two{grid-template-columns:1fr;}}
+  .mini-h{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--brand);margin:0 0 9px;}
+  ul.tight{margin:0;padding-left:16px;} ul.tight li{font-size:12px;color:var(--ink1);margin-bottom:5px;font-weight:500;}
+  ul.tight li b{color:var(--ink0);}
+  code{font-family:var(--mono);font-size:11px;background:#f3f2f8;padding:1px 5px;border-radius:5px;color:var(--brand);}
+
+  /* SSOT hero band */
+  .ssot{background:linear-gradient(180deg,#f3f0ff,#efeafd);border-color:var(--brand-line);}
+  .ssot-core{display:flex;flex-direction:column;align-items:center;text-align:center;}
+  .ssot-node{background:var(--brand);color:#fff;border-radius:16px;padding:14px 30px;box-shadow:0 16px 34px -14px var(--brand);}
+  .ssot-node .t{font-size:20px;font-weight:800;letter-spacing:-.4px;}
+  .ssot-node .s{font-size:11.5px;font-weight:600;opacity:.85;margin-top:2px;}
+  .fanline{color:var(--brand);font-size:12px;font-weight:700;margin:11px 0 12px;display:flex;align-items:center;gap:8px;}
+  .fanline b{font-size:16px;}
+  .fanout{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;width:100%;}
+  @media(max-width:720px){.fanout{grid-template-columns:repeat(3,1fr);}}
+  @media(max-width:420px){.fanout{grid-template-columns:repeat(2,1fr);}}
+  .leaf{background:#fff;border:1px solid var(--brand-line);border-radius:12px;padding:11px 8px;text-align:center;}
+  .leaf .n{font-size:13px;font-weight:800;color:var(--ink0);}
+  .leaf .d{font-size:10px;color:var(--muted);margin-top:2px;font-weight:600;}
+
+  /* difficulty band */
+  .hard-band{background:linear-gradient(180deg,#fdf3f6,#fbeef2);border-color:#f2cdd9;}
+  .hard-band .band-n{background:var(--hard);}
+  .misread{font-size:12.5px;color:var(--muted);font-weight:600;font-style:italic;margin:0 0 12px;}
+  .misread b{color:var(--hard);font-style:normal;}
+  .hardchips{display:flex;flex-wrap:wrap;gap:7px;}
+  .hardchip{font-size:12px;font-weight:800;padding:6px 12px;border-radius:9px;background:#fff;border:1px solid #f0c4d1;color:var(--hard);letter-spacing:-.2px;}
+
+  /* evolution chain */
+  .chain{display:flex;align-items:center;flex-wrap:wrap;gap:0;justify-content:center;}
+  .link{background:#fff;border:1px solid var(--brand-line);border-radius:11px;padding:9px 15px;font-size:13px;font-weight:800;color:var(--ink0);}
+  .link.now{background:var(--brand-tint);}
+  .link.future{border-style:dashed;color:var(--brand);}
+  .caret{color:var(--brand);font-weight:800;padding:0 8px;font-size:15px;}
+
+  .legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:8px;font-size:11.5px;color:var(--muted);font-weight:600;}
+  footer{margin-top:22px;font-size:11.5px;color:var(--faint);line-height:1.6;text-align:center;}
+  .status{display:inline-block;font-size:10px;font-weight:800;padding:2px 7px;border-radius:6px;margin-left:6px;vertical-align:middle;}
+  .status.live{background:#e4f6ee;color:var(--ok);} .status.test{background:#fbf1e0;color:var(--warn);}
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>sal<b>OWN</b> · Sistem Haritası</h1>
+    <p class="tagline">Multi-tenant kuaför/berber SaaS — Booksy/Fresha/Treatwell'i tek yerde <b>toplayan</b> (aggregator) işletme motoru. Firebase <code>havuz-44f70</code> · <code>europe-west2</code>.</p>
+    <div class="thesis">
+      Bookings are the single source of truth that drive every downstream workflow.
+      <span>Booking = platformun kalbi; takvim, ödeme, finans, loyalty, marketing, staff — hepsi oradan beslenir.</span>
+    </div>
+    <div class="meta">
+      <span class="pill b">2 tenant canlı: whitecross · herohairs</span>
+      <span class="pill">React 19 + Vite + TS</span>
+      <span class="pill">Cloud Functions (Node 22)</span>
+      <span class="pill">TypeScript v1.0.0</span>
+    </div>
+  </header>
+
+  <!-- 1 SURFACES -->
+  <div class="band">
+    <div class="band-h"><span class="band-n">1</span><span class="band-t">Yüzeyler — kim kullanıyor</span><span class="band-s">5 frontend</span></div>
+    <div class="grid g5">
+      <div class="card accent"><h3>Staff App</h3><div class="url">salown-staff.web.app</div><p>Mobil kokpit: Today · Week (schedule) · Stats · Clients · Sales · Profile.</p></div>
+      <div class="card accent"><h3>Admin Panel</h3><div class="url">salown web app</div><p>Dashboard · Bookings · Calendar · Finance · Reports · Marketing · Staff Hub · Settings.</p></div>
+      <div class="card accent"><h3>Public Booking</h3><div class="url">salown.com /s /book</div><p>Müşteri: landing + rezervasyon + token'la iptal/erteleme.</p></div>
+      <div class="card accent"><h3>Süper-Admin</h3><div class="url">salown-admin.web.app</div><p>Tenant provisioning, parse-inbox, owner activity.</p></div>
+      <div class="card accent"><h3>Premium Siteler</h3><div class="url">whitecrossbarbers.com</div><p>Tenant custom-domain storefront (SEO).</p></div>
+    </div>
+  </div>
+
+  <div class="flow"><b>▼</b> SDK · callable · Firestore <b>▼</b></div>
+
+  <!-- 2 BACKEND + DATA -->
+  <div class="band">
+    <div class="band-h"><span class="band-n">2</span><span class="band-t">Backend & Veri — beyin</span><span class="band-s">functions/src · tenants/{id}/…</span></div>
+    <div class="two">
+      <div>
+        <p class="mini-h">Cloud Functions — domain modülleri</p>
+        <div class="chips">
+          <span class="chip">parsers</span><span class="chip">inbound</span><span class="chip">notifications</span><span class="chip">emails</span><span class="chip">marketing</span><span class="chip">checkout</span><span class="chip">clients</span><span class="chip">finance</span><span class="chip">bookings</span><span class="chip">tenants</span><span class="chip">ai</span><span class="chip m">utils</span>
+        </div>
+        <p style="font-size:11.5px;color:var(--muted);margin-top:11px;font-weight:500;">Node 22 · 2nd-gen · <code>europe-west2</code>. Deploy <b>hedefli</b> (blanket YASAK — 27 legacy'yi siler).</p>
+      </div>
+      <div>
+        <p class="mini-h">Firestore — <code>tenants/{tid}/</code></p>
+        <div class="chips">
+          <span class="chip data">bookings</span><span class="chip data">clients</span><span class="chip data">services</span><span class="chip data">barbers</span><span class="chip data">products</span><span class="chip data">settings</span><span class="chip data">staffComp</span><span class="chip data">fcmTokens</span><span class="chip data">parserTombstones</span><span class="chip data">auditLogs</span><span class="chip data">emailEvents</span>
+        </div>
+        <p style="font-size:11.5px;color:var(--muted);margin-top:11px;font-weight:500;">+ <code>superAdmin/*</code> · <code>public/booking</code> projeksiyon.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3 INBOUND AGGREGATOR -->
+  <div class="band">
+    <div class="band-h"><span class="band-n">3</span><span class="band-t">Aggregator borusu — GİRİŞ (tek yönlü)</span><span class="band-s">parity-testli</span></div>
+    <div style="margin-bottom:12px;" class="chips">
+      <span class="src"><span class="dot" style="background:var(--booksy)"></span>Booksy</span>
+      <span class="src"><span class="dot" style="background:var(--fresha)"></span>Fresha</span>
+      <span class="src"><span class="dot" style="background:var(--treatwell)"></span>Treatwell (iCal+mail)</span>
+      <span class="src"><span class="dot" style="background:var(--website)"></span>Website / salOWN</span>
+      <span class="src"><span class="dot" style="background:var(--muted)"></span>Walk-in</span>
+    </div>
+    <div class="pipe">
+      <div class="stage"><div class="lab">Kaynak</div><div class="val">Platform mailleri + iCal</div><div class="sub">confirm·reschedule·cancel</div></div>
+      <div class="arrow">→</div>
+      <div class="stage"><div class="lab">İki giriş yolu</div><div class="val">IMAP + Brevo inbound</div><div class="sub">ParseEmails · InboxDispatch</div></div>
+      <div class="arrow">→</div>
+      <div class="stage"><div class="lab">Tek pipeline</div><div class="val">Paylaşılan parse</div><div class="sub">yollar ayrışmaz</div></div>
+      <div class="arrow">→</div>
+      <div class="stage"><div class="lab">Dedup</div><div class="val">externalId·tombstone·slot</div><div class="sub">dirilme yok</div></div>
+    </div>
+  </div>
+
+  <div class="flow"><b>▼</b> her booking buraya düşer <b>▼</b></div>
+
+  <!-- 4 BOOKINGS = SSOT (hero) -->
+  <div class="band ssot">
+    <div class="band-h"><span class="band-n">4</span><span class="band-t">Bookings — Single Source of Truth</span><span class="band-s">platformun kalbi</span></div>
+    <div class="ssot-core">
+      <div class="ssot-node"><div class="t">Bookings (SSOT)</div><div class="s">walk-in · online · Booksy · Fresha · Treatwell — hepsi tek koleksiyonda</div></div>
+      <div class="fanline"><b>↓</b> her downstream iş buradan beslenir <b>↓</b></div>
+      <div class="fanout">
+        <div class="leaf"><div class="n">Calendar</div><div class="d">takvim / slot</div></div>
+        <div class="leaf"><div class="n">Reports</div><div class="d">analiz</div></div>
+        <div class="leaf"><div class="n">Finance</div><div class="d">P&amp;L / ciro</div></div>
+        <div class="leaf"><div class="n">Marketing</div><div class="d">re-engage</div></div>
+        <div class="leaf"><div class="n">Loyalty</div><div class="d">puan</div></div>
+        <div class="leaf"><div class="n">Staff</div><div class="d">occupancy / wage</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5 TRIGGER ENGINE -->
+  <div class="band">
+    <div class="band-h"><span class="band-n">5</span><span class="band-t">Trigger Engine — booking yazımı neyi tetikler</span><span class="band-s">Firestore trigger-driven</span></div>
+    <div class="pipe">
+      <div class="stage" style="border-color:var(--brand-line);background:var(--brand-tint);"><div class="lab" style="color:var(--brand)">Kaynak</div><div class="val" style="color:var(--brand)">Booking yazılır</div><div class="sub" style="color:var(--brand)">create / update</div></div>
+      <div class="arrow">→</div>
+      <div class="stage"><div class="lab">Motor</div><div class="val">Firestore Trigger</div><div class="sub">onDocumentWritten</div></div>
+      <div class="arrow">→</div>
+      <div class="stage"><div class="lab">Zincir (paralel)</div><div class="val">Notification → Email → Loyalty → Marketing → Reports</div><div class="sub">+ Stripe deposit webhook</div></div>
+    </div>
+    <div class="grid g4" style="margin-top:12px;">
+      <div class="card"><h3>🔔 Notification</h3><p>Telegram + panel in-app + FCM push. <code>salownNotifyBooking*</code>.</p></div>
+      <div class="card"><h3>✉️ Email</h3><p>Brevo (loyalty) + tenant Gmail (confirm/cancel/reschedule). GDPR gate.</p></div>
+      <div class="card"><h3>🎁 Loyalty → Marketing</h3><p>Puan tahakkuk + <code>emailEvents</code> funnel → re-engagement.</p></div>
+      <div class="card"><h3>💳 Payment <span class="status test">TEST</span></h3><p>Stripe Connect deposit; webhook PENDING→CONFIRMED.</p></div>
+    </div>
+  </div>
+
+  <!-- 6 WHY IT'S DIFFICULT -->
+  <div class="band hard-band">
+    <div class="band-h"><span class="band-n">!</span><span class="band-t">Neden zor — asıl mühendislik burada</span><span class="band-s">"just read email" değil</span></div>
+    <p class="misread">Dışarıdan bakan: <i>"email okuyup booking oluşturuyor."</i> &nbsp;→&nbsp; <b>Gerçekte zor olan:</b></p>
+    <div class="hardchips">
+      <span class="hardchip">Normalization</span>
+      <span class="hardchip">Deduplication</span>
+      <span class="hardchip">Reschedule</span>
+      <span class="hardchip">Cancel</span>
+      <span class="hardchip">No-resurrection</span>
+      <span class="hardchip">Parser parity</span>
+      <span class="hardchip">Tenant isolation</span>
+    </div>
+    <p style="font-size:11.5px;color:var(--muted);margin:13px 0 0;font-weight:500;">3 platform × 2 giriş yolu (IMAP+inbound) × 4 olay (create/reschedule/cancel/no-show) — hepsi <b>çift kayıt yok · hayalet yok · tenant sızıntısı yok</b> garantisiyle. Karakterizasyon + parity testleriyle kilitli.</p>
+  </div>
+
+  <!-- 7 PRODUCT EVOLUTION -->
+  <div class="band" style="border-color:var(--brand-line);background:linear-gradient(180deg,#faf9ff,#f6f4fe);">
+    <div class="band-h"><span class="band-n">6</span><span class="band-t">Ürün evrimi — artık sadece booking sistemi değil</span><span class="band-s">yukarı taşınıyor</span></div>
+    <div class="chain">
+      <span class="link now">Booking</span><span class="caret">→</span>
+      <span class="link now">Checkout</span><span class="caret">→</span>
+      <span class="link now">Finance</span><span class="caret">→</span>
+      <span class="link future">Payroll</span><span class="caret">→</span>
+      <span class="link future">Employment</span><span class="caret">→</span>
+      <span class="link future">P&amp;L</span>
+    </div>
+    <div class="grid g3" style="margin-top:16px;">
+      <div class="card"><h3>Tiers / Monetization</h3><p>Free/Starter/Pro/Pro+ · hesap-içi upgrade. <code>TIERS_AND_UPGRADE.md</code>.</p></div>
+      <div class="card"><h3>Employment Model</h3><p>Maaşlı + komisyon + chair-rent bir arada (<code>staffComp</code>). Her biri P&amp;L'e farklı etki · UK legal ayrım.</p></div>
+      <div class="card"><h3>Pre-Scale Gate</h3><p>Tier 1 ✅; tenant #4'ten önce Tier 2 (read:true → root kilidi) + güvenlik.</p></div>
+    </div>
+  </div>
+
+  <!-- 8 TENANTS / INTEGRATIONS / DEPLOY -->
+  <div class="band">
+    <div class="band-h"><span class="band-n">7</span><span class="band-t">Tenant'lar · Entegrasyonlar · Deploy</span></div>
+    <div class="grid g3">
+      <div class="card">
+        <p class="mini-h">Tenant'lar</p>
+        <ul class="tight"><li><b>whitecross</b> — premium pilot</li><li><b>herohairs</b> — canlı</li><li><s>eekurt</s> — 18 Tem ayrıldı (inaktif)</li></ul>
+      </div>
+      <div class="card">
+        <p class="mini-h">Entegrasyonlar</p>
+        <div class="chips"><span class="chip m">Booksy</span><span class="chip m">Fresha</span><span class="chip m">Treatwell</span><span class="chip m">Stripe Connect</span><span class="chip m">Brevo</span><span class="chip m">Telegram</span><span class="chip m">FCM</span><span class="chip m">Google Auth</span></div>
+      </div>
+      <div class="card">
+        <p class="mini-h">Deploy topolojisi</p>
+        <ul class="tight"><li><b>Hosting</b> — GitHub Actions, push=auto</li><li><b>Functions</b> — manuel <b>hedefli</b></li><li><b>Multi-device</b> — <code>SYNC.md</code> ledger</li></ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="legend">
+    <span>● <b style="color:var(--ok)">LIVE</b></span><span>● <b style="color:var(--warn)">TEST</b></span>
+    <span>◇ kesikli = gelecek faz</span><span><code>mono</code> = kod/koleksiyon adı</span>
+  </div>
+
+  <footer>
+    salOWN sistem haritası · 2026-07-18 · güncel koda + <code>ARCHITECTURE_V2 / ROADMAP / FIRESTORE_SCHEMA</code>'ya dayalı doğrulanmış snapshot.<br>
+    Tek durum kaynağı = <code>salown-docs/ROADMAP.md</code>. salOWN değiştikçe bu harita güncellenmeli.
+  </footer>
+</div>
+</body></html>

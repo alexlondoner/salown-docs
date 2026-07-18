@@ -26,6 +26,8 @@ Unlike marketplaces such as Booksy, Fresha and Treatwell, salOWN does not own th
 
 Instead, it helps salons run their entire business while keeping ownership of their customers and data.
 
+> 🗺️ **Görsel sistem haritası:** [SYSTEM_MAP.html](SYSTEM_MAP.html) — yüzeyler → backend/veri → aggregator borusu → çıkış → tenant/deploy/ticari katman, tek sayfada. **salOWN değiştikçe güncellenir** (snapshot; kaynak: ARCHITECTURE_V2 / ROADMAP / FIRESTORE_SCHEMA + kod).
+
 ---
 
 ## How did it start?
