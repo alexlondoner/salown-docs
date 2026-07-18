@@ -8,7 +8,7 @@
 ├── salown-site/        ← SİLİNDİ 2026-06-29 (her şey salown-app/hosting/'den deploy)
 ├── salown-app/         ← MAIN ACTIVE REPO — Vite + .jsx, all new work goes here
 ├── super-admin/        ← SaaS super-admin panel (Vite)
-├── eekurtbarbers/      ← Tenant 2 legacy site
+├── eekurtbarbers/      ← EeKurt legacy site (tenant İNAKTİF 2026-07-18 — klasör duruyor)
 └── whitecross-site/    ← Being phased out incrementally
 ```
 

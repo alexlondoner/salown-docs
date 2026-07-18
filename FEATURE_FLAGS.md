@@ -45,4 +45,4 @@ Comma-separated chatIds destekleniyor.
 
 **Namespace'ler:**
 - Whitecross: `WC_TELEGRAM_TOKEN` / `WC_TELEGRAM_CHAT_IDS`
-- EeKurt: `TELEGRAM_TOKEN` / `TELEGRAM_CHAT_IDS` (⚠️ `EEK_` prefix rename pending)
+- EeKurt: `TELEGRAM_TOKEN` / `TELEGRAM_CHAT_IDS` (tenant İNAKTİF 2026-07-18 — config artık kullanılmıyor)

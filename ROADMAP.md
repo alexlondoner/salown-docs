@@ -26,7 +26,7 @@
 
 **Platform canlı ve gerçek kullanımda; proje "sıfırdan feature" fazını geçti.** Kalan iş çoğunlukla **ölçeklenme, operasyon ve ticari olgunlaşma**: staff/finansal model, ödeme canlıya alma, metrik/kanıt toplama, güvenlik gate'i, teknik borç.
 
-- **3 tenant canlıda** (whitecross · herohairs · eekurt), hepsi Class A.
+- **2 tenant canlıda** (whitecross · herohairs), hepsi Class A. *(eekurt 2026-07-18 itibarıyla platformu bıraktı — inaktif; veri/rules silinmedi.)*
 - **Gerçek sinyaller:** müşteriler loyalty puanı redeem ediyor · transactional+loyalty mailleri düzenli · website'ten booking düzenli geliyor · parser borusu (H4) organik mailde uçtan uca kanıtlı.
 - **⚠️ Ticari not:** Stripe Connect **tamamen TEST modunda** — hiçbir tenant gerçek para almıyor. "Go LIVE" owner kararı + live keys bekliyor (Payments teması).
 
@@ -166,14 +166,14 @@
 - 🔄 **I2 `functions/src/index.ts` split** — Faz 1 (helpers→domain modülleri) ✅ fiilen bitti (parity testli). Faz 2: 55 export'un gövdesini domain modüllerine taşı (index.ts 3816 satır). Dilim 1 (askAI+auth) ✅ `bccd828`; **sıradaki parsers** (bkz Şu an odak). 🔴 Altın kural: export adı+config birebir. Operasyon: tek TEMİZ pencerede, codebase-prefix'li deploy (`--only functions:salown`, ASLA blanket). Plan: [TYPESCRIPT_MIGRATION_PLAN.md](TYPESCRIPT_MIGRATION_PLAN.md).
 - 🔵 **G3 unsaved-changes guard'ları** — backdrop/Esc/✕ ile formlar sessizce veri kaybediyor. Altın standart WalkInForm'da (dirtyRef) → ortak `ConfirmDiscard` bileşeni. F1 (6 yüzey): Products · AddClientModal · Clients edit · BookingForm · BulkCampaign Compose · SendCampaignPanel. F2: CheckoutPanel/Settings. F3: staff app Sheet'leri. *(kod-teyitli: 0/6 yüzeyde guard var 2026-07-16)*
 - 🔵 **salOWN ToS/Privacy sayfaları** — landing footer Terms/Privacy `href="#"` ölü (`hosting/index.html:648-649`); salOWN'un kendi ToS/Privacy sayfası YOK (whitecross tenant tarafı ✅). Tenant onboarding ölçeklenmeden yazılmalı (SaaS ToS + GDPR privacy + loyalty çerçeve). *(kod-teyitli açık 2026-07-16)*
-- 🔵 **Küçük infra** — G2 SalownHub DNS (`salown.web.app/app`→`hub.salown.com`) · EeKurt legacy site→salown subdomain redirect · `categoryId` migration · dead `isStaff` Firestore rule.
+- 🔵 **Küçük infra** — G2 SalownHub DNS (`salown.web.app/app`→`hub.salown.com`) · ~~EeKurt legacy site redirect~~ (tenant inaktif 2026-07-18, düştü) · `categoryId` migration · dead `isStaff` Firestore rule.
 
 ---
 
 ## 🎨 Premium Themes (gelir kalemi)
 
 - 🔵 **F1 per-tenant public site temaları** — iki drop-in tema (`style.original.css`+`style.premium.css`) lokal, **deploy YOK**. Kalan: site canlı senkron (whitecross-site `siteTheme` onSnapshot+href swap) · panel "Available Themes" (`OnlineProfile.jsx`, Premium-gated) · theme registry · *(kod-teyitli: OnlineProfile'da theme picker yok; whitecross-site hardcoded DEFAULT_THEME.)* Detay: memory `project_premium_themes`.
-- 💡 **Subdomain temalı siteler** — `{tenant}.salown.com` themed public site (EeKurt redirect + SalownHub DNS ile aynı altyapı ailesi).
+- 💡 **Subdomain temalı siteler** — `{tenant}.salown.com` themed public site (SalownHub DNS ile aynı altyapı ailesi).
 
 ---
 

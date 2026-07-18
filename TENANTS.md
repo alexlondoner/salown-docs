@@ -2,11 +2,13 @@
 
 ## Aktif Tenantlar
 
+> **Şu an CANLI kullanılan 2 tenant:** `whitecross` + `herohairs` (2026-07-18). `eekurt` artık platformu kullanmıyor (inaktif) — kaydı aşağıda korunuyor, Firestore verisi silinmedi.
+
 | Tenant ID    | İşletme                   | Email                        | Firebase UID                          | Durum |
 |-------------|---------------------------|------------------------------|---------------------------------------|-------|
 | `whitecross` | I CUT Whitecross Barbers  | aerulas@gmail.com            | CsktIKNC0wRaP2eK8DECVMWPD0m1          | Premium pilot — her feature ilk burada |
 | `herohairs`  | HeroHairs (Hairdresser)   | alex2ayyildiz3@gmail.com     | BRk26AmRLXUMjLNIoBRLJB11o3o1          | Pilot client — full access, trial bitmez |
-| `eekurt`     | EeKurt Barbers            | eekurtbookings@gmail.com     | L6wsBgQmBYXIVBt3RYHS2LATsxH2          | Legacy, ileride Salown'a taşınacak |
+| `eekurt`     | EeKurt Barbers            | eekurtbookings@gmail.com     | L6wsBgQmBYXIVBt3RYHS2LATsxH2          | ❌ İnaktif (2026-07-18 platformu bıraktı) — veri Firestore'da duruyor, rules/data silinmedi |
 
 **Super Admin:** durvezek@gmail.com (Dursun Kahraman)
 

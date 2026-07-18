@@ -20,7 +20,7 @@
 
 *(Snapshot: 2026-07-14 — see header note; durum tek kaynağı ROADMAP.md)*
 
-- **3 live tenants** (`whitecross` · `herohairs` · `eekurt`), all full-feature ("Class A")
+- **2 live tenants** (`whitecross` · `herohairs`), all full-feature ("Class A"). *(`eekurt` left the platform 2026-07-18 — inactive; data retained.)*
 - **Real customer bookings** — regular, often daily: website + external platforms
   (Booksy/Fresha/Treatwell email ingestion) + walk-ins, all in one system
 - **Loyalty redemptions happening in production** (customers actually redeem points)
@@ -34,8 +34,8 @@
 ## 1. Ürün nedir
 **salOWN** — çok-kiracılı (multi-tenant) salon/barber yönetim SaaS'ı. Booking, ödeme, sadakat
 (loyalty), bildirimler, personel mobil uygulaması, admin panel, raporlama.
-- **3 tenant canlıda:** `whitecross` (premium pilot — her özellik önce burada), `herohairs`,
-  `eekurt`. Hepsi "Class A" (tam özellik).
+- **2 tenant canlıda:** `whitecross` (premium pilot — her özellik önce burada) ve `herohairs`.
+  Hepsi "Class A" (tam özellik). *(`eekurt` 2026-07-18'de platformu bıraktı — inaktif; veri korunuyor.)*
 - **Gerçek kullanım sinyalleri:** müşteriler loyalty puanı redeem ediyor; transactional + loyalty
   mailleri düzenli gidiyor; website'ten düzenli (bazen günlük) booking geliyor. Platform operasyonel.
 

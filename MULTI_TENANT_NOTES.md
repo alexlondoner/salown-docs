@@ -6,7 +6,7 @@
 - `salown-app/functions` her şeyi yönetir
 - Feature flag ile capability açılır
 - Yeni trigger → feature flag ekle → done
-- Aktif Class A tenantlar: whitecross (2026-06-19'dan itibaren), herohairs, eekurt
+- Aktif Class A tenantlar: whitecross (2026-06-19'dan itibaren), herohairs. *(eekurt 2026-07-18'de inaktif oldu — veri korunuyor.)*
 
 ### Class B — Self-managed (kendi codebase'i var)
 - `whitecross-site/functions` email, Telegram, push, in-app notif'i yönetir
