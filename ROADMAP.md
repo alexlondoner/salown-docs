@@ -97,6 +97,38 @@
 
 ---
 
+## 💰 Monetization & Self-Serve Upgrade
+
+> **Vizyon:** tier'ı bugün **yalnız super-admin** flag'liyor; tenant kendi **Settings**'inden plan
+> yükseltebilmeli ("Anthropic gibi hesap-içi upgrade"). Tier motoru (limit/feature çözümleme) hazır
+> ve doğru (`planLimits.ts` tek kaynak, SOFT enforcement); eksik = **(a)** hesap-içi talep yüzeyi,
+> **(b)** approve queue, **(c)** ileride gerçek tahsilat borusu. ⚠️ salOWN tenant'tan para **çekemiyor**
+> (Stripe yalnız Connect/deposit + TEST modu; **abonelik borusu YOK**). Tam tasarım: [TIERS_AND_UPGRADE.md](TIERS_AND_UPGRADE.md).
+
+- 🔵 **M1 hesap-içi upgrade (Faz 1 — request→approve, tahsilatsız)** — Settings'e **"Plan" sekmesi**
+  (4 tier kartı + karşılaştırma + mevcut usage bar taşınır) + `requestPlanChange`/`decidePlanChange`
+  callable'ları + **super-admin "Upgrade requests" queue** (`collectionGroup('planRequests')`). Akış:
+  tenant "Upgrade" → `tenants/{id}/planRequests` doc → super-admin onaylar → flag flip + tenant e-posta.
+  UX self-serve *hissettirir*, backend queue. Canlı-gelir riski YOK, enforcement SOFT kalır. Ayrı odak-günü işi.
+- 🔵 **M2 Pro+ = premium website + SEO paketi** — top tier "Let's talk" kalır; `PlanFeatureFlags`'a
+  **`premiumWebsite: boolean`** eklenir (proplus=true), whitecross paketini temsil eder: hosted premium
+  site + custom domain + SEO (schema/meta/perf) + white-label email + öncelikli destek. Premium site
+  teslimi kod değil operasyon → [Premium Themes F1](ROADMAP.md#-premium-themes-gelir-kalemi) ile aynı aile.
+- 💡 **M3 gerçek self-serve Stripe *Billing* (Faz 2 — VİZYON)** — ⚠️ Connect'ten **AYRI** boru
+  (Connect=müşteri deposit'i; Billing=**salOWN'un tenant'ı abonelikle ücretlendirmesi**). Bileşenler:
+  Stripe Products/Prices (Starter/Pro Price ID) · `createBillingCheckout` (subscription Checkout) ·
+  `billingWebhook` (lifecycle→`plan/status`, plan'in yeni otoritesi) · `createBillingPortalSession`
+  (Stripe Customer Portal = "Manage billing"). Billing alanları `settings/billing` subdoc'a (root=public,
+  sır koyma). Ön koşul: owner "para alıyoruz" kararı + salOWN platform-merchant Stripe + live keys.
+- 💡 **M4 olgunlaşma (Faz 3)** — proration (Stripe default) · invoice/receipt e-posta · dunning
+  (`payment_failed`→retry→`past_due`→grace→downgrade) · enforcement **soft→hard** (A1 stylist cap tetiği,
+  para alımı başlayınca). Bugün DEĞİL.
+- 💡 **M5 public pricing sayfası (Future)** — landing bugün fiyat göstermiyor (vetted "Request a demo",
+  bilinçli). Self-serve tahsilat (M3) canlı + tier'lar stabil olunca `/pricing` açılır (ölü `.pricing-grid`
+  CSS'i zaten `index.html:156` var); self-signup korunur (memory `keep-self-onboarding-active`). *(H3 "Billing sayfası placeholder" bu tema altına taşındı.)*
+
+---
+
 ## 📊 Evidence & Metrics
 
 > **Amaç:** her önemli üretim iddiası veriyle desteklensin — "çalıştığını düşünüyorum" değil "işte N aylık üretim verisi". **Operasyonel altyapı, pazarlama değil** (ağır stack YOK). ⏱ Platform+Reliability katmanları toplanmaya başlamadıkça BİRİKMEZ — bugün ölçülmeyen gün kayıp; bu yüzden EV1/EV2 küçük ama erken.
@@ -115,7 +147,7 @@
 - 🔄 **H4 parser mail girişi — parse-inbox hybrid + token izolasyon** · **PİLOT TAM CANLI** (2026-07-13/14): forwarding kuruldu, tam yaşam-döngüsü tatbikatı GEÇTİ (create/reschedule/chain/cancel × iki boru, sıfır çift kayıt), ilk organik müşteri maili + Fresha borusu canlıda kanıtlı. İzolasyon: token→tenant lookup, fail-closed (cross-tenant misroute yapısal imkânsız). *(detay: Completed › Onboarding)*
   - 🔵 **Kalan:** herohairs parse-inbox geçişi (token rotate ✅ `herohairs_2e1355…`, forwarding yeni adresle kurulacak) · Treatwell borusu ilk mail gözlemi · whitecross IMAP emekliliği (owner istekli — 5dk cron yükü; app-password kaldır, feature flag'lere DOKUNMA → **T-b buharlaşır**).
   - 🧹 **Ev işi:** tatbikatın UNSEEN test mailleri IMAP cron'unu 5dk'da bir aynı "not found" üçlüsünü yeniden loglatıyor (zararsız ama gürültü) → owner okundu işaretlesin YA DA parser'a terminal not-found mark-seen (out-of-order retry'ı bozmadan).
-- 🔵 **H3 kalanı** — cross-tenant user/izin yönetimi (=E1) · tenant metrik derinleştirme · Billing sayfası (placeholder).
+- 🔵 **H3 kalanı** — cross-tenant user/izin yönetimi (=E1) · tenant metrik derinleştirme. *(Billing sayfası → **Monetization & Self-Serve Upgrade** temasına taşındı: M1/M5.)*
 
 ---
 
