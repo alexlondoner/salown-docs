@@ -108,7 +108,7 @@ The project's "why / how / what happened" knowledge lives in 4 cross-linked file
 ## Document Map (35 files)
 
 ### 1. Orientation
-[MANIFESTO](MANIFESTO.md) · [SYSTEM_ARCHITECTURE](SYSTEM_ARCHITECTURE.md) · [GLOSSARY](GLOSSARY.md) · [TENANTS](TENANTS.md) (Whitecross/HeroHairs/EeKurt, Class A/B) · [PEOPLE](PEOPLE.md) (people/roles/emails)
+[CLAUDE](CLAUDE.md) (AI context index — canonical; `alex/CLAUDE.md` symlinks here) · [MANIFESTO](MANIFESTO.md) · [SYSTEM_ARCHITECTURE](SYSTEM_ARCHITECTURE.md) · [GLOSSARY](GLOSSARY.md) · [TENANTS](TENANTS.md) (Whitecross/HeroHairs live; EeKurt inactive) · [PEOPLE](PEOPLE.md) (people/roles/emails)
 
 ### 2. Rules & Memory
 [INVARIANTS](INVARIANTS.md) · [KNOWN_QUIRKS](KNOWN_QUIRKS.md) · [DECISIONS](DECISIONS.md) · [INCIDENTS](INCIDENTS.md)
@@ -152,7 +152,19 @@ git push
 ```
 - **In this docs repo** `git add` is safe (it's its own repo). But in **app repos** (salown-app etc.) commit ONLY your own file by explicit path — never `git add .` / `reset --hard` (it wipes another session's work).
 - If you add a new file, add a line to the **document map** in this README.
-- `alex/CLAUDE.md` (the AI context index) is unversioned and outside this repo — updated separately.
+- The AI context index is now **versioned as [`CLAUDE.md`](CLAUDE.md) in this repo** (canonical). `alex/CLAUDE.md` is a **symlink** to it — edit `docs/CLAUDE.md`, never the symlink target's copy.
+
+### Bootstrap (yeni makine kurulumu)
+
+`alex/` klasörü git repo'su DEĞİL → oradaki `CLAUDE.md` symlink'i her makinede bir kez elle kurulur:
+
+```bash
+cd ~/Desktop/alex
+ln -sf docs/CLAUDE.md CLAUDE.md      # AI context index (kanonik = docs/CLAUDE.md)
+ls -l CLAUDE.md                       # doğrula: CLAUDE.md -> docs/CLAUDE.md
+```
+
+Kanonik içerik `docs/CLAUDE.md`'de yaşar (versiyonlu + push'lu); symlink sayesinde düzenleme tek yerden, drift olmaz. `salown-app/CLAUDE.md` ayrıdır ve kendi repo'sunda zaten versiyonludur.
 
 ---
 
