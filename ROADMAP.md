@@ -38,8 +38,10 @@
 
 > **🏁 COMPLETION SPRINT (owner kararı 2026-07-20):** vizyon işine (marketplace / billing / hub) geçmeden ÖNCE, roadmap'te *başlanmış ama kapanmamış* her şeyi bitir. Aşağıdaki liste bir **sıralı index + kapanış kapısı** — durum rozeti hâlâ ilgili tema altında yaşar (SSOT), burası sadece "bitmemiş kuyrukları" tek yerde toplar ve sırayı tutar. Bir madde bitince: tema altında ✅ + commit, sonra buradaki kutuyu işaretle. **Sprint bitmeden vizyon temalarına (💡) girme.**
 >
+> **🧪 Test edilecekler (kod hazır → owner canlı doğrulaması bekliyor; akışı bloklamaz):**
+> - [ ] **In-app notification (reschedule/cancel) canlı test** — *kod denetimi ✅ 2026-07-20:* boru uçtan uca doğru bağlı (yazma `notifications/index.ts:66` → trigger `index.ts:2056/2095`, gate `ns.customerCancel/Reschedule !== false` = varsayılan AÇIK → bell `NotificationBell.tsx:80`, filtre yok). Reschedule bildirimi staff/customer ayrımı yapmıyor (`index.ts:2094`) → **panelden gerçek (walk-in değil) booking'i reschedule et, zil+🔄 diff çıkmalı.** Çıkarsa ✅ kapanır; çıkmazsa canlı `salownNotifyBookingUpdated` stale → hedefli redeploy.
+>
 > **A — bir ✅'ü kapatmayı bekleyen açık uçlar (önce; küçük):**
-> - [ ] ⚠️ **In-app notification (reschedule/cancel)** canlı test — kod var (`54ee368`), owner tatbikatta bildirim ALMADI → çıkıyor mu doğrula; çıkmazsa trigger bug'ı. *(Booking teması)*
 > - [ ] **A1 stylist cap enforce** — `stylistLimitReached` helper var ama `Barbers.tsx`'te çağrılmıyor. *(Payments teması)*
 > - [ ] **A3 inventory stockQty** — numerik alan + tek `applyStockDelta(soldProducts, sign)` helper + düşük-stok uyarısı. *(Payments teması)*
 > - [ ] **C3 abandoned-cart scheduled** — manuel buton ✅; X-saat sonra scheduled trigger + tek-sefer guard + opt-out. *(Marketing teması)*
