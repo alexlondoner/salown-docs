@@ -36,6 +36,26 @@
 
 ## 🎯 Şu an odak
 
+> **🏁 COMPLETION SPRINT (owner kararı 2026-07-20):** vizyon işine (marketplace / billing / hub) geçmeden ÖNCE, roadmap'te *başlanmış ama kapanmamış* her şeyi bitir. Aşağıdaki liste bir **sıralı index + kapanış kapısı** — durum rozeti hâlâ ilgili tema altında yaşar (SSOT), burası sadece "bitmemiş kuyrukları" tek yerde toplar ve sırayı tutar. Bir madde bitince: tema altında ✅ + commit, sonra buradaki kutuyu işaretle. **Sprint bitmeden vizyon temalarına (💡) girme.**
+>
+> **A — bir ✅'ü kapatmayı bekleyen açık uçlar (önce; küçük):**
+> - [ ] ⚠️ **In-app notification (reschedule/cancel)** canlı test — kod var (`54ee368`), owner tatbikatta bildirim ALMADI → çıkıyor mu doğrula; çıkmazsa trigger bug'ı. *(Booking teması)*
+> - [ ] **A1 stylist cap enforce** — `stylistLimitReached` helper var ama `Barbers.tsx`'te çağrılmıyor. *(Payments teması)*
+> - [ ] **A3 inventory stockQty** — numerik alan + tek `applyStockDelta(soldProducts, sign)` helper + düşük-stok uyarısı. *(Payments teması)*
+> - [ ] **C3 abandoned-cart scheduled** — manuel buton ✅; X-saat sonra scheduled trigger + tek-sefer guard + opt-out. *(Marketing teması)*
+>
+> **B — aktif in-progress (🔄):**
+> - [ ] **I2 Faz 2 parsers dilimi** — 5 parser fn → domain modülü (aşağıdaki eski odak maddesi). *(Tech Debt)*
+> - [ ] **H4 kalanı** — herohairs parse-inbox geçişi + Treatwell ilk mail + whitecross IMAP emekliliği. *(Onboarding teması)*
+>
+> **C — shipped feature'ların "kalanı":**
+> - [ ] **B2 booking settings** — off-day reschedule davranışı + barber-değişim UI + slot aralığı configurable. *(Booking)*
+> - [ ] **B4 telefon ülke kodu** — tek paylaşılan component (5 giriş noktası, IE +353). *(Booking)*
+> - [ ] **C8 audience scope** — member sızıntısı + server-side guard (`sendCampaignBulk`). *(Marketing)*
+> - [ ] **Marketing Slice 3b** — Revenue SSOT (OverviewPanel vs Reports tek kaynağa). *(Marketing)*
+> - [ ] **S1 + S3 Employment** — passive barber hayalet-maaş + Reports silinen barber istatistiği. *(Employment Model)*
+> - [ ] **G3 unsaved-changes guard** — 6 form (ConfirmDiscard ortak bileşen). *(Tech Debt)*
+
 - 🔄 **I2 Faz 2 — functions modülerleştirme** (owner seçimi 2026-07-14). Dilim 1 (askAI + auth guard) ✅ CANLI (`bccd828`). **Sıradaki dilim: parsers** (`salownParseEmails`/`salownInboundEmail`/`salownParseInboxDispatch`/`salownManualImport`/`salownIcalFeed` → domain modüllerine; 5'i de hâlâ `index.ts`'te inline, kod-teyitli). Sonra notifications → marketing; **stripe/bookings EN SON**. Altın kural: export adı+config birebir, saf taşıma, dilim başına tek commit + hedefli deploy. Detay: **Tech Debt** teması.
 - 🔄 **Employment Model Faz C** (aşağıdaki tema) — owner'ın vurguladığı bir sonraki büyük modül.
 
