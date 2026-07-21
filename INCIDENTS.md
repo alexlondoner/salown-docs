@@ -33,6 +33,8 @@ Her olay `## YYYY-MM-DD — kısa başlık` ile açılır, hemen altına **metad
 
 **Severity lejantı:** 🔴 Critical (canlı kesinti / veri-para / güvenlik) · 🟠 High (özellik kırık, geçici çözüm var) · 🟡 Medium (yanlış gösterim / kısmi) · 🟢 Low (tek ekran / kozmetik).
 
+**Tag sözlüğü (KANONİK — sadece bunlar; sprawl yasak):** `#security` `#stripe` `#secrets` `#config` `#deploy` `#normalization` `#permission` `#race` `#timezone` `#parser` `#email` `#data-loss` `#shared-infra`. Yeni tag ancak gerçekten yeni bir sınıf çıkarsa eklenir (ör. `#payment`+`#payments`+`#stripe-payment` gibi ikizler YASAK → hepsi `#stripe`). Her kayıt `**Tags:**` satırı taşır.
+
 ## 2026-07-21 — Canlı Stripe slotunda TEST key → gerçek müşteriler test checkout'a düştü, ödeyemedi
 
 **Severity:** 🔴 Critical (canlı ödeme kesintisi / gelir kaybı — gerçek müşteriler ödeyemedi) · **Owner:** owner (sezgiyle "bu adamlar test linki kullanamaz" deyip ısrar etti) + Claude · **Status:** ✅ Resolved & DEPLOYED 2026-07-21 (STRIPE_SECRET_KEY v5=sk_live, 4 ödeme fn redeploy, canlı booking cs_live+CONFIRMED ile doğrulandı) · **Affected area:** whitecross-site payments / Stripe secret config (`createCheckoutSession`)
