@@ -49,12 +49,49 @@ All tenant data lives under `tenants/{tenantId}/...`.
 | [ROADMAP.md](docs/ROADMAP.md) | **Company roadmap** (restructured 2026-07-16): priority-ordered work themes + 5 tags (✅/🔄/🔵 Planned/⏸ Waiting/💡 Future); active=single-line, completed at the bottom under **Completed**; item IDs (A1/B3/C8/S1…) preserved |
 | [TESTS.md](docs/TESTS.md) | **All test records SINGLE SOURCE**: rules (automated), security gate manual, Stripe live, Staff App, Post-Class-A, busy-slot pointer |
 | [PROMPTS.md](docs/PROMPTS.md) | Claude Code prompt templates |
+| [ops/claims/README.md](salown-app/ops/claims/README.md) | **Parallel-session path ownership** — how concurrent sessions claim/lock the files they edit so two sessions never touch the same path; protocol + `claims.sh` + conflict rule (see Quick Rules coordination block) |
 
 ---
 
 ## salown-app/CLAUDE.md
 
 Technical details (booking model, conflict utils, reschedule invariants, GDPR rules) live there.
+
+---
+
+## Parallel session coordination — path ownership
+
+Multiple sessions may work concurrently across `alby23`, `macbook`, and `alish`.
+A session identity must use:
+
+`<device>/<session-id>`
+
+Before modifying any source file:
+
+1. Run `git pull --rebase`.
+2. Run `./ops/claims/claims.sh check <path>` for every intended path.
+3. If any path is `LOCKED`, stop and report `SKIP` with the current owner.
+4. If all paths are free, create one claim file containing every intended path.
+5. Commit and push only that claim file using an explicit path.
+6. Run `git pull --rebase` again and recheck all claimed paths.
+7. If a competing claim exists for any path, stop. Do not choose a winner automatically — wait for a human owner decision.
+8. Modify only paths declared in your own active claim.
+9. If additional paths become necessary, update and push the claim before touching them.
+10. When finished, commit the implementation with explicit paths, remove only your own claim, push, and record the result in `SYNC.md`.
+
+Never:
+- use `git add .`
+- edit or delete another session's claim
+- touch an undeclared path
+- continue after a claim conflict
+- treat a claim as a substitute for reviewing the working tree
+
+Source roles:
+- `ROADMAP.md` — what is planned
+- `ops/claims/` — current path ownership
+- `SYNC.md` — completed sync and deployment history
+
+Full protocol: `salown-app/ops/claims/README.md`
 
 ---
 
