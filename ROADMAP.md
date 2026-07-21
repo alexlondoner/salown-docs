@@ -88,6 +88,10 @@
 
 **Delete politikası — ✅ CANLI (E1b):** delete = `isSuperAdmin() || isOwner(tenantId)`, 10 koleksiyon (barbers dahil, güçlü onay modallı); owner yalnız kendi tenant'ında; staff/finance/settings/merge super-only (`8670051`+`2af303c`, test 83/83). *(detay: Completed › Security)*
 
+**🔑 P0 — Shared secret namespacing (INCIDENTS 2026-07-21'den):** *Kurumsal ilke: secret'lar **application boundary**'ye aittir, tenant boundary'ye değil; hiçbir secret adı iki farklı uygulama tarafından PAYLAŞILMAMALI.* Bu bir "Stripe bug'ı" değil, shared-infrastructure naming problemi.
+- 🔵 **Split `STRIPE_SECRET_KEY`** → `WC_STRIPE_SECRET_KEY` + `SALOWN_STRIPE_SECRET_KEY` (+ gerekirse `ADMIN_…`). Whitecross ödeme fn'leri (`createCheckoutSession`/`stripeWebhook`/`checkBookingPayment`/`createMobileCheckout`) yeni isim okusun + redeploy + `cs_live` smoke. ~1-2 saat. **Neden P0:** paylaşılan `STRIPE_SECRET_KEY` yüzünden Salown Connect sandbox kurulumu whitecross **canlı** ödemesini ezdi (2 gerçek müşteri kaybı). Bugün v4 destroyed + canlı geri yüklendi AMA isim hâlâ paylaşıldığı için `secrets:set STRIPE_SECRET_KEY` tekrar çalışırsa **incident tekrar eder.**
+- 🔵 **Namespace all shared secrets before tenant #4** — aynı prensip tüm paylaşılan credential'lar için: `BREVO_API_KEY`→`SALOWN_BREVO_API_KEY`, Telegram/OpenAI/Google OAuth vb. app-prefix. Küçük ama kalıcı; ölçekte büyük riski kaldırır. *(Not: Salown TENANT'ları zaten secret tutmaz — sadece `acct_`, Connect modeli; bu madde uygulama-sınırı içindir, tenant-sınırı değil.)*
+
 **Tier 2 — ölçekte patlar, onboarding'i bloklamaz:**
 - 🔵 **read:true yüzeyi → root doc kilidi** — asıl PII (`clients`/`products`) zaten auth-only; kalan meşru-public (`services`/`barbers`/`gallery`/…) + `tenants/{id}` root doc world-readable. **Tek iş:** `BookingPage.tsx:386` ham root yerine `public/booking` projeksiyonundan okusun (Faz 1 projeksiyon trigger + backfill ✅ `2db8721`; Faz 2 oku+fallback; Faz 3 rules `read:true`→`isTenantAny` EN SON). *(kod-teyitli: BookingPage hâlâ ham root okuyor 2026-07-16)*
 - 🔵 **B3 `salownCreateBooking` transactional** — bkz Booking teması (double-booking race).
