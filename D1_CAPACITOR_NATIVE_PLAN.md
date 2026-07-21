@@ -1,97 +1,97 @@
-# D1 — Staff App'i Native'e Taşıma (Capacitor + App Store) — Detaylı Plan
+# D1 — Moving the Staff App to Native (Capacitor + App Store) — Detailed Plan
 
-> **Durum: 🅿️ HAZIR BEKLİYOR / acele YOK.** Owner kararı (2026-07-14): *"bizim app'in üzerinden daha çok geçmemiz lazım, acele etmiyorum."* Native sarma bir **paketleme/dağıtım** adımı — ürün (staff app'in kendi akışları) olgunlaştıktan sonra istenen an uygulanır. Plan hazırdır ki o gün geldiğinde sıfırdan düşünmeyelim.
+> **Status: 🅿️ READY, WAITING / NO rush.** Owner decision (2026-07-14): *"we need to put more mileage on our app, I'm not in a hurry."* Native wrapping is a **packaging/distribution** step — it's applied whenever wanted after the product (the staff app's own flows) has matured. The plan is ready so that when that day comes we don't have to think it through from scratch.
 >
-> ROADMAP özeti: bkz `ROADMAP.md` → D1. İlgili: D2 (Apple sign-in — aynı Apple Developer hesabını paylaşır), D4 (emoji→SVG ikon sistemi = Capacitor-safe hazırlık ZATEN yapıldı), D5 (iOS viewport/drift kök-neden fix ZATEN yapıldı).
+> ROADMAP summary: see `ROADMAP.md` → D1. Related: D2 (Apple sign-in — shares the same Apple Developer account), D4 (emoji→SVG icon system = Capacitor-safe prep ALREADY done), D5 (iOS viewport/drift root-cause fix ALREADY done).
 
-## 1. Neden (gerekçe)
-- **iOS'ta web push kırılgan:** PWA bildirimi sadece "ana ekrana ekle" ile kurulmuşsa ve iOS 16.4+ ile çalışır; kullanıcı deneyimi güvenilmez. Native app **gerçek APNs push** verir → barberlar bildirimi güvenilir alır.
-- **"Sil-yükle / cache temizle" derdi biter:** Native app + OTA ile sürüm yönetimi geliştiricinin kontrolüne geçer; kullanıcı elle cache temizlemek zorunda kalmaz (bkz §5).
-- App Store'da olmak = kurumsal güven + kolay dağıtım (barber'a link yerine "App Store'dan indir").
+## 1. Why (rationale)
+- **Web push is fragile on iOS:** PWA notification works only if installed via "add to home screen" and with iOS 16.4+; the user experience is unreliable. A native app gives **real APNs push** → barbers reliably receive notifications.
+- **The "delete-reinstall / clear cache" hassle ends:** with a native app + OTA, version management moves to the developer's control; the user doesn't have to clear cache manually (see §5).
+- Being in the App Store = institutional trust + easy distribution (instead of a link to the barber, "download from the App Store").
 
-## 2. Mevcut durum (2026-07-14 repo tespiti)
-- **Capacitor kurulu DEĞİL** — sıfırdan native wrap. `package.json`'da hiçbir `@capacitor/*` yok; `ios/` `android/` klasörleri yok.
-- Staff app **ayrı Vite build**: `vite.staff.config.js` → çıktı `hosting/staff-bundle/` (entry `staff.html` → `index.html`'e rename edilir). **Bu klasör aynen Capacitor'ın `webDir`'i olur — mimari uyumlu.**
-- **Push şu an web FCM ile:** `src/staff/StaffApp.tsx` `firebase/messaging` `getToken` (VAPID key) + `hosting/staff-bundle/sw.js` (service worker, `onBackgroundMessage`). Token → `tenants/{tid}/fcmTokens/{token}` (`uid`/`barberName`/`role`/`updatedAt`).
-- **Sunucu tarafı hazır ve native-uyumlu:** `functions/src/notifications/index.ts` `_sendFcmPush` → `admin.messaging().sendEachForMulticast(tokens)` + ölü token temizliği (`registration-token-not-registered` → doc.delete). **Bu FCM multicast native token'larla da aynen çalışır → backend'e neredeyse hiç dokunulmaz.**
-- Stack: Firebase v12, React 19, react-router 7, Vite 8 — hepsi Capacitor ile uyumlu.
-- **Zaten yapılmış hazırlık:** D4 ikon sistemi (tüm emoji → inline SVG, "Capacitor-safe") + D5 viewport fix (`maximum-scale=1`, `touch-action`). Yani zemin kademeli hazırlanıyor.
+## 2. Current state (2026-07-14 repo finding)
+- **Capacitor is NOT installed** — a from-scratch native wrap. No `@capacitor/*` in `package.json`; no `ios/` `android/` folders.
+- The staff app is a **separate Vite build**: `vite.staff.config.js` → output `hosting/staff-bundle/` (entry `staff.html` → renamed to `index.html`). **This folder becomes Capacitor's `webDir` as-is — architecturally compatible.**
+- **Push is currently via web FCM:** `src/staff/StaffApp.tsx` `firebase/messaging` `getToken` (VAPID key) + `hosting/staff-bundle/sw.js` (service worker, `onBackgroundMessage`). Token → `tenants/{tid}/fcmTokens/{token}` (`uid`/`barberName`/`role`/`updatedAt`).
+- **The server side is ready and native-compatible:** `functions/src/notifications/index.ts` `_sendFcmPush` → `admin.messaging().sendEachForMulticast(tokens)` + dead-token cleanup (`registration-token-not-registered` → doc.delete). **This FCM multicast works as-is with native tokens too → the backend is barely touched.**
+- Stack: Firebase v12, React 19, react-router 7, Vite 8 — all compatible with Capacitor.
+- **Prep already done:** D4 icon system (all emoji → inline SVG, "Capacitor-safe") + D5 viewport fix (`maximum-scale=1`, `touch-action`). So the groundwork is being laid gradually.
 
-## 3. Ön koşullar (kod yazmadan önce edinilmesi gerekenler)
-| Gereksinim | Detay | Maliyet | Kim |
+## 3. Prerequisites (things to obtain before writing code)
+| Requirement | Detail | Cost | Who |
 |---|---|---|---|
-| **Apple Developer Program** | App Store yayını + APNs için zorunlu. D2 (Apple sign-in) ile ORTAK. | **$99/yıl** | Owner |
-| **Mac + Xcode** | iOS build **yalnızca macOS'ta** yapılır (Linux'ta imkânsız). Ekipte Mac var (diğer session'lar oradan çalışıyor). | — | Var ✅ |
-| **APNs Auth Key (.p8)** | Apple Developer → Keys → yeni APNs key → Firebase Console → Cloud Messaging → iOS app'e yüklenir. FCM'in iPhone'a ulaşması için köprü. | Ücretsiz | Owner + geliştirici |
-| **Bundle ID** | ör. `com.whitecross.staff` (ya da `com.salown.staff` — multi-tenant marka kararı). Apple'da App ID olarak kaydedilir. | — | Owner kararı |
-| **Google Play Console** (Android da istenirse) | Tek seferlik kayıt. | $25 (tek sefer) | Owner |
+| **Apple Developer Program** | Mandatory for App Store publishing + APNs. SHARED with D2 (Apple sign-in). | **$99/year** | Owner |
+| **Mac + Xcode** | iOS build is done **only on macOS** (impossible on Linux). The team has a Mac (other sessions work from there). | — | Have ✅ |
+| **APNs Auth Key (.p8)** | Apple Developer → Keys → new APNs key → Firebase Console → Cloud Messaging → uploaded to the iOS app. The bridge for FCM to reach the iPhone. | Free | Owner + developer |
+| **Bundle ID** | e.g. `com.whitecross.staff` (or `com.salown.staff` — multi-tenant brand decision). Registered as an App ID at Apple. | — | Owner's call |
+| **Google Play Console** (if Android is also wanted) | One-time registration. | $25 (one-time) | Owner |
 
-## 4. Fazlar
+## 4. Phases
 
-### Faz 1 — Capacitor kabuğu (½–1 gün)
+### Phase 1 — Capacitor shell (½–1 day)
 1. `npm i @capacitor/core @capacitor/cli @capacitor/ios @capacitor/android`
 2. `npx cap init` → app name + **Bundle ID**; `capacitor.config.ts` `webDir: 'hosting/staff-bundle'`.
-3. `npx cap add ios` (+ istenirse `android`) → native projeler üretilir (`ios/`, `android/`).
-4. Build akışı: `npm run build:staff && npx cap sync` (web build'i native kabuğa kopyalar). Bunu bir `npm run build:native` script'ine bağla.
-5. İkon + splash: `@capacitor/assets` ile tek kaynaktan üretilir.
-6. `npx cap open ios` → Xcode → simülatörde çalıştır.
-- **DoD:** Staff app iPhone simülatöründe açılıyor, login + temel akış çalışıyor (henüz native push YOK).
+3. `npx cap add ios` (+ `android` if wanted) → native projects are generated (`ios/`, `android/`).
+4. Build flow: `npm run build:staff && npx cap sync` (copies the web build into the native shell). Bind this to an `npm run build:native` script.
+5. Icon + splash: generated from a single source with `@capacitor/assets`.
+6. `npx cap open ios` → Xcode → run in the simulator.
+- **DoD:** the staff app opens in the iPhone simulator, login + basic flow works (native push not yet).
 
-### Faz 2 — Native push (1–2 gün — işin kalbi)
-1. `npm i @capacitor/push-notifications` (veya `@capacitor-firebase/messaging` — Firebase token'ı doğrudan verir, tercih edilir).
-2. `src/staff/StaffApp.tsx` `initFCM`'i **platforma göre dallandır** (`Capacitor.isNativePlatform()`):
-   - **Web** → mevcut `firebase/messaging` yolu AYNEN kalır (PWA çalışmaya devam eder).
-   - **Native** → Capacitor plugin ile: izin iste → register → **FCM token** al → aynı `tenants/{tid}/fcmTokens/{token}` yoluna aynı şema ile yaz (`uid`/`barberName`/`role`/`updatedAt`). **Firestore şeması + sunucu gönderimi DEĞİŞMEZ.**
-   - Foreground mesaj: `onMessage` yerine native `pushNotificationReceived` listener (StaffRouter'daki toast mantığı korunur).
-3. **iOS APNs:** `.p8` anahtarını Firebase Console'a yükle. Xcode'da **Signing & Capabilities → Push Notifications + Background Modes (Remote notifications)** aç.
-4. Logout'ta token silme (mevcut `handleLogout` mantığı) native token için de çalışsın.
-- **DoD:** Gerçek iPhone'a (TestFlight) native push düşüyor; web-push'un iOS kırılganlığı bitti. `fcmTokens`'ta native token görünüyor, ölü web token'ları eskisi gibi temizleniyor.
+### Phase 2 — Native push (1–2 days — the heart of the work)
+1. `npm i @capacitor/push-notifications` (or `@capacitor-firebase/messaging` — gives the Firebase token directly, preferred).
+2. Branch `src/staff/StaffApp.tsx` `initFCM` **by platform** (`Capacitor.isNativePlatform()`):
+   - **Web** → the existing `firebase/messaging` path stays AS-IS (the PWA keeps working).
+   - **Native** → via the Capacitor plugin: request permission → register → get the **FCM token** → write to the same `tenants/{tid}/fcmTokens/{token}` path with the same schema (`uid`/`barberName`/`role`/`updatedAt`). **The Firestore schema + server send DON'T CHANGE.**
+   - Foreground message: the native `pushNotificationReceived` listener instead of `onMessage` (the toast logic in StaffRouter is preserved).
+3. **iOS APNs:** upload the `.p8` key to the Firebase Console. In Xcode enable **Signing & Capabilities → Push Notifications + Background Modes (Remote notifications)**.
+4. On logout, token deletion (existing `handleLogout` logic) should also work for the native token.
+- **DoD:** native push lands on a real iPhone (TestFlight); the iOS fragility of web-push is over. The native token appears in `fcmTokens`, dead web tokens are cleaned up as before.
 
-### Faz 3 — OTA / havadan güncelleme (½ gün)
-- **Amaç:** JS/HTML/CSS değişiklikleri (ör. bugünkü ciro fix'i gibi) App Store onayı beklemeden anında gitsin. Kullanıcı hiçbir şey yapmasın.
-- **Araç:** **Capgo** (açık kaynak, uygun fiyat — önerilen) veya Ionic Appflow Live Updates. Build sonrası bundle Capgo'ya push edilir; uygulama açılışta yeni sürümü indirir + uygular.
-- **Apple kuralı (kritik):** OTA yalnız web katmanı içindir. Native işlevsellik/izin değişikliği yine App Store build'i gerektirir (App Store Guideline 4.2/2.5.2 — sadece "bug fix ve içerik güncellemesi" OTA'dan geçebilir).
-- **DoD:** Bir JS değişikliği build edip Capgo'ya push → yüklü cihaz açılışta yeni sürümü alıyor (store'a uğramadan).
+### Phase 3 — OTA / over-the-air update (½ day)
+- **Goal:** JS/HTML/CSS changes (e.g. like today's revenue fix) go out instantly without waiting for App Store approval. The user does nothing.
+- **Tool:** **Capgo** (open source, affordable — recommended) or Ionic Appflow Live Updates. After build, the bundle is pushed to Capgo; the app downloads + applies the new version on launch.
+- **Apple rule (critical):** OTA is for the web layer only. A native functionality/permission change still requires an App Store build (App Store Guideline 4.2/2.5.2 — only "bug fixes and content updates" may go through OTA).
+- **DoD:** build a JS change and push to Capgo → an installed device gets the new version on launch (without going through the store).
 
-### Faz 4 — Store yayını (½ gün geliştirme + Apple inceleme 1–3 gün)
-1. Privacy manifest (`PrivacyInfo.xcprivacy`), bildirim izni açıklama metni (`NSUserNotificationsUsageDescription` benzeri Info.plist alanları).
-2. App Store Connect: uygulama kaydı, ekran görüntüleri, açıklama, kategori.
-3. TestFlight → owner + barberlar gerçek cihazda test.
-4. App Store'a gönderim → Apple review → yayın.
-- **DoD:** App Store'da canlı; barberlar mağazadan indiriyor.
+### Phase 4 — Store publish (½ day of development + 1–3 days Apple review)
+1. Privacy manifest (`PrivacyInfo.xcprivacy`), notification permission explanation text (Info.plist fields like `NSUserNotificationsUsageDescription`).
+2. App Store Connect: app registration, screenshots, description, category.
+3. TestFlight → owner + barbers test on real devices.
+4. Submit to the App Store → Apple review → publish.
+- **DoD:** live in the App Store; barbers download it from the store.
 
-## 5. "Sil-yükle" derdi neden biter? (owner sorusu 2026-07-14)
-| Değişiklik türü | Nasıl gider | Apple onayı | Kullanıcı ne yapar |
+## 5. Why does the "delete-reinstall" hassle end? (owner question 2026-07-14)
+| Change type | How it ships | Apple approval | What the user does |
 |---|---|---|---|
-| Bug/mantık/ekran (ör. ciro fix'i) | **OTA — anında** (Faz 3) | ❌ Gerekmez | Hiçbir şey; açınca güncel |
-| Yeni native özellik / izin / SDK | Yeni App Store build (Faz 4) | ✅ 1–3 gün | Otomatik güncellenir (iOS default auto-update) |
+| Bug/logic/screen (e.g. revenue fix) | **OTA — instant** (Phase 3) | ❌ Not needed | Nothing; it's current on open |
+| New native feature / permission / SDK | New App Store build (Phase 4) | ✅ 1–3 days | Auto-updates (iOS default auto-update) |
 
-PWA'daki "cache temizle / kısayolu sil-yükle" ihtiyacı native'de yok — sürümü uygulama kendi yönetir.
+The PWA "clear cache / delete-reinstall the shortcut" need doesn't exist in native — the app manages the version itself.
 
-## 6. Efor & maliyet özeti
-| Faz | Süre | Not |
+## 6. Effort & cost summary
+| Phase | Duration | Note |
 |---|---|---|
-| 1 — Kabuk | ½–1 gün | Geliştirici (Mac'te) |
-| 2 — Native push | 1–2 gün | En kritik; backend değişmez |
-| 3 — OTA | ½ gün | Sil-yükle derdini bitirir |
-| 4 — Store | ½ gün + Apple review | İmza/gönderim adımları Mac'te owner+geliştirici |
-| **Toplam** | **~3–4 gün geliştirme** | + $99/yıl Apple (+$25 tek sefer Play, istenirse) |
+| 1 — Shell | ½–1 day | Developer (on Mac) |
+| 2 — Native push | 1–2 days | Most critical; backend unchanged |
+| 3 — OTA | ½ day | Ends the delete-reinstall hassle |
+| 4 — Store | ½ day + Apple review | Signing/submission steps on Mac, owner+developer |
+| **Total** | **~3–4 days of development** | + $99/year Apple (+$25 one-time Play, if wanted) |
 
-## 7. Riskler & açık kararlar (owner'a)
-1. **Bundle ID / marka:** `com.whitecross.staff` mı `com.salown.staff` mı? Multi-tenant olduğu için tek "Salown Staff" app'i mi, yoksa tenant başına white-label app mi? → **Öneri:** tek `Salown Staff` app'i (tenant login ile ayrışır); white-label ileride ayrı iş.
-2. **Apple guideline 4.2 ("minimum functionality"):** salt web-wrapper app'ler bazen reddedilir. Native push + offline + native hissi ekleyerek geçilir; tam-remote (`server.url` ile canlı siteyi yükleme) yaklaşımından kaçın → bundle'ı gömülü tut + OTA ile güncelle.
-3. **Android paralelliği:** aynı Capacitor projesinden gelir; ekstra ~½ gün + Play $25. Owner Android da istiyor mu?
-4. **D2 bağı:** Apple Developer hesabı D2 (Apple sign-in) ile ORTAK — ikisini aynı hesap kurulumunda halletmek verimli.
+## 7. Risks & open decisions (for the owner)
+1. **Bundle ID / brand:** `com.whitecross.staff` or `com.salown.staff`? Since it's multi-tenant, one "salOWN Staff" app, or a white-label app per tenant? → **Recommendation:** a single `salOWN Staff` app (differentiated by tenant login); white-label is separate work later.
+2. **Apple guideline 4.2 ("minimum functionality"):** pure web-wrapper apps are sometimes rejected. Passed by adding native push + offline + native feel; avoid the full-remote (loading the live site via `server.url`) approach → keep the bundle embedded + update via OTA.
+3. **Android parallelism:** comes from the same Capacitor project; extra ~½ day + Play $25. Does the owner want Android too?
+4. **D2 link:** the Apple Developer account is SHARED with D2 (Apple sign-in) — it's efficient to handle both in the same account setup.
 
-## 8. Başlarken ilk komut (referans)
+## 8. First command to start (reference)
 ```bash
-cd ~/alex/Salown
+cd ~/alex/salOWN
 npm i @capacitor/core @capacitor/cli @capacitor/ios
-npx cap init "Salown Staff" com.salown.staff --web-dir hosting/staff-bundle
+npx cap init "salOWN Staff" com.salown.staff --web-dir hosting/staff-bundle
 npx cap add ios
 npm run build:staff && npx cap sync
-npx cap open ios   # Xcode açar (Mac gerekir)
+npx cap open ios   # opens Xcode (Mac required)
 ```
 
 ---
-*Bu doküman HAZIR-BEKLE statüsündedir; iş başlayınca ROADMAP D1 ✅+hash ile işaretlenir ve [[edit-log-salown]]'a kayıt düşülür. Bakım: staff app'te native-alakalı bir değişiklik olursa (ör. yeni izin gereksinimi) buraya not düş.*
+*This document is in READY-WAIT status; when work starts, ROADMAP D1 is marked ✅+hash and an entry is added to [[edit-log-salown]]. Maintenance: if a native-related change happens in the staff app (e.g. a new permission requirement), note it here.*

@@ -1,14 +1,14 @@
 # PARSER_NOTES.md
 
-Email parser'ları (Booksy, Fresha, Treatwell) geçmişte en çok sorun çıkaran alan.
-Bu dosya: mimari, tekrarlayan bug kalıpları, ve "bir daha yapma" kuralları.
+Email parsers (Booksy, Fresha, Treatwell) have historically been the most problematic area.
+This file: architecture, recurring bug patterns, and "never do this again" rules.
 
 ---
 
-## Nasıl Çalışıyor
+## How It Works
 
-Salown-app IMAP ile tenant Gmail hesabını okur. Her parser kendi parse mantığını yürütür.
-Deploy: `firebase deploy --only functions` — parser değişikliği için zorunlu.
+salown-app reads the tenant Gmail account via IMAP. Each parser runs its own parse logic.
+Deploy: `firebase deploy --only functions` — mandatory for a parser change.
 
 ```
 salownManualImport (callable)
@@ -17,220 +17,220 @@ salownManualImport (callable)
   └─ parseTreatwellForTenant(db, tenantId, since, until, reimport)
   └─ parseTreatwellIcalForTenant(db, tenantId, since, until)
 
-Her parser ortak helpers kullanır:
-  imapSearchAndFetch()   ← IMAP bağlantısı + fetch + seen flag
+Each parser uses shared helpers:
+  imapSearchAndFetch()   ← IMAP connection + fetch + seen flag
   extractTextFromRaw()   ← MIME/base64/quoted-printable decode
-  hasExternalIdMulti()   ← externalId dedup kontrolü
-  isTombstoned()         ← tombstone dedup kontrolü
+  hasExternalIdMulti()   ← externalId dedup check
+  isTombstoned()         ← tombstone dedup check
 ```
 
 ---
 
-## Dedup Sistemi — İki Katman
+## Dedup System — Two Layers
 
-### Katman 1: externalId
-Her booking'in `externalId` field'ı var. Format:
-- Booksy: `BOOKSY-{BookingNumber}` (örn: `BOOKSY-1780000805806`)
+### Layer 1: externalId
+Every booking has an `externalId` field. Format:
+- Booksy: `BOOKSY-{BookingNumber}` (e.g.: `BOOKSY-1780000805806`)
 - Fresha: `FRESHA-{ref}`
 - Treatwell: `TREATWELL-T{7+digit}`
 
-`hasExternalIdMulti(db, tenantId, externalId)` — hem doc ID hem `externalId` field'ını kontrol eder.
+`hasExternalIdMulti(db, tenantId, externalId)` — checks both the doc ID and the `externalId` field.
 
-### Katman 2: Tombstone
-`tenants/{tenantId}/parserTombstones/{key}` — kalıcı, silinemez (sadece super-admin).
+### Layer 2: Tombstone
+`tenants/{tenantId}/parserTombstones/{key}` — permanent, cannot be deleted (super-admin only).
 
-İki tür tombstone:
-1. **ExternalId tombstone**: `isTombstoned(db, tenantId, externalId)` — booking silinse bile yeniden yaratılmaz
-2. **Slot tombstone**: `SLOT-Booksy-{date}-{time}` — aynı slot'a farklı externalId ile gelen email bloklanır (Booksy'e özgü, Jakov Zorić olayı sonrası)
+Two types of tombstone:
+1. **ExternalId tombstone**: `isTombstoned(db, tenantId, externalId)` — even if the booking is deleted it is not recreated
+2. **Slot tombstone**: `SLOT-Booksy-{date}-{time}` — an email arriving at the same slot with a different externalId is blocked (Booksy-specific, after the Jakov Zorić incident)
 
-**Tombstone ne zaman yazılır:**
-- Başarılı import → slot tombstone (Booksy)
-- `deleteBooking()` → externalId tombstone (tüm parser bookingleri)
+**When a tombstone is written:**
+- Successful import → slot tombstone (Booksy)
+- `deleteBooking()` → externalId tombstone (all parser bookings)
 - Bulk delete (Settings cleanup) → tombstone batch
 
-**Tombstone silme:** Hiçbir zaman silme. Bir emailı yeniden işlemek istiyorsan Gmail'de "Okunmadı" işaretle.
+**Deleting a tombstone:** Never delete. If you want to re-process an email, mark it "Unread" in Gmail.
 
 ---
 
-## UNSEEN Logic  (güncellendi 2026-06-24 — seen-skip ÜÇ parser'da da tamamen kaldırıldı)
+## UNSEEN Logic  (updated 2026-06-24 — seen-skip fully removed in ALL THREE parsers)
 
-IMAP search **tarih bazlı** (`{ from, since: son 7 gün }`), UNSEEN değil → parser seen+unseen
-TÜM emailları çeker, `seen` flag'ini per-message okur, işlem sonunda unseen'leri seen işaretler.
+IMAP search is **date-based** (`{ from, since: last 7 days }`), not UNSEEN → the parser
+fetches ALL emails (seen+unseen), reads the `seen` flag per-message, and marks the unseen ones as seen at the end of processing.
 
-Eskiden her okunmuş (seen) non-cancel email atlanıyordu:
+Previously every read (seen) non-cancel email was skipped:
 ```js
-if (seen && !isCancellation) { skipped++; continue }   // ESKİ — booking kaybına yol açtı
+if (seen && !isCancellation) { skipped++; continue }   // OLD — caused booking loss
 ```
-Sorun: personel email'i parser'dan (5 dk periyot) önce Gmail'de açarsa, o booking **hiç
-yaratılmadan sessizce düşüyordu** (Damian Adams-Peatling 21 June olayı). Çözüm: seen-skip'i
-kaldır, her yolu idempotent guard'lara bırak.
+Problem: if staff opened the email in Gmail before the parser (5 min cycle), that booking was
+**silently dropped without ever being created** (Damian Adams-Peatling 21 June incident). Solution: remove
+seen-skip, leave every path to idempotent guards.
 
-**Güncel durum (parser bazında):**
+**Current state (per parser):**
 
-| Parser | seen-skip durumu |
+| Parser | seen-skip status |
 |--------|------------------|
-| **Booksy** | seen-skip TAMAMEN kaldırıldı (2026-06-20). new=dedup, reschedule=ordering guard, cancel=DEAD. |
-| **Fresha** | seen-skip TAMAMEN kaldırıldı (2026-06-24). Booksy paritesi. |
-| **Treatwell** | seen-skip TAMAMEN kaldırıldı (2026-06-24). Booksy paritesi. |
+| **Booksy** | seen-skip FULLY removed (2026-06-20). new=dedup, reschedule=ordering guard, cancel=DEAD. |
+| **Fresha** | seen-skip FULLY removed (2026-06-24). Booksy parity. |
+| **Treatwell** | seen-skip FULLY removed (2026-06-24). Booksy parity. |
 
-✅ **KAPANDI (2026-06-24):** Üç parser'da da `if (seen && ...)` satırı yok. seen YENİ booking
-artık atlanmıyor; "Damian 21 June" / "Muhamed T2185616487" senaryosu üç platformda da kapandı.
-Eskiden Fresha + Treatwell yarım fix'liydi: 2026-06-20'de sadece reschedule/cancel istisnası
-eklenmiş, seen YENİ booking skip'i kalmıştı (commit `472fbec` yarım uyguladı). Bkz: Bug Kalıbı #8.
+✅ **CLOSED (2026-06-24):** In all three parsers there is no `if (seen && ...)` line. A seen NEW booking
+is no longer skipped; the "Damian 21 June" / "Muhamed T2185616487" scenario is closed on all three platforms.
+Previously Fresha + Treatwell were half-fixed: on 2026-06-20 only a reschedule/cancel exception
+was added, the seen NEW booking skip remained (commit `472fbec` applied it halfway). See: Bug Pattern #8.
 
-**Idempotency guard'ları (seen-skip'in yerini alan):**
+**Idempotency guards (replacing seen-skip):**
 - new booking → `isTombstoned` + `isTombstonedBySlot` + `hasExternalIdMulti`
-- reschedule → already-applied (date/time eşleşme) skip + `lastRescheduleEmailMs` ordering guard
+- reschedule → already-applied (date/time match) skip + `lastRescheduleEmailMs` ordering guard
 - cancel → DEAD-status (`CANCELLED`/`CHECKED_OUT`/...) guard
 
-**İstisnalar:**
-- Manual import (`isHistorical = true`) veya Treatwell reimport: tüm emaillar işlenir
-- Bir emailı elle yeniden işlemek için: Gmail'de "Okunmadı" işaretle → parser otomatik alır
+**Exceptions:**
+- Manual import (`isHistorical = true`) or Treatwell reimport: all emails are processed
+- To manually re-process an email: mark it "Unread" in Gmail → the parser picks it up automatically
 
 ---
 
-## extractTextFromRaw — MIME Decode (KRİTİK)
+## extractTextFromRaw — MIME Decode (CRITICAL)
 
-Booksy'nin `Booking #` sadece `text/plain` MIME part'ta var, HTML part'ta yok.
-Bu fix yapılmadan önce: IMAP parser `Booking #` bulamıyordu → tarih/saat bazlı externalId üretiyordu → Gmail API parser ile farklı ID → duplicate.
+Booksy's `Booking #` exists only in the `text/plain` MIME part, not in the HTML part.
+Before this fix: the IMAP parser could not find `Booking #` → it generated a date/time-based externalId → a different ID than the Gmail API parser → duplicate.
 
 ```js
-// Sıra: text/plain önce, base64 decode, quoted-printable decode
-// HTML fallback: extractHtmlAsText() — son çare
+// Order: text/plain first, base64 decode, quoted-printable decode
+// HTML fallback: extractHtmlAsText() — last resort
 ```
 
-**ASLA eski hale döndürme:** HTML part'ı direkt okuma. Her zaman `text/plain` MIME part'ı önce dene.
+**NEVER revert:** Do not read the HTML part directly. Always try the `text/plain` MIME part first.
 
 ---
 
-## Tekrarlayan Bug Kalıpları
+## Recurring Bug Patterns
 
-### 1. ExternalId Tutarsızlığı
-**Semptom:** Aynı booking iki farklı doc olarak Firestore'a yazılmış.
-**Kök neden:** İki farklı parser (veya aynı parserin iki çalışması) farklı externalId üretiyor.
-**Kontrol:** externalId formatı sabit mi? `BOOKSY-{BookingNumber}` her zaman bulunabiliyor mu?
-**Fix:** MIME decode doğru mu? `Booking #` plain text'te var mı?
+### 1. ExternalId Inconsistency
+**Symptom:** The same booking written to Firestore as two different docs.
+**Root cause:** Two different parsers (or two runs of the same parser) generate a different externalId.
+**Check:** Is the externalId format stable? Can `BOOKSY-{BookingNumber}` always be found?
+**Fix:** Is MIME decode correct? Is `Booking #` present in the plain text?
 
 ### 2. Source/Status Casing
-**Semptom:** Bir feature hiç çalışmıyor gibi görünüyor (cancel gelmiyor, cleanup çalışmıyor).
-**Kök neden:** `'website'` vs `'Website'`, `'booksy'` vs `'Booksy'` gibi casing uyuşmazlığı.
-**Kural:** Firestore'da `source` field büyük harf: `'Booksy'`, `'Fresha'`, `'Treatwell'`, `'Website'`, `'Walk-in'`.
-Sorgularda lowercase karşılaştır: `source?.toLowerCase() === 'booksy'`.
+**Symptom:** A feature looks like it doesn't work at all (cancel not arriving, cleanup not running).
+**Root cause:** Casing mismatch like `'website'` vs `'Website'`, `'booksy'` vs `'Booksy'`.
+**Rule:** In Firestore the `source` field is capitalized: `'Booksy'`, `'Fresha'`, `'Treatwell'`, `'Website'`, `'Walk-in'`.
+Compare lowercase in queries: `source?.toLowerCase() === 'booksy'`.
 
-### 3. Servis Adı Mismatch
-**Semptom:** Fresha/Booksy bookinglerinde "Payment due: —" veya yanlış fiyat.
-**Kök neden:** Email'deki servis adı (`"Classic Short Back and Side"`) ile Firestore'daki ad (`"Classic Short Back & Sides"`) farklı.
-**Fix:** `normSvc()` fuzzy normalize — `&`→`and`, trailing `s` strip. Parser match + display'de her ikisinde de kullan.
-**⚠️ Not:** `normSvc` 5 yerde inline ve tutarsız (bazısı trailing `s` strip etmiyor). Tüm normalize/match
-kuralları + bu tutarsızlık için tek referans: [NORMALIZATION.md](NORMALIZATION.md).
+### 3. Service Name Mismatch
+**Symptom:** "Payment due: —" or wrong price on Fresha/Booksy bookings.
+**Root cause:** The service name in the email (`"Classic Short Back and Side"`) differs from the name in Firestore (`"Classic Short Back & Sides"`).
+**Fix:** `normSvc()` fuzzy normalize — `&`→`and`, strip trailing `s`. Use it in both parser match and display.
+**⚠️ Note:** `normSvc` is inline in 5 places and inconsistent (some don't strip trailing `s`). Single reference for all normalize/match
+rules + this inconsistency: [NORMALIZATION.md](NORMALIZATION.md).
 
-### 4. İki Parser Aynı Inbox (Jakov Zorić olayı)
-**Semptom:** Whitecross'ta duplicate bookinglar.
-**Kök neden:** whitecross-site parser + salown-app parser aynı Gmail'i okuyor.
-**Kural:** Bir parser enable edilmeden önce diğeri disable edilmeli. Migration tablosuna bkz: [MULTI_TENANT_NOTES.md](MULTI_TENANT_NOTES.md)
+### 4. Two Parsers Same Inbox (Jakov Zorić incident)
+**Symptom:** Duplicate bookings at Whitecross.
+**Root cause:** The whitecross-site parser + salown-app parser read the same Gmail.
+**Rule:** Before one parser is enabled, the other must be disabled. See migration table: [MULTI_TENANT_NOTES.md](MULTI_TENANT_NOTES.md)
 
-### 5. Treatwell T-ref Eksikliği
-**Semptom:** Treatwell bookinglar duplicate oluyor veya garip externalId'ler görünüyor.
-**Kök neden:** `Date.now()` fallback unstable externalId üretiyordu.
-**Fix:** T-ref yoksa email skip (`console.warn` ile). Gerçek Treatwell emaillarında daima `T{7+digit}` var.
+### 5. Treatwell T-ref Missing
+**Symptom:** Treatwell bookings duplicate or strange externalIds appear.
+**Root cause:** `Date.now()` fallback generated an unstable externalId.
+**Fix:** If there's no T-ref, skip the email (with `console.warn`). Real Treatwell emails always have `T{7+digit}`.
 
 ### 6. Cancel Cross-Match
-**Semptom:** Booksy cancel geldiğinde Fresha bookingini iptal ediyor (veya tam tersi).
-**Kök neden:** externalId olmadan source field'ına güvenildi.
-**Fix:** Cancel fallback'te prefix check zorunlu: `externalId.startsWith('BOOKSY-')`.
+**Symptom:** When a Booksy cancel arrives it cancels the Fresha booking (or vice versa).
+**Root cause:** Relied on the source field without an externalId.
+**Fix:** A prefix check is mandatory in the cancel fallback: `externalId.startsWith('BOOKSY-')`.
 
-### 7. Zincir Reschedule — kırık eski-doc eşleşmesi (Booksy'ye özgü, 2026-06-20)
-**Semptom:** A→B uygulanıyor ama B→C uygulanmıyor. Booking ikinci kez taşınmıyor.
-**Kök neden:** Booksy reschedule email'i çoğu zaman orijinal booking numarasını taşımaz →
-`oldExternalId` `BOOKSY-{isim}-{tarih}-{saat}` formatına düşer. Apply fallback'i bu string'i
-pozisyona göre parçalayıp eski tarih/saati çıkarmaya çalışıyordu; çok-kelimeli isimlerde
-("Damian Adams-Peatling") parçalama kayıyordu → canlı booking bulunamıyordu.
+### 7. Chain Reschedule — broken old-doc match (Booksy-specific, 2026-06-20)
+**Symptom:** A→B is applied but B→C is not. The booking is not moved a second time.
+**Root cause:** A Booksy reschedule email often does not carry the original booking number →
+`oldExternalId` falls back to `BOOKSY-{name}-{date}-{time}` format. The apply fallback tried to
+split this string by position and extract the old date/time; with multi-word names
+("Damian Adams-Peatling") the split shifted → the live booking could not be found.
 **Fix (A+B+C, commit 42def41):**
-- **A:** Reschedule email'inden temiz `oldDate`/`oldTime` taşı, canlı booking'i `where date== / time==` ile bul (string parse YOK).
-- **B:** Ordering guard — `emailDateMs <= booking.lastRescheduleEmailMs` ise atla (eski email yeniyi ezmesin).
-- **C:** Reschedule'larda seen-skip kaldır (bkz #8).
-**Neden Fresha/Treatwell'de YOK:** O platformların reschedule email'i stabil referans kodu taşır
-(`FRESHA-{ref}`, `TREATWELL-T{...}`) → booking direkt `doc(externalId)` ile bulunur, tarih/saat
-geri-üretimi gerekmez. Bu yüzden onlara sadece **B + C** uygulandı, A değil.
+- **A:** Carry clean `oldDate`/`oldTime` from the reschedule email, find the live booking with `where date== / time==` (NO string parse).
+- **B:** Ordering guard — if `emailDateMs <= booking.lastRescheduleEmailMs`, skip (don't let an old email override a newer one).
+- **C:** Remove seen-skip on reschedules (see #8).
+**Why NOT in Fresha/Treatwell:** Those platforms' reschedule emails carry a stable reference code
+(`FRESHA-{ref}`, `TREATWELL-T{...}`) → the booking is found directly via `doc(externalId)`, no date/time
+regeneration is needed. So only **B + C** were applied to them, not A.
 
-**🔑 Temel ilke (asla unutma):** Bir reschedule **YÖNDEN BAĞIMSIZDIR** — müşteri booking'i daha
-ileri tarihe DE, daha erkene DE alabilir. "Müşteri hep ileri tarihe alır → yeni gelen tarih zaten
-ileridir, öncekini beat et" varsayımı YANLIŞ. Damian 21 Jun→31 Jul (ileri) sonra 31 Jul→**1 Jul
-(geri)** aldı ve bu varsayımla kurulan logic çöktü. Doğru kıstas her zaman **en yeni gelen email'in
-geliş zamanı (`emailDateMs`)** — booking tarihinin yönü/büyüklüğü DEĞİL. Kod bunu uyguluyor:
-within-batch seçim `emailDateMs > existing.emailDateMs`, cross-run ise B ordering guard. Yorumlarda
-"higher date wins" gibi ifade görürsen düzelt — booking tarihi değil, email zamanı kastedilir.
+**🔑 Core principle (never forget):** A reschedule is **DIRECTION-INDEPENDENT** — the customer can move the booking
+to a LATER date OR an EARLIER one. The assumption "the customer always moves forward → the newly arrived date is already
+later, beat the previous one" is WRONG. Damian went 21 Jun→31 Jul (forward) then 31 Jul→**1 Jul
+(back)** and the logic built on that assumption collapsed. The correct criterion is always **the arrival
+time of the newest arriving email (`emailDateMs`)** — NOT the direction/magnitude of the booking date. The code implements this:
+within-batch selection `emailDateMs > existing.emailDateMs`, cross-run is the B ordering guard. If you see an expression
+like "higher date wins" in the comments, fix it — it means the email time, not the booking date.
 
-### 8. Seen-skip Booking Kaybı (2026-06-20 Damian + 2026-06-24 Muhamed/Treatwell — KAPANDI)
-**Semptom:** Yeni booking (veya reschedule) hiç sisteme düşmüyor; Firestore'da iz yok, hata da yok.
-**Kök neden:** `if (seen && !isCancellation) { skip }` — personel email'i 5 dk'lık parser
-periyodundan önce Gmail'de açarsa, okunmuş (seen) email atlanıyor, booking hiç yaratılmıyordu.
-**Fix:** seen-skip'i kaldır, dedup/ordering guard'lara güven (idempotent). Booksy'de 2026-06-20'de
-tam kaldırıldı; Fresha + Treatwell **2026-06-24'te tam kaldırıldı** (üç parser parite).
-**Yarım-fix tuzağı:** 2026-06-20'de Fresha/Treatwell'e sadece `&& !isReschedule` istisnası eklenmişti
-(commit `472fbec`); yorum "No seen-skip for reschedules/cancels" diyordu ama seen YENİ booking hâlâ
-atlanıyordu. Yorum "halloldu" izlenimi verdiği için 4 gün gözden kaçtı → Muhamed T2185616487 düşmedi.
-**Ders:** Bir fix'i çoklu parser'a uygularken üçünü de fiziksel olarak doğrula (`grep "if (seen"`);
-"benzer yorum var" ≠ "aynı davranış". Düzeltme commit'i bittiğinde grep ile sıfır kalıntı teyit et.
+### 8. Seen-skip Booking Loss (2026-06-20 Damian + 2026-06-24 Muhamed/Treatwell — CLOSED)
+**Symptom:** A new booking (or reschedule) never lands in the system; no trace in Firestore, no error either.
+**Root cause:** `if (seen && !isCancellation) { skip }` — if staff opened the email in Gmail before the parser's
+5-min cycle, the read (seen) email was skipped and the booking was never created.
+**Fix:** Remove seen-skip, rely on dedup/ordering guards (idempotent). Fully removed on Booksy 2026-06-20;
+Fresha + Treatwell **fully removed on 2026-06-24** (three-parser parity).
+**Half-fix trap:** On 2026-06-20 only a `&& !isReschedule` exception was added to Fresha/Treatwell
+(commit `472fbec`); the comment said "No seen-skip for reschedules/cancels" but a seen NEW booking was still
+skipped. Because the comment gave the impression "it's handled," it was overlooked for 4 days → Muhamed T2185616487 didn't land.
+**Lesson:** When applying a fix across multiple parsers, physically verify all three (`grep "if (seen"`);
+"there's a similar comment" ≠ "same behavior." When the fix commit is done, confirm zero residue with grep.
 
-### 9. Refactor-Orphan ReferenceError (2026-06-24, Treatwell `orderRef` — KAPANDI)
-**Semptom:** Bir parser'ın TÜM yeni booking'leri sessizce düşüyor (Firestore'da iz yok). Diğer parser'lar normal çalışıyor → sorun ortak değil, o parser'a özel.
-**Kök neden:** 2026-06-13 refactor'u (commit `96d6e7a`) Treatwell'de `const orderRef = refMatch[1]` tanımını sildi ama `orderRef`'i kullanan 3 yeri (`treatwellRef: orderRef`, reschedule map) bıraktı. Öksüz değişken her `set()`'te `ReferenceError: orderRef is not defined` atıyor; loop'taki try/catch yakalayıp `result.errors`'a koyuyor, booking yazılmıyor. 11 gün fark edilmedi (seen-skip ayrıca maskeliyordu).
-**Teşhis:** `firebase functions:log --only salownParseEmails | grep -i treatwell` → hatayı doğrudan verdi. **Booking düşmüyorsa İLK adım: parser loglarına bak, tahmin etme.**
-**Fix:** `const orderRef = refMatch[1];` `externalId`'nin altına geri eklendi (`functions/index.js:2293`).
-**Ders:** Değişken tanımını silerken/yeniden adlandırırken TÜM kullanımlarını grep'le (`grep -n "orderRef" functions/index.js`). `node -c` runtime ReferenceError'ı YAKALAMAZ — sadece syntax. Çalıştırma/lint veya gerçek email testi gerekir. Aynı kalıbı diğer parser'larda da ara: bir parser'da `treatwellRef`/`orderRef`-türü öksüz değişken varsa Fresha/Booksy'de `freshaRef`/`booksyRef` benzerini grep'le.
-
----
-
-## Booksy'ye Özgü Notlar
-
-- **Subject format değişti:** Eski: `"Booking confirmed: Hafiz — 15:00"`. Yeni: `"John Smith: new booking"` (tarih yok). Tarih/saat body'den parse edilmeli.
-- **Price:** `BOOKSY_DURATION_MAP[key].p` önce (config'den), yoksa regex `£([\d.]+)` fallback. Regex yeni formatta £22 (remaining) yakalıyordu — config her zaman önce.
-- **Duration:** Body'deki time range'den (`15:00 - 15:25` → 25 dk), fallback map'ten.
-- **HTML-only email:** `extractHtmlAsText()` fallback — bazı emaillar sadece HTML part içeriyor.
-
-## Fresha'ya Özgü Notlar
-
-- **Servis adı normalize:** `normSvc()` ile karşılaştır — `&`/`and` ve trailing `s` farkına dikkat.
-- **Fiyat:** Email'de yoksa Firestore servis kataloğundan `svc.price` çek, parser'da yaz.
-- **Cancel:** `source === 'fresha'` VEYA `externalId.startsWith('FRESHA-')`.
-- **Süre (duration) — Fresha email'inde YOK** (2026-06-24 düzeltildi). Booksy saat aralığı
-  (`15:00-15:25`) verir → hesaplanır; Treatwell `(40 minutes )` verir → parse edilir; **Fresha
-  yalnızca başlangıç saati verir, bitiş/süre yok.** Eskiden `endTime` sabit `+30` yazılıyor ve
-  `duration` field'ı HİÇ yazılmıyordu → conflict detection (`parseInt(b.duration)` truth source)
-  her Fresha booking'ini 30 dk sanıyor, uzun servislerde takvim çakışması/yanlış blok oluşuyordu.
-  **Çözüm:** eşleşen servisin (`svcCache`) `duration`'ı kullanılır; `duration` field'ı hem new
-  booking hem reschedule yollarında YAZILIR. Eşleşme yoksa 30 fallback (eski davranış).
-  - **Reschedule = sadece zaman taşıma:** mevcut `existingData.duration` korunur (30'a resetlenmez).
-  - **Reschedule-create (nadir, booking yok):** `svcCache` yüklüyse oradan çözülür, yoksa 30.
-  - Tüm Fresha yazma yolları artık `date/time/duration/startTime/endTime` dördünü tutarlı yazar.
-
-## Treatwell'e Özgü Notlar
-
-- **externalId:** `T{7+digit}` ref zorunlu. Yoksa skip.
-- **iCal parser:** `since`/`until` range filter → `evt.dtStart < since || evt.dtStart >= until` olanları atla.
-- **Reschedule fallback:** Booking bulunamazsa yeni booking YARATMA — tombstone bloklar zaten.
-- **Reimport:** `reimport=true` → UNSEEN logic bypass, tüm emaillar yeniden işlenir.
+### 9. Refactor-Orphan ReferenceError (2026-06-24, Treatwell `orderRef` — CLOSED)
+**Symptom:** ALL new bookings of one parser silently drop (no trace in Firestore). The other parsers work normally → the problem isn't shared, it's specific to that parser.
+**Root cause:** The 2026-06-13 refactor (commit `96d6e7a`) deleted the `const orderRef = refMatch[1]` definition in Treatwell but left the 3 places that use `orderRef` (`treatwellRef: orderRef`, reschedule map). The orphaned variable throws `ReferenceError: orderRef is not defined` on every `set()`; the try/catch in the loop catches it and puts it in `result.errors`, the booking isn't written. Went unnoticed for 11 days (seen-skip was also masking it).
+**Diagnosis:** `firebase functions:log --only salownParseEmails | grep -i treatwell` → gave the error directly. **If a booking isn't landing, the FIRST step: look at the parser logs, don't guess.**
+**Fix:** `const orderRef = refMatch[1];` was re-added below `externalId` (`functions/index.js:2293`).
+**Lesson:** When deleting/renaming a variable definition, grep ALL of its uses (`grep -n "orderRef" functions/index.js`). `node -c` does NOT CATCH a runtime ReferenceError — only syntax. A run/lint or a real email test is needed. Look for the same pattern in the other parsers too: if there's a `treatwellRef`/`orderRef`-type orphan variable in one parser, grep for the `freshaRef`/`booksyRef` equivalent in Fresha/Booksy.
 
 ---
 
-## Manual Import Güvenliği
+## Booksy-Specific Notes
 
-- `isHistorical = true` → UNSEEN logic kapalı
-- Geçmiş tarihten re-run → missing bookinglar yaratılır, mevcut olanlar duplike edilmez (externalId + tombstone)
-- `since`/`until` parametreleri tüm parserlara geçilir
-- **Safe to re-run:** Her parser idempotent — aynı tarihi birden çok kez import edebilirsin.
+- **Subject format changed:** Old: `"Booking confirmed: Hafiz — 15:00"`. New: `"John Smith: new booking"` (no date). Date/time must be parsed from the body.
+- **Price:** `BOOKSY_DURATION_MAP[key].p` first (from config), otherwise regex `£([\d.]+)` fallback. The regex was catching £22 (remaining) in the new format — config always first.
+- **Duration:** From the time range in the body (`15:00 - 15:25` → 25 min), fallback from the map.
+- **HTML-only email:** `extractHtmlAsText()` fallback — some emails contain only an HTML part.
+
+## Fresha-Specific Notes
+
+- **Service name normalize:** Compare with `normSvc()` — mind the `&`/`and` and trailing `s` difference.
+- **Price:** If not in the email, pull `svc.price` from the Firestore service catalog, write it in the parser.
+- **Cancel:** `source === 'fresha'` OR `externalId.startsWith('FRESHA-')`.
+- **Duration — NOT in the Fresha email** (fixed 2026-06-24). Booksy gives a time range
+  (`15:00-15:25`) → it's calculated; Treatwell gives `(40 minutes )` → it's parsed; **Fresha
+  gives only the start time, no end/duration.** Previously `endTime` was written as a fixed `+30` and
+  the `duration` field was NEVER written → conflict detection (`parseInt(b.duration)` truth source)
+  thought every Fresha booking was 30 min, causing calendar clashes/wrong blocks on long services.
+  **Solution:** the matched service's (`svcCache`) `duration` is used; the `duration` field is WRITTEN on both the new
+  booking and reschedule paths. If there's no match, 30 fallback (old behavior).
+  - **Reschedule = time move only:** the existing `existingData.duration` is preserved (not reset to 30).
+  - **Reschedule-create (rare, no booking):** resolved from `svcCache` if loaded, otherwise 30.
+  - All Fresha write paths now write all four `date/time/duration/startTime/endTime` consistently.
+
+## Treatwell-Specific Notes
+
+- **externalId:** `T{7+digit}` ref required. Skip if missing.
+- **iCal parser:** `since`/`until` range filter → skip those where `evt.dtStart < since || evt.dtStart >= until`.
+- **Reschedule fallback:** If the booking isn't found, do NOT create a new booking — the tombstone blocks it anyway.
+- **Reimport:** `reimport=true` → UNSEEN logic bypass, all emails are re-processed.
 
 ---
 
-## Deploy Sırası (Parser Değişikliği)
+## Manual Import Safety
+
+- `isHistorical = true` → UNSEEN logic off
+- Re-run from a past date → missing bookings are created, existing ones are not duplicated (externalId + tombstone)
+- `since`/`until` parameters are passed to all parsers
+- **Safe to re-run:** Every parser is idempotent — you can import the same date multiple times.
+
+---
+
+## Deploy Order (Parser Change)
 
 ```bash
 cd ~/Desktop/alex/salown-app
 firebase deploy --only functions --project havuz-44f70
 ```
 
-Hosting değişikliği gerekmez — parser sadece Cloud Function.
+No hosting change needed — the parser is just a Cloud Function.
 
 ---
 
@@ -243,4 +243,4 @@ parserTombstones/{key}:
   update/delete: super-admin only (immutable after write)
 ```
 
-Tombstone silinmez. Silmek istiyorsan super-admin panel'den.
+Tombstones are not deleted. If you want to delete, use the super-admin panel.

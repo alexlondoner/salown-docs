@@ -1,38 +1,38 @@
 # PROMPTS.md
 
-İşe yarayan Claude Code prompt template'leri. Yeni bir prompt çalışırsa buraya ekle.
+Claude Code prompt templates that work. If a new prompt works, add it here.
 
 ---
 
 ## staff_app_fixes
 
-Salown Staff App'te birden fazla bağımsız bug'ı tek seferde fix etmek için.
+For fixing multiple independent bugs in the salOWN Staff App in one pass.
 
 ```
-salown-app/src/ altındaki Staff App dosyalarını oku.
-Şu bug'ları sırayla fix et — her fix'ten sonra değiştirilen satırları rapor et, sonrakine geç:
+Read the Staff App files under salown-app/src/.
+Fix these bugs in order — after each fix report the changed lines, then move to the next:
 
-1. [bug açıklaması]
-2. [bug açıklaması]
+1. [bug description]
+2. [bug description]
 ...
 
-Kural: bir bug'ı fix ederken başka hiçbir şeye dokunma.
+Rule: while fixing one bug, don't touch anything else.
 ```
 
 ---
 
 ## merge_hardening
 
-salown-app ve whitecross-site'daki aynı mantığı senkronda tutmak için.
+For keeping the same logic in salown-app and whitecross-site in sync.
 
 ```
-[dosya adı] içindeki [fonksiyon adı]'nı oku.
-Aynı mantığın whitecross-site'daki karşılığı [dosya:satır].
-İkisi arasındaki farkları listele.
-Whitecross versiyonunu salown-app versiyonuyla eşleştir — sadece logic farkları, style değil.
-Değişen satırları önce göster, onay bekle.
+Read [function name] in [file name].
+The counterpart of the same logic in whitecross-site is [file:line].
+List the differences between the two.
+Match the Whitecross version to the salown-app version — logic differences only, not style.
+Show the changed lines first, wait for confirmation.
 ```
 
 ---
 
-_Yeni prompt eklemek için: başlık + kullanım durumu + template._
+_To add a new prompt: title + use case + template._

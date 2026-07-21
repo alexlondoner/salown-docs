@@ -1,420 +1,420 @@
 # INCIDENTS.md
 
-Geçmiş kazalar ve çıkarılan dersler. Her kayıt: ne oldu, neden, nasıl düzeltildi.
+Past incidents and the lessons learned from them. Every entry: what happened, why, how it was fixed.
 
-> **ÖNCE BURAYA BAK:** Bir problem (email gitmiyor, booking düşmüyor, sayfa boş, vb.) yaşandığında, teşhise başlamadan önce bu dosyada benzer bir olay raporlanmış mı diye ara — kök neden ve teşhis yöntemi muhtemelen burada yazılı.
+> **LOOK HERE FIRST:** When a problem occurs (email not sending, booking not landing, blank page, etc.), before starting the diagnosis, search this file for whether a similar incident has been reported — the root cause and diagnostic method are probably written here.
 
 ---
 
-## 📋 Kayıt standardı (yeni olaylar bu şablonu doldurur)
+## 📋 Record standard (new incidents fill in this template)
 
-Her olay `## YYYY-MM-DD — kısa başlık` ile açılır, hemen altına **metadata satırı**, sonra sabit alanlar + **Dersler / Lessons Learned**. **Bu alan seti bozulmaz** (2026-07-18 owner kararı) — tutarlılık kurumsal hafıza demek; her incident aynı alanları doldurur. Bilgi yoksa "yok"/"—" yaz, alanı atlama.
+Every incident opens with `## YYYY-MM-DD — short title`, immediately followed by the **metadata line**, then the fixed fields + **Lessons Learned**. **This field set is not broken** (2026-07-18 owner decision) — consistency means institutional memory; every incident fills in the same fields. If information is missing, write "yok"/"—", do not skip the field.
 
 ```
-## 2026-XX-XX — kısa başlık
+## 2026-XX-XX — short title
 
-**Severity:** 🔴 Critical / 🟠 High / 🟡 Medium / 🟢 Low · **Owner:** <kim> · **Status:** ✅ Resolved / 🟡 Open / 🔴 Regressed · **Affected area:** <modül/akış — ör. checkout, delete, dashboard>
+**Severity:** 🔴 Critical / 🟠 High / 🟡 Medium / 🟢 Low · **Owner:** <who> · **Status:** ✅ Resolved / 🟡 Open / 🔴 Regressed · **Affected area:** <module/flow — e.g. checkout, delete, dashboard>
 
-**Discovery:** bug'ı kim/nasıl buldu — owner test / müşteri raporu / regression test / refactor sırasında / monitoring (yıllar sonra "bug'ları ne yakalıyor" = kalite metriği)
-**Impact:** kullanıcı/işletme ne yaşadı (bir cümle)
-**Root Cause:** asıl neden — "bug'ı değil NEDEN'ini yaz" (ör. "create çalışıyor, update permission yüzünden patlıyor")
-**Bug Class:** tek satır sınıflandırma — Permission mismatch / State normalization (SSOT ihlali) / Race condition / Legacy compatibility / Timezone / Firestore transaction / … (yıllar sonra sayınca mimarinin zayıf noktaları çıkar)
-**Resolution:** ne yapıldı + deploy durumu
-**Prevention:** tekrarı nasıl engelleriz (kalıcı kural / guard)
-**Regression Tests:** hangi test bug'ı sabitledi (dosya::adı) — yoksa "yok (neden)"
-**Related:** commits <hash / uncommitted> · roadmap <ID/tema> · files <path'ler>
+**Discovery:** who/how found the bug — owner test / customer report / regression test / during refactor / monitoring (years later "what catches the bugs" = quality metric)
+**Impact:** what the user/business experienced (one sentence)
+**Root Cause:** the actual cause — "write not the bug but the WHY" (e.g. "create works, blows up on update because of permission")
+**Bug Class:** one-line classification — Permission mismatch / State normalization (SSOT violation) / Race condition / Legacy compatibility / Timezone / Firestore transaction / … (counted years later, the architecture's weak points emerge)
+**Resolution:** what was done + deploy status
+**Prevention:** how we prevent recurrence (permanent rule / guard)
+**Regression Tests:** which test pinned the bug (file::name) — otherwise "yok (why)"
+**Related:** commits <hash / uncommitted> · roadmap <ID/theme> · files <paths>
 
-**Ne oldu / Teşhis / Fix:** (serbest, uzun anlatım)
+**What happened / Diagnosis / Fix:** (free-form, long narrative)
 
-**Dersler / Lessons Learned:**
+**Lessons Learned:**
 - ...
 - ...
 ```
 
-**Severity lejantı:** 🔴 Critical (canlı kesinti / veri-para / güvenlik) · 🟠 High (özellik kırık, geçici çözüm var) · 🟡 Medium (yanlış gösterim / kısmi) · 🟢 Low (tek ekran / kozmetik).
+**Severity legend:** 🔴 Critical (live outage / data-money / security) · 🟠 High (feature broken, workaround exists) · 🟡 Medium (wrong display / partial) · 🟢 Low (single screen / cosmetic).
 
-**Tag sözlüğü (KANONİK — sadece bunlar; sprawl yasak):** `#security` `#stripe` `#secrets` `#config` `#deploy` `#normalization` `#permission` `#race` `#timezone` `#parser` `#email` `#data-loss` `#shared-infra`. Yeni tag ancak gerçekten yeni bir sınıf çıkarsa eklenir (ör. `#payment`+`#payments`+`#stripe-payment` gibi ikizler YASAK → hepsi `#stripe`). Her kayıt `**Tags:**` satırı taşır.
+**Tag dictionary (CANONICAL — only these; sprawl forbidden):** `#security` `#stripe` `#secrets` `#config` `#deploy` `#normalization` `#permission` `#race` `#timezone` `#parser` `#email` `#data-loss` `#shared-infra`. A new tag is added only if a genuinely new class emerges (e.g. twins like `#payment`+`#payments`+`#stripe-payment` are FORBIDDEN → all `#stripe`). Every entry carries a `**Tags:**` line.
 
-## 2026-07-21 — Canlı Stripe slotunda TEST key → gerçek müşteriler test checkout'a düştü, ödeyemedi
+## 2026-07-21 — TEST key in the live Stripe slot → real customers dropped into test checkout, could not pay
 
-**Severity:** 🔴 Critical (canlı ödeme kesintisi / gelir kaybı — gerçek müşteriler ödeyemedi) · **Owner:** owner (sezgiyle "bu adamlar test linki kullanamaz" deyip ısrar etti) + Claude · **Status:** ✅ Resolved & DEPLOYED 2026-07-21 (STRIPE_SECRET_KEY v5=sk_live, 4 ödeme fn redeploy, canlı booking cs_live+CONFIRMED ile doğrulandı) · **Affected area:** whitecross-site payments / Stripe secret config (`createCheckoutSession`)
-**Tags:** `#security` `#stripe` `#secrets` `#config` `#deploy` `#shared-infra`  *(tag taksonomisi 2026-07-21 owner önerisiyle başladı — ölçekte incident arama için; geriye dönük etiketleme ROADMAP'e ekli değil, ilerledikçe her yeni kayıt Tags satırı taşır)*
+**Severity:** 🔴 Critical (live payment outage / revenue loss — real customers could not pay) · **Owner:** owner (insisted on intuition, saying "these guys can't use a test link") + Claude · **Status:** ✅ Resolved & DEPLOYED 2026-07-21 (STRIPE_SECRET_KEY v5=sk_live, 4 payment fn redeployed, verified with live booking cs_live+CONFIRMED) · **Affected area:** whitecross-site payments / Stripe secret config (`createCheckoutSession`)
+**Tags:** `#security` `#stripe` `#secrets` `#config` `#deploy` `#shared-infra`  *(the tag taxonomy started 2026-07-21 on the owner's suggestion — for incident search at scale; retroactive tagging is not on the ROADMAP; going forward every new entry carries a Tags line)*
 
-**Discovery:** Owner — salOWN panelinde bugün 2 booking CANCELLED görünüyordu ama "why not payment" tanısı **PAID** diyordu; owner "Taylor+Jack gerçek/sadık müşteri, `?testMode=1` linkini bulup giremezler" diye ısrar edince link teorisi elendi → sunucudaki Stripe key'ine bakıldı.
-**Impact:** 07-21 sabahı gerçek müşteriler (Taylor 2 deneme, Jack 1) normal siteden (testMode YOK) booking yapınca **test Stripe checkout'una** düştü → gerçek kartla ödeyemediler → PENDING kaldı → `salownCleanupExpiredPending` 15 dk'da `expired_pending` → CANCELLED. Gerçek para alınmadı ama **2 gerçek müşteri + randevu kaybı** (owner manuel rebook + özür mesajıyla kurtardı). Confirmed email gitmedi (hiç CONFIRMED olmadı).
-**Root Cause:** `STRIPE_SECRET_KEY` (CANLI slot) secret'ının **en son versiyonu (v4) bir TEST key** (`sk_test_51TB…`) idi. `createCheckoutSession` non-testMode dalında `chargeGBP` için `STRIPE_SECRET_KEY`'i kullanır (`functions/index.js:175`) → değer test olduğundan Stripe **cs_test** session üretti (gerçek kart reddedilir). ⚠️ **ASIL KÖK NEDEN — PAYLAŞILAN SECRET ÇAKIŞMASI (transcript-kanıtlı):** `STRIPE_SECRET_KEY` **aynı Firebase projesinde (havuz-44f70) Salown + Whitecross fonksiyonları arasında PAYLAŞILAN** bir secret ismi. **2026-07-04 00:44 UTC**'de, **Salown Stripe Connect kurulumu** yapan bir Claude session'ı (`ba29869e`, owner yönlendirmesiyle) **`salown-app` dizininden** şu komutu çalıştırdı: `printf 'sk_test_51TBv2…' | firebase functions:secrets:set STRIPE_SECRET_KEY --force`. Amaç Salown Connect'i test etmekti (Salown sandbox = "Turquoise" hesabı, `sk_test_51TB…`); ama paylaşılan secret ismi yüzünden **Whitecross'un canlı ödeme key'ini de ezdi.** (Whitecross'un gerçek hesabı `51T3CrpR` — canlı+test ikisi de doğruydu; sorun yabancı Turquoise `51TB` key'inin canlı slotu ezmesi.) **Neden 17 gün gizli kaldı:** whitecross fonksiyonları 07-04→07-21 arası redeploy edilmedi → eski canlı binding'de kaldı (Elie 07-19 cs_live çalıştı). ⚠️ testMode KODU çok daha eski (05-07 `f92ac1b8`) ama secret çakışması 07-04. ⚠️ **Zamanlama kanıtı (owner düzeltmesi):** testMode KODU 05-07'de eklendi (`f92ac1b8`/`017842e2`) ama secret hatası o kadar eski DEĞİL — webhook loglarında gerçek `cs_live` booking'ler kesintisiz var (07-08/09/10/13/17/18 + Elie 07-19 cs_live), yani 07-19'a kadar canlı ödeme çalışıyordu. Fonksiyonlar v4 yazıldıktan sonra deploy edilmediği için **uykuda kaldı**; **Claude'un 07-21 email-extras `functions:whitecross` deploy'u** secret'ı "latest = v4"e yeniden bağlayınca canlı checkout sessizce test'e döndü (ilk gerçek-müşteri cs_test = Jack 07-21 07:39). (v2 de "mk_…" bozuk bir değerdi — slot geçmişi kirli.)
-**Bug Class:** Secret/credential misconfiguration — yanlış slota yazılmış test key + **deploy-time secret rebind** (alakasız bir redeploy uykudaki hatalı versiyonu "latest" olarak aktive etti).
-**Resolution:** `STRIPE_SECRET_KEY` v3'teki gerçek `sk_live` değeriyle yeni versiyon (v5) yazıldı (`access @3 | set --data-file -`, newline korundu). 4 ödeme fn redeploy: `createCheckoutSession`, `stripeWebhook`, `checkBookingPayment`, `createMobileCheckout` (`functions:whitecross:…` hedefli). Doğrulama: owner'ın gerçek booking'i 11:32 → **cs_live + CONFIRMED + DEPOSIT_PAID** (11:19'daki son cs_test, fix yayılmadan bir dk önceki denemeydi, expire oldu). Owner Taylor+Jack'e manuel booking + özür mesajı.
-**Prevention:** (1) 🔑 **EN ÖNEMLİ — Whitecross ve Salown AYNI `STRIPE_SECRET_KEY` secret'ını PAYLAŞMAMALI.** Whitecross kendi ayrı isimli secret'ını kullanmalı (ör. `WC_STRIPE_SECRET_KEY`) + `createCheckoutSession`/`stripeWebhook`/`checkBookingPayment`/`createMobileCheckout` onu okumalı. Böylece Salown Stripe (Connect/sandbox) işi bir daha whitecross canlı ödemesini asla ezemez. Paylaşılan secret ismi = tek başına root risk. (2) **Deploy-sonrası smoke check:** ödeme fn'leri deploy edilince bir booking'in session'ının `cs_live` prefix'i aldığını teyit et (bu tek kontrol tüm zinciri yakalardı). (3) Canlı secret slotuna ASLA test/sandbox key yazma; `sk_test` prefix'li değeri canlı slota yazmayı reddeden guard/script. (4) ✅ Bozuk v4 (Turquoise test) versiyonu **DESTROYED** edildi (2026-07-21). (5) v4'ün tam createTime = transcript kanıtı **2026-07-04 00:44 UTC** (session `ba29869e`); Cloud Console → Secret Manager → Versions ile de doğrulanabilir.
-**Regression Tests:** yok (secret-config hatası kod-testiyle yakalanmaz) → yerine **deploy-sonrası cs_live smoke doğrulaması** kalıcı adım olmalı.
-**Related:** **yazan session `ba29869e` (2026-07-04 00:44 UTC, Salown Connect kurulumu, salown-app)** · tetikleyen = bu session'ın (`2357c819`) `functions:whitecross` email-extras deploy'u (2026-07-21) · commits `f92ac1b8`+`017842e2` (test mode support KODU, 2026-05-07 — secret hatasıyla alakasız) · secret `STRIPE_SECRET_KEY` v4(Turquoise test, DESTROYED)→v5(sk_live fix) · files `functions/index.js` (`createCheckoutSession` key seçimi L173-177)
+**Discovery:** Owner — today 2 bookings showed as CANCELLED in the salOWN panel, but the "why not payment" diagnosis said **PAID**; when the owner insisted "Taylor+Jack are real/loyal customers, they can't find and enter the `?testMode=1` link", the link theory was eliminated → the Stripe key on the server was examined.
+**Impact:** On the morning of 07-21, real customers (Taylor 2 attempts, Jack 1) booking from the normal site (NO testMode) dropped into **test Stripe checkout** → they could not pay with a real card → stayed PENDING → `salownCleanupExpiredPending` turned them `expired_pending` → CANCELLED within 15 min. No real money was taken but **2 real customers + lost appointments** (owner recovered with a manual rebook + apology message). Confirmed email did not go out (it was never CONFIRMED).
+**Root Cause:** The **latest version (v4) of the `STRIPE_SECRET_KEY`** secret (LIVE slot) was a **TEST key** (`sk_test_51TB…`). In the non-testMode branch, `createCheckoutSession` uses `STRIPE_SECRET_KEY` for `chargeGBP` (`functions/index.js:175`) → because the value was test, Stripe produced a **cs_test** session (a real card is rejected). ⚠️ **THE ACTUAL ROOT CAUSE — SHARED SECRET COLLISION (transcript-proven):** `STRIPE_SECRET_KEY` is a secret name **SHARED between salOWN + Whitecross functions in the same Firebase project (havuz-44f70)**. On **2026-07-04 00:44 UTC**, a Claude session doing the **salOWN Stripe Connect setup** (`ba29869e`, at owner's direction) ran this command **from the `salown-app` directory**: `printf 'sk_test_51TBv2…' | firebase functions:secrets:set STRIPE_SECRET_KEY --force`. The intent was to test salOWN Connect (salOWN sandbox = "Turquoise" account, `sk_test_51TB…`); but because of the shared secret name it **also overwrote Whitecross's live payment key.** (Whitecross's real account is `51T3CrpR` — both live+test were correct; the problem was the foreign Turquoise `51TB` key overwriting the live slot.) **Why it stayed hidden for 17 days:** the whitecross functions were not redeployed between 07-04→07-21 → they stayed on the old live binding (Elie's 07-19 cs_live worked). ⚠️ the testMode CODE is much older (05-07 `f92ac1b8`) but the secret collision is 07-04. ⚠️ **Timing evidence (owner correction):** the testMode CODE was added on 05-07 (`f92ac1b8`/`017842e2`) but the secret error is NOT that old — the webhook logs have uninterrupted real `cs_live` bookings (07-08/09/10/13/17/18 + Elie 07-19 cs_live), i.e. live payment was working until 07-19. Because the functions were not deployed after v4 was written, it **stayed dormant**; when **Claude's 07-21 email-extras `functions:whitecross` deploy** rebound the secret to "latest = v4", live checkout silently reverted to test (the first real-customer cs_test = Jack 07-21 07:39). (v2 was also a broken "mk_…" value — the slot history is dirty.)
+**Bug Class:** Secret/credential misconfiguration — a test key written to the wrong slot + **deploy-time secret rebind** (an unrelated redeploy activated the dormant faulty version as "latest").
+**Resolution:** A new version (v5) of `STRIPE_SECRET_KEY` was written with the real `sk_live` value from v3 (`access @3 | set --data-file -`, newline preserved). 4 payment fn redeployed: `createCheckoutSession`, `stripeWebhook`, `checkBookingPayment`, `createMobileCheckout` (targeted `functions:whitecross:…`). Verification: the owner's real booking at 11:32 → **cs_live + CONFIRMED + DEPOSIT_PAID** (the last cs_test at 11:19 was an attempt a minute before the fix propagated, it expired). Owner sent Taylor+Jack a manual booking + apology message.
+**Prevention:** (1) 🔑 **MOST IMPORTANT — Whitecross and salOWN MUST NOT SHARE the same `STRIPE_SECRET_KEY` secret.** Whitecross must use its own separately named secret (e.g. `WC_STRIPE_SECRET_KEY`) + `createCheckoutSession`/`stripeWebhook`/`checkBookingPayment`/`createMobileCheckout` must read it. That way salOWN Stripe (Connect/sandbox) work can never again overwrite whitecross live payment. A shared secret name = a standalone root risk. (2) **Post-deploy smoke check:** when the payment fns are deployed, confirm that a booking's session gets the `cs_live` prefix (this single check would have caught the whole chain). (3) NEVER write a test/sandbox key to the live secret slot; a guard/script that refuses to write an `sk_test`-prefixed value to the live slot. (4) ✅ The broken v4 (Turquoise test) version was **DESTROYED** (2026-07-21). (5) v4's exact createTime = transcript evidence **2026-07-04 00:44 UTC** (session `ba29869e`); can also be verified via Cloud Console → Secret Manager → Versions.
+**Regression Tests:** yok (a secret-config error is not caught by a code test) → instead a **post-deploy cs_live smoke verification** should become a permanent step.
+**Related:** **writing session `ba29869e` (2026-07-04 00:44 UTC, salOWN Connect setup, salown-app)** · trigger = this session's (`2357c819`) `functions:whitecross` email-extras deploy (2026-07-21) · commits `f92ac1b8`+`017842e2` (test mode support CODE, 2026-05-07 — unrelated to the secret error) · secret `STRIPE_SECRET_KEY` v4(Turquoise test, DESTROYED)→v5(sk_live fix) · files `functions/index.js` (`createCheckoutSession` key selection L173-177)
 
-**Ne oldu / Teşhis / Fix:** Owner panelde bugünkü 2 booking'in CANCELLED olduğunu ama "why not payment"in PAID dediğini gördü. İlk teoriler: (a) expired_pending abandon (INCIDENTS 2026-07-12 deseni), (b) dolaşan `?testMode=1` linki. Firestore sorgusu: 4 bugünkü booking'in de session'ı `cs_test`; canlı site kendiliğinden test'e düşmüyor + public'te sızmış test linki yok → link teorisi elendi. Owner "Taylor+Jack gerçek müşteri, test linki giremezler" deyince odak sunucuya kaydı. `firebase functions:secrets:access STRIPE_SECRET_KEY` → `sk_test_51TB…` = **canlı slotta test key.** Versiyon dökümü: v1/v3 sk_live, v4 sk_test (aktif), v2 bozuk. Zamanlama: Elie 07-19 cs_live → v4 sonradan aktive oldu; ilk gerçek-müşteri cs_test = Jack 07-21 07:39 → Claude'un 07-21 deploy'u tetikleyici. Fix: v3'ün sk_live'ı v5 olarak geri yüklendi + 4 fn redeploy. Doğrulama: 11:32 booking cs_live+CONFIRMED+DEPOSIT_PAID. **Forensik (owner "kanıt yok" deyince):** zsh history boştu; Claude session transcript'leri (`~/.claude/projects/`) tarandı → `printf 'sk_test_51TBv2…' | firebase functions:secrets:set STRIPE_SECRET_KEY --force` komutu **session `ba29869e`, 2026-07-04 00:44 UTC**'de, **salown-app**'ten, **Salown Stripe Connect kurulumu** sırasında çalışmış. Paylaşılan secret ismi Whitecross canlı key'ini ezmiş.
+**What happened / Diagnosis / Fix:** The owner saw that today's 2 bookings were CANCELLED but "why not payment" said PAID. Initial theories: (a) expired_pending abandon (INCIDENTS 2026-07-12 pattern), (b) a circulating `?testMode=1` link. Firestore query: all 4 of today's bookings had a `cs_test` session; the live site does not drop into test on its own + there is no leaked test link in public → the link theory was eliminated. When the owner said "Taylor+Jack are real customers, they can't enter a test link", focus shifted to the server. `firebase functions:secrets:access STRIPE_SECRET_KEY` → `sk_test_51TB…` = **a test key in the live slot.** Version dump: v1/v3 sk_live, v4 sk_test (active), v2 broken. Timing: Elie 07-19 cs_live → v4 was activated afterwards; the first real-customer cs_test = Jack 07-21 07:39 → Claude's 07-21 deploy was the trigger. Fix: v3's sk_live was restored as v5 + 4 fn redeployed. Verification: 11:32 booking cs_live+CONFIRMED+DEPOSIT_PAID. **Forensics (when the owner said "there's no evidence"):** zsh history was empty; the Claude session transcripts (`~/.claude/projects/`) were scanned → the command `printf 'sk_test_51TBv2…' | firebase functions:secrets:set STRIPE_SECRET_KEY --force` ran in **session `ba29869e`, 2026-07-04 00:44 UTC**, from **salown-app**, during the **salOWN Stripe Connect setup**. The shared secret name overwrote Whitecross's live key.
 
-**Dersler / Lessons Learned:**
-- **🏛️ KURUMSAL PRENSİP (bu olayın asıl mirası):** *Secret'lar **application boundary**'ye aittir, tenant boundary'ye değil. Hiçbir secret adı iki farklı uygulama tarafından paylaşılmamalı.* ❌ `STRIPE_SECRET_KEY` (paylaşılan) → ✅ `WC_STRIPE_SECRET_KEY` / `SALOWN_STRIPE_SECRET_KEY` / `ADMIN_STRIPE_SECRET_KEY`; aynısı `BREVO_API_KEY`→`SALOWN_BREVO_API_KEY`, Telegram/OpenAI/Google OAuth için de. Bu incident bir "Stripe bug'ı" değil, **shared-infrastructure naming problemi** olarak tarihe geçmeli. → ROADMAP P0 "Namespace all shared secrets before tenant #4". (Salown TENANT'ları zaten secret tutmaz — Connect modeli sadece `acct_` saklar; sorun app-sınırında.)
-- **Secret'lar deploy anında "latest"e bağlanır:** hatalı bir secret versiyonu, onu yazan işlem değil, **sonraki alakasız bir redeploy** tarafından aktive edilir. Deploy, kod değişmese bile secret'ı yeniden bağlar → "deploy sonrası hiçbir şey değişmedi" varsayımı yanlış.
-- **Ödeme deploy'undan sonra tek bir `cs_live` teyidi** bu tür sessiz kredensiyel hatalarını anında yakalar — kalıcı smoke adımı yap.
-- **Owner'ın alan sezgisi teşhisi yönlendirdi:** "bu müşteri bunu yapamaz" ifadesi yanlış teoriyi (link) eledi; kullanıcının domain bilgisini ciddiye al.
-- **Yanıltıcı tanı:** "why not payment → paid", test Stripe'daki test-kart ödemesini görüp PAID dedi; canlı para yokken "ödendi" demek ilk teşhisi saptırdı — tanı aracı hangi ortama baktığını (live vs test) açıkça göstermeli.
-- **Test/canlı kredensiyel ayrımı katı olmalı:** canlı slota test değeri yazma imkânı tek başına bir risk; guard/isim-disiplini şart.
-- **🔑 Paylaşılan secret ismi çoklu-app'te landmine:** Salown ve Whitecross aynı projede (`havuz-44f70`) `STRIPE_SECRET_KEY`'i paylaşınca, bir app'in Stripe testi diğerinin canlı ödemesini sessizce ezdi. Farklı app/tenant'lar için secret isimleri AYRIK olmalı (namespace: `WC_…` / `SALOWN_…`).
-- **Forensik = session transcript'leri:** "kanıt yok" gibi görünen credential değişikliği, `~/.claude/projects/*.jsonl` içinde tam komut + timestamp + hangi dizinden + hangi task olarak bulunabiliyor. Cloud audit log erişimi yoksa ilk durak burası.
+**Lessons Learned:**
+- **🏛️ INSTITUTIONAL PRINCIPLE (the real legacy of this incident):** *Secrets belong to the **application boundary**, not the tenant boundary. No secret name should be shared by two different applications.* ❌ `STRIPE_SECRET_KEY` (shared) → ✅ `WC_STRIPE_SECRET_KEY` / `SALOWN_STRIPE_SECRET_KEY` / `ADMIN_STRIPE_SECRET_KEY`; the same for `BREVO_API_KEY`→`SALOWN_BREVO_API_KEY`, and for Telegram/OpenAI/Google OAuth. This incident should go into history not as a "Stripe bug" but as a **shared-infrastructure naming problem**. → ROADMAP P0 "Namespace all shared secrets before tenant #4". (salOWN TENANTS already hold no secrets — the Connect model stores only `acct_`; the problem is at the app boundary.)
+- **Secrets are bound to "latest" at deploy time:** a faulty secret version is activated not by the operation that wrote it, but by **the next unrelated redeploy**. A deploy rebinds the secret even if the code has not changed → the assumption "nothing changed after the deploy" is wrong.
+- **A single `cs_live` confirmation after a payment deploy** catches this kind of silent credential error immediately — make it a permanent smoke step.
+- **The owner's domain intuition guided the diagnosis:** the statement "this customer can't do this" eliminated the wrong theory (link); take the user's domain knowledge seriously.
+- **Misleading diagnosis:** "why not payment → paid" saw the test-card payment in test Stripe and said PAID; saying "paid" when there is no real money misdirected the initial diagnosis — a diagnostic tool must clearly show which environment it is looking at (live vs test).
+- **The test/live credential separation must be strict:** the mere ability to write a test value to the live slot is a standalone risk; guards/name discipline are mandatory.
+- **🔑 A shared secret name is a landmine in multi-app:** when salOWN and Whitecross shared `STRIPE_SECRET_KEY` in the same project (`havuz-44f70`), one app's Stripe test silently overwrote the other's live payment. Secret names for different apps/tenants must be SEPARATE (namespace: `WC_…` / `SALOWN_…`).
+- **Forensics = session transcripts:** a credential change that looks like "there's no evidence" can be found in `~/.claude/projects/*.jsonl` with the exact command + timestamp + from which directory + as which task. When there is no Cloud audit log access, this is the first stop.
 
-## 2026-07-18 — Inbound parse: elle forward'lanan mailler "UNKNOWN_SOURCE" — hiç parse olmuyor
+## 2026-07-18 — Inbound parse: manually forwarded emails "UNKNOWN_SOURCE" — never parsed at all
 
-**Severity:** 🟠 High (özellik kırık: manuel forward ile hiçbir booking/reschedule/cancel içeri girmiyor; sessiz düşer) · **Owner:** owner (sezgiyle kök nedeni buldu) + Claude · **Status:** ✅ Resolved & DEPLOYED 2026-07-18 (`functions:salown:salownInboundEmail` europe-west2, hedefli; `tsc` temiz + 7 regression testi + full suite 53/0) · **Affected area:** inbound email routing (`salownInboundEmail` → `parseInbox` → dispatch) / platform source-detection
+**Severity:** 🟠 High (feature broken: with manual forward no booking/reschedule/cancel gets in; it drops silently) · **Owner:** owner (found the root cause on intuition) + Claude · **Status:** ✅ Resolved & DEPLOYED 2026-07-18 (`functions:salown:salownInboundEmail` europe-west2, targeted; `tsc` clean + 7 regression tests + full suite 53/0) · **Affected area:** inbound email routing (`salownInboundEmail` → `parseInbox` → dispatch) / platform source-detection
 
-**Discovery:** Owner — natasha Gilbert'ın Treatwell booking'ini uçtan uca yeniden yaratma + reschedule zinciri testi sırasında; forward ettiği mailler booking'e dönüşmedi. Owner kök nedeni kendi tahmin etti ("noreply'dan gelmediği için yapmıyor"). `parseInbox` incelemesi 3 maili de `UNKNOWN_SOURCE` gösterdi.
-**Impact:** Salon bir Booksy/Fresha/Treatwell bildirimini **elle "Fwd:"** ile parse adresine yollayınca mail hiç parse edilmiyor — booking düşmüyor, reschedule uygulanmıyor, hata da görünmüyor (sessizce `parseInbox`'ta `UNKNOWN_SOURCE` olarak takılı kalıyor). Sadece Gmail **filtre auto-forward'ı** (Brevo üzerinden, orijinal `From` korunur) çalışıyordu.
-**Root Cause:** Kaynak (booksy/fresha/treatwell) **yalnızca gönderenden** tespit ediliyordu: `String(msg.from || msg.raw)` → `msg.from` dolu olduğunda `msg.raw`'a hiç düşmüyordu. Manuel forward'da `from` artık `noreply@treatwell.co.uk` değil **forward eden salon'un Gmail'i** → `/treatwell/` eşleşmez → `source='unknown'` → dispatch trigger'ı `UNKNOWN_SOURCE` yazıp bırakır. Yani "gerçek provider maili çalışıyor, forward patlıyor" — sinyal `from`'da kaybolduğu için.
-**Bug Class:** Source/identity detection — tek sinyale (sender) bağımlılık; forward gönderen kimliğini değiştirince tespit çöküyor (State/identity provenance kaybı). Kardeş kalıp: parser barber-ad eşleşmesi, client identity lookup.
-**Resolution:** `_detectInboundSource(msg)` saf fonksiyonuna çıkarıldı: **önce `from`** (mevcut öncelik + davranış AYNEN korunur — gerçek provider maili hiç etkilenmez), tanınmazsa **`subject` + `raw` gövdesine düş** (forward'da orijinal `From: noreply@treatwell...` ve marka adı gövdede duruyor). Öncelik `from`'da kaldığı için gövdede geçen bir marka adı gerçek maili asla yanlış sınıflamaz.
-**Prevention:** (1) Kaynak-tespit tek sinyalle değil `from → subject/raw` fallback zinciriyle. (2) Regression testi bug'ı sabitledi: manuel-forward (from=forwarder) → 'treatwell'; priority guard (from=booksy, gövdede 'treatwell' geçse de → 'booksy'); junk → 'unknown'. (3) **Not:** natasha'nın orijinal booking'i forward'la DEĞİL, tombstone silindikten sonra zamanlı IMAP taraması gerçek gelen kutusundaki `noreply@treatwell` mailinden re-import edildi — iki borunun (IMAP cron + inbound webhook) ayrı davrandığını gösteren teşhis ipucu.
-**Regression Tests:** `functions/src/inbound/source-detect.test.js` (7 test — genuine-from, manuel-forward-subject/body, body-only, priority guard, unknown, empty-no-throw); full functions suite 53 pass / 0 fail.
-**Related:** commits <uncommitted (owner onayı bekliyor)> · roadmap <parser/inbound> · files `functions/src/inbound/index.ts` (`_detectInboundSource` + export) · `functions/src/inbound/source-detect.test.js`
+**Discovery:** Owner — during an end-to-end recreation of natasha Gilbert's Treatwell booking + a reschedule chain test; the emails she forwarded did not turn into bookings. The owner guessed the root cause himself ("it's not doing it because it's not coming from noreply"). Inspecting `parseInbox` showed all 3 emails as `UNKNOWN_SOURCE`.
+**Impact:** When the salon manually **"Fwd:"** a Booksy/Fresha/Treatwell notification to the parse address, the email is never parsed — the booking does not land, the reschedule is not applied, and no error shows either (it stays silently stuck as `UNKNOWN_SOURCE` in `parseInbox`). Only Gmail **filter auto-forward** (via Brevo, original `From` preserved) was working.
+**Root Cause:** The source (booksy/fresha/treatwell) was detected **only from the sender**: `String(msg.from || msg.raw)` → when `msg.from` was populated it never fell through to `msg.raw`. On a manual forward the `from` is no longer `noreply@treatwell.co.uk` but **the forwarding salon's Gmail** → `/treatwell/` does not match → `source='unknown'` → the dispatch trigger writes `UNKNOWN_SOURCE` and gives up. So "the real provider email works, the forward blows up" — because the signal is lost in `from`.
+**Bug Class:** Source/identity detection — dependence on a single signal (sender); when the forward changes the sender identity, detection collapses (loss of State/identity provenance). Sibling pattern: parser barber-name matching, client identity lookup.
+**Resolution:** Extracted into the pure function `_detectInboundSource(msg)`: **first `from`** (existing priority + behavior preserved EXACTLY — the real provider email is not affected at all), and if unrecognized, **fall through to `subject` + `raw` body** (on a forward the original `From: noreply@treatwell...` and brand name remain in the body). Because priority stays on `from`, a brand name that appears in the body never misclassifies a real email.
+**Prevention:** (1) Source detection via a `from → subject/raw` fallback chain, not a single signal. (2) A regression test pinned the bug: manual-forward (from=forwarder) → 'treatwell'; priority guard (from=booksy, even if 'treatwell' appears in the body → 'booksy'); junk → 'unknown'. (3) **Note:** natasha's original booking was re-imported NOT via forward, but after the tombstone was deleted, by the scheduled IMAP scan from the `noreply@treatwell` email in the real inbox — a diagnostic clue showing that the two pipes (IMAP cron + inbound webhook) behave separately.
+**Regression Tests:** `functions/src/inbound/source-detect.test.js` (7 tests — genuine-from, manual-forward-subject/body, body-only, priority guard, unknown, empty-no-throw); full functions suite 53 pass / 0 fail.
+**Related:** commits <uncommitted (awaiting owner approval)> · roadmap <parser/inbound> · files `functions/src/inbound/index.ts` (`_detectInboundSource` + export) · `functions/src/inbound/source-detect.test.js`
 
-**Ne oldu / Teşhis / Fix:** natasha testinde forward'lar düşmedi. `parseInbox`'a admin SDK ile bakınca 3 doc da `source:"unknown"`/`UNKNOWN_SOURCE` çıktı (2× natasha yeni-booking dup + 1× **Chloé Lopez** reschedule — takılı reschedule aslında natasha'nın değildi). `inbound/index.ts:127`'de `String(msg.from || msg.raw)` fallback'inin yalnız `from` boşken devreye girdiği görüldü; manuel forward'da `from` dolu olduğu için raw hiç okunmuyordu. Fix `from`-öncelikli + subject/raw fallback saf fonksiyonuna indirgedi, test edildi.
+**What happened / Diagnosis / Fix:** In the natasha test the forwards did not land. Looking at `parseInbox` with the admin SDK, all 3 docs came out `source:"unknown"`/`UNKNOWN_SOURCE` (2× natasha new-booking dup + 1× **Chloé Lopez** reschedule — the stuck reschedule was actually not natasha's). At `inbound/index.ts:127` it was seen that the `String(msg.from || msg.raw)` fallback only kicks in when `from` is empty; on a manual forward `from` is populated so raw was never read. The fix reduced it to a `from`-priority + subject/raw fallback pure function, and it was tested.
 
-**Dersler / Lessons Learned:**
-- **Kimlik/kaynak tespiti tek sinyale asılmamalı:** forward, gönderen adresini değiştirir; sinyal kaybolursa özellik sessizce çöker. `from → subject → body` gibi kademeli fallback + öncelik koruması doğru desen.
-- **Sessiz `UNKNOWN_SOURCE` bir alarm değil:** kullanıcı "olmadı" derken sistem hata da vermez. Teşhiste ilk durak ham stage tablosu (`parseInbox`) — orada durumu görünce kök neden 2 dakikada çıktı.
-- **İki boru = iki davranış:** aynı maili IMAP cron doğru (from=noreply) alır, inbound webhook forward'ta yanlış sınıflar. Bir boru çalışırken öbürü patlıyorsa, tam olarak nerede ayrıştıklarına bak.
-- Owner'ın "noreply'dan gelmiyor" sezgisi doğrudan kök nedendi — saha sezgisini ciddiye al.
+**Lessons Learned:**
+- **Identity/source detection must not hang on a single signal:** a forward changes the sender address; if the signal is lost, the feature collapses silently. Graded fallback like `from → subject → body` + priority protection is the right pattern.
+- **A silent `UNKNOWN_SOURCE` is not an alarm:** while the user says "it didn't work" the system does not even error. The first stop in diagnosis is the raw stage table (`parseInbox`) — seeing the state there, the root cause emerged in 2 minutes.
+- **Two pipes = two behaviors:** the IMAP cron receives the same email correctly (from=noreply), the inbound webhook misclassifies it on a forward. When one pipe works while the other blows up, look at exactly where they diverge.
+- The owner's "it's not coming from noreply" intuition was directly the root cause — take field intuition seriously.
 
-## 2026-07-18 — Checkout: ek servis (child) ana servise "merge" oluyor / kayboluyor
+## 2026-07-18 — Checkout: extra service (child) "merges" into the main service / disappears
 
-**Severity:** 🟠 High (multi-servisli booking'lerde veri kaybı: ek servis satırı düşüyor, fiyatı parent'ta kalıyor; para/kayıt etkisi) · **Owner:** owner (yakaladı) + Claude · **Status:** ✅ Resolved (LOCAL; typecheck+lint+7 regression testi geçti; canlıda dev doğrulandı Alex+Ladies-Haircut £40 korundu; deploy owner onayı bekliyor) · **Affected area:** checkout (Save unpaid + Complete Checkout) / soldAddOns persist
+**Severity:** 🟠 High (data loss on multi-service bookings: the extra-service line drops, its price stays on the parent; money/record impact) · **Owner:** owner (caught it) + Claude · **Status:** ✅ Resolved (LOCAL; typecheck+lint+7 regression tests passed; verified on live dev Alex+Ladies-Haircut £40 preserved; deploy awaiting owner approval) · **Affected area:** checkout (Save unpaid + Complete Checkout) / soldAddOns persist
 
-**Discovery:** Owner — HeroHairs'ta multi-servisli booking'i checkout / "Save unpaid" ederken fark etti (yeni inline "Extra services" işini test ederken).
-**Impact:** Bir booking'e ek servis (Beard/Facial gibi tam servis) eklenip **checkout** yapılınca ya da **"Save unpaid"** (veresiye) ile kaydedilince, ek servis(ler) **kayboluyordu**; toplam fiyat parent servisin fiyatında kaldığı için ek servis **ana servise "merge olmuş" gibi** görünüyordu (ör. HeroHairs "Highlights & Toner & Blowdry — …" £330 tek-servis, ADD-ONS boş; Alex Perry orijinali "Men Highlights"tı, eski akış Wash & Blow Dry'a kaydırmıştı).
-**Root Cause:** Checkout borusu ek servisleri **"Extras" kataloğuna filtreliyor** + `normalizeSoldProducts` ile normalize edip **serviceId + duration'ı düşürüyordu.** `CheckoutPanel.tsx` init (`localExtras = soldAddOns.filter(extrasList.find(...))`) → "Extras" kategorisinde olmayan tam-servis add-on'lar daha panel açılırken eleniyordu; `ProductSelector.setQty` her stepper dokunuşunda listeyi yeniden normalize edip yine düşürüyordu; `saveUnpaidBooking` + `checkoutBooking` yazımı da duration/serviceId'siz normalize ediyordu. Üç katman aynı yanlışı yapıyordu çünkü **draft "Save unpaid" ile "Complete Checkout" ek servisi AYRI AYRI normalize ediyordu** (tek doğru kaynak yoktu).
-**Bug Class:** State normalization — Single Source of Truth ihlali (aynı veriyi 3 yol ayrı normalize ediyordu) + yanlış-normalize (`normalizeSoldProducts` add-on'a uygulanmış → duration/serviceId düşürme).
-**Resolution:** Tek doğru kaynak `normalizeSoldAddOns` (`bookingUtils.ts`) — serviceId+duration+qty korur, katalog filtresi YOK, eksik qty→1 / açık 0→düşer. Her yol buradan geçer artık: CheckoutPanel init (filtre kaldırıldı), ProductSelector.setQty (raw value üzerinde çalışır, dokunulmayan/katalog-dışı item + duration korunur), `saveUnpaidBooking`, `checkoutBooking`, `createWalkIn`, BookingDetailPanel (local `normAddOns` silindi, import edildi). Products (retail) filtresine dokunulmadı (rapor add-on'du). **Regression testi:** `src/utils/soldAddOns.test.ts` (7 test) — Haircut+Beard+Facial senaryosu: add-on'lar düşmez, serviceId+duration korunur, qty default'ları, junk-input.
-**Prevention:** (1) `normalizeSoldAddOns` tek kaynak — ek servis persist eden HER yol bunu kullanmalı, ASLA `normalizeSoldProducts` (o duration/serviceId düşürür) ya da lokal ikinci bir normalize. (2) Regression testi bug'ı sabitledi (`npm test`). (3) **Mimari yön:** "Save unpaid" ile "Complete Checkout" tek bir `buildCheckoutPayload` üzerinden geçmeli (servis/add-on/ürün/ödeme tek yerde hazırlanır, draft/final sadece son adımda ayrışır) → ROADMAP'e. İki ayrı akış aynı payload'ı ayrı hazırladığı sürece bu sınıf bug tekrar eder.
-**Regression Tests:** `src/utils/soldAddOns.test.ts` (7 test — Haircut+Beard+Facial: düşmez, serviceId+duration korunur, qty default'ları, junk); full suite 66/66.
-**Related:** commits <uncommitted (owner onayı bekliyor)> · roadmap <Monetization/checkout — `buildCheckoutPayload` birleştirme> · files `bookingUtils.ts` (normalizeSoldAddOns) · `CheckoutPanel.tsx` · `firestoreActions.ts` (saveUnpaidBooking/checkoutBooking/createWalkIn) · `BookingDetailPanel.tsx` · `soldAddOns.test.ts`
+**Discovery:** Owner — noticed while checking out / "Save unpaid" on a multi-service booking at HeroHairs (while testing the new inline "Extra services" work).
+**Impact:** When an extra service (a full service like Beard/Facial) is added to a booking and then **checked out** or saved via **"Save unpaid"** (on account), the extra service(s) would **disappear**; because the total price stayed at the parent service's price, the extra service **looked as if it had "merged" into the main service** (e.g. HeroHairs "Highlights & Toner & Blowdry — …" £330 single-service, ADD-ONS empty; the original for Alex Perry was "Men Highlights", the old flow had shifted it to Wash & Blow Dry).
+**Root Cause:** The checkout pipe **filters extra services against the "Extras" catalog** + normalizes them with `normalizeSoldProducts` and **drops the serviceId + duration.** `CheckoutPanel.tsx` init (`localExtras = soldAddOns.filter(extrasList.find(...))`) → full-service add-ons not in the "Extras" category were eliminated as the panel opened; `ProductSelector.setQty` re-normalized the list on every stepper touch and dropped them again; the write in `saveUnpaidBooking` + `checkoutBooking` also normalized without duration/serviceId. Three layers made the same mistake because **the draft "Save unpaid" and "Complete Checkout" normalized the extra service SEPARATELY** (there was no single source of truth).
+**Bug Class:** State normalization — Single Source of Truth violation (3 paths normalized the same data separately) + wrong-normalize (`normalizeSoldProducts` applied to an add-on → dropping duration/serviceId).
+**Resolution:** A single source of truth `normalizeSoldAddOns` (`bookingUtils.ts`) — preserves serviceId+duration+qty, NO catalog filter, missing qty→1 / explicit 0→dropped. Every path now goes through it: CheckoutPanel init (filter removed), ProductSelector.setQty (works on the raw value, untouched/off-catalog item + duration preserved), `saveUnpaidBooking`, `checkoutBooking`, `createWalkIn`, BookingDetailPanel (local `normAddOns` deleted, imported). The Products (retail) filter was not touched (the report was about an add-on). **Regression test:** `src/utils/soldAddOns.test.ts` (7 tests) — Haircut+Beard+Facial scenario: add-ons don't drop, serviceId+duration preserved, qty defaults, junk-input.
+**Prevention:** (1) `normalizeSoldAddOns` is the single source — EVERY path that persists an extra service must use it, NEVER `normalizeSoldProducts` (it drops duration/serviceId) or a local second normalize. (2) A regression test pinned the bug (`npm test`). (3) **Architectural direction:** "Save unpaid" and "Complete Checkout" should go through a single `buildCheckoutPayload` (service/add-on/product/payment prepared in one place, draft/final split only at the last step) → to ROADMAP. As long as two separate flows prepare the same payload separately, this class of bug will recur.
+**Regression Tests:** `src/utils/soldAddOns.test.ts` (7 tests — Haircut+Beard+Facial: don't drop, serviceId+duration preserved, qty defaults, junk); full suite 66/66.
+**Related:** commits <uncommitted (awaiting owner approval)> · roadmap <Monetization/checkout — `buildCheckoutPayload` unification> · files `bookingUtils.ts` (normalizeSoldAddOns) · `CheckoutPanel.tsx` · `firestoreActions.ts` (saveUnpaidBooking/checkoutBooking/createWalkIn) · `BookingDetailPanel.tsx` · `soldAddOns.test.ts`
 
-**Ne oldu / Teşhis / Fix:** Owner test ederken fark etti: ek servisli booking checkout/save-unpaid sonrası ek servisi kaybediyor, isim ikilenip fiyat şişiyor ("merge"). Audit log (Alex Perry) kök nedeni doğruladı: orijinal "Men Highlights (Short Hair variation)" → 10 Temmuz'da ESKİ BookingForm "Edit" popup'ının "eşleşmezse config.services[0] default" bug'ıyla Wash & Blow Dry'a kaymış (o form panelden ayrıca kaldırıldı). Asıl checkout-merge bug'ı ise `CheckoutPanel` init filtresi + 3-katman normalize'da. Fix tek doğru kaynağa indirgedi.
+**What happened / Diagnosis / Fix:** The owner noticed while testing: a booking with an extra service loses the extra after checkout/save-unpaid, the name doubles and the price inflates ("merge"). The audit log (Alex Perry) confirmed the root cause: the original "Men Highlights (Short Hair variation)" → on 10 July it had shifted to Wash & Blow Dry via the OLD BookingForm "Edit" popup's "if it doesn't match, default to config.services[0]" bug (that form was separately removed from the panel). The actual checkout-merge bug, however, was in the `CheckoutPanel` init filter + the 3-layer normalize. The fix reduced it to a single source of truth.
 
-**Dersler / Lessons Learned:**
-- Aynı veriyi (soldAddOns) persist eden **birden fazla yol** varsa (draft-save + checkout + walk-in create), MUTLAKA tek normalize fonksiyonundan geçir — yoksa biri düzelir öbürü düşürür.
-- `normalizeSoldProducts` add-on'lara UYGULANMAZ: retail ürün için tasarlı (qty önemli, duration yok); ek servis serviceId+duration taşır. Yanlış normalize = sessiz veri kaybı.
-- "Katalog filtresi" ile persist listesi karıştırılmamalı: filtre GÖSTERİM içindir; **save listesi hiçbir zaman katalog eşleşmesine göre kırpılmamalı** (yoksa katalog-dışı item silinir).
-- Owner'ın refleksi doğruydu: "sadece fix etme, regression testi yaz" — bu sınıf (multi-akış payload) tam da test edilmesi gereken yer.
+**Lessons Learned:**
+- If there is **more than one path** persisting the same data (soldAddOns) (draft-save + checkout + walk-in create), ALWAYS route it through a single normalize function — otherwise one fixes it and another drops it.
+- `normalizeSoldProducts` MUST NOT BE APPLIED to add-ons: it's designed for retail products (qty matters, no duration); an extra service carries serviceId+duration. Wrong normalize = silent data loss.
+- The "catalog filter" must not be confused with the persist list: the filter is for DISPLAY; **the save list must never be trimmed based on catalog matching** (otherwise off-catalog items are deleted).
+- The owner's reflex was right: "don't just fix it, write a regression test" — this class (multi-flow payload) is exactly the place that needs testing.
 
-## 2026-07-18 — Owner walk-in silemiyor: "insufficient permissions" (delete tombstone yazımı bloklu)
+## 2026-07-18 — Owner can't delete a walk-in: "insufficient permissions" (delete tombstone write blocked)
 
-**Severity:** 🟡 Medium (fonksiyon kırık — owner aynı slotta ikinci silmede takılıyor; veri kaybı yok) · **Owner:** owner (yakaladı) + Claude · **Status:** ✅ Resolved (LOCAL frontend fix; typecheck+lint temiz; canlıda dev doğrulandı — owner sildi; hard-refresh yeter, deploy gerekmez) · **Affected area:** delete (deleteBooking / parserTombstones)
+**Severity:** 🟡 Medium (function broken — the owner gets stuck on a second delete in the same slot; no data loss) · **Owner:** owner (caught it) + Claude · **Status:** ✅ Resolved (LOCAL frontend fix; typecheck+lint clean; verified on live dev — owner deleted it; a hard-refresh suffices, no deploy needed) · **Affected area:** delete (deleteBooking / parserTombstones)
 
-**Discovery:** Owner — HeroHairs'ta bir walk-in silmeye çalışırken (unpaid-checkout regression testine hazırlanırken).
-**Impact:** HeroHairs OWNER bir walk-in'i silmeye çalışınca "insufficient permissions" alıyordu; booking silinmiyordu. İlk silme çalışıyor, aynı slottaki ikinci silme patlıyordu (owner "ama normalde silme yetkim var" dedi — haklı).
-**Root Cause:** `deleteBooking` (`firestoreActions.ts`) walk-in'de `deleteDoc`'tan ÖNCE re-import koruması için `parserTombstones/SLOT-{source}-{date}-{time}` `setDoc` yazıyor. `parserTombstones` rules (`firestore.rules:159-161`): create=tenant-üyesi (owner ✅) AMA **update=super-admin-only.** `setDoc` doc yoksa create, VARSA update → aynı slotta önceki silmeden kalan tombstone varsa `setDoc`=UPDATE → owner denied → hata `deleteDoc`'tan önce fırlıyor, silme hiç olmuyor. UNPAID/status ile ilgisiz.
-**Bug Class:** Permission mismatch — create-vs-update rule farkı + `setDoc` (create-or-update) belirsizliği; ayrıca yan-etki-yazımı asıl işlemi bloklamış (best-effort ihlali).
-**Resolution:** İki tombstone `setDoc`'u `try/catch` ile best-effort yapıldı — tombstone yazımı (re-import koruması) silmeyi ASLA bloklamamalı; tombstone zaten varsa yeniden yazmaya gerek yok, yoksa create zaten owner'a açık. Frontend fix, functions/rules deploy gerekmez.
-**Prevention:** Bir "yan-etki yazımı" (tombstone/audit/projeksiyon) asıl işlemi (delete) bloklamamalı → best-effort/try-catch. Açık kalan (ayrı, rules deploy + güvenlik kararı): `parserTombstones` update'i `isTenantAny(tenantId)`'e açmak (owner kendi tenant'ında tombstone güncelleyebilsin).
-**Regression Tests:** yok — saf-fonksiyon değil (Firestore rules + setDoc etkileşimi); guard try/catch ile kod içinde. İleride: emulator entegrasyon testi.
-**Related:** commits <uncommitted (owner onayı bekliyor)> · roadmap <SECURITY — parserTombstones update rule> · files `firestoreActions.ts` (deleteBooking) · `firestore.rules:159-161` (parserTombstones)
+**Discovery:** Owner — while trying to delete a walk-in at HeroHairs (while preparing for the unpaid-checkout regression test).
+**Impact:** When the HeroHairs OWNER tried to delete a walk-in, he got "insufficient permissions"; the booking would not delete. The first delete worked, the second delete in the same slot blew up (the owner said "but normally I do have delete permission" — correct).
+**Root Cause:** `deleteBooking` (`firestoreActions.ts`), for a walk-in, writes a `parserTombstones/SLOT-{source}-{date}-{time}` `setDoc` BEFORE `deleteDoc` for re-import protection. The `parserTombstones` rules (`firestore.rules:159-161`): create=tenant-member (owner ✅) BUT **update=super-admin-only.** `setDoc` is a create if the doc doesn't exist, and an update if it DOES → if a tombstone remains from a previous delete in the same slot, `setDoc`=UPDATE → owner denied → the error is thrown before `deleteDoc`, so the delete never happens. Unrelated to UNPAID/status.
+**Bug Class:** Permission mismatch — create-vs-update rule difference + `setDoc` (create-or-update) ambiguity; also a side-effect-write blocked the actual operation (best-effort violation).
+**Resolution:** The two tombstone `setDoc` calls were made best-effort with `try/catch` — a tombstone write (re-import protection) must NEVER block the delete; if the tombstone already exists there's no need to rewrite it, and if it doesn't the create is already open to the owner. Frontend fix, no functions/rules deploy needed.
+**Prevention:** A "side-effect write" (tombstone/audit/projection) must not block the actual operation (delete) → best-effort/try-catch. Still open (separate, needs rules deploy + a security decision): open `parserTombstones` update to `isTenantAny(tenantId)` (so the owner can update a tombstone in their own tenant).
+**Regression Tests:** yok — not a pure-function (Firestore rules + setDoc interaction); the guard is in code via try/catch. Future: emulator integration test.
+**Related:** commits <uncommitted (awaiting owner approval)> · roadmap <SECURITY — parserTombstones update rule> · files `firestoreActions.ts` (deleteBooking) · `firestore.rules:159-161` (parserTombstones)
 
-**Dersler / Lessons Learned:**
-- "İlk sefer çalışıyor, ikinci sefer 'permission' hatası" kalıbı → neredeyse her zaman create-vs-update rule farkı + `setDoc` (create-or-update) kullanımı.
-- Asıl işlemden ÖNCE yapılan yardımcı yazımlar (tombstone, audit) fırlarsa asıl işlem hiç olmaz — bunları try/catch veya işlemden SONRA yap.
+**Lessons Learned:**
+- The "works the first time, 'permission' error the second time" pattern → almost always a create-vs-update rule difference + `setDoc` (create-or-update) usage.
+- Helper writes done BEFORE the actual operation (tombstone, audit), if they throw, mean the actual operation never happens — do these with try/catch or AFTER the operation.
 
-## 2026-07-14 — Dashboard week view "ekran titremesi" — iki useEffect'in sonsuz ping-pong render loop'u
+## 2026-07-14 — Dashboard week view "screen shaking" — an infinite ping-pong render loop of two useEffects
 
-**Severity:** 🟡 Medium (week view kullanılamaz; day/month etkilenmedi, veri etkisi yok) · **Owner:** Claude + owner · **Status:** ✅ Resolved (`82490c1` PUSHED→CI deploy; owner canlıda test etti, titreme kesildi)
+**Severity:** 🟡 Medium (week view unusable; day/month unaffected, no data impact) · **Owner:** Claude + owner · **Status:** ✅ Resolved (`82490c1` PUSHED→CI deploy; owner tested on live, the shaking stopped)
 
-**Impact:** Panel Dashboard'da week view'a geçince ekran sürekli titriyordu (shaking/flicker) — component her frame yeniden render oluyordu; week view fiilen kullanılamıyordu.
-**Root Cause:** İki useEffect birbirini sonsuz döngüde tetikliyordu. Effect A (`Dashboard.tsx:324`, view kontrolü YOKtu): seçili barber `selectedDate` gününde çalışmıyorsa (workingDays/dayHours.closed) `setBarberFilter('all')`. Effect B (`:335`, yalnız week view): filtre `'all'` ise `setBarberFilter(barbers[0].id)`. `barbers[0]` o gün off/closed ise A↔B ping-pong = sonsuz re-render.
-**Resolution:** Effect A'ya `if (view === 'week') return;` guard + `view` deps'e eklendi (`82490c1`, +4/-1 tek dosya). Gerekçe: week view 7 gün gösterir — tek-gün "bugün çalışmıyor" reset'i orada anlamsız, barber haftanın başka günlerinde çalışıyor olabilir. Build 0 error; owner canlıda doğruladı.
-**Prevention:** Aynı state'i yazan iki useEffect eklerken koşullarının kesişimi kontrol edilmeli — biri diğerinin yazdığı değeri geri alıyorsa döngü garantidir. "Ekran titriyor/shaking" semptomu görülürse ilk şüpheli: setState'li useEffect çiftlerinin ping-pong'u (React DevTools ile render sayısı patlaması teyit eder).
+**Impact:** In the panel Dashboard, switching to week view caused the screen to shake continuously (shaking/flicker) — the component re-rendered every frame; week view was effectively unusable.
+**Root Cause:** Two useEffects triggered each other in an infinite loop. Effect A (`Dashboard.tsx:324`, with NO view check): if the selected barber does not work on the `selectedDate` day (workingDays/dayHours.closed), `setBarberFilter('all')`. Effect B (`:335`, only week view): if the filter is `'all'`, `setBarberFilter(barbers[0].id)`. If `barbers[0]` is off/closed that day, A↔B ping-pong = infinite re-render.
+**Resolution:** A `if (view === 'week') return;` guard added to Effect A + `view` added to deps (`82490c1`, +4/-1 single file). Rationale: week view shows 7 days — a single-day "not working today" reset is meaningless there, the barber may work on other days of the week. Build 0 errors; owner confirmed on live.
+**Prevention:** When adding two useEffects that write the same state, the intersection of their conditions must be checked — if one undoes the value the other wrote, a loop is guaranteed. If you see the "screen shaking" symptom, the first suspect is a ping-pong of useEffect pairs with setState (React DevTools confirms via an explosion in the render count).
 
-**Ne oldu / Teşhis:** Semptom yalnız week view'da → week'e özgü state mantığı grep'lendi. `barberFilter` yazan iki effect bulundu: A gün-bazlı reset (view'suz), B week-view zorunlu-tek-barber. Koşullar çakışıyor: A `'all'`'a çeker, B geri barbers[0]'a; barbers[0]'ın off olduğu günlerde kapanmayan döngü. Kod okumasıyla kesin teşhis, canlı repro'ya gerek kalmadı.
+**What happened / Diagnosis:** The symptom was only in week view → the week-specific state logic was grepped. Two effects writing `barberFilter` were found: A day-based reset (view-less), B week-view mandatory-single-barber. The conditions clash: A pulls to `'all'`, B pulls back to barbers[0]; on days barbers[0] is off, an unclosing loop. Definitive diagnosis by reading the code, no live repro needed.
 
-**Dersler / Lessons Learned:**
-- İki useEffect aynı state'i zıt yönde yazıyorsa deps üzerinden sonsuz döngü kurulabilir — yeni effect eklerken o state'i yazan DİĞER effect'lerin koşullarıyla kesişimi kontrol et.
-- "Sadece X view'da oluyor" tarzı semptomlarda o view'a koşullu effect'ler ilk bakılacak yer; döngünün yarısı koşullu olunca bug yalnız o view'da görünür.
-- Gün-bazlı iş kuralları (working days reset) çok-günlü view'larda (week/month) uygulanmadan önce "bu view'da anlamlı mı" diye sorulmalı.
+**Lessons Learned:**
+- If two useEffects write the same state in opposite directions, an infinite loop can be set up via deps — when adding a new effect, check its condition intersection with the OTHER effects that write that state.
+- For symptoms like "only happens in view X", effects conditional on that view are the first place to look; when half the loop is conditional the bug appears only in that view.
+- Day-based business rules (working days reset) should be asked "is this meaningful in this view" before being applied in multi-day views (week/month).
 
-## 2026-07-14 — Calendar Day-view'da art arda iki walk-in üst üste bindi — kart min-yükseklik tabanı computeColumns'ta yoktu
+## 2026-07-14 — Two consecutive walk-ins overlapped in Calendar Day-view — the card min-height floor was missing in computeColumns
 
-**Severity:** 🟡 Medium (yanlış gösterim; veri/para etkisi yok) · **Owner:** Claude + owner · **Status:** ✅ Resolved (`5b1c67f` PUSHED→CI; owner canlıda doğruladı — art arda walk-in'ler artık yan yana kolona bölünüyor) · **Related:** [[INC 2026-06-27 checked-out cascade]]
+**Severity:** 🟡 Medium (wrong display; no data/money impact) · **Owner:** Claude + owner · **Status:** ✅ Resolved (`5b1c67f` PUSHED→CI; owner verified on live — consecutive walk-ins now split into side-by-side columns) · **Related:** [[INC 2026-06-27 checked-out cascade]]
 
-**Impact:** Owner Arda'nın gününde iki walk-in'i (6:15 + 6:35, ikisi Classic Short Back & Side) yan yana kolona bölünmek yerine üst üste binmiş gördü — 6:15 kartı 6:35 kartının üstüne oturmuştu.
-**Root Cause:** Render her kartı `Math.max(duration*slotHeight/15 − 4, slotHeight*2)` ile **min 30 dk** boyunda çiziyor; `computeColumns` bu tabanı GÖRMÜYORDU. Arda 6:15 walk-in'ini erken checkout etti → `actualDuration` kısaldı (min(scheduled, actual)) → kolon motoru kartı ~6:30-6:35'te bitmiş sayıp bir sonrakiyle "çakışmıyor" dedi (aynı kolon, tam genişlik), ama kart görselde 30 dk tabanına takılıp 6:45'e kadar çizildi → alttaki 6:35 kartını fiziksel olarak yuttu = sessiz görsel örtüşme.
-**Resolution:** `computeColumns`'ta `end = Math.max(end, start + 30)` — render'ın 30 dk tabanı kolon matematiğine de eklendi; artık kısa kart da 30 dk sayılıp çakışma algılanıyor → yan yana kolona bölünüyor (`TimeGrid.tsx` +8/−0). Main build 0 error. Squeeze-in'e dokunulmadı (gap band'leri `getBusyIntervals`'tan, `actualDuration`/floor görmüyor).
-**Prevention:** Kart geometrisini etkileyen HER dönüşüm (üst cap `min(scheduled,actual)` VE alt taban `max(.., 30dk)`) hem render'da hem `computeColumns`'ta birebir uygulanmalı. 2026-06-27 dersi "aynı süre kaynağı" idi; eksik kalan yarısı = min taban. Kolon motoru "efektif çizilen yükseklik"i görmeli, ham süreyi değil.
+**Impact:** The owner saw two walk-ins on Arda's day (6:15 + 6:35, both Classic Short Back & Side) overlap instead of splitting into side-by-side columns — the 6:15 card sat on top of the 6:35 card.
+**Root Cause:** The render draws each card at a **min 30 min** height via `Math.max(duration*slotHeight/15 − 4, slotHeight*2)`; `computeColumns` did NOT SEE this floor. Arda checked out his 6:15 walk-in early → `actualDuration` shortened (min(scheduled, actual)) → the column engine considered the card to end at ~6:30-6:35 and said it "doesn't clash" with the next one (same column, full width), but the card visually snapped to the 30 min floor and drew to 6:45 → it physically swallowed the 6:35 card below = silent visual overlap.
+**Resolution:** `end = Math.max(end, start + 30)` in `computeColumns` — the render's 30 min floor was added to the column math too; now a short card is also counted as 30 min and the clash is detected → it splits into side-by-side columns (`TimeGrid.tsx` +8/−0). Main build 0 errors. Squeeze-in was not touched (gap bands come from `getBusyIntervals`, don't see `actualDuration`/floor).
+**Prevention:** EVERY transformation affecting card geometry (top cap `min(scheduled,actual)` AND bottom floor `max(.., 30min)`) must be applied identically in both the render and `computeColumns`. The 2026-06-27 lesson was "the same duration source"; the missing half = the min floor. The column engine must see the "effective drawn height", not the raw duration.
 
-**Ne oldu / Teşhis / Fix:** Owner ekran görüntüsü paylaştı: art arda iki walk-in üst üste. Kural #7 gereği önce INCIDENTS okundu → 2026-06-27 "checked-out cascade" doğrudan ilgili çıktı (o zaman `actualDuration` kartı UZATIYORDU, fix `min(scheduled, actual)`; dersi "computeColumns ile kart yüksekliği aynı süre kaynağını kullanmalı"). Kod okundu: `TimeGrid.tsx` render (`:374`) `Math.max(.., slotHeight*2)` = 30 dk hard taban uyguluyor; `computeColumns` (`:159`) uygulamıyor → erken-checkout'la kısalan kart iki hesapta ayrışıyor. Aynı sınıf regresyon-komşusu bug: cap hizalanmıştı, taban değil. Tek satır clamp ile iki hesap yeniden eşitlendi.
+**What happened / Diagnosis / Fix:** The owner shared a screenshot: two consecutive walk-ins overlapping. Per Rule #7, INCIDENTS was read first → 2026-06-27 "checked-out cascade" came up as directly related (at that time `actualDuration` was LENGTHENING the card, the fix was `min(scheduled, actual)`; its lesson was "card height must use the same duration source as computeColumns"). The code was read: the `TimeGrid.tsx` render (`:374`) applies `Math.max(.., slotHeight*2)` = a 30 min hard floor; `computeColumns` (`:159`) does not → an early-checkout-shortened card diverges between the two calculations. A neighboring bug of the same class: the cap was aligned, the floor was not. A single-line clamp re-aligned the two calculations.
 
-**Dersler / Lessons Learned:**
-- **Bir "efektif yükseklik" clamp'i (min VEYA max) render'a girdiyse, aynısı overlap/kolon motoruna da girmeli.** 2026-06-27'de max cap hizalandı ama min taban unutuldu — yarım hizalama, aynı "görünmez örtüşme" sonucunu diğer uçtan verdi.
-- **"İki randevu üst üste, bölünmedi" şikâyeti = computeColumns onları çakışmıyor sanıyor.** İlk şüpheli: kartlardan birinin GERÇEK süresi çizilen boyundan kısa (erken checkout / min-taban), yani kolon hesabı ile görsel ayrışmış.
-- Kart geometrisi türetimleri (`duration → height`) tek bir yardımcıda toplanmalı ki render + computeColumns aynı fonksiyonu çağırsın; iki yere elle kopyalanan formül er geç ayrışıyor (bu üçüncü ayrışma).
+**Lessons Learned:**
+- **If an "effective height" clamp (min OR max) entered the render, the same must enter the overlap/column engine.** On 2026-06-27 the max cap was aligned but the min floor was forgotten — a half-alignment produced the same "invisible overlap" result from the other end.
+- **"Two appointments overlapping, didn't split" complaint = computeColumns thinks they don't clash.** First suspect: one of the cards' REAL duration is shorter than its drawn height (early checkout / min floor), i.e. the column calculation and the visual diverged.
+- Card geometry derivations (`duration → height`) should be collected in a single helper so render + computeColumns call the same function; a formula copied by hand into two places diverges eventually (this is the third divergence).
 
-## 2026-07-14 — whitecross-site: izinli barber booking listesinde ismi görünmeye devam ediyordu (leave-hide, `active !== false` guard'ı erken dönüyordu)
+## 2026-07-14 — whitecross-site: a barber on leave kept showing in the booking list (leave-hide, the `active !== false` guard returned early)
 
-**Severity:** 🟡 Medium (yanlış gösterim; booking slotları zaten doğru bloke, veri/para etkisi yok) · **Owner:** Claude + owner · **Status:** ✅ Resolved (`cddf0d02` ilk fix → `f2ba207f` tarihe-duyarlı düzeltme; ikisi de `firebase.saas.json` ile canlıya deploy; whitecrossbarbers-saas) · **Related:** G5 leave semantics unification
+**Severity:** 🟡 Medium (wrong display; the booking slots are already blocked correctly, no data/money impact) · **Owner:** Claude + owner · **Status:** ✅ Resolved (`cddf0d02` first fix → `f2ba207f` date-aware correction; both deployed to live via `firebase.saas.json`; whitecrossbarbers-saas) · **Related:** G5 leave semantics unification
 
-**Impact:** Muhamed tatile çıktı (`status:'leave'`), premium sitede (whitecrossbarbers.com) booking barber seçicide **ismi hâlâ görünüyordu** — slot yok ama isim listede, 1 aylık izin boyunca listeyi dolduruyordu. Beklenen: izin süresince tamamen gizli, dönüşte otomatik geri gelsin.
-**Root Cause:** `whitecross-site/script.js` `_shouldShowBarber()` satır 138 `if (b.active !== false) return true;` — leave kontrolünden (satır 142) ÖNCE dönüyordu. İzne çıkma `status:'leave'` yapıyor ama `active`'i `true` bırakıyor → guard "göster" deyip alttaki `isBarberOnLeaveForKey` tarih kontrolünü hiç çalıştırmıyordu. Leave-hide mantığı yanlışlıkla "izinli barber `active===false`" varsayımıyla yazılmış (halbuki leave ile active bağımsız alanlar).
-**Resolution:** İKİ AŞAMA. (1) `cddf0d02`: `_shouldShowBarber` başına `if (isBarberOnLeaveForKey(b, _barberTodayKey())) return false;` — BUGÜNE göre gizle. **Bu regresyon yarattı:** booking penceresi bugün→+90 gün ama barber butonları BUGÜNE göre bir kez filtrelendiği için, izin süresince barber 90 gün boyunca listeden düşüyordu → owner dönüş-SONRASI bir tarihe book etmek istedi, barber seçilemiyordu ("hani otomatik açıyordu?"). (2) `f2ba207f` DÜZELTME: today-hide kaldırıldı; barber master listede kalıyor, butonu SEÇİLİ TARİHE göre `refreshBarberButtonsForDate(dateKey)` ile gizleniyor (`isBarberOnLeaveForKey(b, dateKey)`) — date-change handler'da + render sonunda çağrılıyor. Default tarih bugün → izinde açılış temiz (kalabalık yok); dönüş-sonrası tarih seçilince buton otomatik geri geliyor → comeback pre-book edilebilir. Seçili barber bir tarih değişiminde gizlenirse "Any Barber"a düşülüyor. Slot üretimi (`getBarberScheduleForDay :1588`) zaten seçili tarihe göre leave'i bloke ediyordu, dokunulmadı. Normal off-günler leave DEĞİL (shiftChanges/dayHours) → etkilenmedi, "not available" aynı kaldı (owner onayı). salOWN online profile "Team" listesi bilinçli DOKUNULMADI (owner: tanıtım listesi, orada kalsın).
-**Prevention:** `active` (lifecycle) ile `status:'leave'` (tarih-aralıklı) BAĞIMSIZ alanlar — biri diğerini ima etmez. Leave/off gizleme guard'ları görünürlük fonksiyonunda `active` kısa-devresinden ÖNCE gelmeli. Aynı `barberStatusOf` + `isBarberOnLeaveForKey` yardımcıları salown-app (`isBarberOnLeaveForDate`) ile whitecross-site'ta ayrı kopyalar → biri düzelince diğerinde de aynı sıra hatası aranmalı.
+**Impact:** Muhamed went on holiday (`status:'leave'`), and on the premium site (whitecrossbarbers.com) **his name still showed** in the booking barber picker — no slots but the name in the list, filling the list for the whole 1-month leave. Expected: fully hidden during the leave, automatically back on return.
+**Root Cause:** `whitecross-site/script.js` `_shouldShowBarber()` line 138 `if (b.active !== false) return true;` — returned BEFORE the leave check (line 142). Going on leave sets `status:'leave'` but leaves `active` as `true` → the guard says "show" and never runs the `isBarberOnLeaveForKey` date check below. The leave-hide logic was mistakenly written with the assumption "a barber on leave has `active===false`" (whereas leave and active are independent fields).
+**Resolution:** TWO STAGES. (1) `cddf0d02`: `if (isBarberOnLeaveForKey(b, _barberTodayKey())) return false;` at the top of `_shouldShowBarber` — hide by TODAY. **This created a regression:** the booking window is today→+90 days but because barber buttons were filtered once by TODAY, the barber dropped off the list for 90 days during the leave → the owner wanted to book a date AFTER the return, and the barber could not be selected ("wasn't it supposed to open automatically?"). (2) `f2ba207f` FIX: today-hide was removed; the barber stays in the master list, and their button is hidden by the SELECTED DATE via `refreshBarberButtonsForDate(dateKey)` (`isBarberOnLeaveForKey(b, dateKey)`) — called in the date-change handler + at the end of render. The default date is today → a clean opening during leave (no clutter); when a post-return date is selected the button comes back automatically → the comeback can be pre-booked. If a selected barber is hidden on a date change, it falls back to "Any Barber". Slot generation (`getBarberScheduleForDay :1588`) already blocked leave by the selected date, untouched. Normal off-days are NOT leave (shiftChanges/dayHours) → unaffected, "not available" stayed the same (owner-approved). The salOWN online profile "Team" list was deliberately NOT TOUCHED (owner: it's a promotional list, let it stay there).
+**Prevention:** `active` (lifecycle) and `status:'leave'` (date-range) are INDEPENDENT fields — one does not imply the other. Leave/off hiding guards must come BEFORE the `active` short-circuit in the visibility function. The same `barberStatusOf` + `isBarberOnLeaveForKey` helpers are separate copies in salown-app (`isBarberOnLeaveForDate`) and whitecross-site → when one is fixed, the same ordering bug should be looked for in the other.
 
-**Dersler / Lessons Learned:**
-- **`active` boolean ≠ leave/off durumu.** Bir barber izinliyken `active:true` kalır; görünürlük filtresi `active`'e bakıp erken dönerse tarih-aralıklı leave hiç değerlendirilmez. Guard sırası: önce "gizlenmeli mi" (leave/off), sonra "aktif mi".
-- **"Slot yok ama isim var" = filtre iki katmanda ayrışmış:** slot üretimi leave'i görüyor, isim listesi görmüyor. İki katman aynı `isBarberOnLeave*` yardımcısını kullanmalı.
-- **Görünürlük hangi tarihe göre? Booking penceresi çok-günlü (90 gün) ise picker'ı TEK güne (bugün) göre filtreleme.** Bir barber izinliyken bugün gizlenmeli AMA dönüş-sonrası tarihler için seçilebilir kalmalı → filtre SEÇİLİ tarihe bağlı olmalı, tarih değişince yeniden değerlendirilmeli. Today-bazlı gizleme "izinde gizle" isteğini karşılar ama "dönünce açıl / ileri tarih book et"i kırar (bu olayda ilk fix böyle kırdı).
-- whitecross-site public site CI ile deploy OLMAZ (`deploy.yml` yalnız `barber-panel/**`+`functions/**` path'lerinde, `firebase.admin.json`). Kök `script.js` değişikliği MANUEL `firebase.saas.json` deploy ister — push tek başına canlıya çıkarmaz.
+**Lessons Learned:**
+- **The `active` boolean ≠ leave/off status.** A barber stays `active:true` while on leave; if the visibility filter looks at `active` and returns early, the date-range leave is never evaluated. Guard order: first "should it be hidden" (leave/off), then "is it active".
+- **"No slots but the name is there" = the filter diverged across two layers:** slot generation sees the leave, the name list doesn't. Both layers must use the same `isBarberOnLeave*` helper.
+- **By which date is visibility computed? If the booking window is multi-day (90 days), don't filter the picker by a SINGLE day (today).** A barber on leave should be hidden today BUT stay selectable for post-return dates → the filter must depend on the SELECTED date and be re-evaluated when the date changes. Today-based hiding satisfies "hide during leave" but breaks "reappear on return / book a future date" (the first fix broke exactly this in this incident).
+- The whitecross-site public site does NOT deploy via CI (`deploy.yml` only on `barber-panel/**`+`functions/**` paths, `firebase.admin.json`). A root `script.js` change requires a MANUAL `firebase.saas.json` deploy — a push alone does not push it live.
 
-## 2026-07-13 — dailyFirestoreBackup her gece sessizce fail — günlük yedek hiç alınmamış
+## 2026-07-13 — dailyFirestoreBackup silently failing every night — the daily backup was never taken
 
-**Severity:** 🟠 High (veri-kaybı senaryosunda yedek YOKTU; canlı etki yok) · **Owner:** Claude + owner onayı · **Status:** ✅ Resolved (2026-07-13 akşam — IAM verildi + canlı export doğrulandı)
+**Severity:** 🟠 High (in a data-loss scenario there was NO backup; no live impact) · **Owner:** Claude + owner approval · **Status:** ✅ Resolved (2026-07-13 evening — IAM granted + live export verified)
 
-**Impact:** Scheduled 03:00 Londra backup'ı deploy edildiğinden beri her gece "The caller does not have permission" ile düşüyordu → `firestore-backups/` altında hiçbir gece yedeği yoktu. Sessiz risk: Firestore'da toplu veri kazası olsaydı dönülecek nokta yoktu.
-**Root Cause:** İki IAM izni hiç verilmemişti: (1) fonksiyonun runtime SA'sı (`1050766582653-compute@developer.gserviceaccount.com`) `datastore.exportDocuments` çağıramıyordu — proje-seviyesi `roles/datastore.importExportAdmin` yoktu; (2) export'u fiilen yazan Firestore service agent'ın (`service-1050766582653@gcp-sa-firestore.iam.gserviceaccount.com`) hedef bucket'ta yazma izni yoktu. Kod doğruydu (koddaki yorum zaten izni belgeliyordu) — kurulum adımı hiç yapılmamıştı.
-**Resolution:** Owner onayıyla ("hallet hemen") iki izin REST API üzerinden verildi (gcloud yok — firebase CLI OAuth token'ı ile `cloudresourcemanager` `setIamPolicy` + Storage bucket IAM PUT; script scratchpad `fix_backup_iam.py`). Doğrulama: Cloud Scheduler job'ı (`firebase-schedule-dailyFirestoreBackup-europe-west2`) elle `:run` edildi → ~10 sn'de `gs://havuz-44f70.firebasestorage.app/firestore-backups/2026-07-13/` doldu, `overall_export_metadata` yazıldı = export TAMAM. Kod değişikliği yok.
-**Prevention:** (1) Bir sonraki gece cron'u aynı izinlerle geçer — 14 Tem sabahı `firestore-backups/2026-07-14/` var mı kontrol et; (2) ✅ failure-alarm AYNI GÜN eklendi (`740916b` + hedefli deploy): export hatasında `info@salown.com`'a Brevo maili + rethrow (run failed görünür) — alarm yolu canlıda doğrulandı (aynı-gün ikinci export "Path already exists" hatası → alarm maili gitti; owner'ın inbox'ındaki 13 Tem "🔴 backup FAILED" maili o testtir, yok say); (3) ✅ 30-gün lifecycle silme kuralı AYNI GÜN kuruldu — bucket'ta YALNIZ `firestore-backups/` prefix'ine `age>30 → Delete` (aynı bucket'taki `tenants/` upload'ları kapsam DIŞI, bilinçli scoped).
+**Impact:** Ever since the scheduled 03:00 London backup was deployed, it fell over every night with "The caller does not have permission" → there was no nightly backup anywhere under `firestore-backups/`. Silent risk: if a bulk data incident happened in Firestore there was no point to return to.
+**Root Cause:** Two IAM permissions were never granted: (1) the function's runtime SA (`1050766582653-compute@developer.gserviceaccount.com`) could not call `datastore.exportDocuments` — there was no project-level `roles/datastore.importExportAdmin`; (2) the Firestore service agent that actually writes the export (`service-1050766582653@gcp-sa-firestore.iam.gserviceaccount.com`) had no write permission on the target bucket. The code was correct (a comment in the code already documented the permission) — the setup step was simply never done.
+**Resolution:** With owner approval ("just handle it"), the two permissions were granted via the REST API (no gcloud — using the firebase CLI OAuth token, `cloudresourcemanager` `setIamPolicy` + Storage bucket IAM PUT; script in scratchpad `fix_backup_iam.py`). Verification: the Cloud Scheduler job (`firebase-schedule-dailyFirestoreBackup-europe-west2`) was manually `:run` → in ~10 s `gs://havuz-44f70.firebasestorage.app/firestore-backups/2026-07-13/` filled, `overall_export_metadata` written = export DONE. No code change.
+**Prevention:** (1) The next night's cron passes with the same permissions — on the morning of 14 Jul check whether `firestore-backups/2026-07-14/` exists; (2) ✅ a failure-alarm was added the SAME DAY (`740916b` + targeted deploy): on an export error, a Brevo email to `info@salown.com` + rethrow (so the run shows as failed) — the alarm path was verified live (a second same-day export "Path already exists" error → the alarm email went out; the "🔴 backup FAILED" email in the owner's inbox on 13 Jul is that test, ignore it); (3) ✅ a 30-day lifecycle delete rule was set up the SAME DAY — ONLY on the `firestore-backups/` prefix in the bucket (`age>30 → Delete`) (the `tenants/` uploads in the same bucket are OUT of scope, deliberately scoped).
 
-**Dersler / Lessons Learned:**
-- "Scheduled fonksiyon deploy edildi" ≠ "çalışıyor" — IAM gerektiren fonksiyonlar deploy sonrası EN AZ BİR başarılı run kanıtıyla kapatılmalı (rc3 smoke listesine scheduled fn'ler dahil edilmeli).
-- Sessizce fail eden gece işleri log taramasına kadar görünmez — kritik cron'lara failure-path alarmı şart (Guru olayındaki success/failure-marker dersiyle aynı sınıf).
-- gcloud kurulu olmasa da firebase CLI OAuth token'ı ile GCP REST API'leri (IAM/Scheduler/Storage) tam çalışıyor — read-logs-oauth deseninin yazma-tarafı eşi.
+**Lessons Learned:**
+- "Scheduled function deployed" ≠ "working" — functions that require IAM must be closed out with proof of AT LEAST ONE successful run after deploy (scheduled fns should be included in the rc3 smoke list).
+- Silently failing nightly jobs are invisible until a log scan — critical crons need a failure-path alarm (same class as the success/failure-marker lesson from the Guru incident).
+- Even without gcloud installed, GCP REST APIs (IAM/Scheduler/Storage) work fully via the firebase CLI OAuth token — the write-side counterpart of the read-logs-oauth pattern.
 
-## 2026-07-12 — Guru 3× "Payment setup failed" (whitecrossbarbers.com) — Stripe session hiç yaratılamadı
+## 2026-07-12 — Guru 3× "Payment setup failed" (whitecrossbarbers.com) — the Stripe session was never created
 
-**Severity:** 🟠 High (müşteri 3 kez ödeyemedi; kendi kendine çözüldü) · **Owner:** Claude (rc3 session) + owner · **Status:** ✅ Resolved (2026-07-12 ~13:00: owner GH Pages **Enforce HTTPS**'i açtı; curl doğrulandı — apex+www `http://` → **301** → https 200. Hata sınıfı kalıcı kapandı.)
+**Severity:** 🟠 High (the customer could not pay 3 times; self-resolved) · **Owner:** Claude (rc3 session) + owner · **Status:** ✅ Resolved (2026-07-12 ~13:00: owner turned on GH Pages **Enforce HTTPS**; verified via curl — apex+www `http://` → **301** → https 200. The error class is permanently closed.)
 
-**🎯 KESİN KÖK NEDEN (Cloud Logging httpRequest kanıtı, 2026-07-12):** Başarısız 3 denemede `referer: http://whitecrossbarbers.com/` — başarılı 2'sinde `https://`. `createCheckoutSession` CORS allowlist'i YALNIZ https origin'leri içeriyor (`https://whitecrossbarbers.com` + `https://www...`) → http'li sayfadan gelen preflight 204 döner ama `Access-Control-Allow-Origin` İÇERMEZ (OPTIONS responseSize 222B vs başarılıda 278B — fark tam o header) → tarayıcı POST'u bloklar → "Payment setup failed". İki farklı cihaz (iPhone Chrome + iPhone Safari) + iki farklı ağ, ortak payda = http. **GitHub Pages `http://whitecrossbarbers.com/` 301 ATMIYOR, 200 dönüyor (curl ile teyit)** — Enforce HTTPS kapalı → şifresiz sayfa tam çalışır görünüyor, sadece ödeme adımı sessiz ölüyor. Firestore SDK kendi google endpoint'lerine konuştuğu için PENDING yazımı http'de bile çalışıyor (o yüzden "booking oluştu ama ödeme yok" deseni).
-**Kalıcı fix (KOD YOK):** GitHub repo Settings → Pages → **Enforce HTTPS aç** → http istekleri 301 ile https'e döner, sorun sınıf olarak kapanır. (Alternatif olan http origin'i CORS'a eklemek ÖNERİLMEZ — ödeme başlatan sayfa şifresiz servis edilmemeli.) Log erişimi de bu incelemede çözüldü: firebase CLI OAuth token'ıyla Logging API doğrudan sorgulanabiliyor (scratchpad read-logs-oauth.cjs deseni; CLI'ın kendi `functions:log`'u günler geride).
+**🎯 DEFINITIVE ROOT CAUSE (Cloud Logging httpRequest evidence, 2026-07-12):** In the 3 failed attempts `referer: http://whitecrossbarbers.com/` — in the 2 successful ones `https://`. The `createCheckoutSession` CORS allowlist contains ONLY https origins (`https://whitecrossbarbers.com` + `https://www...`) → a preflight from an http page returns 204 but does NOT INCLUDE `Access-Control-Allow-Origin` (OPTIONS responseSize 222B vs 278B on success — the difference is exactly that header) → the browser blocks the POST → "Payment setup failed". Two different devices (iPhone Chrome + iPhone Safari) + two different networks, common denominator = http. **GitHub Pages `http://whitecrossbarbers.com/` does NOT 301, it returns 200 (confirmed via curl)** — Enforce HTTPS off → the unencrypted page looks fully working, only the payment step dies silently. Because the Firestore SDK talks to its own google endpoints, the PENDING write works even over http (hence the "booking created but no payment" pattern).
+**Permanent fix (NO CODE):** GitHub repo Settings → Pages → **turn on Enforce HTTPS** → http requests 301 to https, the problem closes as a class. (The alternative of adding the http origin to CORS is NOT RECOMMENDED — a page that initiates payment should not be served unencrypted.) Log access was also solved in this investigation: the Logging API can be queried directly with the firebase CLI OAuth token (scratchpad read-logs-oauth.cjs pattern; the CLI's own `functions:log` is days behind).
 
-**Impact:** Gerçek müşteri (Guru) whitecrossbarbers.com'dan 09:56–09:59 BST arası 3 kez book etmeye çalıştı (1×DEPOSIT, 2×FULL) — üçünde de ödeme ekranına hiç ulaşamadı. 4. deneme (~10:29, dükkanda, owner yanında) sorunsuz: ödedi, CHECKED_OUT £34.
-**Root Cause (en olası):** İstemci-ortam — akışın 3 aşamasından ilk ikisi çalıştı (race-check fail-open; **PENDING doc'ları Firestore'a yazıldı**), 3.sü düştü: `fetch('https://createcheckoutsession-…-uc.a.run.app')`. Kanıt: 3 doc'ta da `stripeSessionId` YOK (fonksiyon session yaratınca best-effort yazıyor) + Stripe dashboard'da session yok = fonksiyona hiç ulaşılamadı ya da anında hata. Aynı backend (rc3-sonrası, değişmeden) 30 dk sonra hem owner testinde hem Guru'nun dükkandaki denemesinde çalıştı → değişken ortam/ağ (ev wifi DNS filtresi/VPN/in-app browser `*.run.app` engeli tipik şüpheliler).
-**rc3 İLGİSİZ (kanıtlı):** source=Website → us-central1 legacy `createCheckoutSession` (rc3 europe-west2 salown codebase'ini değiştirdi, us-central1'e dokunmadı). Akıştaki tek salown fonksiyonu (`salownGetBusySlots` race-check) `.catch(()=>null)` ile fail-open VE başarılı 4. deneme aynı deploy'la çalıştı.
-**Resolution:** Kendiliğinden (ortam değişince). 3 PENDING, `salownCleanupExpiredPending` ile 15 dk'da `expired_pending` CANCELLED — sistem tasarlandığı gibi temizledi.
-**Prevention (freeze sonrası):** (1) `createCheckoutSession` catch'i booking doc'una `stripeSessionError:{ts,msg}` yazsın — "neden session yok" veriden okunur (bugün sessionId-yokluğundan çıkarsadık); (2) **log körlüğü giderilmeli:** `firebase functions:log` bu ortamda ~1-2 gün geride sayfa döndürüyor, Logging API'de salown-panel SA'ya izin yok (`roles/logging.viewer` verilebilir) — canlı olay anında fonksiyon logu OKUNAMIYOR; (3) popup zaten telefon numarası veriyor (iyi); retry-with-backoff eklenebilir.
+**Impact:** A real customer (Guru) tried to book from whitecrossbarbers.com 3 times between 09:56–09:59 BST (1×DEPOSIT, 2×FULL) — in all three he never even reached the payment screen. The 4th attempt (~10:29, in the shop, with the owner present) was smooth: he paid, CHECKED_OUT £34.
+**Root Cause (most likely):** Client-environment — of the flow's 3 stages the first two worked (race-check fail-open; **the PENDING docs were written to Firestore**), the 3rd failed: `fetch('https://createcheckoutsession-…-uc.a.run.app')`. Evidence: none of the 3 docs have a `stripeSessionId` (the function writes it best-effort when it creates a session) + no session in the Stripe dashboard = the function was never reached, or errored instantly. The same backend (post-rc3, unchanged) worked 30 min later both in the owner's test and in Guru's in-shop attempt → variable environment/network (home wifi DNS filter/VPN/in-app browser `*.run.app` block are the typical suspects).
+**rc3 IRRELEVANT (proven):** source=Website → us-central1 legacy `createCheckoutSession` (rc3 changed the europe-west2 salown codebase, did not touch us-central1). The only salown function in the flow (`salownGetBusySlots` race-check) fail-opens with `.catch(()=>null)` AND the successful 4th attempt worked on the same deploy.
+**Resolution:** Self-resolved (when the environment changed). The 3 PENDING docs were turned `expired_pending` CANCELLED within 15 min by `salownCleanupExpiredPending` — the system cleaned up as designed.
+**Prevention (post-freeze):** (1) `createCheckoutSession`'s catch should write `stripeSessionError:{ts,msg}` to the booking doc — "why is there no session" becomes readable from the data (today we inferred it from the sessionId absence); (2) **the log blindness must be fixed:** `firebase functions:log` in this environment returns a page ~1-2 days behind, and the salown-panel SA has no permission on the Logging API (`roles/logging.viewer` can be granted) — during a live incident the function log is UNREADABLE; (3) the popup already gives the phone number (good); retry-with-backoff can be added.
 
-**Yan bulgular (aynı inceleme):** (a) **Cancel'lı 3 booking'e PUAN İŞLENMEDİ** — owner şüphesi kontrol edildi, loyalty alanları üçünde de yok; Guru 123 puan = 55 (21 Haz Booksy) + 68 (bugünkü gerçek checkout £34). Panelde farklı görünüyorsa display konusu, veri temiz. (b) **"Your spot is still warm" emaili OTOMATİK DEĞİL** — `sendAbandonedCart` onCall'ını çağıran tek yer panel `BookingDetailPanel.sendFinishBooking`. Log korelasyonu: 10:23 BST "Why no payment?" tıklaması ile 10:24 mail AYNI Mac + AYNI IP'den (60 sn arayla; owner'ın sabahki teşhisi farklı IP'deydi) — teşhis sırasında, sonuç kutusunun hemen altındaki onaysız-sessiz "Send Finish your booking" butonuna istemeden basılmış. Kimlik loglarda YOK (callable uid loglamıyor — I4 audit gerekçesine 3. kanıt). **UX dersi → G1:** mail gönderen buton salt-okunur teşhis butonunun dibinde onaysız duramaz (confirm + görsel ayrım). Gerçek otomasyon ROADMAP C3'te zaten planlı. (c) Hazır teşhis aracı var: `checkBookingPayment` (kart reddi vs sayfa terki) — staff-auth'lu, session'ı OLAN unpaid'lerde kullanılır.
+**Side findings (same investigation):** (a) **POINTS WERE NOT APPLIED to the 3 cancelled bookings** — the owner's suspicion was checked, the loyalty fields are absent in all three; Guru's 123 points = 55 (21 Jun Booksy) + 68 (today's real checkout £34). If the panel shows something different that's a display matter, the data is clean. (b) **The "Your spot is still warm" email is NOT AUTOMATIC** — the only place that calls the `sendAbandonedCart` onCall is the panel `BookingDetailPanel.sendFinishBooking`. Log correlation: the 10:23 BST "Why no payment?" click and the 10:24 email are from the SAME Mac + SAME IP (60 s apart; the owner's morning diagnosis was on a different IP) — during diagnosis, the unconfirmed-silent "Send Finish your booking" button right below the result box was pressed unintentionally. The identity is NOT in the logs (the callable doesn't log uid — a 3rd piece of evidence for the I4 audit rationale). **UX lesson → G1:** the email-sending button must not sit unconfirmed right beneath a read-only diagnosis button (confirm + visual distinction). Real automation is already planned in ROADMAP C3. (c) A ready diagnostic tool exists: `checkBookingPayment` (card decline vs page abandon) — staff-auth'd, used on unpaids that HAVE a session.
 
-**Dersler / Lessons Learned:**
-- Success-path marker (`stripeSessionId`) sayesinde "session hiç yaratılmadı"yı veriden kanıtlayabildik — failure-path marker'ı da olsaydı kök neden kesinleşirdi. İkisi birlikte tasarlanmalı.
-- Canlı müşteri olayında log erişimi = teşhis hızı. CLI'a güvenme; SA'ya logging.viewer ver.
-- PENDING→expired_pending→CANCELLED zinciri + fail-open race-check bugün doğru çalıştı — dokunma.
+**Lessons Learned:**
+- Thanks to the success-path marker (`stripeSessionId`) we could prove "the session was never created" from the data — with a failure-path marker too, the root cause would be certain. The two should be designed together.
+- In a live-customer incident, log access = diagnosis speed. Don't rely on the CLI; grant the SA logging.viewer.
+- The PENDING→expired_pending→CANCELLED chain + the fail-open race-check worked correctly today — don't touch it.
 
-## 2026-07-12 — Muhamed'in on-leave kaydı sessizce silindi (tek-tık "Activate")
+## 2026-07-12 — Muhamed's on-leave record was silently deleted (single-click "Activate")
 
-**Severity:** 🟡 Medium · **Owner:** Claude (gece session) · **Status:** ✅ Resolved (2026-07-13: guard CANLI `b582042` — leave'deki üyede toggle confirm soruyor + `BARBER_STATUS_CHANGED` audit yazıyor; veri zaten 12'sinde yeniden girilmişti [14 Tem–19 Ağu]. Ayrıca G5 adım 1 `c66320d` ile Finance izin günü SAYMIYOR — £1,331 riski kapandı. G5'in kalan adımları [grid/BookingPage/server resolver] ROADMAP'te açık.)
+**Severity:** 🟡 Medium · **Owner:** Claude (night session) · **Status:** ✅ Resolved (2026-07-13: guard LIVE `b582042` — a toggle on a member on leave asks for confirm + writes a `BARBER_STATUS_CHANGED` audit; the data had already been re-entered on the 12th [14 Jul–19 Aug]. Also, via G5 step 1 `c66320d` Finance NO LONGER COUNTS leave days — the £1,331 risk is closed. G5's remaining steps [grid/BookingPage/server resolver] are open on the ROADMAP.)
 
-**Güncelleme (2026-07-12 öğleden sonra):** Owner leave'i yeniden girdi ama Muhamed grid'de görünmeye devam etti → tam denetim yapıldı: müsaitlik mantığı 5 yüzeyde 5 farklı — grid leave'i hiç okumuyor, BookingPage `active` boolean'ına takılı (izin bitince otomatik dönmez), server reschedule leave'e izin veriyor, **Finance leave günlerini saymaya devam ediyor (~£1,331 hayalet maaş riski, 14 Tem'den önce fix önerilir)**. Envanter + hedef model + sıra: [STAFF_SETTINGS_AUDIT.md](STAFF_SETTINGS_AUDIT.md), ROADMAP G5.
+**Update (2026-07-12 afternoon):** The owner re-entered the leave but Muhamed kept showing in the grid → a full audit was done: availability logic behaves in 5 different ways across 5 surfaces — the grid doesn't read leave at all, BookingPage hangs on the `active` boolean (doesn't auto-return when leave ends), the server reschedule allows leave, and **Finance keeps counting leave days (~£1,331 ghost-wage risk, fix recommended before 14 Jul)**. Inventory + target model + order: [STAFF_SETTINGS_AUDIT.md](STAFF_SETTINGS_AUDIT.md), ROADMAP G5.
 
-**Impact:** Whitecross'ta Muhamed on-leave yapılmıştı; owner fark etti ki leave kaybolmuş (doc: `status:'active'`, `leaveFrom/leaveUntil:null`) — barber tekrar bookable göründü.
-**Root Cause:** `Barbers.tsx:358 cycleStatus` — durum ne olursa olsun (leave dahil) tek tıkla active/passive'e çevirir ve **her seferinde `leaveFrom/leaveUntil:null` yazar**; onay yok. Üstelik `_status!=='active'` üyelerde buton bilerek "unmissable yeşil ✓ Activate" (passive-karışıklığı fix'inin yan etkisi) → on-leave kartında da davetkâr tek-tık leave-silici. Alternatif yol (editörde status değiştirip kaydetme, `:313`) aynı sonucu verir.
-**Resolution:** Leave verisi owner'ın vereceği tarihlerle yeniden set edilecek (veri düzeltmesi). Kod fix'i freeze gereği 2026-07-14+ (ROADMAP G1).
-**Prevention:** (1) on-leave üyede toggle'a confirm modal ("X is on leave until Y — end leave?"), (2) `BARBER_STATUS_CHANGED` auditLogs kaydı — bu olayda **kim/ne zaman bulunamadı çünkü barber değişiklikleri loglanmıyor** (auditLogs sadece booking/finans).
+**Impact:** At Whitecross, Muhamed had been set on-leave; the owner noticed the leave had vanished (doc: `status:'active'`, `leaveFrom/leaveUntil:null`) — the barber appeared bookable again.
+**Root Cause:** `Barbers.tsx:358 cycleStatus` — regardless of the status (including leave), a single click flips to active/passive and **writes `leaveFrom/leaveUntil:null` every time**; no confirm. Moreover, for `_status!=='active'` members the button is deliberately "unmissable green ✓ Activate" (a side effect of the passive-confusion fix) → so even on an on-leave card there is an inviting single-click leave-eraser. The alternative path (changing status in the editor and saving, `:313`) gives the same result.
+**Resolution:** The leave data will be re-set with the dates the owner provides (data correction). The code fix is 2026-07-14+ due to the freeze (ROADMAP G1).
+**Prevention:** (1) a confirm modal on the toggle for an on-leave member ("X is on leave until Y — end leave?"), (2) a `BARBER_STATUS_CHANGED` auditLogs record — in this incident **who/when could not be found because barber changes are not logged** (auditLogs is only booking/finance).
 
-**Ne oldu / Teşhis:** Kural #7 gereği INCIDENTS tarandı (benzer yok). Admin SDK read-only ile doc fotoğrafı alındı: leave alanları null + status active = süre dolması DEĞİL (expiry doc'u yeniden yazmaz, status 'leave' kalırdı) → aktif üzerine-yazma. Yazan yollar grep'lendi: panel `cycleStatus` + editör kaydı; staff app barbers'a yazmıyor (tek updateDoc'u RescheduleSheet=bookings); functions barbers'a yazmıyor. rc3 ile İLGİSİZ (aynı gece ama kod içeriği değişmedi, functions barbers'a dokunmaz, panel push'u da bekliyor). auditLogs son 25 kayıt tarandı — barber olayı yok (loglanmıyor).
+**What happened / Diagnosis:** Per Rule #7, INCIDENTS was scanned (nothing similar). A read-only snapshot of the doc was taken via the admin SDK: leave fields null + status active = NOT an expiry (expiry doesn't rewrite the doc, the status would stay 'leave') → an active overwrite. The writing paths were grepped: panel `cycleStatus` + editor save; the staff app doesn't write to barbers (its only updateDoc is RescheduleSheet=bookings); functions don't write to barbers. UNRELATED to rc3 (same night but the code content didn't change, functions don't touch barbers, and the panel push is also pending). The last 25 auditLogs were scanned — no barber event (not logged).
 
-**Dersler / Lessons Learned:**
-- "Görünür olsun" diye vurgulanan buton (yeşil Activate) yanlış durumda **davetkâr yıkıcı** olur — vurgu, durumun anlamına göre değişmeli (leave'de "End leave" de, Activate deme).
-- Tek tıkla durum + veri silen aksiyonlara (tarih alanı sıfırlama) confirm şart; toggle ≠ zararsız.
-- auditLogs kapsam boşluğu teşhisi kör bırakıyor: personel/rota değişiklikleri de loglanmalı.
-**Status lejantı:** ✅ Resolved · 🟡 Open (kısmi/takip var) · 🔴 Regressed (geri geldi — recurrence).
-**Owner:** düzeltmeyi yapan/sorumlu kişi. Bilinmiyorsa `—`, ama yeni kayıtlarda ZORUNLU (multi-session repo, "kime sorarım" cevabı).
+**Lessons Learned:**
+- A button emphasized "so it's visible" (green Activate) becomes **invitingly destructive** in the wrong state — the emphasis must change according to the meaning of the state (on leave say "End leave", not Activate).
+- A confirm is mandatory for single-click actions that change status AND delete data (zeroing a date field); a toggle ≠ harmless.
+- The auditLogs coverage gap leaves the diagnosis blind: staff/rota changes must also be logged.
+**Status legend:** ✅ Resolved · 🟡 Open (partial/follow-up) · 🔴 Regressed (came back — recurrence).
+**Owner:** the person who did/is responsible for the fix. If unknown `—`, but MANDATORY on new records (multi-session repo, the answer to "who do I ask").
 
 ---
 
-## 2026-07-11 — Products sayfası panel redesign'da "öksüz" kaldı — route canlı, hiçbir menüden ulaşılamıyor
+## 2026-07-11 — The Products page was "orphaned" in the panel redesign — the route is live, unreachable from any menu
 
 **Severity:** 🟡 Medium · **Owner:** Alish + Claude · **Status:** ✅ Resolved
 
-**Impact:** Owner ürün eklemek istedi, Products'ı sidebar'da bulamadı — sayfa aylardır yalnız `/app/products` URL'i elle yazılırsa açılıyordu (veri modeli canlıydı: satışlar `soldProducts` üzerinden akmaya devam etti, yalnız YÖNETİM ekranına giden yol yoktu).
-**Root Cause:** Legacy panelde (salown-panel) Products, **Online Profile'ın bir TAB'ıydı**; salown-app redesign'ında OnlineProfile yeni tab setiyle (profile/gallery/team/announce/seo) yeniden yazılırken products tab'ı taşınmadı, Sidebar'a da hiç eklenmedi — route (`AppRouter.tsx`) taşındığı için sayfa "çalışır ama ulaşılamaz" kaldı. İlgili ama AYRI katman: `settings.products.enabled` (public shop gate'i) Settings'e düzgün taşınmıştı → "ayar var, sayfa yok" karışıklığı.
-**Resolution:** `7cb698c` (push→CI) — Sidebar CONFIG bölümüne Services yanına `products` girişi (owner+admin görür; OWNER_ONLY seti). Public-shop gate'ine dokunulmadı.
-**Prevention:** **Redesign'da route↔nav paritesi kontrol edilmeli:** router'da kayıtlı her sayfanın en az bir UI girişi (nav/tab/buton) olduğu, redesign PR'ının checklist'inde doğrulanmalı. "Route çalışıyor" ≠ "özellik erişilebilir".
+**Impact:** The owner wanted to add a product, couldn't find Products in the sidebar — the page had for months only opened if you manually typed the `/app/products` URL (the data model was live: sales kept flowing through `soldProducts`, only the path to the MANAGEMENT screen was missing).
+**Root Cause:** In the legacy panel (salown-panel), Products was a TAB of the Online Profile; when OnlineProfile was rewritten in the salown-app redesign with a new tab set (profile/gallery/team/announce/seo), the products tab was not carried over, nor was it ever added to the Sidebar — because the route (`AppRouter.tsx`) was carried over, the page stayed "works but unreachable". Related but SEPARATE layer: `settings.products.enabled` (the public shop gate) had been properly moved to Settings → the "the setting exists, the page doesn't" confusion.
+**Resolution:** `7cb698c` (push→CI) — a `products` entry in the Sidebar CONFIG section next to Services (visible to owner+admin; OWNER_ONLY set). The public-shop gate was not touched.
+**Prevention:** **In a redesign, route↔nav parity must be checked:** that every page registered in the router has at least one UI entry (nav/tab/button) must be verified in the redesign PR's checklist. "The route works" ≠ "the feature is accessible".
 
-**Dersler / Lessons Learned:**
-- Bir özellik "kayboldu" dendiğinde üç katmanı AYRI kontrol et: veri modeli (çalışıyor muydu?) → route (kayıtlı mı?) → nav girişi (linki var mı?). Burada yalnız üçüncüsü kopuktu.
-- Legacy'deki bir özelliğin "özel ayarı" iki farklı şey olabilir: yönetim UI'ı (panel) vs public gate (website). İkisini karıştırmadan haritala.
+**Lessons Learned:**
+- When a feature is said to have "disappeared", check three layers SEPARATELY: the data model (was it working?) → the route (is it registered?) → the nav entry (is there a link to it?). Here only the third was broken.
+- A legacy feature's "special setting" can be two different things: the management UI (panel) vs the public gate (website). Map them without conflating.
 
 ---
 
-## 2026-07-11 — Client edit'ten sonra walk-in picker aynı kişiyi ikiye böldü → kontaksız booking, loyalty maili gitmedi
+## 2026-07-11 — After a client edit, the walk-in picker split the same person in two → contactless booking, loyalty email did not go out
 
 **Severity:** 🟠 High · **Owner:** Alish + Claude · **Status:** ✅ Resolved
 
-**Impact:** Owner isim-only kayıtlı bir müşterinin ("Alex Software Dev") client doc'una Clients edit'ten email ekledi; ardından grid'den walk-in girdi — booking **email/telefon/manualId'siz** yazıldı, confirmation/loyalty maili GİTMEDİ, client doc'a puan/ziyaret işlenmedi. Owner "kopya kayıt açıldı" sandı ama Firestore'da tek client doc vardı — kopya yalnız WalkInForm dropdown'ında yaşıyordu.
-**Root Cause:** `WalkInForm` client listesi **booking'lerden ÖNCE** kuruluyor ve birleştirme anahtarı `phone||email||name`. Doc kontak kazanınca anahtarı isimden email'e taşındı; eski isim-only booking'ler isim anahtarında kaldı → aynı kişi dropdown'da İKİ satır oldu. Kontaksız hayalet satır önce eklendiği için `nearMatch`/banner/save-onayı hep ONU önerdi; auto-link de "tam isim + TEK eşleşme" istediğinden (2 eşleşme var) devreye girmedi → hangi yoldan seçilirse seçilsin hayalet linklendi → booking `email:'' phone:''`. Zincirleme: `salownSendLoyaltyEmail` boş `clientEmail` görüp erken döndü (flag `sendLoyaltyEmail:true` TAKILI kaldı, reset edilmeden çıkıyor); `checkoutBooking`'in client-doc güncellemesi `if (phone || email)` arkasında → puan/stats doc'a hiç yazılmadı (booking'e yazıldı: earned 38 / total 66, doc 28'de kaldı).
-**Resolution:** (1) **Veri onarımı** (admin script, owner onaylı): booking'e `clientEmail`+`clientManualId`; client doc'a atlanan stats birebir (loyaltyPoints 28→66, totalSpent +£41.80, totalVisits +1, lastVisit/lastBarber/lastService); loyalty maili `sendLoyaltyEmail` false→true geçişiyle ateşlendi → `loyaltyEmailSent:true` 4 sn'de teyit. (2) **Kalıcı fix** `540db5a` (push→CI, salown.com panel): client doc'lar canonical olarak ÖNCE işlenir; booking'ler exact phone/email ile, kontaksız booking'ler ise YALNIZ belirsiz-olmayan normalize isimle doc satırına merge olur (aynı isimli 2 doc → merge yok; NORMALIZATION "kontak varken isim-eşleşme yok" kuralı korunur). Doc'suz müşteri + docs-fetch-hata yolu eski davranış. 4 vaka simülasyonla + tsc/eslint/vitest 25/25/build ile doğrulandı.
-**Prevention:** Kimlik birleştiren HER yüzeyde canonical kaynak (client doc) önce gelir; booking-türevi kayıt ancak MERGE olur, asla canonical'ın önüne satır açamaz. `phone||email||name` tekli anahtar, kişi kontak kazandığında kimliği böler — çoklu-index (phone + email + guarded name) kullan. Ayrıca trigger'lar guard'dan erken dönerken talep bayraklarını (`sendLoyaltyEmail`) resetlemeli ya da durumu işaretlemeli — takılı `true` sonraki tetiklemeyi de bloklar (bugün ikinci yazımda `false→true` gerekti). **✅ İKİSİ DE UYGULANDI (aynı gün):** (a) aynı bug BookingForm'da da bulunup düzeltildi (`40c79e9`, push→CI; staff ClientSearch + Reports/Clients temiz çıktı — canonical zaten); (b) trigger hardening CANLI (`35818d2` + targeted deploy `functions:salown:salownSendLoyaltyEmail`, hayalet-booking prod smoke PASS): her erken çıkış bayrağı resetler + `loyaltyEmailSkipped: 'tenant-flag-off'|'checkout-email-disabled'|'no-email'|'opt-out'` yazar — Brevo yalnız DENENMİŞ gönderimleri görür, denenMEmişlerin sebebi artık booking'in üstünde. Tarama envanteri: 366 takılı bayrak (whitecross 343 · herohairs 13 · demo 9 · hair-lab 1); geçmiş temizliği (bulk `false` reset) owner onayı bekliyor — inert, acil değil.
+**Impact:** The owner added an email via Clients edit to the client doc of a name-only customer ("Alex Software Dev"); then entered a walk-in from the grid — the booking was written **without email/phone/manualId**, the confirmation/loyalty email did NOT go out, and no points/visits were applied to the client doc. The owner thought "a duplicate record was created" but there was a single client doc in Firestore — the duplicate lived only in the WalkInForm dropdown.
+**Root Cause:** The `WalkInForm` client list is built **BEFORE** the bookings, and the merge key is `phone||email||name`. When the doc gained contact, its key shifted from name to email; the old name-only bookings stayed on the name key → so the same person became TWO rows in the dropdown. Because the contactless ghost row was added first, `nearMatch`/banner/save-confirm always suggested THAT one; auto-link also didn't kick in (it requires "full name + a SINGLE match", and there were 2 matches) → whichever way it was selected the ghost got linked → the booking became `email:'' phone:''`. Chain reaction: `salownSendLoyaltyEmail` saw the empty `clientEmail` and returned early (the flag `sendLoyaltyEmail:true` stayed STUCK, exiting without reset); `checkoutBooking`'s client-doc update is behind `if (phone || email)` → so points/stats were never written to the doc (they were written to the booking: earned 38 / total 66, doc stayed at 28).
+**Resolution:** (1) **Data repair** (admin script, owner-approved): to the booking `clientEmail`+`clientManualId`; to the client doc the skipped stats exactly (loyaltyPoints 28→66, totalSpent +£41.80, totalVisits +1, lastVisit/lastBarber/lastService); the loyalty email was fired by a `sendLoyaltyEmail` false→true transition → `loyaltyEmailSent:true` confirmed in 4 s. (2) **Permanent fix** `540db5a` (push→CI, salown.com panel): client docs are processed FIRST as canonical; bookings merge onto the doc row by exact phone/email, and contactless bookings ONLY by an unambiguous normalized name (2 docs with the same name → no merge; the NORMALIZATION rule "no name-matching when contact exists" is preserved). The doc-less-customer + docs-fetch-error path keeps the old behavior. Verified with a 4-case simulation + tsc/eslint/vitest 25/25/build.
+**Prevention:** On EVERY surface that merges identity, the canonical source (client doc) comes first; a booking-derived record can only MERGE, never open a row ahead of the canonical. A single `phone||email||name` key splits the identity when a person gains contact — use a multi-index (phone + email + guarded name). Also, triggers must reset the request flags (`sendLoyaltyEmail`) or mark the state when returning early from a guard — a stuck `true` blocks the next trigger too (today the second write needed a `false→true`). **✅ BOTH WERE APPLIED (same day):** (a) the same bug was found and fixed in BookingForm too (`40c79e9`, push→CI; staff ClientSearch + Reports/Clients came out clean — already canonical); (b) trigger hardening is LIVE (`35818d2` + targeted deploy `functions:salown:salownSendLoyaltyEmail`, ghost-booking prod smoke PASS): every early exit resets the flag + writes `loyaltyEmailSkipped: 'tenant-flag-off'|'checkout-email-disabled'|'no-email'|'opt-out'` — Brevo sees only ATTEMPTED sends, and the reason for un-attempted ones is now on top of the booking. Scan inventory: 366 stuck flags (whitecross 343 · herohairs 13 · demo 9 · hair-lab 1); the historical cleanup (bulk `false` reset) is awaiting owner approval — inert, not urgent.
 
-**Ne oldu / Teşhis / Fix:** Owner "edit'ten telefon+email girdim, walk-in attım, detayda kontak yok, mail gitmedi; kopya kayıt da göremiyorum" dedi. Kural #7 → INCIDENTS'ta 2026-07-05 "eşleşen-ama-linklenmemiş müşteri" emsali bulundu (aynı dosya, komşu akış). Admin SDK read-only sorguyla kanıt toplandı: doc'ta email VAR/telefon YOK; bugünkü + 22 May booking'leri isim-only. Kod izinde `WalkInForm` map kurulum sırası + anahtar seçimi kök neden çıktı. Onarım script'i safety re-check'lerle (state drift guard) yazıldı; email teyidi booking'teki `loyaltyEmailSent` marker'ı poll'lanarak alındı. Not: doc'ta `phone:""` boştu; owner sonradan netleştirdi — telefon zaten girilmemişti (yalnız doğum tarihi + email eklendi), Clients edit'te sorun YOK.
+**What happened / Diagnosis / Fix:** The owner said "I entered phone+email from the edit, made a walk-in, no contact in the detail, the email didn't go; and I can't see a duplicate record either". Rule #7 → in INCIDENTS the 2026-07-05 "matched-but-not-linked customer" precedent was found (same file, neighboring flow). Evidence was collected with a read-only admin SDK query: the doc HAS email/NO phone; today's + 22 May bookings are name-only. Reading the code, the `WalkInForm` map build order + key selection emerged as the root cause. The repair script was written with safety re-checks (state drift guard); the email confirmation was obtained by polling the booking's `loyaltyEmailSent` marker. Note: the doc's `phone:""` was empty; the owner later clarified — the phone was simply never entered (only birthday + email were added), there's NO issue in Clients edit.
 
-**Dersler / Lessons Learned:**
-- **"Kopya kayıt yok ama davranış kopya-kayıt gibi" = kimlik bölünmesi UI katmanında olabilir.** Firestore temizken dropdown/liste kurulum mantığına bak — kimlik anahtarı zamanla değişen kişiyi böler.
-- **Kontak kazanmak bir kimlik-geçiş anıdır:** `phone||email||name` gibi tekli-anahtar şemalarda kişinin anahtarı değişir; eski kayıtlar eski anahtarda kalır. Birleştirme çoklu-index ister.
-- **Erken-dönen trigger talep bayrağını temizlemeli** — `sendLoyaltyEmail:true` takılı kalınca hem durum yanıltıcı ("gönderilecek" görünür) hem yeniden tetikleme iki yazım ister.
-- **TS migration davranış bug'ı düzeltmez (bilerek):** type-only anayasası gereği migration dilimleri mantığa dokunmaz; "TS geçince düzelir" beklentisi bu sınıf hatalar için geçersiz — ayrı `fix:` commit'i gerekir.
+**Lessons Learned:**
+- **"No duplicate record but the behavior is like a duplicate record" = the identity split may be in the UI layer.** When Firestore is clean, look at the dropdown/list build logic — an identity key that changes over time splits the person.
+- **Gaining contact is an identity-transition moment:** in single-key schemes like `phone||email||name` the person's key changes; old records stay on the old key. Merging requires a multi-index.
+- **An early-returning trigger must clear the request flag** — a stuck `sendLoyaltyEmail:true` both makes the state misleading ("will be sent" appears) and requires two writes to re-trigger.
+- **TS migration does not fix a behavior bug (deliberately):** by the type-only constitution, migration slices don't touch logic; the expectation "it'll fix itself when TS lands" is invalid for this class of bug — a separate `fix:` commit is needed.
 
-## 2026-07-06 — Marketing listesi opt-out/suppressed kişileri gösteriyordu (liste ≠ gönderim)
+## 2026-07-06 — The Marketing list showed opt-out/suppressed people (list ≠ send)
 
-**Severity:** 🟡 Medium · **Owner:** Claude (Opus 4.8 · owner bildirdi) · **Status:** ✅ Resolved
+**Severity:** 🟡 Medium · **Owner:** Claude (Opus 4.8 · owner reported) · **Status:** ✅ Resolved
 
-**Impact:** Owner, Marketing kampanya alıcı listesinde **unsubscribe / bounce / spam olmuş kişileri** görüyordu ("email gitmiş / opt-out kişi listede görünmemeli"). Gerçekte o kişilere email **gitmiyordu** (sunucu gönderim guard'ı doğru atlıyordu) — sorun **yalnız gösterim**di: liste, gerçek gönderimden daha gevşekti → yanıltıcı.
-**Root Cause:** Suppression verisi salOWN'da vardı ama **listeye bağlı değildi.** `salownBrevoWebhook` (`functions/index.js:4213`) Brevo event'lerini `tenants/{id}/emailEvents/{key}`'e `suppressed:true` olarak yazıyor + eşleşen client doc'a `emailOptOut` mirror'lıyor — AMA mirror yalnız **exact-email client doc'u olan** kişide çalışıyor (`:4253` `where email==`, limit 5). Client doc'u olmayan (walk-in/aggregator) veya email'i harf/boşluk uyumsuz kişide mirror atlanıyor; suppress bilgisi sadece `emailEvents`'te kalıyor. Liste ise (`buildAudience` → `BulkCampaignPanel`) `emailOptOut`'u **yalnız client doc'tan** okuyor, `emailEvents`'i hiç okumuyordu (`audienceUtils.js:114`). `emailEvents` frontend'e yükleniyordu (`Marketing.jsx:249`) ama sadece re-engagement STATS paneli için kullanılıyordu, gönderim listesi için değil.
-**Resolution:** `cf62f72` (push→CI, salown.com). `buildAudience(bookings, clients, emailEvents)` — 3. arg opt-in (default `[]`, diğer çağıranlar Overview/Customers değişmedi). `emailEvents`'ten normalize-email ile `suppressed` set'i kuruluyor, `emailOptOut`'a katlanıyor (`emailOptOut: clientDoc.emailOptOut || suppressedEmails.has(normEmail(email))`) + şeffaflık için `brevoSuppressed` alanı. `BulkCampaignPanel`'e dokunulmadı — mevcut `:178` opt-out filtresi artık Brevo-suppressed'leri de eliyor. Lokalde doğrulandı: liste render OK, "76 will receive · 1 unsubscribed (skipped)", walk-in kontaklar kapsamda. Yan fayda: "Unsubscribed" paneli de artık Brevo çıkışlılarını gösteriyor.
-**Prevention:** Bir suppression/opt-out mekanizması varsa, onu tüketen HER yüzey (gösterim + gönderim) **aynı kaynak(lar)dan** okumalı. Send guard `emailOptOut` + `emailOptOuts` koleksiyonu + (artık) `emailEvents.suppressed`'i kontrol ederken listenin yalnız client-doc bayrağına bakması = liste-gönderim tutarsızlığı. Kural: "kim email alır" tek bir predicate'ten türesin. **KALAN (#2) → ✅ ÇÖZÜLDÜ (2026-07-14, `1bf3416`):** bulk-send artık her başarılı alıcıya damga yazıyor — `lastMarketingSentAt` her gönderimde, `reengagementSentAt` lapsed/re-engage'te (BulkCampaignPanel lapsed segmentlerde `campaignType:'re-engagement'` yollar), `birthdayCampaignYear` birthday'de; doc'suz re-engage alıcısına C5-A find-or-create (tek clients snapshot'a karşı, per-alıcı scan yok) + her gönderim `campaignsSent`'e loglanır. "Slipping away" kart sayacı da compose filtresiyle aynı 30g suppress'i uyguluyor. Bu bug yüzünden whitecross lapsed30'a 9 günde 3 kez aynı blast'i attı (04/06/13 Temmuz); 13 Temmuz koşusunun 75 alıcısı script'le geriye dönük damgalandı (75/75 isim→doc eşleşti). Residual: liste hâlâ `all`/`haspoints` segmentlerinde "son N günde gönderilen"i gizlemiyor (veri artık var: `lastMarketingSentMs` audience'ta okunuyor, UI filtresi ileride). Bkz [[project-lapsed-dedup-limitation]].
+**Impact:** The owner was seeing **people who had unsubscribed / bounced / been marked spam** in the Marketing campaign recipient list ("someone who was emailed / opted out shouldn't appear in the list"). In reality email was **not going** to those people (the server send guard was correctly skipping them) — the problem was **display only**: the list was looser than the actual send → misleading.
+**Root Cause:** The suppression data existed in salOWN but was **not connected to the list.** `salownBrevoWebhook` (`functions/index.js:4213`) writes Brevo events to `tenants/{id}/emailEvents/{key}` as `suppressed:true` + mirrors `emailOptOut` onto the matching client doc — BUT the mirror works only for a person who **has an exact-email client doc** (`:4253` `where email==`, limit 5). For someone without a client doc (walk-in/aggregator) or whose email is letter/space-mismatched, the mirror is skipped; the suppress info stays only in `emailEvents`. The list, meanwhile (`buildAudience` → `BulkCampaignPanel`), read `emailOptOut` **only from the client doc** and never read `emailEvents` (`audienceUtils.js:114`). `emailEvents` was loaded to the frontend (`Marketing.jsx:249`) but used only for the re-engagement STATS panel, not for the send list.
+**Resolution:** `cf62f72` (push→CI, salown.com). `buildAudience(bookings, clients, emailEvents)` — the 3rd arg is opt-in (default `[]`, other callers Overview/Customers unchanged). A `suppressed` set is built from `emailEvents` via normalize-email, folded into `emailOptOut` (`emailOptOut: clientDoc.emailOptOut || suppressedEmails.has(normEmail(email))`) + a `brevoSuppressed` field for transparency. `BulkCampaignPanel` was not touched — its existing `:178` opt-out filter now also eliminates Brevo-suppressed ones. Verified locally: list renders OK, "76 will receive · 1 unsubscribed (skipped)", walk-in contacts in scope. Side benefit: the "Unsubscribed" panel now also shows the Brevo opt-outs.
+**Prevention:** If a suppression/opt-out mechanism exists, EVERY surface that consumes it (display + send) must read from **the same source(s)**. When the send guard checks `emailOptOut` + the `emailOptOuts` collection + (now) `emailEvents.suppressed`, but the list only looks at the client-doc flag = a list-send inconsistency. Rule: "who gets an email" must derive from a single predicate. **REMAINING (#2) → ✅ RESOLVED (2026-07-14, `1bf3416`):** bulk-send now stamps every successful recipient — `lastMarketingSentAt` on every send, `reengagementSentAt` on lapsed/re-engage (BulkCampaignPanel sends `campaignType:'re-engagement'` on lapsed segments), `birthdayCampaignYear` on birthday; a doc-less re-engage recipient gets C5-A find-or-create (against a single clients snapshot, no per-recipient scan) + every send is logged to `campaignsSent`. The "Slipping away" card counter also applies the same 30d suppress as the compose filter. Because of this bug whitecross sent the same blast to lapsed30 3 times in 9 days (04/06/13 July); the 75 recipients of the 13 July run were retroactively stamped by a script (75/75 name→doc matched). Residual: the list still doesn't hide "sent in the last N days" on the `all`/`haspoints` segments (the data now exists: `lastMarketingSentMs` is read in the audience, a UI filter later). See [[project-lapsed-dedup-limitation]].
 
-**Ne oldu / Teşhis / Fix:** Owner "email gitmiş + opt-out kişiler listede görünmemeli" dedi. İlk teşhiste liste ile gönderim guard'ı ayrı filtreler kullanıyor sanıldı; owner "biz Brevo hook'unu birkaç gün önce kurduk, detaylar içeride olmalı" deyince `salownBrevoWebhook` + `emailEvents` + `ROADMAP:135` bulundu → veri zaten toplanıyordu, sadece liste tüketmiyordu. Fix = mevcut veriyi bağlamak (sıfırdan tracking değil).
+**What happened / Diagnosis / Fix:** The owner said "people who were emailed + opted out shouldn't appear in the list". At first it was assumed the list and the send guard used separate filters; when the owner said "we set up the Brevo hook a few days ago, the details must be inside", `salownBrevoWebhook` + `emailEvents` + `ROADMAP:135` were found → the data was already being collected, only the list wasn't consuming it. Fix = connect the existing data (not tracking from scratch).
 
-**Dersler / Lessons Learned:**
-- **"Liste ≠ gönderim" = neredeyse her zaman gösterim bug'ı, veri değil.** Gönderim doğru atlıyordu; panik etmeden önce gerçek gönderim guard'ına bakınca kimseye yanlış mail gitmediği görüldü.
-- **Toplanan veri ≠ bağlanan veri.** `emailEvents` webhook'la doluyordu ve STATS panelinde kullanılıyordu ama gönderim listesine bağlı değildi — "içeride var" ≠ "doğru yerde kullanılıyor". Yeni veri kaynağı eklerken TÜM tüketicilerini de bağla.
-- **Suppression tek predicate.** Opt-out üç yere yazılabiliyor (client `emailOptOut`, `emailOptOuts` koleksiyonu, `emailEvents.suppressed`); her yüzey üçünü de okumalı yoksa yüzeyler ayrışır.
-- Owner'ın "biz bunu planlamıştık, hook'u kurmuştuk" hatırlatması kritikti — sıfırdan çözüm yerine mevcut altyapıyı bulmaya yönlendirdi.
+**Lessons Learned:**
+- **"List ≠ send" = almost always a display bug, not a data one.** The send was correctly skipping; before panicking, looking at the actual send guard showed no one had been wrongly emailed.
+- **Collected data ≠ connected data.** `emailEvents` was being filled by the webhook and used in the STATS panel but was not connected to the send list — "it exists inside" ≠ "it's used in the right place". When adding a new data source, connect ALL of its consumers too.
+- **Suppression is a single predicate.** Opt-out can be written to three places (client `emailOptOut`, the `emailOptOuts` collection, `emailEvents.suppressed`); every surface must read all three or the surfaces diverge.
+- The owner's "we planned this, we set up the hook" reminder was critical — it steered toward finding the existing infrastructure instead of a from-scratch solution.
 
-## 2026-07-05 — Walk-in/booking client search: eşleşen ama link'lenmemiş müşteri = sessiz kopya kayıt
+## 2026-07-05 — Walk-in/booking client search: a matched-but-not-linked customer = a silent duplicate record
 
-**Severity:** 🟠 High · **Owner:** Claude (Opus 4.8 · Arda bildirdi) · **Status:** ✅ Resolved
+**Severity:** 🟠 High · **Owner:** Claude (Opus 4.8 · Arda reported) · **Status:** ✅ Resolved
 
-**Impact:** Arda walk-in/booking eklerken müşteri adını yazıp **isim çıkınca klavyeden Enter'a basıyordu** (doğal kas hafızası: yaz→Enter→seç) — ama **gördüğü kişi atanmıyordu**. Seçmeden devam edip kaydedince booking mevcut client'a bağlanmıyor, isim-only, telefon/email/docId'siz **kopya kayıt** yazılıyordu → ziyaret geçmişi + loyalty **kopuk**, duplicate client. Sessizdi (ne hata ne uyarı) ve Arda bunu **bir süredir canlı kullanımda** söylüyordu.
-**Root Cause:** İKİ katmanlı. (1) `WalkInForm.jsx` client search input'unda **`onKeyDown` handler'ı HİÇ YOKTU → Enter ölü tuştu**; klavyeyle seçim imkânsızdı, link SADECE fare ile dropdown satırının `onClick`'inde (`setSelectedClient`) oluyordu. Arda'nın "yaz→Enter" refleksi bu yüzden hiçbir zaman link yapmıyordu (her tuş vuruşu ayrıca `setSelectedClient(null)`). (2) Kaydetmede `name: selectedClient ? selectedClient.name : titleCase(search.trim())` — anonim walk-in için **meşru, load-bearing** fallback; AMA "eşleşme ekranda görünüyor ama seçilmedi" durumunu da SESSİZCE aynı dala sokuyordu. İki farklı senaryo (yeni/anonim müşteri **vs** eşleşen-ama-linklenmemiş) tek dala çöktüğü için biri veriyi bozuyordu. Yani gerçek tetikleyici "tıklamayı unutmak" değil, **beklenen etkileşimin (Enter) hiç bağlı olmaması**ydı.
-**Resolution:** `07fb06c` (push→CI, salown.com panel). Dört guard (walk-in + booking sekmesi, paylaşılan `clientSearchBlock`+`resolveClientForSave`): (2) **klavye** ↑/↓ highlight + Enter yalnız highlighted VEYA **tek** eşleşme (birden fazlada tahmin yok — "B safer") + Esc — **Arda'nın yaz→Enter akışının ASIL düzeltmesi**; (1) **exact tam-isim** → tek net eşleşme auto-link; (3) **amber "Not linked — did you mean X? [Link]" banner** (`nearMatch`); (4) **save-time backstop** `resolveClientForSave()` → bağlantısız-ama-eşleşen isimle Save/Checkout'ta `window.confirm` (link-existing vs add-new). + dropdown satırlarına `onMouseDown preventDefault` (blur-timeout tıklamayı yutmasın). Staff `NewBookingSheet.jsx` bu tuzağa sahip DEĞİL (walk-in düz isim input, appointment `ClientSearch onSelect`) → dokunulmadı.
-**Prevention:** "Bul → seçmek için TIKLA" tipi autocomplete'lerde **kaydetme anında** bir backstop olmalı: yazılı değer mevcut bir kayda eşleşiyor ama link'lenmemişse SESSİZCE orphan yazma — sor ya da auto-link. **Load-bearing bir fallback ikinci bir meşru-olmayan durumu da yutuyorsa orası latent bug'dır.** Aynı "typed-but-unlinked" deseni başka arama yüzeylerinde de riskli: **Reschedule modal** client değişimi, **Clients merge-drag**, **campaign audience** arama → aynı guard'ı düşün.
+**Impact:** When adding a walk-in/booking, Arda would type the customer name and, **when the name appeared, press Enter on the keyboard** (natural muscle memory: type→Enter→select) — but **the person he saw was not being assigned**. Continuing without selecting and saving, the booking was not linked to the existing client, and a name-only **duplicate record** without phone/email/docId was written → visit history + loyalty **disconnected**, a duplicate client. It was silent (no error, no warning) and Arda had been saying this **for a while in live use**.
+**Root Cause:** TWO layers. (1) The `WalkInForm.jsx` client search input had **NO `onKeyDown` handler AT ALL → Enter was a dead key**; keyboard selection was impossible, the link happened ONLY via mouse on the dropdown row's `onClick` (`setSelectedClient`). Arda's "type→Enter" reflex therefore never linked (and every keystroke also `setSelectedClient(null)`). (2) On save, `name: selectedClient ? selectedClient.name : titleCase(search.trim())` — a **legitimate, load-bearing** fallback for an anonymous walk-in; BUT it also SILENTLY routed the "a match is on screen but wasn't selected" case into the same branch. Because two different scenarios (new/anonymous customer **vs** matched-but-not-linked) collapsed into one branch, one of them was corrupting the data. So the real trigger was not "forgetting to click" but **the expected interaction (Enter) never being wired up at all**.
+**Resolution:** `07fb06c` (push→CI, salown.com panel). Four guards (walk-in + booking tab, shared `clientSearchBlock`+`resolveClientForSave`): (2) **keyboard** ↑/↓ highlight + Enter only on a highlighted OR a **single** match (no guessing on multiple — "B safer") + Esc — **the ACTUAL fix for Arda's type→Enter flow**; (1) **exact full-name** → a single clear match auto-links; (3) an **amber "Not linked — did you mean X? [Link]" banner** (`nearMatch`); (4) a **save-time backstop** `resolveClientForSave()` → on Save/Checkout with an unlinked-but-matching name, a `window.confirm` (link-existing vs add-new). + `onMouseDown preventDefault` on the dropdown rows (so a blur-timeout doesn't swallow the click). The staff `NewBookingSheet.jsx` does NOT have this trap (walk-in is a plain name input, appointment is `ClientSearch onSelect`) → not touched.
+**Prevention:** In "find → CLICK to select" autocompletes, there must be a backstop **at save time**: if the typed value matches an existing record but isn't linked, don't SILENTLY write an orphan — ask or auto-link. **If a load-bearing fallback also swallows a second illegitimate case, that's a latent bug.** The same "typed-but-unlinked" pattern is risky on other search surfaces too: **Reschedule modal** client change, **Clients merge-drag**, **campaign audience** search → consider the same guard.
 
-**Ne oldu / Teşhis / Fix:** Arda "arıyorum, buluyorum ama tıklamadan atamıyor" dedi. Teşhis: kod tip-doğruydu, çökme/exception yoktu; sorun `selectedClient=null` iken typed-name fallback'inin near-match'i de sessizce yutması (anonim-walk-in fallback'i near-match durumunu maskeliyordu). Lokal Chrome'da uçtan uca doğrulandı: isim yaz → tıklama → banner çıktı, [Link] → linked chip; **Total 13 sabit** = hiç test verisi yazılmadı. Sadece `WalkInForm.jsx` explicit-path commit; staff-bundle (başka session) + aerulas `b9c5b2e` (o sırada origin'e zaten push'lanmıştı) dokunulmadı → push YALNIZ kendi commit'i deploy etti. CI run #225 = success.
+**What happened / Diagnosis / Fix:** Arda said "I search, I find, but it doesn't assign without clicking". Diagnosis: the code was type-correct, there was no crash/exception; the problem was that with `selectedClient=null` the typed-name fallback also silently swallowed the near-match (the anonymous-walk-in fallback masked the near-match case). Verified end-to-end in local Chrome: type name → click → banner appeared, [Link] → linked chip; **Total 13 stayed fixed** = no test data was written. Only the `WalkInForm.jsx` explicit-path commit; the staff-bundle (another session) + aerulas `b9c5b2e` (already pushed to origin by then) were not touched → the push deployed ONLY its own commit. CI run #225 = success.
 
-**Dersler / Lessons Learned:**
-- **"Buluyorum ama atamıyor" = beklenen tuş hiç bağlı olmayabilir.** Gerçek sebep "tıklamayı unutmak" değil, input'ta `onKeyDown` olmaması → **Enter ölü tuş**. Kullanıcı şikayetini birebir tekrarlat (Arda'nın yaptığı: yaz→**Enter**, tıklama değil) — yanlış zihinsel modelle teşhis ("tıklamadı") asıl kök nedeni (Enter bağlı değil) gölgeler. Aranabilir/seçilebilir her autocomplete klavye seçimini (Enter/↑↓) desteklemeli.
-- **Bir süredir gelen tekrarlayan kullanıcı şikayeti = önceliklendir.** Arda bunu uzun süre söyledi; "muhtemelen tıklamıyordur" diye ertelenirken sessizce kopya client birikiyordu. Tekrar eden operasyonel şikayet, sessiz veri kaybının sinyali olabilir.
-- **Latent _data_ bug ≠ UX pürüzü:** ölçüt = sessizce **kalıcı yanlış state** üretiyor mu? Kopya client + kopuk loyalty/geçmiş → evet, bug. Sadece "bir tık fazla, veri doğru" olsaydı saf UX'ti.
-- **Load-bearing fallback içine gizlenen bug:** anonim-walk-in fallback'i doğru bir quirk'ti ama ikinci bir senaryoyu da yutuyordu — "doğru görünen kodun ikinci işi". KNOWN_QUIRKS (kasıtlı) vs latent (kaza) ayrımı tam burada.
-- **TypeScript yakalamazdı:** `null` selectedClient geçerli state, fallback geçerli dal → tip değil **mantık/veri** hatası. TS'in kör noktası (bkz TS-geçiş kararı).
-- "Bul-ama-tıkla" autocomplete'lerinde **save-time guard + tek-net-eşleşme auto-link** kalıcı kalıp olsun; near-match'i sessizce yeni-kayıt yapma.
+**Lessons Learned:**
+- **"I find it but it doesn't assign" = the expected key may not be wired at all.** The real cause was not "forgetting to click" but the absence of `onKeyDown` on the input → **Enter a dead key**. Reproduce the user's complaint literally (what Arda did: type→**Enter**, not click) — diagnosing with the wrong mental model ("didn't click") shadows the actual root cause (Enter not wired). Every searchable/selectable autocomplete must support keyboard selection (Enter/↑↓).
+- **A recurring user complaint over time = prioritize it.** Arda said it for a long time; while it was being deferred as "he's probably not clicking", duplicate clients were silently accumulating. A recurring operational complaint can be a signal of silent data loss.
+- **A latent _data_ bug ≠ a UX rough edge:** the criterion = does it silently produce a **persistently wrong state**? Duplicate client + disconnected loyalty/history → yes, a bug. If it were merely "one extra click, data correct" it would be pure UX.
+- **A bug hidden inside a load-bearing fallback:** the anonymous-walk-in fallback was a correct quirk but was also swallowing a second scenario — "the second job of code that looks correct". The distinction between KNOWN_QUIRKS (deliberate) and latent (accidental) is exactly here.
+- **TypeScript would not have caught it:** `null` selectedClient is valid state, the fallback is a valid branch → not a type but a **logic/data** error. TS's blind spot (see the TS-migration decision).
+- In "find-but-click" autocompletes, make **save-time guard + single-clear-match auto-link** a permanent pattern; don't silently create a new record for a near-match.
 
 ## 2026-07-04 — Off-day barber bookable (empty-day fast path skipped schedule)
 
 **Severity:** 🟠 High · **Owner:** Claude (Opus 4.8) · **Status:** ✅ Resolved
 
-**Impact:** Müşteri, o gün **off olan** bir barber'a online booking yapabildi (Alex Salı çalışmıyor ama 7 Tem Salı 10:15'e Alex'e CONFIRMED booking düştü — üstelik ödemeli). Yanlış barber'a randevu = operasyonel karışıklık.
-**Root Cause:** `BookingPage.getAvailableSlots` iki yollu: **busy-day yolu** (o gün booking varsa) `getBarberSchedule` ile working-days/hours doğru filtreliyordu; ama **empty-day fast path** (`existingBookings.length === 0`) HİÇ program kontrolü yapmadan TÜM eligible barber'ları "free" işaretliyordu → boş günde (Salı, o gün booking yok) off-barber hem auto-assign'e hem seçim listesine giriyordu. Ek: `handleSubmit` fallback `barbers[0]`'a düşüyordu (program-kör).
-**Resolution:** `0ffabf4` (push→CI). Fast path artık `getBarberSchedule(b, date)` + slot-saati ile filtreliyor (busy-day yolunun aynısı); off/aralık-dışı barber `free` sayılmıyor, slot'ta çalışan yoksa `available:false`. `handleSubmit` fallback = o gün çalışan ilk barber (`barbers.find(b => getBarberSchedule(b, selectedDate))`), asla `barbers[0]`. Tenant-agnostic (her barber'ın `workingDays`/`shiftChanges`'i).
-**Prevention:** Availability'nin İKİ yolu (fast/busy) da AYNI kuralları uygulamalı — "boş gün = herkes müsait" kısayolu working-days'i atlar. Kural: barber müsaitliği = shop-open ∧ barber-working-day ∧ barber-hours ∧ slot-boş; hiçbir yol bunlardan birini atlamamalı. Aynı desen reschedule/manage'de de var (bkz 2026-06-29 off-day ghost booking) — tekrar eden kalıp.
+**Impact:** A customer was able to book online with a barber who was **off that day** (Alex doesn't work Tuesdays but a CONFIRMED booking with Alex landed for Tue 7 Jul 10:15 — and paid). An appointment with the wrong barber = operational confusion.
+**Root Cause:** `BookingPage.getAvailableSlots` is two-path: the **busy-day path** (if there are bookings that day) filtered working-days/hours correctly via `getBarberSchedule`; but the **empty-day fast path** (`existingBookings.length === 0`) marked ALL eligible barbers "free" WITHOUT any schedule check → on an empty day (Tuesday, no bookings) an off-barber entered both the auto-assign and the selection list. Also: `handleSubmit` fell back to `barbers[0]` (schedule-blind).
+**Resolution:** `0ffabf4` (push→CI). The fast path now filters by `getBarberSchedule(b, date)` + slot-time (the same as the busy-day path); an off/out-of-range barber is not counted `free`, and if no one works at that slot, `available:false`. The `handleSubmit` fallback = the first barber working that day (`barbers.find(b => getBarberSchedule(b, selectedDate))`), never `barbers[0]`. Tenant-agnostic (each barber's `workingDays`/`shiftChanges`).
+**Prevention:** BOTH availability paths (fast/busy) must apply the SAME rules — the "empty day = everyone available" shortcut skips working-days. Rule: barber availability = shop-open ∧ barber-working-day ∧ barber-hours ∧ slot-free; no path may skip any of these. The same pattern exists in reschedule/manage too (see 2026-06-29 off-day ghost booking) — a recurring pattern.
 
-**Dersler / Lessons Learned:**
-- "Boş veri = her şey serbest" fast-path'leri tehlikeli: doğru yolun tüm guard'larını taşımalı, yoksa yalnız-boş-durumda sessiz açık.
-- Barber auto-assign SADECE o gün+saat çalışan barber'lara atamalı; display-list (freeBarbers) = auto-assign havuzu = aynı filtre.
-- 2. kez benzer off-day bug (önce reschedule/manage `5476238`, şimdi booking) → availability mantığı tek helper'a (`getBarberSchedule`) dayanmalı, her call-site onu kullanmalı.
+**Lessons Learned:**
+- "Empty data = everything allowed" fast-paths are dangerous: they must carry all the guards of the correct path, otherwise there's a silent hole only-in-empty-state.
+- Barber auto-assign must assign ONLY to barbers working that day+time; display-list (freeBarbers) = auto-assign pool = the same filter.
+- A 2nd similar off-day bug (first reschedule/manage `5476238`, now booking) → availability logic must rest on a single helper (`getBarberSchedule`), and every call-site must use it.
 
 ## 2026-07-04 — "Connect with Stripe" internal error (Firestore odd-path)
 
 **Severity:** 🟠 High · **Owner:** Claude (Opus 4.8) · **Status:** ✅ Resolved
 
-**Impact:** Owner Settings→Integrations'ta "Connect with Stripe"e basınca `internal` hatası — Stripe Connect onboarding hiç başlamıyordu (hem local hem salown.com).
-**Root Cause:** `salownConnectStart` CSRF nonce'unu `superAdmin/oauthStates/${nonce}` yoluna yazıyordu = **3 segment** (odd). Firestore `.doc()` çift-segment ister; 3 segment koleksiyon yolu → `Value for argument "documentPath" must point to a document ... does not contain an even number of components` → unhandled → callable `internal`.
-**Resolution:** yol `superAdmin/oauthStates/nonces/${nonce}` (4 segment) yapıldı; yazan (`salownConnectStart`) + okuyan (`salownConnectCallback`) İKİSİ de düzeltildi + targeted deploy (`functions:salown:salownConnectStart,salownConnectCallback`).
-**Prevention:** Firestore `.doc(path)` string'lerinde segment sayısı **çift** olmalı (collection/doc/collection/doc…); `.collection()` tek. Yeni path yazarken say. Faz 0 kodu deploy edilmiş ama HİÇ çalıştırılmamıştı → "deployed ≠ tested"; secret/happy-path'i deploy sonrası bir kez tetikle.
+**Impact:** When the owner pressed "Connect with Stripe" in Settings→Integrations, an `internal` error — Stripe Connect onboarding never started (both local and salown.com).
+**Root Cause:** `salownConnectStart` wrote the CSRF nonce to the path `superAdmin/oauthStates/${nonce}` = **3 segments** (odd). Firestore `.doc()` requires an even number of segments; a 3-segment collection path → `Value for argument "documentPath" must point to a document ... does not contain an even number of components` → unhandled → callable `internal`.
+**Resolution:** The path was made `superAdmin/oauthStates/nonces/${nonce}` (4 segments); BOTH the writer (`salownConnectStart`) + the reader (`salownConnectCallback`) were fixed + targeted deploy (`functions:salown:salownConnectStart,salownConnectCallback`).
+**Prevention:** In Firestore `.doc(path)` strings the segment count must be **even** (collection/doc/collection/doc…); `.collection()` is odd. Count when writing a new path. The Phase 0 code was deployed but had NEVER been run → "deployed ≠ tested"; trigger the secret/happy-path once after deploy.
 
-**Dersler / Lessons Learned:**
-- Odd/even segment kuralı: `.doc()` çift, `.collection()` tek. Nested state için `col/doc/col/doc` (örn. `superAdmin/oauthStates/nonces/{id}`), `col/doc/{id}` değil.
-- Deploy edilmiş ama tetiklenmemiş kod = test edilmemiş kod. Faz 0 haftalar önce yazıldı, ilk gerçek tık bugün → bug bugün çıktı. Kritik happy-path'i deploy günü smoke'la.
+**Lessons Learned:**
+- The odd/even segment rule: `.doc()` even, `.collection()` odd. For nested state use `col/doc/col/doc` (e.g. `superAdmin/oauthStates/nonces/{id}`), not `col/doc/{id}`.
+- Deployed-but-never-triggered code = untested code. Phase 0 was written weeks ago, the first real click was today → the bug surfaced today. Smoke the critical happy-path on deploy day.
 
-## 2026-07-03 — Checkout özet paneli add-on'ları göstermiyordu (Subtotal eksik, Total doğru)
+## 2026-07-03 — The checkout summary panel wasn't showing add-ons (Subtotal missing, Total correct)
 
 **Severity:** 🟢 Low · **Owner:** Claude (Opus 4.8) · **Status:** ✅ Resolved
 
-**Impact:** Owner checkout'ta servise "Nose Wax £6" add-on ekledi; sağdaki özet panelinde **Subtotal £28** (add-on'suz) kalıyor, add-on satırı hiç görünmüyordu — ama **Total £40 doğruydu**. Subtotal+Tip (£28+£6) ≠ Total (£40) → tutarsız/yanıltıcı göründü ("eklediğim extra breakdown'a girmiyor"). **Veri ve receipt HER ZAMAN doğruydu** (booking `soldAddOns`, Service total £34, receipt "Nose Wax Add-on £6" hepsi doğru); sorun yalnızca checkout ekranındaki canlı gösterim.
-**Root Cause:** `CheckoutPanel.jsx` `SummaryPanel`'e `localExtras` (add-on'lar) **hiç geçilmiyordu**. Panel yalnız `localProducts`'ı topluyor, `Subtotal = basePrice + productsTotal` — `addOnsTotal` eksik. `total` prop'u ise parent'ta add-on dahil hesaplandığı için (`startingTotal = basePrice + productsTotal + addOnsTotal`, `:687`) doğru geliyordu → Subtotal ile Total arasında add-on kadar fark. Latent bug (ürünler gösteriliyordu, add-on'lar hiç eklenmemişti).
-**Resolution:** `CheckoutPanel.jsx` (+13/−2): `SummaryPanel`'e `localExtras` prop'u geçirildi; `addOnsTotal = getProductsTotal(localExtras)`; ürün bloğunun altına amber add-on bloğu (isim·£) eklendi; `Subtotal = basePrice + productsTotal + addOnsTotal`. Build sıfır-hata (`CheckoutPanel-Ck-OpAyi.js`). Deploy: salown.com `npm run deploy:panel` (staff app AYRI checkout, etkilenmedi).
-**Prevention:** Bir para özeti hem "kalem listesi" hem "Subtotal" gösteriyorsa, ikisi de **aynı kaynaktan** (products **+ extras + service**) türemeli; Total ayrı formülden gelip kalem toplamıyla uyuşmuyorsa gösterim eksik demektir. Add-on = ürünle aynı `getProductsTotal` şekli, unutulması kolay ikinci dizi.
+**Impact:** The owner added a "Nose Wax £6" add-on to the service at checkout; in the summary panel on the right, **Subtotal £28** (no add-on) remained and the add-on line never appeared — but **Total £40 was correct**. Subtotal+Tip (£28+£6) ≠ Total (£40) → looked inconsistent/misleading ("the extra I added doesn't enter the breakdown"). **The data and receipt were ALWAYS correct** (booking `soldAddOns`, Service total £34, receipt "Nose Wax Add-on £6" all correct); the problem was only the live display on the checkout screen.
+**Root Cause:** `CheckoutPanel.jsx` **never passed** `localExtras` (add-ons) to `SummaryPanel`. The panel only summed `localProducts`, `Subtotal = basePrice + productsTotal` — `addOnsTotal` missing. The `total` prop, however, came correct because in the parent it's computed with add-ons included (`startingTotal = basePrice + productsTotal + addOnsTotal`, `:687`) → hence a gap between Subtotal and Total equal to the add-on. A latent bug (products were shown, add-ons had never been added).
+**Resolution:** `CheckoutPanel.jsx` (+13/−2): the `localExtras` prop was passed to `SummaryPanel`; `addOnsTotal = getProductsTotal(localExtras)`; an amber add-on block (name·£) added below the product block; `Subtotal = basePrice + productsTotal + addOnsTotal`. Build zero-error (`CheckoutPanel-Ck-OpAyi.js`). Deploy: salown.com `npm run deploy:panel` (the staff app has a SEPARATE checkout, unaffected).
+**Prevention:** If a money summary shows both a "line-item list" and a "Subtotal", both must derive from **the same source** (products **+ extras + service**); if the Total comes from a separate formula and doesn't match the line total, the display is missing something. An add-on = the same `getProductsTotal` shape as a product, an easy-to-forget second array.
 
-**Dersler / Lessons Learned:**
-- "Total doğru ama breakdown yanlış" = neredeyse her zaman **gösterim** bug'ı, veri değil — önce persistan doc + receipt'e bak (ikisi de doğruysa panik yok).
-- `soldProducts` ve `soldAddOns` İKİ ayrı dizi; bir yüzey ürünü gösterip add-on'u unutabiliyor (bkz aynı gün Staff/Panel Sales görünürlük işi — kalıp aynı: add-on/product ikinci diziyi kaçırmak).
+**Lessons Learned:**
+- "Total correct but breakdown wrong" = almost always a **display** bug, not data — look first at the persistent doc + receipt (if both are correct, no panic).
+- `soldProducts` and `soldAddOns` are TWO separate arrays; a surface can show the product and forget the add-on (see the same-day Staff/Panel Sales visibility work — the same pattern: missing the second add-on/product array).
 
-## 2026-07-03 — Mesai-dışı "Busy" quick-block grid'de görünmedi → silinemeyen hayalet kayıt
+## 2026-07-03 — An after-hours "Busy" quick-block didn't show in the grid → an un-deletable ghost record
 
 **Severity:** 🟡 Medium · **Owner:** Claude (Opus 4.8) · **Status:** ✅ Resolved
 
-**Impact:** Whitecross'ta owner tüm takıma **23:44'te bir "Busy" quick-block** attı (scope 'all' → alex/arda/muhamed, 23:44→ertesi 00:44 gece-yarısı geçen). Kayıtlar Calendar Day grid'inde görünmedi → tıklanıp silinemediler. Owner ayrıca "Alex'e off veremiyorum, booking var diyor" sandı.
-**Root Cause:** `TimeGrid.jsx` görünür pencereyi `GRID_START = açılış−2s`, `GRID_END = kapanış+2s` ile sabitliyordu. 23:44'lük block, kapanış+2s (~21:00) penceresinin altına düşünce `top = (startMins − GRID_START*60)*…` ekranın altında konumlanıp görünmez oldu ("data valid, UI invalid" — INC 2026-06-29 hayalet-booking ailesi, farklı sebep: off-day değil, **mesai-dışı saat**). İkincil: `Barbers.jsx` "Off today" `_todayCount` uyarısı BLOCKED holdleri de sayıyordu → busy block "reassign manually" dedi (ama `markOffToday` ENGELLEMİYOR; off yine verilebilir).
-**Resolution:** (1) 3 hayalet block salt-okunur admin sorguyla bulunup **imza-doğrulamalı** silindi (yalnız `status:BLOCKED·blockKind:busy·note:Busy·02Tem23:44`). (2) `TimeGrid.jsx` (+17/−2): `GRID_START/END` artık `OPEN/CLOSE` ile seed'lenip o günün gerçek kayıtlarını (CANCELLED hariç) kapsayacak şekilde **sadece dışarı** genişliyor — mesai-dışı hiçbir kayıt bir daha görünmez kalmaz. (3) `Barbers.jsx` (+2/−1): `_todayCount` BLOCKED'ı atlar. Commit `7d06c33` PUSHED→CI hosting deploy (tüm tenant Calendar). functions'a dokunulmadı.
-**Prevention:** Grid penceresi artık **veriyi izler** (statik saat kutusu değil) → mesai-dışı kayıt yapısal olarak erişilebilir kalır. Normal günlerde byte-identical (pencere yalnız büyür, `OPEN_MINS/CLOSE_MINS` header/popup için gerçek mesai olarak korunur).
+**Impact:** At Whitecross the owner set a **"Busy" quick-block at 23:44** for the whole team (scope 'all' → alex/arda/muhamed, crossing midnight 23:44→next 00:44). The records didn't show in the Calendar Day grid → they couldn't be clicked and deleted. The owner also thought "I can't give Alex off, it says there's a booking".
+**Root Cause:** `TimeGrid.jsx` fixed the visible window with `GRID_START = open−2h`, `GRID_END = close+2h`. When the 23:44 block fell below the close+2h (~21:00) window, `top = (startMins − GRID_START*60)*…` positioned it below the screen and it became invisible ("data valid, UI invalid" — the INC 2026-06-29 ghost-booking family, different cause: not off-day but **after-hours time**). Secondary: the `Barbers.jsx` "Off today" `_todayCount` warning was also counting BLOCKED holds → the busy block said "reassign manually" (but `markOffToday` does NOT BLOCK; off can still be given).
+**Resolution:** (1) The 3 ghost blocks were found and **signature-verified** deleted via a read-only admin query (only `status:BLOCKED·blockKind:busy·note:Busy·02Jul23:44`). (2) `TimeGrid.jsx` (+17/−2): `GRID_START/END` are now seeded with `OPEN/CLOSE` and expand **outward only** to cover that day's real records (excluding CANCELLED) — no after-hours record ever stays invisible again. (3) `Barbers.jsx` (+2/−1): `_todayCount` skips BLOCKED. Commit `7d06c33` PUSHED→CI hosting deploy (all-tenant Calendar). Functions not touched.
+**Prevention:** The grid window now **follows the data** (not a static time box) → after-hours records stay structurally accessible. On normal days byte-identical (the window only grows, `OPEN_MINS/CLOSE_MINS` are preserved as real hours for the header/popup).
 
-**Ne oldu / Teşhis / Fix:** Owner "dün bir walk-in ya da busy attım, grid'in görünmediği saate, silemiyorum" dedi. Kural #7 gereği önce bu dosya + KNOWN_QUIRKS/INVARIANTS okundu → INC 2026-06-29 "off-day hayalet booking" kalıbı ("grid'de yok = DISPLAY sorunu; önce Firestore'da doc'u DOĞRULA") uygulandı. `firebase-admin` + ADC ile `tenants/whitecross/bookings` 30Haz–6Tem sorgulandı → 3 BLOCKED/busy kaydı 02Tem 23:44'te bulundu. Off-day değil (kolonlar çiziliyor), **saat penceresi** sebebi doğrulandı. Silme imza-guard'lı script'le yapıldı; fix build sıfır-hata doğrulandı.
+**What happened / Diagnosis / Fix:** The owner said "yesterday I set a walk-in or busy at a time the grid doesn't show, and I can't delete it". Per Rule #7, this file + KNOWN_QUIRKS/INVARIANTS were read first → the INC 2026-06-29 "off-day ghost booking" pattern ("not in grid = a DISPLAY problem; first VERIFY the doc in Firestore") was applied. With `firebase-admin` + ADC, `tenants/whitecross/bookings` was queried for 30Jun–6Jul → 3 BLOCKED/busy records were found at 02Jul 23:44. Not off-day (columns are drawn), the **time-window** cause was confirmed. The delete was done with a signature-guarded script; the fix was verified zero-error build.
 
-**Dersler / Lessons Learned:**
-- **Grid gibi "görünür pencere" hesapları statik olmamalı, veriyi kapsamalı.** Kayıt penceresinin dışına düşerse UI'da erişilemez ("ghost") olur — off-day (kolon yok) ve mesai-dışı-saat (kart pencere dışında) iki ayrı görünmezlik sebebi, ikisi de aynı "data valid, UI invalid" sonucunu verir.
-- **"Grid'de yok = create değil DISPLAY sorunu" (INC 2026-06-29 & 2026-06-26 ile aynı ders):** teşhise kod okumakla değil, **Firestore'da doc'u salt-okunur doğrulayarak** başla; sebep (off-day mı, saat mi, barber-eşleşme mi) veriden çıkar.
-- **Production tekil silme = imza-guard'lı script.** Silmeden önce doc'un beklenen imzasını (status/kind/note/tarih) doğrula, uymuyorsa DURDUR — yanlış kaydı silmektense hiç silme.
-- **Uyarı ≠ engel:** `markOffToday` sadece `_todayCount>0` uyarısı gösteriyordu, işlemi bloklamıyordu; "yapamıyorum" şikâyetinde önce gerçekten bloklanıyor mu diye kodu teyit et.
+**Lessons Learned:**
+- **"Visible window" calculations like a grid must not be static; they must cover the data.** If a record falls outside the record window it becomes inaccessible in the UI ("ghost") — off-day (no column) and after-hours-time (card outside the window) are two separate causes of invisibility, both giving the same "data valid, UI invalid" result.
+- **"Not in grid = not a create but a DISPLAY problem" (the same lesson as INC 2026-06-29 & 2026-06-26):** start the diagnosis not by reading code but by **read-only verifying the doc in Firestore**; the cause (off-day, time, or barber-match) emerges from the data.
+- **A production single delete = a signature-guarded script.** Before deleting, verify the doc's expected signature (status/kind/note/date); if it doesn't match, STOP — better to not delete at all than to delete the wrong record.
+- **A warning ≠ a block:** `markOffToday` was only showing a `_todayCount>0` warning, not blocking the operation; on an "I can't" complaint, first confirm in the code whether it's actually being blocked.
 
-## 2026-07-02 — Demo başvurusu approve'u, mevcut bir tenant'ın (eekurt) auth hesabının claim'ini ezdi
+## 2026-07-02 — Approving a demo application overwrote the claim of an existing tenant's (eekurt) auth account
 
 **Severity:** 🟠 High · **Owner:** Claude (Opus 4.8) · **Status:** ✅ Resolved
-**Impact:** H2 P3 test'inde super-admin, KWOLF BARBERS demo başvurusunu (email: `eekurtbookings@gmail.com`) approve etti. Bu email zaten **eekurt tenant'ının giriş hesabıydı** (uid `L6ws…`, `docs/TENANTS.md`). `approveApplication` mevcut hesabı yeniden kullanıp custom claim'ini `{tenantId:eekurt}` → `{tenantId:kwolf-barbers, tenantRole:owner}` yaptı → eekurt hesabı kwolf-barbers'a düştü, eekurt erişimi bu hesap üzerinden bozuldu. Ayrıca davet maili `Domain not allowlisted` ile patladı.
-**Root Cause:** (1) `approveApplication` `getUserByEmail` ile bulduğu mevcut kullanıcının claim'ini **koşulsuz eziyordu** — başka tenant'a ait olup olmadığını kontrol etmiyordu. (2) `generatePasswordResetLink` continue-URL'i `salown.com` Firebase Auth Authorized domains'te değil.
-**Resolution:** Guard eklendi — `getUserByEmail` bir kullanıcı bulur ve `customClaims.tenantId` doluysa approve **reddediyor** (`failed-precondition`), ezmiyor. Mail: `salown.com → salown.web.app → default` fallback zinciri. İkisi de redeploy (`functions:salown:approveApplication`). Temizlik: eekurt + kwolf-barbers Firestore'dan silindi (kullanıcı elle); orphan auth hesabı `eekurtbookings@gmail.com` Authentication'dan silinecek (düşük öncelik).
-**Prevention:** Bir auth kullanıcısının claim'ini yazmadan **önce** o kullanıcının başka bir tenant'a bağlı olup olmadığını kontrol et. Provision/onboarding akışları asla mevcut bir hesabı sessizce başka tenant'a taşımamalı.
+**Impact:** In an H2 P3 test, the super-admin approved the KWOLF BARBERS demo application (email: `eekurtbookings@gmail.com`). This email was already **eekurt tenant's login account** (uid `L6ws…`, `docs/TENANTS.md`). `approveApplication` reused the existing account and changed its custom claim from `{tenantId:eekurt}` → `{tenantId:kwolf-barbers, tenantRole:owner}` → the eekurt account dropped into kwolf-barbers, and eekurt access via this account broke. Also, the invite email blew up with `Domain not allowlisted`.
+**Root Cause:** (1) `approveApplication` was **unconditionally overwriting** the claim of the existing user it found via `getUserByEmail` — it didn't check whether it belonged to another tenant. (2) The `generatePasswordResetLink` continue-URL `salown.com` is not in Firebase Auth Authorized domains.
+**Resolution:** A guard was added — if `getUserByEmail` finds a user and `customClaims.tenantId` is populated, approve **rejects** (`failed-precondition`) instead of overwriting. Email: a `salown.com → salown.web.app → default` fallback chain. Both redeployed (`functions:salown:approveApplication`). Cleanup: eekurt + kwolf-barbers deleted from Firestore (by the user manually); the orphan auth account `eekurtbookings@gmail.com` to be deleted from Authentication (low priority).
+**Prevention:** **Before** writing an auth user's claim, check whether that user is bound to another tenant. Provision/onboarding flows must never silently move an existing account to another tenant.
 
-**Ne oldu / Teşhis / Fix:** P3 (Applications sekmesi + approve→provision) canlıya alındı. İlk gerçek approve testinde başvuru email'i mevcut bir tenant hesabıyla çakıştı. `firebase functions:log` → `invite email failed: Domain not allowlisted by project` (mail); `docs/TENANTS.md` → `eekurtbookings@gmail.com`'un eekurt'ün hesabı olduğu (claim clobber). Tenant kurulumu başarılıydı (approve akışı çalışıyor) ama iki yan bug çıktı. İkisi de kodda düzeltildi + redeploy; test verisi (kwolf-barbers) + eekurt (kullanıcı kararıyla komple) silindi.
+**What happened / Diagnosis / Fix:** P3 (Applications tab + approve→provision) went live. In the first real approve test the application email collided with an existing tenant account. `firebase functions:log` → `invite email failed: Domain not allowlisted by project` (email); `docs/TENANTS.md` → that `eekurtbookings@gmail.com` is eekurt's account (claim clobber). The tenant setup succeeded (the approve flow works) but two side bugs emerged. Both were fixed in code + redeployed; the test data (kwolf-barbers) + eekurt (deleted entirely by the user's decision) were removed.
 
-**Dersler / Lessons Learned:**
-- `setCustomUserClaims` **yıkıcı** bir işlem — mevcut claim'i tamamen değiştirir. Yazmadan önce "bu hesap zaten birine mi ait?" kontrolü şart.
-- `generatePasswordResetLink`/`actionCodeSettings.url` domain'i Firebase Auth **Authorized domains**'te olmalı; custom domain (salown.com) default olarak değil — `salown.web.app` var. Kalıcı çözüm: salown.com'u Authorized domains'e ekle (Console).
-- Firestore console'dan doc silmek **auth kullanıcısını silmez** (ayrı sistem) ve alt-koleksiyonları cascade etmeyebilir — tenant retire ederken üç yeri de düşün: Firestore doc, alt-koleksiyonlar, Auth user.
-- Test verisi için gerçek/mevcut email kullanma (eekurtbookings@) — çakışma riski.
+**Lessons Learned:**
+- `setCustomUserClaims` is a **destructive** operation — it completely replaces the existing claim. Before writing, a "does this account already belong to someone?" check is mandatory.
+- The `generatePasswordResetLink`/`actionCodeSettings.url` domain must be in Firebase Auth **Authorized domains**; a custom domain (salown.com) isn't there by default — `salown.web.app` is. Permanent fix: add salown.com to Authorized domains (Console).
+- Deleting a doc from the Firestore console **does not delete the auth user** (a separate system) and may not cascade sub-collections — when retiring a tenant, consider all three places: the Firestore doc, the sub-collections, and the Auth user.
+- Don't use a real/existing email for test data (eekurtbookings@) — collision risk.
 
-## 2026-06-29 — Müşteri reschedule barber off-gününü (Arda Çarşamba) kabul etti → "hayalet booking" (grid'de görünmez)
+## 2026-06-29 — A customer reschedule accepted a barber's off-day (Arda Wednesday) → "ghost booking" (invisible in the grid)
 
 **Severity:** 🟠 High · **Owner:** — · **Status:** ✅ Resolved
-**Impact:** Reschedule linki booking'i barber'ın off-gününe taşıdı; grid o kolonu çizmediği için kayıt görünmez/yönetilemez oldu ("data valid, UI invalid").
-**Root Cause:** İş kuralı iki yoldan sadece birinde — `workingDays` gate BookingPage'de var, reschedule yolunda (`salownGetBusySlots`/`salownRescheduleByToken`) yok.
-**Resolution:** Server-side barber müsaitlik doğrulaması + client MiniCal off-day disable (commit `5476238`, DEPLOYED).
-**Prevention:** Business rules **UI'da yaşayamaz** — bir veriye yazan/taşıyan TÜM yolları grep'le, kısıtı hem UI'da göster hem server'da reddet.
+**Impact:** A reschedule link moved a booking to the barber's off-day; because the grid doesn't draw that column, the record became invisible/unmanageable ("data valid, UI invalid").
+**Root Cause:** The business rule was on only one of two paths — the `workingDays` gate is in BookingPage, but not in the reschedule path (`salownGetBusySlots`/`salownRescheduleByToken`).
+**Resolution:** Server-side barber availability validation + client MiniCal off-day disable (commit `5476238`, DEPLOYED).
+**Prevention:** Business rules **cannot live in the UI** — grep ALL paths that write/move a piece of data, and both show the constraint in the UI and reject it on the server.
 
-**Ne oldu:** Email reschedule linkinden bir booking, Arda'nın **off günü Çarşamba**'ya (1 Temmuz 14:00) taşınabildi. Booking Firestore'da VAR ama Calendar grid o gün Arda kolonu çizmediği için **görünmüyordu** ("ama booking var, grid'de Arda yok") — görünmez/yönetilemez hayalet booking.
+**What happened:** Via an email reschedule link, a booking could be moved to **Wednesday, Arda's off-day** (1 July 14:00). The booking EXISTS in Firestore but because the Calendar grid doesn't draw Arda's column that day it was **invisible** ("but the booking exists, Arda's not in the grid") — an invisible/unmanageable ghost booking.
 
-**Kök neden — iki reschedule yolundan biri workingDays kontrol etmiyor:** Barber müsaitliği `barber.workingDays` (capitalized gün adları) + `shiftChanges[dateKey]` + `dayHours[day].closed` ile modelleniyor. **Yeni booking** yolu (`BookingPage.jsx:248` `if(!workingDays.includes(dayName)) return null`) bunu uyguluyor → Arda Çarşamba gösterilmez. Ama **reschedule** yolu (`ManageBooking` + `salownGetBusySlots` + `salownRescheduleByToken`) barber'ı hiç okumuyordu: `salownGetBusySlots` yalnız **mağaza** saatleri + dolu slotları döndürüyor (per-barber YOK), `salownRescheduleByToken` yalnız çakışma + geçmiş-zaman + 2h kuralını kontrol ediyordu. Mağaza Çarşamba açık (Muhamed/Alex çalışıyor) → off-day reschedule kabul edildi. whitecross-site `Reschedule.html` zaten doğru yapıyordu (off ise o gün çalışan barber'a otomatik geçiş) — yani yeni Salown akışı regresyon.
+**Root cause — one of two reschedule paths doesn't check workingDays:** Barber availability is modeled by `barber.workingDays` (capitalized day names) + `shiftChanges[dateKey]` + `dayHours[day].closed`. The **new booking** path (`BookingPage.jsx:248` `if(!workingDays.includes(dayName)) return null`) applies this → Arda isn't shown on Wednesday. But the **reschedule** path (`ManageBooking` + `salownGetBusySlots` + `salownRescheduleByToken`) never read the barber: `salownGetBusySlots` returns only **shop** hours + busy slots (NO per-barber), and `salownRescheduleByToken` only checked the clash + past-time + 2h rule. The shop is open on Wednesday (Muhamed/Alex work) → the off-day reschedule was accepted. whitecross-site `Reschedule.html` already did this correctly (auto-switch to a barber working that day if off) — so the new salOWN flow is a regression.
 
-**Fix (2026-06-29, DEPLOYED — functions:salown + hosting, commit `5476238`):** İki katman. (1) **Server (authoritative)** `salownRescheduleByToken`: yazmadan önce barbers koleksiyonundan barber'ı (id VEYA name, case-insensitive) bul, yeni günü `shiftChange→workingDays→dayHours.closed` ile doğrula, off-day ise `HttpsError('failed-precondition', '<barber> is not available on <day>...')`. (2) **Client (UX)** `ManageBooking`: public `barbers`'ı oku, `barberWorksOn()` helper (BookingPage mantığının aynası) ile MiniCal'da off-günleri disable + `loadSlots` guard. Barbers public-readable (`firestore.rules:83 allow read: if true`) → ekstra callable gerekmedi. Hatalı CANLI booking'e (Arda 1 Tem) owner kararıyla dokunulmadı.
+**Fix (2026-06-29, DEPLOYED — functions:salown + hosting, commit `5476238`):** Two layers. (1) **Server (authoritative)** `salownRescheduleByToken`: before writing, find the barber (by id OR name, case-insensitive) from the barbers collection, validate the new day via `shiftChange→workingDays→dayHours.closed`, and if off-day `HttpsError('failed-precondition', '<barber> is not available on <day>...')`. (2) **Client (UX)** `ManageBooking`: read the public `barbers`, and via a `barberWorksOn()` helper (a mirror of BookingPage's logic) disable off-days in the MiniCal + a `loadSlots` guard. Barbers is public-readable (`firestore.rules:83 allow read: if true`) → no extra callable needed. The erroneous LIVE booking (Arda 1 Jul) was left untouched by the owner's decision.
 
-**Dersler:**
-- **Aynı işlemin iki yolu varsa (booking vs reschedule), iş kuralı İKİSİNDE de olmalı.** workingDays gate yalnız BookingPage'deydi; reschedule yolu sessizce atlamıştı. Yeni bir kısıt eklerken "bu veriye yazan/taşıyan TÜM yollar" grep'lenmeli.
-- **Off-day'e düşen booking = hayalet booking.** Grid barberi o gün çizmediği için kayıt görünmez/yönetilemez olur. Müsaitlik kısıtı UI'da göstermemekle kalmamalı, server-side de reddetmeli (UI bypass + grid görünmezliği iki ayrı zarar).
-- **Public callable PII-free veri döndürürken iş-kuralı verisini de taşımalı.** `salownGetBusySlots` sadece mağaza saatini döndürüp barber müsaitliğini dışarıda bıraktı → tüketen sayfa eksik kararla kaldı. Ya callable barber müsaitliğini döndürmeli ya client (public-readable ise) kendi okumalı.
-- **Dinamik versiyon roadmap'te** (ROADMAP #3b): off-day reschedule davranışı + cancel/reschedule pencereleri + barber-değiştirme tenant-configurable olacak.
+**Lessons:**
+- **If an operation has two paths (booking vs reschedule), the business rule must be on BOTH.** The workingDays gate was only in BookingPage; the reschedule path had silently skipped it. When adding a new constraint, "ALL paths that write/move this data" must be grepped.
+- **A booking that falls on an off-day = a ghost booking.** Because the grid doesn't draw the barber that day the record becomes invisible/unmanageable. An availability constraint must not merely be hidden in the UI, it must also be rejected server-side (UI bypass + grid invisibility are two separate harms).
+- **A public callable returning PII-free data must also carry the business-rule data.** `salownGetBusySlots` returned only the shop hours and left barber availability out → the consuming page was left with an incomplete decision. Either the callable must return barber availability, or the client (if public-readable) must read it itself.
+- **The dynamic version is on the roadmap** (ROADMAP #3b): off-day reschedule behavior + cancel/reschedule windows + barber-change will become tenant-configurable.
 
 ---
 
-## 2026-06-29 — Confirmation email'deki reschedule/cancel linki + TÜM Salown app'i (login/signup/booking/manage) production'da 404 — CI deploy bundle'ı 14 Haz'dan beri canlıya indirmiyordu
+## 2026-06-29 — The reschedule/cancel link in the confirmation email + the ENTIRE salOWN app (login/signup/booking/manage) 404 in production — the CI deploy had not been shipping the bundle to live since 14 Jun
 
 **Severity:** 🔴 Critical · **Owner:** — · **Status:** ✅ Resolved
-**Impact:** hub.salown.com panel rotaları (login/signup/app) + salown.com booking/manage + email linkleri haftalarca 404; "deployment pipeline silently broke".
-**Root Cause:** `hosting/public-bundle` gitignored → build atlayan HER `firebase deploy` bundle'ı siliyordu (CI değil, ham deploy). Son başarılı deploy'da (14 Haz öncesi, statik-only) donmuştu, hata vermeden.
-**Resolution:** `firebase.json`'a `predeploy` build hook (commit `026c914`, PUSHED) — deploy eden herkes önce build alır, bundle yapısal olarak düşemez.
-**Prevention:** (1) "Sayfa yok + rota kodda VAR = önce deploy'a bak"; `curl <site>/public-bundle/index.html` 404 ise tüm SPA ölü. (2) **Post-deploy smoke test** — CI sonunda kritik rotalar 200 dönmezse fail (aşağıdaki blok). (3) Build-output ya commit'lenir ya predeploy hook'a bağlanır.
+**Impact:** The hub.salown.com panel routes (login/signup/app) + salown.com booking/manage + email links 404'd for weeks; "deployment pipeline silently broke".
+**Root Cause:** `hosting/public-bundle` was gitignored → EVERY `firebase deploy` that skipped the build was deleting the bundle (not CI, a raw deploy). It had frozen on the last successful deploy (pre-14 Jun, static-only), without erroring.
+**Resolution:** A `predeploy` build hook was added to `firebase.json` (commit `026c914`, PUSHED) — everyone who deploys builds first, and the bundle can't structurally drop.
+**Prevention:** (1) "Page missing + route EXISTS in code = look at the deploy first"; if `curl <site>/public-bundle/index.html` is 404, the entire SPA is dead. (2) **Post-deploy smoke test** — fail if critical routes don't return 200 at the end of CI (the block below). (3) Build-output is either committed or bound to a predeploy hook.
 
-**Ne oldu:** Whitecross web booking'inin `noreply@salown.com` confirmation email'indeki **Reschedule** linkine tıklayınca "Firestore/page bulunamadı" (Firebase Hosting 404 "Page Not Found") çıkıyordu. Owner G1/G4 sonrası mı diye sordu + "normalde Salown'un kendi reschedule sayfasına gidiyordu" dedi (doğru hatırlıyordu). Sonradan `salown.com/login` de 404 verince kapsam genişledi.
+**What happened:** Clicking the **Reschedule** link in the `noreply@salown.com` confirmation email of a Whitecross web booking gave "Firestore/page not found" (Firebase Hosting 404 "Page Not Found"). The owner asked whether it was after G1/G4 + said "normally it went to salOWN's own reschedule page" (he remembered correctly). Later, when `salown.com/login` also 404'd, the scope widened.
 
-**Teşhis yöntemi (sırayla):**
-1. Email linki: `functions/index.js:551` → `https://salown.com/manage/${tenantId}/${bookingId}?email=...&action=reschedule` (hem `salownSendBookingConfirmation` onCall'da hem trigger `_salownSendConfirmationEmail`'de; `bookingId = data.bookingId || docId`).
-2. Sayfa gerçekten VAR: `salown-app/src/App.jsx:25` `/manage/:tenantId/:bookingId` → `ManageBooking.jsx` (`salownGetBookingByToken` callable, Admin SDK → kuralları baypas). `firebase.json`'da `/manage/** → /public-bundle/index.html` rewrite mevcut, yerel build (`hosting/public-bundle`) bu rotayı içeriyor.
-3. **Canlı testle kök neden bulundu:** `curl salown.com/{manage,app,login,signup,book}` → **hepsi 404**, ama `/` ve `/barbers` (statik) → 200. Kesin kanıt: `salown.com/public-bundle/index.html` → **404**. `salown.web.app` (site varsayılanı) da aynı → domain doğru site'a bağlı, deploy'un kendisi eski.
-4. **Neden CI'dı:** `origin/main`'de firebase.json DOĞRU (tüm rewrite'lar var), `npm run build` lokalde SAĞLIKLI, `package-lock` senkron. Ama canlı, `public-bundle`'ın eklendiği commit `3d63c39` (14 Haz)'dan ÖNCEKİ deploy'da donmuş. `deploy.yml` (push→main → npm ci → build → `firebase deploy --only hosting`) origin'de var ama bundle production'a hiç inmemiş. 7 Haz commit geçmişi şüpheliyi veriyor: secret adı git-gel (`FIREBASE_SERVICE_ACCOUNT_HAVUZ_44F70` ↔ `FIREBASE_SERVICE_ACCOUNT`) + `c7424f1` "remove functions from CI (IAM permission issue)" → deploy adımının SA/secret yetkisi muhtemelen kırık.
+**Diagnostic method (in order):**
+1. Email link: `functions/index.js:551` → `https://salown.com/manage/${tenantId}/${bookingId}?email=...&action=reschedule` (both in the `salownSendBookingConfirmation` onCall and in the trigger `_salownSendConfirmationEmail`; `bookingId = data.bookingId || docId`).
+2. The page really EXISTS: `salown-app/src/App.jsx:25` `/manage/:tenantId/:bookingId` → `ManageBooking.jsx` (`salownGetBookingByToken` callable, Admin SDK → bypasses rules). The `/manage/** → /public-bundle/index.html` rewrite exists in `firebase.json`, and the local build (`hosting/public-bundle`) includes this route.
+3. **Root cause found via live test:** `curl salown.com/{manage,app,login,signup,book}` → **all 404**, but `/` and `/barbers` (static) → 200. Definitive proof: `salown.com/public-bundle/index.html` → **404**. `salown.web.app` (the site default) is the same → the domain points to the right site, the deploy itself is old.
+4. **Why it was CI:** in `origin/main` the firebase.json is CORRECT (all rewrites present), `npm run build` is HEALTHY locally, `package-lock` is in sync. But live is frozen on a deploy from BEFORE the commit `3d63c39` (14 Jun) that added `public-bundle`. `deploy.yml` (push→main → npm ci → build → `firebase deploy --only hosting`) exists in origin, but the bundle never shipped to production. The 7 Jun commit history offers the suspect: the secret name went back and forth (`FIREBASE_SERVICE_ACCOUNT_HAVUZ_44F70` ↔ `FIREBASE_SERVICE_ACCOUNT`) + `c7424f1` "remove functions from CI (IAM permission issue)" → the deploy step's SA/secret permission is probably broken.
 
-**G1/G4 SUÇSUZ:** G1/G4 (`0f8de7e`) bir Firestore *rules* değişikliği. ManageBooking okumaları Admin SDK callable + public tenant-root (`firestore.rules:31 allow read: if true`) → rules'tan etkilenmez. Zamanlama tesadüfen yakındı; owner bağladı ama ilgisizdi.
+**G1/G4 INNOCENT:** G1/G4 (`0f8de7e`) is a Firestore *rules* change. ManageBooking reads are an Admin SDK callable + public tenant-root (`firestore.rules:31 allow read: if true`) → unaffected by rules. The timing happened to be close; the owner connected it but it was irrelevant.
 
-**Fix (2026-06-29, MANUEL DEPLOY):** Bu makinede firebase CLI authed olduğu için `npm run deploy:panel` (= `vite build && firebase deploy --only hosting:salown`) ile bundle production'a alındı. Doğrulama: `/`, `/barbers` hâlâ 200 (landing kaybolmadı), `/login /app /manage/**` artık 200 (SPA shell yükleniyor). Owner teyit etti ("ok geldi"). **Kök neden (CI) ÇÖZÜLMEDİ** — bir sonraki `main` push'unda CI deploy yine fail edip eski state'e dönebilir.
+**Fix (2026-06-29, MANUAL DEPLOY):** Because the firebase CLI is authed on this machine, the bundle was shipped to production via `npm run deploy:panel` (= `vite build && firebase deploy --only hosting:salown`). Verification: `/`, `/barbers` still 200 (the landing didn't disappear), `/login /app /manage/**` now 200 (the SPA shell loads). The owner confirmed ("ok it came"). **The root cause (CI) was NOT SOLVED** — on the next `main` push CI deploy may fail again and revert to the old state.
 
-**Dersler:**
-- **"Sayfa bulunamadı" + rota kodda VAR = önce DEPLOY'a bak, koda değil.** `curl <site>/public-bundle/index.html` 404 ise tüm SPA rewrite'ları ölü demektir; tek route değil, bundle'ın tamamı eksiktir. Statik sayfa (/) çalışıp app rotaları (/app /login) 404 veriyorsa kesin tanı: bundle deploy edilmemiş.
-- **Gitignored build + CI-build modeli sessizce kırılır.** `hosting/public-bundle` gitignore'da, CI'da `npm run build` üretiyor. Build veya deploy adımı fail ederse canlı SON BAŞARILI deploy'da donar (burada 14 Haz öncesi statik-only) — hata vermez, eski site çalışmaya devam eder. Düzenli "canlı rota smoke-test" olmadan haftalarca fark edilmez.
-- **CI loglarına erişim yoksa kök neden lokalden daraltılır:** origin/main config doğru + build sağlıklı + lock senkron → kalan tek katman deploy adımı (secret/IAM). `git show origin/main:firebase.json` + `git log -- .github/workflows/deploy.yml` çok şey söyler.
-- **AÇIK İŞ:** CI deploy adımı (FIREBASE_SERVICE_ACCOUNT secret / SA Hosting-deploy yetkisi) kalıcı düzeltilmeli; yoksa her manuel deploy geçici. Bkz [[project_salown_ci_deploy_gap]].
+**Lessons:**
+- **"Page not found" + the route EXISTS in code = look at the DEPLOY first, not the code.** If `curl <site>/public-bundle/index.html` is 404, all the SPA rewrites are dead — it's not one route, the whole bundle is missing. If the static page (/) works but app routes (/app /login) 404, the definitive diagnosis: the bundle wasn't deployed.
+- **A gitignored build + CI-build model breaks silently.** `hosting/public-bundle` is in gitignore, produced by `npm run build` in CI. If the build or deploy step fails, live freezes on the LAST SUCCESSFUL deploy (here pre-14 Jun static-only) — it doesn't error, the old site keeps working. Without a regular "live route smoke-test" it goes unnoticed for weeks.
+- **Without CI log access, the root cause is narrowed from local:** origin/main config correct + build healthy + lock in sync → the only remaining layer is the deploy step (secret/IAM). `git show origin/main:firebase.json` + `git log -- .github/workflows/deploy.yml` say a lot.
+- **OPEN WORK:** the CI deploy step (FIREBASE_SERVICE_ACCOUNT secret / SA Hosting-deploy permission) must be permanently fixed; otherwise every manual deploy is temporary. See [[project_salown_ci_deploy_gap]].
 
-**GÜNCELLEME (aynı gün — KESİN kök neden + KALICI fix):** İlk manuel deploy ("ok geldi") 20 dk sonra YİNE 404'e döndü. Sebep CI/secret DEĞİLMİŞ: commit `222f2a1` "everdy" (aerulas, pazarlama sayfaları `/features /apps /story /emails` ekliyor) sahibinin **lokalden build YAPMADAN ham `firebase deploy`** çalıştırmasıyla geldi (commit'lenen `.firebase/hosting.*.cache` kanıt). **Asıl kök neden:** `hosting/public-bundle` **gitignored** — sadece `npm run build` üretir. Build atlayan HER deploy (pazarlama düzenlemesi dahil) bundle'sız site gönderip tüm SPA'yı (login/signup/book/manage) siler. Hem haftalarca süren orijinal kesintiyi hem de tekrarlayan revert'leri bu açıklıyor; CI değil (CI zaten build ediyor). **KALICI FIX (commit `026c914`, PUSHED):** `firebase.json` her iki hosting site'ına **`predeploy` hook** eklendi (`npm run build` / `build:staff`) → artık `firebase deploy` çalıştıran herkes (manuel/CI/worktree) deploy'dan ÖNCE otomatik build alır, bundle yapısal olarak düşemez. Test: bundle silinip ham `firebase deploy` → predeploy yeniden build etti, site ayakta kaldı. **Ek ders:** build-output gitignored + "deploy = ayrı adım" modeli kırılgandır; deploy'a predeploy hook bağla VEYA artefaktı commit'le. `.firebase/` cache git'e girmemeli (everdy yanlışlıkla commit'lemiş — gitignore'a eklenmeli).
+**UPDATE (same day — DEFINITIVE root cause + PERMANENT fix):** The first manual deploy ("ok it came") reverted to 404 AGAIN 20 min later. The cause was NOT CI/secret: commit `222f2a1` "everdy" (aerulas, adding marketing pages `/features /apps /story /emails`) arrived because the owner ran a raw `firebase deploy` **WITHOUT building locally** (the committed `.firebase/hosting.*.cache` is the evidence). **The actual root cause:** `hosting/public-bundle` is **gitignored** — only `npm run build` produces it. EVERY deploy that skips the build (including a marketing edit) ships a bundle-less site and wipes the whole SPA (login/signup/book/manage). This explains both the weeks-long original outage and the recurring reverts; not CI (CI already builds). **PERMANENT FIX (commit `026c914`, PUSHED):** a **`predeploy` hook** was added to both hosting sites in `firebase.json` (`npm run build` / `build:staff`) → now everyone who runs `firebase deploy` (manual/CI/worktree) auto-builds BEFORE the deploy, and the bundle can't structurally drop. Test: the bundle was deleted and a raw `firebase deploy` → predeploy rebuilt it, the site stayed up. **Additional lesson:** a gitignored build-output + "deploy = a separate step" model is fragile; bind a predeploy hook to the deploy OR commit the artifact. `.firebase/` cache must not enter git (everdy committed it by mistake — it should be added to gitignore).
 
-**Prevention — post-deploy smoke test (ekle):** predeploy hook bundle'ın _oluşmasını_ garanti eder ama _sunulduğunu_ değil. Deploy sonrası kritik rotalar canlıda 200 dönmeli; dönmezse deploy fail sayılmalı (CI adımı veya deploy script sonu):
+**Prevention — post-deploy smoke test (add):** the predeploy hook guarantees the bundle is _produced_ but not that it is _served_. After a deploy, critical routes must return 200 live; if they don't, the deploy should be treated as a failure (a CI step or at the end of the deploy script):
 ```bash
 set -e
 for url in \
@@ -428,317 +428,317 @@ for url in \
   [ "$code" = "200" ] || { echo "SMOKE FAIL: $url → $code"; exit 1; }
 done
 ```
-`/public-bundle/index.html` özellikle önemli: bu 404 ise tüm SPA rewrite'ları ölü demektir (bu olayın kesin teşhis imzası).
+`/public-bundle/index.html` is especially important: if this is 404, all the SPA rewrites are dead (the definitive diagnostic signature of this incident).
 
 ---
 
-## 2026-06-28 — Staff app gelir £370, web panel £335 (£35 fark) — `paidAmount` bahşiş-dahil + latent `tipPaymentMethod` açığı
+## 2026-06-28 — Staff app revenue £370, web panel £335 (£35 difference) — `paidAmount` tip-inclusive + latent `tipPaymentMethod` gap
 
-**Severity:** 🟡 Medium (vergi-anlamlı, HMRC) · **Owner:** — · **Status:** 🟡 Open
-**Impact:** Staff app geliri £35 fazla (bahşiş gelire karışmış); latent olarak kart/nakit bahşiş ayrımı yanlış.
-**Root Cause:** `paidAmount = subtotal + tip` (brüt tahsilat, gelir değil); ayrıca `tipPaymentMethod` yazılıyor ama hiçbir rapor okumuyor.
-**Resolution:** SalesView geliri `− pp(tip)` + Tips breakdown eklendi (LOCAL, deploy edilmedi).
-**Prevention:** `paidAmount` = brüt tahsilat, gelir için bahşişi çıkar; bir alan yakalanıp okunmuyorsa = sessiz bug, tüm okuma noktalarını geçir.
-**⚠️ Açık takip:** SalesView LOCAL (deploy bekliyor); Finance/Reports hâlâ servis `paymentMethod` kullanıyor → aynı `tipPaymentMethod` helper'ına geçmeli (whitecross-hassas, owner onayı bekliyor).
+**Severity:** 🟡 Medium (tax-significant, HMRC) · **Owner:** — · **Status:** 🟡 Open
+**Impact:** The staff app revenue is £35 too high (tips mixed into revenue); latently, the card/cash tip distinction is wrong.
+**Root Cause:** `paidAmount = subtotal + tip` (gross collection, not revenue); also `tipPaymentMethod` is written but no report reads it.
+**Resolution:** SalesView revenue `− pp(tip)` + a Tips breakdown added (LOCAL, not deployed).
+**Prevention:** `paidAmount` = gross collection, subtract the tip for revenue; if a field is captured but not read = a silent bug, route all read points through it.
+**⚠️ Open follow-up:** SalesView LOCAL (awaiting deploy); Finance/Reports still use the service `paymentMethod` → must move to the same `tipPaymentMethod` helper (whitecross-sensitive, awaiting owner approval).
 
-**Ne oldu:** Aynı gün için staff app "Total revenue" £370, web panel (Dashboard/Finance) £335 gösteriyordu. Owner farkın nereden geldiğini sordu.
+**What happened:** For the same day the staff app showed "Total revenue" £370, the web panel (Dashboard/Finance) £335. The owner asked where the difference came from.
 
-**Kök neden — `paidAmount` bahşişi içeriyor:** Checkout `paidAmount`'a `total = subtotal + tip` yazıyor (`CheckoutPanel.jsx:688` → `firestoreActions.js:153`). Staff app gelir olarak `pp(paidAmount ?? price)` kullanıyordu (`SalesView.jsx:85`) → bahşişi geliri içine alıyor, üstelik `totalTips`'i ayrıca gösteriyordu (çift sunum). Web panel `bookingNetWithoutTip` (`bookingUtils.js`) bahşişi kasıtlı hariç tutuyor. Discount + loyalty iki tarafta da düşülüyor → sadeleşiyor; **tek fark = bahşiş** (£35). Owner teyidi: bahşiş hiçbir zaman gelir değildir, ayrı tutulur.
+**Root cause — `paidAmount` includes the tip:** Checkout writes `total = subtotal + tip` to `paidAmount` (`CheckoutPanel.jsx:688` → `firestoreActions.js:153`). The staff app used `pp(paidAmount ?? price)` as revenue (`SalesView.jsx:85`) → so it takes the tip into revenue, and moreover showed `totalTips` separately (double presentation). The web panel uses `bookingNetWithoutTip` (`bookingUtils.js`), which deliberately excludes the tip. Discount + loyalty are subtracted on both sides → they cancel; **the only difference = the tip** (£35). Owner confirmation: a tip is never revenue, it's kept separate.
 
-**İkinci (latent) bulgu — `tipPaymentMethod` hiçbir yerde okunmuyordu:** Checkout bahşişin yöntemini ayrı yakalıyor (`tipPaymentMethod`: Cash/Card, `CheckoutPanel.jsx:455`, yazımı `firestoreActions.js:157`) ama Finance/Reports/staff dahil **her yer** kart/nakit bahşiş ayrımını servisin `paymentMethod`'undan yapıyordu. "Kartla ödedi, bahşişi nakit verdi" (veya tersi) durumunda kart-bahşiş toplamı yanlış — tam da HMRC'nin gelir sayabileceği rakam.
+**Second (latent) finding — `tipPaymentMethod` was read nowhere:** Checkout captures the tip's method separately (`tipPaymentMethod`: Cash/Card, `CheckoutPanel.jsx:455`, written at `firestoreActions.js:157`) but **everywhere** (Finance/Reports/staff included) made the card/cash tip distinction from the service's `paymentMethod`. In a "paid by card, tipped in cash" (or vice versa) case the card-tip total is wrong — precisely the figure HMRC might count as revenue.
 
-**Fix (2026-06-28, LOCAL):** (1) `SalesView.jsx` gelir = `pp(paidAmount ?? price) − pp(tip)` (`revOf` helper, totalRevenue + ödeme-yöntemi + barber kırılımı üçü de tip-hariç) → staff app artık £335. (2) Staff app'e Tips breakdown eklendi: nakit/kart (artık `tipPaymentMethod ?? paymentMethod` ile DOĞRU) + barber settlement (`tipTakenAsCash` kasadan alınan vs borç), view-only. **Açık takip:** Finance/Reports hâlâ servis `paymentMethod`'unu kullanıyor → aynı `tipPaymentMethod` helper'ına geçmeli (whitecross-hassas, owner onayı bekliyor).
+**Fix (2026-06-28, LOCAL):** (1) `SalesView.jsx` revenue = `pp(paidAmount ?? price) − pp(tip)` (the `revOf` helper; totalRevenue + payment-method + barber breakdown are all three tip-excluded) → the staff app is now £335. (2) A Tips breakdown was added to the staff app: cash/card (now CORRECT via `tipPaymentMethod ?? paymentMethod`) + barber settlement (`tipTakenAsCash` taken-from-till vs owed), view-only. **Open follow-up:** Finance/Reports still use the service `paymentMethod` → must move to the same `tipPaymentMethod` helper (whitecross-sensitive, awaiting owner approval).
 
-**Dersler:**
-- **`paidAmount` brüt-tahsilat'tır (bahşiş dahil), gelir değildir.** Servis geliri isteniyorsa bahşişi çıkar (`− pp(tip)`) ya da `bookingNetWithoutTip` kullan. İki ekran aynı "gelir"i farklı gösteriyorsa önce birinin bahşiş/discount/loyalty muamelesine bak.
-- **Bir alanı yakalayıp hiç okumamak sessiz bir bug'dır.** `tipPaymentMethod` aylarca yazıldı ama kart/nakit raporları servis yöntemini kullanmaya devam etti → vergi-anlamlı kart-bahşiş toplamı yanlıştı. Yeni alan eklenince tüm okuma noktalarını da geçir.
-- **Bahşiş para akışı seçeresi (`tipTaken`/`tipTakenAsCash`) kart bahşişi için settlement demektir** — işletmeden geçen kart bahşişi barbere borçtur; nakit doğrudan barberin. Raporlarken bu ayrımı koru.
-
----
-
-## 2026-06-27 — Calendar Day-view'da checked-out booking'ler "iç içe / cascade" göründü — geç checkout kart yüksekliğini şişirdi
-
-**Severity:** 🟡 Medium (görsel/UX, veri sağlam) · **Owner:** — · **Status:** ✅ Resolved
-**Impact:** Yoğun günde checked-out kartlar balonlaşıp altındakileri yuttu → sahte örtüşme / kademeli cascade.
-**Root Cause:** `actualDuration` (checkout'a basma anı − başlangıç) kart yüksekliğini planlanan süreden UZATIYORDU; amaç sadece erken-bitişte KISALTMAKTI.
-**Resolution:** `min(scheduledDuration, actualDuration)` — kart yalnız kısalabilir; render + `computeColumns` iki yerde birebir (commit `11318da`, PUSHED→CI).
-**Prevention:** Süre alanı kart geometrisini sürüyorsa tek-yönlü olmalı; height ve kolon motoru AYNI süre kaynağını kullansın.
-
-**Ne oldu:** Whitecross'ta eski yoğun bir gün (Sat 20 June, 16 walk-in, hepsi CHECKED_OUT) Day görünümünde açılınca booking kartları üst üste binip kademeli yan-yana daralan kolonlara (Treatwell-stili) dağılmıştı — "satışlar iç içe girmiş" görüntüsü. Owner bunun gridin başlama-bitiş saatine göre yükselmesinden ve manuel girilenlerin aşağı kaymasından şüphelendi (doğru sezgi).
-
-**Kök neden — `actualDuration` kart yüksekliğini şişiriyor:** Checkout'ta `actualDuration = checkedOutAt − startTime` (dakika, clamp 5..240 = 4 saate kadar; `firestoreActions.js:146`). Bu, servisin GERÇEK süresi değil, booking başlangıcı ile **checkout'a basma anı** arasındaki süre. `TimeGrid.jsx` checked-out kartların hem yüksekliğini (`:343`) hem kolon matematiğini (`computeColumns :154`) doğrudan `actualDuration`'dan hesaplıyordu. Yoğun günde personel müşteriyi gerçek bitişten **çok sonra** (toplu/boş kalınca) checkout edince `actualDuration` 1.5–4 saate fırlıyor → kart balonlaşıyor → alttaki bookingleri "yutuyor" → `computeColumns` hepsini örtüşen küme sayıp kademeli kolonlara açıyor = cascade. Veri bozuk değil; görüntü her render'da `actualDuration`'dan türediği için o gün her açılışta yeniden oluşuyordu (tekrar riski yapısal).
-
-**Tasarım hatası:** `actualDuration`'ın asıl amacı "erken biten servis slotu boşaltsın" (squeeze-in için kartı KISALTMAK). Ama implementasyon süreyi planlanan servisi AŞINCA da kartı UZATIYORDU — şişme buradan.
-
-**Fix (2026-06-27, PUSHED→CI `11318da`, `src/components/TimeGrid.jsx` +14/−7):** Checked-out süresi artık `Math.min(scheduledDuration, actualDuration)` — kart yalnız KISALABİLİR (erken bitiş slotu boşaltır), planlanan `svc.duration`'ı ASLA aşamaz. İki yerde birebir aynı (render `:343` + `computeColumns :154`), yoksa height/kolon ayrışır. **Squeeze-in'e dokunulmadı:** gap band'leri `getBusyIntervals` → `getExistingRangeMinutes` + servis processing-segment'lerinden türüyor, `actualDuration` görmüyor → processing'li servis hâlâ araya sıkıştırılabilir. TENANT-BAĞIMSIZ (flag yok, ortak component) → tüm tenant'lara genel. localhost'ta 20 June cascade'in gittiği doğrulandı. Geçmiş veriye dokunulmadı (cap render anında).
-
-**Dersler:**
-- **Bir "süre" alanı kart geometrisini sürüyorsa, tek yönlü olmalı.** `actualDuration` = erken-bitiş sinyali; slotu sadece KISALTMALI. Planlanan süreyi aşmasına izin vermek (geç checkout) görsel taşmaya + sahte örtüşmeye yol açar. Cap = `min(scheduled, actual)`.
-- **Örtüşme/kolon motoru (`computeColumns`) ile kart yüksekliği AYNI süre kaynağını kullanmalı.** İkisi ayrışırsa ya görünmez örtüşme ya hayalet cascade olur — fix'i her iki yere birebir uygula.
-- **"Grid yükseldi/kaydı" şikâyeti = bir booking'in yüksekliği gerçek süresinden büyük.** Önce o günün checked-out kayıtlarının `actualDuration`'ına bak (checkout gecikmesi), `startTime`/`time` kaymasına değil.
-- **actualDuration ≠ servis süresi.** Çakışma/kapasite/analitik hesaplarında kullanılırken her zaman planlanan süreyle cap'le ([[project_processing_time]] busy-slot v2 ile tutarlı kalsın).
+**Lessons:**
+- **`paidAmount` is the gross collection (tip included), not revenue.** If service revenue is wanted, subtract the tip (`− pp(tip)`) or use `bookingNetWithoutTip`. If two screens show the same "revenue" differently, look first at one's tip/discount/loyalty treatment.
+- **Capturing a field and never reading it is a silent bug.** `tipPaymentMethod` was written for months but the card/cash reports kept using the service method → the tax-significant card-tip total was wrong. When adding a new field, route all read points through it too.
+- **The tip money-flow lineage (`tipTaken`/`tipTakenAsCash`) means settlement for a card tip** — a card tip passing through the business is owed to the barber; a cash tip goes directly to the barber. Preserve this distinction when reporting.
 
 ---
 
-## 2026-06-26 — Treatwell prepaid booking "Pay at venue" gösterdi + komisyon geliri şişirdi
+## 2026-06-27 — Checked-out bookings looked "nested / cascaded" in Calendar Day-view — a late checkout inflated card height
 
-**Severity:** 🟡 Medium (para/muhasebe + çift-tahsilat riski) · **Owner:** — · **Status:** ✅ Resolved
-**Impact:** Prepaid £40 booking "Pay at venue" göründü (çift tahsilat riski) + brüt £40 gelir sayıldı (net £23.20).
-**Root Cause:** Global `paymentType` per-booking gerçeği eziyor; aggregator brüt = net varsayımı (komisyon modellenmemiş).
-**Resolution:** "Both (per booking)" modu + parser `twFeeTotal`/`twNetPayout` + Finance `platformFee()` otomatik gider (DEPLOYED).
-**Prevention:** Per-booking değişen alan tek global ayarla gösterilmez; aggregator brüt ≠ işletme net (komisyon+VAT modellenmeli).
+**Severity:** 🟡 Medium (visual/UX, data intact) · **Owner:** — · **Status:** ✅ Resolved
+**Impact:** On a busy day checked-out cards ballooned and swallowed the ones below → fake overlap / gradual cascade.
+**Root Cause:** `actualDuration` (moment of pressing checkout − start) was LENGTHENING card height beyond the scheduled duration; the intent was to SHORTEN only on an early finish.
+**Resolution:** `min(scheduledDuration, actualDuration)` — the card can only shorten; identical in two places, render + `computeColumns` (commit `11318da`, PUSHED→CI).
+**Prevention:** If a duration field drives card geometry it must be one-directional; the height and the column engine must use the SAME duration source.
 
-**Ne oldu:** Jeremiah (T2185837725) Treatwell'de prepaid £40 ödedi ama booking detayında ödeme "Pay at venue" görünüyordu (personel parayı yeniden almaya çalışabilirdi). Ayrıca bu booking checkout olunca Finance/Reports £40 brüt geliri kaydediyordu — oysa Treatwell ilk-müşteri komisyonu (%35 + VAT = £16.80) sonrası işletmeye net **£23.20** geliyor → gelir şişiyordu.
+**What happened:** When an old busy day at Whitecross (Sat 20 June, 16 walk-ins, all CHECKED_OUT) was opened in Day view, the booking cards overlapped and scattered into progressively narrowing side-by-side columns (Treatwell-style) — a "the sales are nested" look. The owner suspected it came from the grid rising by the start-end time and the manually entered ones shifting down (a correct intuition).
 
-**Kök neden #1 — global ayar per-booking gerçeği eziyor:** Treatwell PER-BOOKING prepaid VEYA pay-at-venue olabilir (email `Status` alanı söyler). Ama Settings → Platforms → Treatwell tek **global** `paymentType` tutuyordu (`pay_at_venue`'ya set'liydi) ve BookingDetailPanel bu global ayarı okuyordu → her Treatwell booking'i pay-at-venue çiziliyordu. **Fix:** toggle'a "Both (per booking)" eklendi; `both` seçiliyse UI booking'in kendi `twPaymentMode`'una göre çiziyor (parser email Status'tan yazıyor). whitecross `both`'a alındı.
+**Root cause — `actualDuration` inflates card height:** At checkout `actualDuration = checkedOutAt − startTime` (minutes, clamp 5..240 = up to 4 hours; `firestoreActions.js:146`). This is not the service's REAL duration, but the time between the booking start and **pressing checkout**. `TimeGrid.jsx` computed both the height (`:343`) and the column math (`computeColumns :154`) of checked-out cards directly from `actualDuration`. On a busy day, when staff check a customer out **much later** than the real finish (in bulk / when free), `actualDuration` jumps to 1.5–4 hours → the card balloons → it "swallows" the bookings below → `computeColumns` counts them all as one overlapping cluster and fans them into progressive columns = cascade. The data isn't corrupt; because the display derives from `actualDuration` on every render, it re-formed on every opening of that day (structural recurrence risk).
 
-**Kök neden #2 — aggregator brüt ≠ işletme net:** Parser/Finance fee'yi hiç modellemiyordu; brüt = net varsayımı. Treatwell komisyonu prepaid'de kaynağında kesiliyor (£23.20 yatıyor), pay-at-venue'da ayrı fatura ediliyor — her iki halde gerçek net = brüt − fee. **Fix:** parser `twFeeTotal`/`twNetPayout` (35%+VAT) yazıyor; Finance `platformFee()` ile komisyonu **otomatik gider** sayıyor (brüt korunur, netRevenue/companyNetPL/bankBalance düşer); Reports source kartı net-after-fee; booking detay (checkout öncesi+sonrası) fee kırılımı gösteriyor.
+**Design flaw:** `actualDuration`'s real purpose is "let an early-finishing service free the slot" (SHORTENING the card for squeeze-in). But the implementation was also LENGTHENING the card when the duration EXCEEDED the scheduled service — the inflation came from here.
 
-**Doğrulama notları (ileride işe yarar):**
-- Checkout tw* alanlarını KORUR (prepaid booking checkout → `paidAmount=0`, `paymentMethod=CARD`, `twFeeTotal` sağ çıkar). Finance `effectiveRevenue` paidAmount=0 olunca `price` fallback'ine düşer → brüt £40 korunur.
-- Finance `dateKey`'i stored alandan değil `startTime`'dan türetir (`Finance.jsx:158`) — parser dateKey yazmasa da booking görünür.
+**Fix (2026-06-27, PUSHED→CI `11318da`, `src/components/TimeGrid.jsx` +14/−7):** The checked-out duration is now `Math.min(scheduledDuration, actualDuration)` — the card can only SHORTEN (an early finish frees the slot), and can NEVER exceed the scheduled `svc.duration`. Identical in two places (render `:343` + `computeColumns :154`), otherwise the height/column diverge. **Squeeze-in not touched:** gap bands derive from `getBusyIntervals` → `getExistingRangeMinutes` + service processing-segments, don't see `actualDuration` → a service with processing can still be squeezed in. TENANT-AGNOSTIC (no flag, shared component) → applies to all tenants. Verified on localhost that the 20 June cascade is gone. Historical data untouched (the cap is at render time).
 
-**Dersler:**
-- **Bir platform per-booking değişiyorsa, tek global ayar gösterimi yanıltır.** Per-booking gerçeği (parser alanı) varsa onu kullan; global ayarı yalnız "hepsi aynı" durumunda uygula ("Both" modeli).
-- **Aggregator brüt fiyatı ≠ işletme geliri.** Komisyon (özellikle new-client + VAT) modellenmezse defterler geliri şişirir. Komisyonu otomatik gider olarak işle; brüt görünür kalsın ([[project_whitecross_muhasebe]] iki-defter).
+**Lessons:**
+- **If a "duration" field drives card geometry, it must be one-directional.** `actualDuration` = an early-finish signal; it should only SHORTEN the slot. Allowing it to exceed the scheduled duration (late checkout) leads to visual overflow + fake overlap. Cap = `min(scheduled, actual)`.
+- **The overlap/column engine (`computeColumns`) and card height must use the SAME duration source.** If they diverge, you get either an invisible overlap or a ghost cascade — apply the fix identically to both places.
+- **A "the grid rose/shifted" complaint = a booking's height is greater than its real duration.** First look at that day's checked-out records' `actualDuration` (checkout delay), not at `startTime`/`time` shift.
+- **actualDuration ≠ service duration.** When used in overlap/capacity/analytics calculations, always cap it with the scheduled duration (keep consistent with [[project_processing_time]] busy-slot v2).
 
 ---
 
-## 2026-06-26 — Whitecross web booking confirmation email gitmiyor + success sayfası boş — Salown migration'ının açtığı ÇOK KATMANLI regresyon
+## 2026-06-26 — A Treatwell prepaid booking showed "Pay at venue" + inflated commission revenue
+
+**Severity:** 🟡 Medium (money/accounting + double-charge risk) · **Owner:** — · **Status:** ✅ Resolved
+**Impact:** A prepaid £40 booking showed "Pay at venue" (double-charge risk) + counted as £40 gross revenue (net £23.20).
+**Root Cause:** A global `paymentType` overrides the per-booking truth; the aggregator gross = net assumption (commission not modeled).
+**Resolution:** A "Both (per booking)" mode + parser `twFeeTotal`/`twNetPayout` + Finance `platformFee()` automatic expense (DEPLOYED).
+**Prevention:** A field that varies per-booking isn't shown by a single global setting; aggregator gross ≠ business net (commission+VAT must be modeled).
+
+**What happened:** Jeremiah (T2185837725) paid prepaid £40 on Treatwell, but in the booking detail the payment showed as "Pay at venue" (staff might try to collect the money again). Also, when this booking was checked out, Finance/Reports recorded £40 gross revenue — whereas after the Treatwell first-customer commission (35% + VAT = £16.80) the business nets **£23.20** → revenue was inflated.
+
+**Root cause #1 — a global setting overrides the per-booking truth:** Treatwell can be prepaid OR pay-at-venue PER-BOOKING (the email `Status` field says). But Settings → Platforms → Treatwell held a single **global** `paymentType` (set to `pay_at_venue`) and BookingDetailPanel read this global setting → so every Treatwell booking was drawn pay-at-venue. **Fix:** "Both (per booking)" was added to the toggle; if `both` is selected the UI draws by the booking's own `twPaymentMode` (the parser writes it from the email Status). whitecross was set to `both`.
+
+**Root cause #2 — aggregator gross ≠ business net:** The parser/Finance never modeled the fee; the gross = net assumption. The Treatwell commission is deducted at source on prepaid (£23.20 lands), and invoiced separately on pay-at-venue — in either case the real net = gross − fee. **Fix:** the parser writes `twFeeTotal`/`twNetPayout` (35%+VAT); Finance counts the commission as an **automatic expense** via `platformFee()` (gross preserved, netRevenue/companyNetPL/bankBalance decrease); the Reports source card is net-after-fee; the booking detail (pre- and post-checkout) shows the fee breakdown.
+
+**Verification notes (useful later):**
+- Checkout PRESERVES the tw* fields (prepaid booking checkout → `paidAmount=0`, `paymentMethod=CARD`, `twFeeTotal` comes out right). When `paidAmount=0`, Finance `effectiveRevenue` falls back to `price` → the £40 gross is preserved.
+- Finance derives the `dateKey` not from a stored field but from `startTime` (`Finance.jsx:158`) — so even if the parser doesn't write a dateKey, the booking shows.
+
+**Lessons:**
+- **If a platform varies per-booking, a single global-setting display misleads.** If a per-booking truth (a parser field) exists, use it; apply the global setting only in the "all the same" case (the "Both" model).
+- **An aggregator's gross price ≠ business revenue.** If the commission (especially new-client + VAT) is not modeled, the books inflate revenue. Treat the commission as an automatic expense; keep the gross visible ([[project_whitecross_muhasebe]] two-ledger).
+
+---
+
+## 2026-06-26 — Whitecross web booking confirmation email not sending + success page blank — a MULTI-LAYER regression opened by the salOWN migration
 
 **Severity:** 🟠 High · **Owner:** — · **Status:** ✅ Resolved
-**Impact:** CONFIRMED web booking'lerde confirmation email gitmiyor; success.html detay + Add-to-Calendar boş.
-**Root Cause:** 3 katman — katı gate + `BREVO_API_KEY` secret 4 fonksiyonda bağlı değil + `sendBrevoEmail` boş `headers:{}` → Brevo 400. Success: auth-only rules → public read 403.
-**Resolution:** Gate genişletildi + secret 4 fn'e + headers guard; success `sessionStorage` fallback (DEPLOYED). GDPR: public booking read AÇILMADI.
-**Prevention:** Gönderici stratejisi değişince (Gmail→Brevo) tüm fn `secrets` listesini grep'le; migration regresyonları KATMANLI, her fix sonrası yeni test; public sayfa auth-gated veri okuyamaz.
+**Impact:** Confirmation email not sending on CONFIRMED web bookings; success.html detail + Add-to-Calendar blank.
+**Root Cause:** 3 layers — a strict gate + the `BREVO_API_KEY` secret not bound on 4 functions + `sendBrevoEmail` empty `headers:{}` → Brevo 400. Success: auth-only rules → public read 403.
+**Resolution:** The gate widened + the secret onto 4 fns + a headers guard; success `sessionStorage` fallback (DEPLOYED). GDPR: public booking read was NOT opened.
+**Prevention:** When the sender strategy changes (Gmail→Brevo) grep all fn `secrets` lists; migration regressions are LAYERED, a new test after each fix; a public page can't read auth-gated data.
 
-**Ne oldu:** whitecross premium → Salown tenant migrasyonundan sonra, whitecrossbarbers.com'dan yapılan online booking'lerde (ödeme tamamlanmış, CONFIRMED) confirmation email gitmiyordu. Ayrıca success.html "Booking Confirmed" sayfası detay satırlarını ve yeni eklenen Add to Calendar butonunu göstermiyordu (sadece statik kart).
+**What happened:** After the whitecross premium → salOWN tenant migration, confirmation emails were not sending on online bookings made from whitecrossbarbers.com (payment completed, CONFIRMED). Also, the success.html "Booking Confirmed" page wasn't showing the detail lines and the newly added Add to Calendar button (only the static card).
 
-**Teşhis yöntemi:**
-1. Gerçek test booking'i + `salown-panel/serviceAccountKey.json` (havuz-44f70 admin SDK) ile Firestore doğrulandı: status CONFIRMED, source Website, stripeSessionId VAR, clientEmail dolu, emailOptOut yok, `settings.emailConfirmationEnabled=true` → veri sağlam, sorun gönderimde.
-2. `firebase functions:log --only salownBookingConfirmedEmailTrigger` → trigger HER booking'de ATEŞLİYOR ama `[whitecross] confirmationEmail error: ...` veriyor. Hata mesajı **her fix sonrası değişti** (katmanlı bug).
-3. success.html için: REST API ile **token'sız** okuma testi → `HTTP 403` (kurallar blokluyor), tenant root doc → 200. Public-read yasağı doğrulandı.
+**Diagnostic method:**
+1. Verified in Firestore with a real test booking + `salown-panel/serviceAccountKey.json` (havuz-44f70 admin SDK): status CONFIRMED, source Website, stripeSessionId PRESENT, clientEmail populated, no emailOptOut, `settings.emailConfirmationEnabled=true` → data intact, the problem is in the send.
+2. `firebase functions:log --only salownBookingConfirmedEmailTrigger` → the trigger FIRES on every booking but gives `[whitecross] confirmationEmail error: ...`. The error message **changed after each fix** (a layered bug).
+3. For success.html: a **token-less** read test via the REST API → `HTTP 403` (rules blocking), tenant root doc → 200. The public-read ban was confirmed.
 
-**Kök neden — email (3 ardışık katman):** Migration'da email gönderimi whitecross-site (kendi Gmail) → salown-app trigger'larına taşındı; `FORCE_SALOWN_SENDER_TENANTS=['whitecross']` ile whitecross Brevo (noreply@salown.com)'a zorlandı. Ama:
-1. **Gate çok katı:** `salownBookingConfirmedEmailTrigger` `if(!after.stripeSessionId) return` (gerçek akışta stripeSessionId vardı, asıl blocker değildi ama yine de `isOnlineSelfBooking` ile genişletildi).
-2. **Secret bağlı değil:** `salownBookingConfirmationTrigger` + `salownBookingConfirmedEmailTrigger`'da `secrets:['BREVO_API_KEY']` YOKTU → `sendBrevoEmail` "BREVO_API_KEY secret not set" fırlattı. Diğer email fonksiyonlarında secret vardı, bu ikisi (ve cancel/reschedule token fonksiyonları) atlanmıştı.
-3. **Boş headers:** `sendBrevoEmail` payload'a `headers:{}` koyuyordu; confirmation/cancel/reschedule header göndermediği için Brevo `400 "headers is blank"` döndü.
+**Root cause — email (3 successive layers):** In the migration, email sending was moved from whitecross-site (its own Gmail) → salown-app triggers; forced to whitecross Brevo (noreply@salown.com) via `FORCE_SALOWN_SENDER_TENANTS=['whitecross']`. But:
+1. **The gate is too strict:** `salownBookingConfirmedEmailTrigger` `if(!after.stripeSessionId) return` (in the real flow stripeSessionId was present, so not the actual blocker, but it was still widened with `isOnlineSelfBooking`).
+2. **The secret is not bound:** `salownBookingConfirmationTrigger` + `salownBookingConfirmedEmailTrigger` did NOT have `secrets:['BREVO_API_KEY']` → `sendBrevoEmail` threw "BREVO_API_KEY secret not set". The other email functions had the secret; these two (and the cancel/reschedule token functions) had been skipped.
+3. **Empty headers:** `sendBrevoEmail` was putting `headers:{}` in the payload; because confirmation/cancel/reschedule sent no header, Brevo returned `400 "headers is blank"`.
 
-**Kök neden — success sayfası:** success.html booking'i client-side **giriş yapmadan** okuyor (`getDocs where bookingId`). Salown kuralları booking read'i auth-only yaptı (`firestore.rules` `match /bookings/{docId}` → `isSuperAdmin()||isTenantAny()`) → public sorgu 403 → `data` null (try/catch yuttu) → ne detay ne buton. Buton kodu doğruydu; sorun public-read yasağıydı.
+**Root cause — success page:** success.html reads the booking client-side **without logging in** (`getDocs where bookingId`). The salOWN rules made booking read auth-only (`firestore.rules` `match /bookings/{docId}` → `isSuperAdmin()||isTenantAny()`) → the public query 403'd → `data` null (try/catch swallowed it) → neither detail nor button. The button code was correct; the problem was the public-read ban.
 
 **Fix (2026-06-26, DEPLOYED):**
-- functions (`firebase deploy --only functions:salown:<fn>`): gate genişletildi (`isOnlineSelfBooking`=source website/salown); `secrets:['BREVO_API_KEY']` **4 fonksiyona** eklendi (2 confirmation trigger + `salownCancelByToken` + `salownRescheduleByToken`); `sendBrevoEmail` headers'ı sadece doluysa ekliyor (`Object.keys(headers).length>0`).
-- success.html (gh-pages, commit 62ef765b): Firestore public-read 403 olunca `sessionStorage.pendingBooking` (Stripe'a gitmeden saklanan, aynı tab/origin korunur) fallback → satırlar + buton ondan dolar; `buildCalendarUrl` startTime yoksa date+time parse eder. **GDPR: public booking read AÇILMADI.** NOT: çıplak `?id=` URL'i yeni sekmede çalışmaz (sessionStorage yok), gerçek ödeme akışında çalışır.
+- functions (`firebase deploy --only functions:salown:<fn>`): the gate widened (`isOnlineSelfBooking`=source website/salown); `secrets:['BREVO_API_KEY']` added to **4 functions** (2 confirmation triggers + `salownCancelByToken` + `salownRescheduleByToken`); `sendBrevoEmail` adds headers only if populated (`Object.keys(headers).length>0`).
+- success.html (gh-pages, commit 62ef765b): when the Firestore public-read 403's, a `sessionStorage.pendingBooking` (stored before going to Stripe, preserved on the same tab/origin) fallback → the lines + button fill from it; `buildCalendarUrl` parses date+time when startTime is absent. **GDPR: public booking read was NOT opened.** NOTE: a bare `?id=` URL doesn't work in a new tab (no sessionStorage), but it works in the real payment flow.
 
-**Dersler:**
-- **Trigger ateşliyor ama email yok = erken-return VEYA gönderim hatası.** `functions:log`'da fonksiyonun kendi `[tenant] ... error:` satırını ara; boş log satırı = erken return. Hata mesajı kök nedeni doğrudan verir — tahmin etme.
-- **Email gönderici stratejisi değişince (Gmail→Brevo) o yola giren TÜM fonksiyonların `secrets` listesini grep'le.** `FORCE_SALOWN_SENDER_TENANTS` gibi bir bayrak, secret'i olmayan fonksiyonları sessizce kırar.
-- **Migration regresyonları KATMANLIDIR:** bir fix sonraki hatayı açar. Her fix sonrası yeni test + log; "bu son katman" varsayma.
-- **Public sayfa (success/cancel/manage) auth-gated veri okuyamaz.** Kurallar sıkılaşınca client-side public okumalar sessizce 403 alır (try/catch yutar → boş ekran). Çözüm: client'ta zaten olan veriyi (sessionStorage) kullan VEYA sınırlı-alan döndüren public Cloud Function — **booking'i public-readable YAPMA (GDPR).**
-- **Tanı araçları:** `salown-panel/serviceAccountKey.json` admin SDK okuma + REST API token'sız okuma (rules testi) + `firebase functions:log`.
+**Lessons:**
+- **Trigger fires but no email = an early-return OR a send error.** Look in `functions:log` for the function's own `[tenant] ... error:` line; an empty log line = an early return. The error message gives the root cause directly — don't guess.
+- **When the email sender strategy changes (Gmail→Brevo), grep the `secrets` list of ALL functions on that path.** A flag like `FORCE_SALOWN_SENDER_TENANTS` silently breaks functions that lack the secret.
+- **Migration regressions are LAYERED:** one fix opens the next error. A new test + log after each fix; don't assume "this is the last layer".
+- **A public page (success/cancel/manage) can't read auth-gated data.** When rules tighten, client-side public reads silently 403 (try/catch swallows → blank screen). Solution: use data the client already has (sessionStorage) OR a public Cloud Function returning a limited field set — **do NOT make the booking public-readable (GDPR).**
+- **Diagnostic tools:** `salown-panel/serviceAccountKey.json` admin SDK read + REST API token-less read (rules test) + `firebase functions:log`.
 
 ---
 
-## 2026-06-26 — Treatwell booking grid'de görünmedi (Arda T2185837725) — barber tam-ad eşleşmesi
+## 2026-06-26 — A Treatwell booking didn't show in the grid (Arda T2185837725) — barber full-name matching
 
 **Severity:** 🟡 Medium · **Owner:** — · **Status:** ✅ Resolved
-**Impact:** Booking yazıldı + notification geldi ama hiçbir barber kolonunda görünmedi ("data valid, UI invalid").
-**Root Cause:** Treatwell tam ad ("Arda Uzun") ↔ sistem ilk ad ("Arda"); exact matcher eşleşmedi + `barberName` yazılmıyordu.
-**Resolution:** Parser'da `resolveBarberName()` (ambiguity-safe first-name map) + `barberName` write + telefon regex fix (DEPLOYED).
-**Prevention:** Notification var + grid yok = **display** sorunu (create değil); eşleşme matcher'da fuzzy ile değil, kaynakta kanonik isme map'leyerek — [[feedback_barber_name_matching]].
+**Impact:** The booking was written + a notification arrived, but it didn't show in any barber column ("data valid, UI invalid").
+**Root Cause:** Treatwell full name ("Arda Uzun") ↔ system first name ("Arda"); the exact matcher didn't match + `barberName` wasn't written.
+**Resolution:** `resolveBarberName()` in the parser (ambiguity-safe first-name map) + `barberName` write + phone regex fix (DEPLOYED).
+**Prevention:** Notification present + no grid = a **display** problem (not create); matching is done not by fuzzy in the matcher but by mapping to the canonical name at source — [[feedback_barber_name_matching]].
 
-**Ne oldu:** Treatwell'den Arda'ya booking geldi (T2185837725, Jeremiah Lewis, 26 June 15:00, The Full Experience £40). Email düştü, **notification de geldi**, ama Calendar grid'de hiçbir kolonda görünmedi. Owner telefon formatından (`+1 510-228-6000`, US numarası) şüphelendi.
+**What happened:** A booking came from Treatwell for Arda (T2185837725, Jeremiah Lewis, 26 June 15:00, The Full Experience £40). The email landed, **a notification arrived too**, but it didn't show in any column in the Calendar grid. The owner suspected the phone format (`+1 510-228-6000`, a US number).
 
-**Teşhis yöntemi:** Notification geldiyse booking Firestore'a **yazılmış** demektir (notification trigger booking create'te ateşler) → sorun parse-and-create DEĞİL, görüntüleme. Service account ile Firestore doğrulandı: booking `status=CONFIRMED` mevcut ama `barberId="arda uzun"`, `barberName=undefined`. Sistemdeki barber sadece `name="Arda"` (docId `barber-1777655430086`).
+**Diagnostic method:** If a notification arrived the booking was **written** to Firestore (the notification trigger fires on booking create) → the problem is NOT parse-and-create, it's display. Verified in Firestore via the service account: the booking `status=CONFIRMED` exists but `barberId="arda uzun"`, `barberName=undefined`. The barber in the system is only `name="Arda"` (docId `barber-1777655430086`).
 
-**Kök neden — aggregator tam-ad vs sistem ilk-ad:** Treatwell `with **Arda Uzun**` (tam ad) gönderiyor → parser `barberId = barber.toLowerCase() = "arda uzun"`. `matchesBarber()` (case-insensitive exact, [[feedback_barber_name_matching]] gereği fuzzy YOK) "arda uzun" ≠ "arda" → booking hiçbir barber kolonuna düşmüyor → grid'de görünmez. **İkincil:** Treatwell yeni-booking `set()`'i `barberName`'i HİÇ yazmıyordu (tek istisna — Booksy/Fresha/Treatwell-reschedule hepsi yazıyor) → barberName fallback'i de yoktu. **Üçüncül (bağımsız):** telefon regex `[+\d][\d\s]+` ilk `-`'de duruyordu → `+1 510` olarak kesik kaydedildi (booking'i bozmaz, sadece veri kaybı).
+**Root cause — aggregator full-name vs system first-name:** Treatwell sends `with **Arda Uzun**` (full name) → the parser `barberId = barber.toLowerCase() = "arda uzun"`. `matchesBarber()` (case-insensitive exact, NO fuzzy per [[feedback_barber_name_matching]]) "arda uzun" ≠ "arda" → the booking falls into no barber column → invisible in the grid. **Secondary:** the Treatwell new-booking `set()` never wrote `barberName` (the only exception — Booksy/Fresha/Treatwell-reschedule all write it) → so there was no barberName fallback either. **Tertiary (independent):** the phone regex `[+\d][\d\s]+` stopped at the first `-` → it was saved truncated as `+1 510` (doesn't break the booking, just data loss).
 
 **Fix (2026-06-26, DEPLOYED — `firebase deploy --only functions`):**
-1. YENİ `resolveBarberName(rawName, barberCache)` helper: exact full-name match → yoksa first-name match, ama **SADECE tek barber'ın ilk adı eşleşiyorsa** (iki barber aynı ilk adı paylaşırsa tahmin etmez, raw döner). Matcher'a fuzzy eklemek yerine **kaynakta (parser) çözüm** — ilke korundu.
-2. Treatwell parser loop başında `tenants/{tid}/barbers` cache fetch; `barber = resolveBarberName(rawBarber, barberCache)` (new + reschedule ikisi de yararlanır).
-3. Eksik `barberName: barber` Treatwell new-booking write'ına eklendi.
-4. Telefon regex → `[+(]?[\d][-\d\s().]*\d` (uluslararası numara `-`/parantez dahil tam yakalar).
-5. Mevcut booking doğrudan düzeltildi (script): `barberId=arda`, `barberName=Arda`, telefon tam → Arda kolonunda göründü. (Dedup `hasExternalIdMulti` yüzünden re-parse etmezdi.)
+1. A NEW `resolveBarberName(rawName, barberCache)` helper: exact full-name match → else first-name match, but **ONLY if a single barber's first name matches** (if two barbers share the same first name it doesn't guess, returns raw). Instead of adding fuzzy to the matcher, **solve at source (parser)** — the principle is preserved.
+2. At the start of the Treatwell parser loop, a `tenants/{tid}/barbers` cache fetch; `barber = resolveBarberName(rawBarber, barberCache)` (both new + reschedule benefit).
+3. The missing `barberName: barber` was added to the Treatwell new-booking write.
+4. Phone regex → `[+(]?[\d][-\d\s().]*\d` (captures an international number fully including `-`/parentheses).
+5. The existing booking was fixed directly (script): `barberId=arda`, `barberName=Arda`, phone full → it showed in Arda's column. (Dedup `hasExternalIdMulti` meant it wouldn't re-parse.)
 
-**Dersler:**
-- **Notification geldi + grid'de yok = create değil DISPLAY sorunu.** Önce Firestore'da doc'u doğrula; "parser patladı" sanma. Trigger ateşlediyse veri zaten yazılı.
-- **Aggregator barber adı formatı tenant'la aynı olmayabilir** (Treatwell tam ad, sistem ilk ad). Eşleştirme matcher'da fuzzy ile DEĞİL, parser'da kanonik isme map'leyerek çözülür ([[feedback_barber_name_matching]]: "wrong source name = fix the source").
-- **First-name match'te ambiguity koruması şart:** birden fazla barber aynı ilk adı paylaşıyorsa tahmin etme, raw bırak — yanlış barber'a yazmaktansa görünmez kalsın (teşhis edilebilir).
-- **`barberName` her parser write'ında olmalı** (matcher fallback'i). Bir parser yolunda eksikse grid eşleşmesi tek `barberId`'ye bağımlı kalır ve kırılgandır — üç parser write'ını da grep'le doğrula.
+**Lessons:**
+- **Notification arrived + not in grid = not a create but a DISPLAY problem.** First verify the doc in Firestore; don't assume "the parser blew up". If the trigger fired, the data is already written.
+- **An aggregator's barber name format may not be the same as the tenant's** (Treatwell full name, system first name). Matching is solved NOT by fuzzy in the matcher, but by mapping to the canonical name in the parser ([[feedback_barber_name_matching]]: "wrong source name = fix the source").
+- **Ambiguity protection is mandatory in first-name matching:** if more than one barber shares the same first name, don't guess, leave it raw — better invisible (diagnosable) than writing to the wrong barber.
+- **`barberName` must be on every parser write** (the matcher fallback). If it's missing on one parser path, the grid match depends solely on `barberId` and is fragile — grep-verify all three parser writes.
 
 ---
 
-## 2026-06-24 — Loyalty email belirli bir client'a gitmiyor (Adam Wu) — bozuk adres + stuck flag + propagasyon eksiği
+## 2026-06-24 — Loyalty email not going to a specific client (Adam Wu) — corrupt address + stuck flag + propagation gap
 
 **Severity:** 🟡 Medium · **Owner:** — · **Status:** ✅ Resolved
-**Impact:** Loyalty email gitmedi ama panel "sent" dedi; retry hiç tetiklenmedi (optimistik UI yanıltması).
-**Root Cause:** 3 zincir — email format validasyonu yok (`gmailcom`) + CF try-catch'siz → bayrak `true` takıldı + client edit booking'e propagate olmuyor.
-**Resolution:** `isValidEmail` tüm girişlerde + try/catch bayrak sıfırlama + gerçek durum + Retry + batch propagate (commit `168bd35`/`9bf03a6`, DEPLOYED).
-**Prevention:** Email'de asla optimistik "sent" (durum sunucudan); dış API hep try/catch; retry `false→true`; client kimliği booking'e snapshot → edit'te propagate.
+**Impact:** The loyalty email didn't go but the panel said "sent"; the retry never fired (optimistic-UI deception).
+**Root Cause:** 3 chain — no email format validation (`gmailcom`) + the CF without try-catch → the flag stuck `true` + a client edit not propagating to the booking.
+**Resolution:** `isValidEmail` on all inputs + try/catch flag reset + real status + Retry + batch propagate (commit `168bd35`/`9bf03a6`, DEPLOYED).
+**Prevention:** Never optimistic "sent" for email (status from the server); an external API always in try/catch; retry `false→true`; the client identity is snapshotted to the booking → propagate on edit.
 
-**Ne oldu:** Adam Wu'nun checkout'unda loyalty email gitmedi. Panelden "Send loyalty email" denince ekran "sent" diyordu ama email gitmiyordu. Aynı saatte Alex üzerinden satış yapılan başka client'a email sorunsuz gitti → sistem geneli sağlam, soruna client'a özel.
+**What happened:** The loyalty email didn't go on Adam Wu's checkout. When "Send loyalty email" was pressed from the panel, the screen said "sent" but the email didn't go. At the same time an email went fine to another client sold to via Alex → the system is healthy overall, the problem is client-specific.
 
-**Teşhis:** Client email'i bozuk girilmişti — `adamwu838@gmailcom` (gmail.com'da **nokta eksik**). Geçersiz adres → Brevo 400.
+**Diagnosis:** The client email was entered corrupted — `adamwu838@gmailcom` (a **missing dot** in gmail.com). An invalid address → Brevo 400.
 
-**Kök neden (zincir, 3 katman):**
-1. **Bozuk adres kaydedilebiliyordu:** Hiçbir giriş noktasında email format validasyonu yoktu (sadece "boş mu" kontrolü). `name@gmailcom` kabul ediliyordu.
-2. **CF try-catch'siz → stuck flag:** `salownSendLoyaltyEmail` Brevo'ya gönderirken çöktü; `sendLoyaltyEmail` bayrağını `false`'a sıfırlayan satır hiç çalışmadı → booking'de bayrak **`true` takılı** kaldı. Fonksiyon sadece `false→true` geçişinde tetiklendiği için tekrar "Send" deyince HİÇ tetiklenmiyordu (panel "sent" diyor, hiçbir şey olmuyor — optimistik UI yanıltması).
-3. **Client edit booking'e yansımıyordu:** Clients sayfasından email düzeltilse bile booking dökümanındaki `clientEmail` eski/bozuk kalıyordu → booking detail'den gönderince yine bozuk adrese gidiyordu.
+**Root cause (chain, 3 layers):**
+1. **A corrupt address could be saved:** there was no email format validation at any entry point (only a "is it empty" check). `name@gmailcom` was accepted.
+2. **The CF without try-catch → stuck flag:** `salownSendLoyaltyEmail` crashed while sending to Brevo; the line that resets the `sendLoyaltyEmail` flag to `false` never ran → the flag stayed **stuck `true`** on the booking. Because the function only fires on a `false→true` transition, pressing "Send" again NEVER triggered it (the panel says "sent", nothing happens — optimistic-UI deception).
+3. **The client edit didn't propagate to the booking:** even if the email was corrected from the Clients page, the `clientEmail` in the booking document stayed old/corrupt → sending from the booking detail still went to the corrupt address.
 
 **Fix (2026-06-24, DEPLOYED — commit `168bd35` + `9bf03a6` hosting, `salownSendLoyaltyEmail` functions deploy):**
-1. `src/utils/email.js` (YENİ `isValidEmail`) → format validasyonu tüm giriş noktalarında: `BookingPage`, `AddClientModal`, `Clients` (edit), `WalkInForm`, `NewBookingSheet` (staff source pushlandı, bundle ertelendi).
-2. `salownSendLoyaltyEmail`: gönderim öncesi format reddi (`loyaltyEmailBounced` işaretler) + `sendBrevoEmail` `try/catch` → başarısızlıkta çökmeden bayrağı sıfırlar + `loyaltyEmailError` kaydeder. Stuck flag bir daha oluşmaz.
-3. `BookingDetailPanel`: optimistik "sent" KALDIRILDI → gerçek durum booking'den (live snapshot); başarısızlıkta "⚠️ Couldn't send" + **🔄 Retry**; manuel trigger artık önce `false` sonra `true` yazıyor → takılı bayrağı kırar.
-4. `Clients.jsx handleEditClient`: client edit'i artık **tüm assigned booking'lere batch propagate** ediyor (manualId / eski email / eski telefon ile eşleştirip `clientName/clientEmail/clientPhone` günceller). Telefon stabil olduğu için email zaten düzeltilmiş olsa bile booking'i yakalar.
+1. `src/utils/email.js` (NEW `isValidEmail`) → format validation at all entry points: `BookingPage`, `AddClientModal`, `Clients` (edit), `WalkInForm`, `NewBookingSheet` (staff source pushed, bundle deferred).
+2. `salownSendLoyaltyEmail`: a format rejection before sending (marks `loyaltyEmailBounced`) + `sendBrevoEmail` in `try/catch` → on failure resets the flag without crashing + records `loyaltyEmailError`. The stuck flag no longer forms.
+3. `BookingDetailPanel`: the optimistic "sent" was REMOVED → the real status from the booking (live snapshot); on failure "⚠️ Couldn't send" + **🔄 Retry**; the manual trigger now writes `false` first then `true` → breaking the stuck flag.
+4. `Clients.jsx handleEditClient`: a client edit now **batch-propagates to all assigned bookings** (matching by manualId / old email / old phone and updating `clientName/clientEmail/clientPhone`). Because the phone is stable, it catches the booking even if the email had already been corrected.
 
-**Dersler:**
-- **Email'i ASLA optimistik "sent" gösterme.** Gerçek gönderim sonucu sunucudan (bayrak) gelmeli; aksi halde başarısız gönderim "başarılı" görünür ve teşhis günlerce gecikir.
-- **Dış API çağrısı (Brevo) HER ZAMAN try/catch içinde.** Yakalanmayan hata, sonraki idempotency bayrağını sıfırlamayı atlar → "stuck flag" → fonksiyon bir daha tetiklenmez.
-- **Tetikleyici bayrak (`false→true`) tasarımında, manuel retry önce `false` yazıp sonra `true` yapmalı** — yoksa takılı `true` durumundan çıkış yok.
-- **Client kimliği (isim/telefon/email) booking'e snapshot'lanıyor** → client doc'unu güncellemek booking'leri otomatik güncellemez; edit'te eski kimlikle eşleştirip booking'lere propagate ET.
-- **Giriş validasyonu = ilk savunma hattı.** Bozuk veri hiç girmezse alt katmanlardaki crash senaryoları da tetiklenmez.
-
----
-
-## 2026-06-24 — Treatwell booking sisteme düşmedi (Muhamed T2185616487) — İKİ üst üste bug
-
-**Severity:** 🟠 High (**11 gün** tüm Treatwell yeni booking'leri kayıp) · **Owner:** — · **Status:** ✅ Resolved
-**Impact:** Treatwell yeni booking Firestore'a hiç yazılmadı; 13→24 Haz arası tüm Treatwell yeni booking'leri sessizce kayıp.
-**Root Cause:** `orderRef is not defined` (13 Haz refactor `96d6e7a` tanımı sildi, 3 kullanımı bıraktı → ReferenceError) + seen-skip yarım fix.
-**Resolution:** `const orderRef` geri + seen-skip Fresha/Treatwell'de tamamen kaldırıldı, Booksy paritesi (DEPLOYED).
-**Prevention:** Booking düşmüyorsa ÖNCE `functions:log`; refactor-orphan → değişkenin tüm kullanımlarını grep (`node -c` runtime hatasını yakalamaz); bir parser'da bug bulunca diğer ikisini de grep'le.
-
-**Ne oldu:** Treatwell'den yeni booking yapıldı (T2185616487, Muhamed Kanidagli, 24 June 10:45, The Full Experience £40, Alex). Email salon Gmail'ine düştü ama booking Firestore'a hiç yazılmadı — Calendar'da iz yok. Aynı gün Booksy booking'i sorunsuz düştü → sorun ortak (Firestore rules/veri) DEĞİL, Treatwell'e özel.
-
-**Teşhis yöntemi (önemli):** Firestore'a ADC olmadan bakılamadı; bunun yerine `firebase functions:log --only salownParseEmails | grep -i treatwell` çalıştırıldı → **`[whitecross] Treatwell parse error: orderRef is not defined`**. Loglar kök nedeni doğrudan verdi. (Booking düşmüyorsa ÖNCE parser loglarına bak — tahmin etme.)
-
-**Kök neden #1 — `orderRef is not defined` (ASIL sebep, refactor-orphan):** Orijinal kod (commit `7f94588`, 2026-06-05) `const orderRef = refMatch ? refMatch[1] : ...` tanımlıyor, `externalId`'yi ondan türetiyordu. **2026-06-13 refactor'u (commit `96d6e7a` "source")** `externalId`'yi `TREATWELL-${refMatch[1]}` olarak sadeleştirdi ve `const orderRef` satırını sildi — ama `orderRef`'i kullanan 3 yeri (`treatwellRef: orderRef` + reschedule map push'u) SİLMEDİ. Öksüz kalan değişken her Treatwell yeni-booking + reschedule `set()`'inde `ReferenceError` atıyordu. Try/catch yakalayıp `result.errors`'a koyuyor, booking sessizce düşüyordu. **11 gün boyunca (13→24 Haziran) tüm Treatwell yeni booking'leri kayıptı.**
-
-**Kök neden #2 — seen-skip (maske/ikincil):** Treatwell parser'ı (`:2279`) `if (seen && !isCancellation && !isReschedule) { skip }` ile okunmuş yeni booking'i atlıyordu. Owner email'i Gmail'de açınca tetiklendi. Bu 2026-06-20 "Damian 21 June" (Bug Kalıbı #8) olayının Treatwell tekrarı. 2026-06-20'de seen-skip Booksy'de TAM kaldırıldı ama aynı commit (`472fbec`) Fresha + Treatwell'e sadece `&& !isReschedule` istisnası ekledi — yarım fix. Yorum "No seen-skip for reschedules/cancels" diyordu, "halloldu" sanıldı.
-
-**Fix (2026-06-24, ikisi de):**
-1. `orderRef` tanımı geri eklendi: `externalId`'nin hemen altına `const orderRef = refMatch[1];` (`functions/index.js:2293`).
-2. seen-skip Fresha (`:1978`) + Treatwell (`:2279`)'de tamamen kaldırıldı, Booksy paritesi. `grep "if (seen"` → sıfır kalıntı.
-- `node -c` OK. `firebase deploy --only functions --project havuz-44f70` DEPLOYED (iki kez transient "Internal error", retry'da geçti).
-
-**Dersler:**
-- **Booking düşmüyorsa ÖNCE `functions:log`'a bak.** Loglar `orderRef is not defined` diyordu; tahminle uğraşmak yerine 1 komutla kök neden.
-- **Refactor-orphan:** Bir değişkenin tanımını/adını değiştirirken TÜM kullanımlarını grep'le (`grep -n "orderRef" functions/index.js`). Tanım silindi ama kullanım kaldı = sessiz ReferenceError. `node -c` bunu yakalamaz (runtime hatası), sadece çalıştırma/lint yakalar.
-- **Parser izolasyonu:** Her parser ayrı fonksiyon; birinde yapılan refactor diğerini etkilemez ama AYNI bug kalıbı (seen-skip, orderRef-türü tanımlar) hepsinde tekrar eder. Bir parser'da bug bulunca diğer ikisinde de aynı satırı grep'le.
-- **Yarım fix > hiç fix tehlikesi:** Çoklu parser'a fix uygularken üçünü de fiziksel doğrula; "benzer yorum var" ≠ "aynı davranış".
+**Lessons:**
+- **NEVER show an optimistic "sent" for email.** The real send result must come from the server (the flag); otherwise a failed send looks "successful" and the diagnosis is delayed for days.
+- **An external API call (Brevo) is ALWAYS inside try/catch.** An uncaught error skips resetting the next idempotency flag → "stuck flag" → the function never fires again.
+- **In a trigger-flag (`false→true`) design, a manual retry must write `false` first then `true`** — otherwise there's no exit from a stuck `true` state.
+- **The client identity (name/phone/email) is snapshotted to the booking** → updating the client doc does not auto-update the bookings; on edit, match by the old identity and propagate to the bookings.
+- **Input validation = the first line of defense.** If corrupt data never gets in, the crash scenarios in lower layers are never triggered either.
 
 ---
 
-## 2026-06-22 — Team Members'ta barber revenue "NaN" (Arda)
+## 2026-06-24 — A Treatwell booking didn't land in the system (Muhamed T2185616487) — TWO back-to-back bugs
 
-**Severity:** 🟢 Low (tek ekran) · **Owner:** — · **Status:** ✅ Resolved
-**Impact:** Team Members'ta Arda'nın revenue değeri `£NaN` göründü.
-**Root Cause:** `parseFloat("£20.00")` → NaN (import kalıntısı para-simgeli string); tek NaN tüm toplamı zehirler.
-**Resolution:** `pp()` canonical para-parser + aynı-sınıf sweep (commit `198ffde`).
-**Prevention:** Firestore para alanları ham `parseFloat`/`Number` ile toplanmaz; hep `pp()`/`parsePrice()` ya da `(Number(x)||0)` guard.
+**Severity:** 🟠 High (**11 days** of all Treatwell new bookings lost) · **Owner:** — · **Status:** ✅ Resolved
+**Impact:** The Treatwell new booking was never written to Firestore; all Treatwell new bookings between 13→24 Jun were silently lost.
+**Root Cause:** `orderRef is not defined` (the 13 Jun refactor `96d6e7a` deleted the definition, left 3 uses → ReferenceError) + a half-done seen-skip fix.
+**Resolution:** `const orderRef` restored + seen-skip fully removed in Fresha/Treatwell, Booksy parity (DEPLOYED).
+**Prevention:** If a booking isn't landing, FIRST `functions:log`; a refactor-orphan → grep all uses of the variable (`node -c` doesn't catch a runtime error); when you find a bug in one parser, grep the other two too.
 
-**Ne oldu:** salown-app → Team Members (Barbers.jsx) ekranında Arda'nın revenue değeri `£NaN` görünüyordu.
+**What happened:** A new booking was made on Treatwell (T2185616487, Muhamed Kanidagli, 24 June 10:45, The Full Experience £40, Alex). The email landed in the salon Gmail but the booking was never written to Firestore — no trace in the Calendar. The same day a Booksy booking landed fine → so the problem is Treatwell-specific, NOT a shared one (Firestore rules/data).
 
-**Kök neden:** `src/pages/Barbers.jsx:88` revenue'yu `parseFloat(bk.price || 0)` ile topluyordu. Arda'nın booking'lerinden en az birinde `price` alanı sayısal değil para-simgeli string (`"£20.00"` — Booksy/Fresha import kalıntısı). `parseFloat("£20.00")` → `NaN`; tek bir NaN tüm toplamı NaN'e çevirir ve `.toFixed(0)` → `"NaN"`. Bu yüzden sadece o tür booking'i olan barber etkilendi.
+**Diagnostic method (important):** Firestore couldn't be accessed without ADC; instead `firebase functions:log --only salownParseEmails | grep -i treatwell` was run → **`[whitecross] Treatwell parse error: orderRef is not defined`**. The logs gave the root cause directly. (If a booking isn't landing, look at the parser logs FIRST — don't guess.)
+
+**Root cause #1 — `orderRef is not defined` (the ACTUAL cause, a refactor-orphan):** The original code (commit `7f94588`, 2026-06-05) defined `const orderRef = refMatch ? refMatch[1] : ...` and derived `externalId` from it. **The 2026-06-13 refactor (commit `96d6e7a` "source")** simplified `externalId` to `TREATWELL-${refMatch[1]}` and deleted the `const orderRef` line — but did NOT DELETE the 3 places that used `orderRef` (`treatwellRef: orderRef` + the reschedule map push). The orphaned variable threw a `ReferenceError` on every Treatwell new-booking + reschedule `set()`. Try/catch caught it and put it in `result.errors`, and the booking silently dropped. **For 11 days (13→24 June) all Treatwell new bookings were lost.**
+
+**Root cause #2 — seen-skip (mask/secondary):** The Treatwell parser (`:2279`) skipped a read new booking with `if (seen && !isCancellation && !isReschedule) { skip }`. It was triggered when the owner opened the email in Gmail. This is a Treatwell recurrence of the 2026-06-20 "Damian 21 June" (Bug Pattern #8) incident. On 2026-06-20 seen-skip was FULLY removed in Booksy but the same commit (`472fbec`) added only a `&& !isReschedule` exception to Fresha + Treatwell — a half fix. The comment said "No seen-skip for reschedules/cancels", and it was assumed "done".
+
+**Fix (2026-06-24, both):**
+1. The `orderRef` definition was restored: `const orderRef = refMatch[1];` right below `externalId` (`functions/index.js:2293`).
+2. seen-skip was fully removed in Fresha (`:1978`) + Treatwell (`:2279`), Booksy parity. `grep "if (seen"` → zero remnants.
+- `node -c` OK. `firebase deploy --only functions --project havuz-44f70` DEPLOYED (twice transient "Internal error", passed on retry).
+
+**Lessons:**
+- **If a booking isn't landing, look at `functions:log` FIRST.** The logs said `orderRef is not defined`; instead of struggling with guesses, the root cause in 1 command.
+- **Refactor-orphan:** When changing a variable's definition/name, grep ALL its uses (`grep -n "orderRef" functions/index.js`). Definition deleted but use remained = a silent ReferenceError. `node -c` doesn't catch this (a runtime error), only running/lint catches it.
+- **Parser isolation:** Each parser is a separate function; a refactor in one doesn't affect another, but the SAME bug pattern (seen-skip, orderRef-type definitions) recurs in all. When you find a bug in one parser, grep the same line in the other two.
+- **The danger of a half fix > no fix:** when applying a fix to multiple parsers, physically verify all three; "there's a similar comment" ≠ "the same behavior".
+
+---
+
+## 2026-06-22 — Barber revenue "NaN" in Team Members (Arda)
+
+**Severity:** 🟢 Low (single screen) · **Owner:** — · **Status:** ✅ Resolved
+**Impact:** Arda's revenue value showed as `£NaN` in Team Members.
+**Root Cause:** `parseFloat("£20.00")` → NaN (a currency-symboled string, an import remnant); a single NaN poisons the whole sum.
+**Resolution:** The `pp()` canonical money-parser + a same-class sweep (commit `198ffde`).
+**Prevention:** Firestore money fields aren't summed with raw `parseFloat`/`Number`; always `pp()`/`parsePrice()` or a `(Number(x)||0)` guard.
+
+**What happened:** On the salown-app → Team Members (Barbers.jsx) screen, Arda's revenue value showed as `£NaN`.
+
+**Root cause:** `src/pages/Barbers.jsx:88` summed revenue with `parseFloat(bk.price || 0)`. In at least one of Arda's bookings the `price` field is not numeric but a currency-symboled string (`"£20.00"` — a Booksy/Fresha import remnant). `parseFloat("£20.00")` → `NaN`; a single NaN turns the whole sum into NaN, and `.toFixed(0)` → `"NaN"`. That's why only a barber who has that kind of booking was affected.
 
 **Fix (2026-06-22):**
-1. Canonical para-parser `pp()` (`src/utils/bookingUtils.js`) import edildi — `£`/virgül temizler, sonuç NaN ise `|| 0` ile yutar.
+1. The canonical money-parser `pp()` (`src/utils/bookingUtils.js`) was imported — it strips `£`/commas, and swallows a NaN result with `|| 0`.
 2. `parseFloat(bk.price || 0)` → `pp(bk.price)`.
 
-**Ders:** Firestore'daki para alanları (`price`, `paidAmount` …) ham `parseFloat`/`Number()` ile toplanmamalı veya gösterilmemeli — import edilmiş veride para simgeli/boş string olabilir. Daima `pp()`/`parsePrice()` kullan ya da `(Number(x)||0)` ile guard'la; tek NaN bütün toplamı zehirler.
+**Lesson:** Money fields in Firestore (`price`, `paidAmount` …) must not be summed or displayed with raw `parseFloat`/`Number()` — imported data can have currency-symboled/empty strings. Always use `pp()`/`parsePrice()` or guard with `(Number(x)||0)`; a single NaN poisons the whole sum.
 
-**Sweep (aynı gün):** Tüm para okumaları tarandı, aynı sınıftaki kalan yerler kapatıldı (commit `198ffde`): `BookingPage.jsx` + `SalonSitePage.jsx:475` + `Products.jsx:222` müşteriye-dönük `Number(price).toFixed()` → `(Number(price)||0)`; `Finance.jsx` tip toplamları → `parsePrice(b.tip)`. Geri kalan okumalar zaten canonical (`replace(/[£,]/g,'')||0`) veya Finance-owned numeric.
+**Sweep (same day):** All money reads were scanned, the remaining places of the same class were closed (commit `198ffde`): `BookingPage.jsx` + `SalonSitePage.jsx:475` + `Products.jsx:222` customer-facing `Number(price).toFixed()` → `(Number(price)||0)`; `Finance.jsx` tip sums → `parsePrice(b.tip)`. The rest of the reads are already canonical (`replace(/[£,]/g,'')||0`) or Finance-owned numeric.
 
 ---
 
-## 2026-06-20 — Damian Adams-Peatling: geriye reschedule + zincir reschedule çöküşü
+## 2026-06-20 — Damian Adams-Peatling: a backward reschedule + a chained-reschedule collapse
 
 **Severity:** 🟠 High · **Owner:** — · **Status:** ✅ Resolved
-**Impact:** Booking hiç düşmedi → sonra zincir reschedule (31 Jul→1 Jul) uygulanmadı, booking 31 Jul'da takıldı.
-**Root Cause:** 3 katman — seen-skip booking kaybı + çok-kelimeli isimde string-parse ID kırılması + "hep ileri tarih" yön varsayımı.
-**Resolution:** Booksy seen-skip kaldır + temiz `oldDate`/`oldTime` sorgu + `lastRescheduleEmailMs` ordering guard (`0a03411`/`42def41`).
-**Prevention:** Reschedule YÖNDEN BAĞIMSIZ (en yeni email zamanı kazanır); "seen" email booking kaybına dönüşmez (idempotency guard); türev-ID string parse çok-kelimeli isimde kırılır.
+**Impact:** The booking never landed → then the chained reschedule (31 Jul→1 Jul) wasn't applied, the booking stuck on 31 Jul.
+**Root Cause:** 3 layers — seen-skip booking loss + string-parse ID breakage on a multi-word name + a "always a future date" direction assumption.
+**Resolution:** Remove Booksy seen-skip + a clean `oldDate`/`oldTime` query + a `lastRescheduleEmailMs` ordering guard (`0a03411`/`42def41`).
+**Prevention:** A reschedule is DIRECTION-INDEPENDENT (the newest email time wins); a "seen" email doesn't turn into a booking loss (an idempotency guard); a derived-ID string parse breaks on a multi-word name.
 
-**Ne oldu:**
-1. Damian Booksy'den **Cut Deluxe** booking yaptı, 21 June için.
-2. Booking **ilk başta sisteme hiç düşmedi** — Firestore'da iz yok, hata da yok.
-3. Sonra Damian booking'i **21 June → 31 July**'a aldı (reschedule). Sistem bunu uyguladı.
-4. Arda'yla "5 haftadan fazla fark var, bu adam bizi mi deniyor?" dedik; aradık. Müşteri
-   "something came up, yanlış olmuş" dedi. **1 July**'a alalım dedik. Salown kuralı gereği
-   reschedule'ı **müşterinin kendisi Booksy'den** yapması gerektiğini söyledik.
-5. Damian kendisi **31 July → 1 July**'a aldı — yani ilk kez **daha ERKEN** bir tarihe.
-6. Bu son reschedule **uygulanmadı**; booking 31 July'da takılı kaldı.
+**What happened:**
+1. Damian made a **Cut Deluxe** booking on Booksy, for 21 June.
+2. The booking **never landed in the system at first** — no trace in Firestore, no error either.
+3. Then Damian moved the booking **21 June → 31 July** (reschedule). The system applied this.
+4. We said with Arda "the gap is more than 5 weeks, is this guy testing us?"; we called. The customer
+   said "something came up, it was a mistake". We said let's move it to **1 July**. Per the salOWN rule we told him the
+   reschedule must be done **by the customer himself on Booksy**.
+5. Damian himself moved it **31 July → 1 July** — i.e. for the first time to an **EARLIER** date.
+6. This last reschedule **was not applied**; the booking stuck on 31 July.
 
-**Kök nedenler (üç ayrı katman):**
-- **(2. adım) Seen-skip booking kaybı:** Onay email'i parser (5 dk periyot) çalışmadan önce Gmail'de
-  açılmıştı (seen). `if (seen && !isCancellation) skip` okunmuş yeni booking'i sessizce düşürüyordu.
-- **(6. adım) Zincir reschedule kırık eşleşme:** Booking 21Jun→31Jul taşınınca doc hâlâ orijinal
-  ID'sini taşıyordu. İkinci reschedule (31Jul→1Jul) için booking'i mevcut tarih/saatiyle bulmak
-  gerekiyordu; eski fallback `oldExternalId` string'ini parçalayıp tarih çıkarmaya çalışıyordu ve
-  **"Damian Adams-Peatling"** çok-kelimeli isminde parçalama kayıyordu → booking bulunamadı.
-  Ayrıca o email de seen'di → C sorunu üst üste bindi.
-- **(Tasarım kusuru) Yön varsayımı:** Reschedule logic'i, müşterinin **hep ileri tarihe** alacağı
-  varsayımıyla tasarlanmıştı. Doğru kıstas **en yeni email'in geliş zamanı (`emailDateMs`)** — booking
-  tarihinin yönü değil. Geriye reschedule (1 July) bu varsayımı kırdı.
+**Root causes (three separate layers):**
+- **(Step 2) Seen-skip booking loss:** The confirmation email had been **opened** in Gmail (seen) before the parser (5-min period) ran.
+  `if (seen && !isCancellation) skip` silently dropped the read new booking.
+- **(Step 6) Chained-reschedule broken matching:** When the booking moved 21Jun→31Jul the doc still carried its original
+  ID. For the second reschedule (31Jul→1Jul) the booking had to be found by its current date/time;
+  the old fallback tried to split the `oldExternalId` string to extract the date, and
+  the split **broke on the multi-word name "Damian Adams-Peatling"** → the booking couldn't be found.
+  Also that email was seen too → problem C stacked on top.
+- **(Design flaw) Direction assumption:** The reschedule logic was designed with the assumption the customer would **always move to a future date**.
+  The correct criterion is **the arrival time of the newest email (`emailDateMs`)** — not the direction of the booking
+  date. A backward reschedule (1 July) broke this assumption.
 
 **Fixes (2026-06-20, commit 0a03411 + 42def41):**
-1. **C** — Booksy'de seen-skip tamamen kaldırıldı (her yol idempotent). Yeni booking ve reschedule
-   okunmuş olsa bile işlenir. (Fresha/Treatwell'de şimdilik sadece reschedule için — yeni booking açık, bkz PARSER_NOTES #8.)
-2. **A** — Reschedule email'inden temiz `oldDate`/`oldTime` taşınıp canlı booking `where date==/time==`
-   ile bulunuyor; kırılgan string parse kaldırıldı (Booksy'ye özgü).
-3. **B** — `lastRescheduleEmailMs` ordering guard: eski/gecikmiş email yeniyi ezemez (üç parser).
-4. Yanıltıcı `"higher date wins"` yorumları (Fresha/Treatwell) "en yeni email kazanır" diye düzeltildi.
+1. **C** — seen-skip was fully removed in Booksy (every path idempotent). A new booking and a reschedule are processed
+   even if read/seen. (In Fresha/Treatwell only for reschedule for now — new booking still open, see PARSER_NOTES #8.)
+2. **A** — a clean `oldDate`/`oldTime` is carried from the reschedule email and the live booking is found by `where date==/time==`;
+   the fragile string parse was removed (Booksy-specific).
+3. **B** — `lastRescheduleEmailMs` ordering guard: an old/delayed email can't overwrite a newer one (all three parsers).
+4. The misleading `"higher date wins"` comments (Fresha/Treatwell) were corrected to "the newest email wins".
 
-**Doğrulandı:** Parser run otomatik 31 July→1 July'ı çekti, kullanıcı müdahalesi olmadan. ✅
+**Verified:** A parser run automatically pulled the 31 July→1 July, with no user intervention. ✅
 
-**Dersler:**
-- Reschedule YÖNDEN BAĞIMSIZ — erken/geç fark etmez, daima en yeni email'in zamanına bak.
-- "Seen" bir email'i asla booking kaybına çevirme — idempotency guard'lar seen-skip'in yerini alır.
-- Date/time türevli ID üzerinden string parse = çok-kelimeli isimde kırılır; stabil ref yoksa
-  booking'i mevcut tarih/saatiyle sorgula.
+**Lessons:**
+- A reschedule is DIRECTION-INDEPENDENT — earlier/later doesn't matter, always look at the newest email's time.
+- Never turn a "seen" email into a booking loss — idempotency guards replace seen-skip.
+- A string parse over a date/time-derived ID = breaks on a multi-word name; if there's no stable ref, query
+  the booking by its current date/time.
 
 ---
 
 ## 2026-06-17 — Jakov Zorić Duplicate Booking
 
 **Severity:** 🟡 Medium · **Owner:** — · **Status:** ✅ Resolved
-**Impact:** Aynı Booksy rezervasyonu iki farklı doc olarak Firestore'a yazıldı.
-**Root Cause:** İki parser aynı inbox'ı okuyor (Gmail API + IMAP), farklı `externalId` üretiyor (base64 decode eksikti); Gmail API `\Seen` set etmiyor.
+**Impact:** The same Booksy reservation was written to Firestore as two different docs.
+**Root Cause:** Two parsers read the same inbox (Gmail API + IMAP), producing different `externalId` (base64 decode was missing); the Gmail API doesn't set `\Seen`.
 **Resolution:** `extractTextFromRaw` base64 fix + slot tombstone + whitecross-site Booksy parser disabled.
-**Prevention:** İki parser aynı inbox okursa `externalId` formatları tam eşleşmeli; tombstone = son güvenlik ağı.
+**Prevention:** If two parsers read the same inbox, the `externalId` formats must match exactly; the tombstone = the last safety net.
 
-**Ne oldu:** Aynı Booksy rezervasyonu iki farklı doc olarak Firestore'a yazıldı.
+**What happened:** The same Booksy reservation was written to Firestore as two different docs.
 
-**Kök neden:** `parseBooksyConfirmations` (whitecross-site, Gmail API) ve `salownParseEmails` (salown-app, IMAP) aynı anda çalışıyordu. Gmail API `\Seen` flag'ini set etmez, IMAP aynı emailı yeniden gördü. İki parser farklı `externalId` üretiyordu:
-- Gmail API: `BOOKSY-1780000805806` (base64 MIME part decode doğru)
-- IMAP: `BOOKSY-Jakov-Zorić-29-May-2026-15:30` (base64 decode yoktu, booking# bulunamadı)
+**Root cause:** `parseBooksyConfirmations` (whitecross-site, Gmail API) and `salownParseEmails` (salown-app, IMAP) were running at the same time. The Gmail API doesn't set the `\Seen` flag, so IMAP saw the same email again. The two parsers produced different `externalId`:
+- Gmail API: `BOOKSY-1780000805806` (correct base64 MIME part decode)
+- IMAP: `BOOKSY-Jakov-Zorić-29-May-2026-15:30` (no base64 decode, the booking# not found)
 
 **Fixes (2026-06-17):**
-1. `extractTextFromRaw` artık `text/plain` MIME part'ı önce çekiyor, base64-decode yapıyor
-2. Slot tombstone: her başarılı Booksy import'ta `parserTombstones/SLOT-Booksy-{date}-{time}`
-3. `parseBooksyConfirmations` + `parseBooksyCancellations` whitecross-site'da disabled
+1. `extractTextFromRaw` now pulls the `text/plain` MIME part first and does a base64-decode
+2. Slot tombstone: on every successful Booksy import a `parserTombstones/SLOT-Booksy-{date}-{time}`
+3. `parseBooksyConfirmations` + `parseBooksyCancellations` disabled in whitecross-site
 
-**Ders:** İki parser aynı inbox'ı okuyorsa, externalId formatları tam eşleşmeli. Tombstone = son güvenlik ağı.
+**Lesson:** If two parsers read the same inbox, the externalId formats must match exactly. The tombstone = the last safety net.
 
 ---
 
 ## GitHub Key Exposure
 
-**Severity:** 🔴 Critical (secret sızıntısı) · **Owner:** — · **Status:** ✅ Resolved · **Date:** ⚠️ kayıtta yok
-**Impact:** `serviceAccountKey.json` GitHub'a push edildi (admin SDK credential sızıntısı).
-**Root Cause:** Key `.gitignore`'da değildi / yanlışlıkla commit edildi.
-**Resolution:** Key revoke + yeni key oluşturuldu.
-**Prevention:** `serviceAccountKey.json` asla commit edilmez, `.gitignore`'da olmalı.
+**Severity:** 🔴 Critical (secret leak) · **Owner:** — · **Status:** ✅ Resolved · **Date:** ⚠️ not in the record
+**Impact:** `serviceAccountKey.json` was pushed to GitHub (admin SDK credential leak).
+**Root Cause:** The key was not in `.gitignore` / was committed by mistake.
+**Resolution:** Key revoked + a new key created.
+**Prevention:** `serviceAccountKey.json` is never committed, must be in `.gitignore`.
 
-**Ne oldu:** `serviceAccountKey.json` GitHub'a push edildi.
+**What happened:** `serviceAccountKey.json` was pushed to GitHub.
 
-**Çözüm:** Key revoke edildi, yeni key oluşturuldu.
+**Resolution:** The key was revoked, a new key was created.
 
-**Kural:** `serviceAccountKey.json` asla git'e commit edilmez. `.gitignore`'da olmalı.
+**Rule:** `serviceAccountKey.json` is never committed to git. It must be in `.gitignore`.
 
 ---
 
 ## Notlar
 
-- `checkDuplicateInFirestore` (whitecross-site script.js:471): locked rules altında fails-open — kabul edilebilir, booking devam eder.
-- `salownGetBusySlots` + `salownRescheduleByToken`: expired PENDING bookings'i (`expiresAt < now`) skip eder — abandoned Stripe sessions 0-20dk arasında slot ghost-block etmez.
+- `checkDuplicateInFirestore` (whitecross-site script.js:471): under locked rules it fails-open — acceptable, the booking continues.
+- `salownGetBusySlots` + `salownRescheduleByToken`: skip expired PENDING bookings (`expiresAt < now`) — abandoned Stripe sessions don't ghost-block a slot for 0-20 min.

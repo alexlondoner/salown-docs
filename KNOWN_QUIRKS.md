@@ -1,90 +1,90 @@
-# KNOWN_QUIRKS.md — tuhaf ama kasıtlı, dokunma
+# KNOWN_QUIRKS.md — weird but intentional, don't touch
 
-> **Bu dosya nedir:** Sezgiye aykırı görünen ama **kasıtlı / kabul edilmiş** davranışlar. Amaç: yeni bir session (veya insan) bunları "bug" sanıp "düzeltmeye" kalkıp bir şeyi kırmasın.
+> **What this file is:** behaviors that look counterintuitive but are **intentional / accepted**. Purpose: so a new session (or human) doesn't mistake them for a "bug", try to "fix" them, and break something.
 >
-> **INVARIANTS vs QUIRKS vs latent bug — farkı bil:**
-> - [INVARIANTS.md](INVARIANTS.md) = bozulmaması gereken kural ("hep böyle YAP").
-> - **KNOWN_QUIRKS (bu dosya)** = tuhaf ama doğru, bilerek böyle ("şaşırma, DOKUNMA").
-> - [NORMALIZATION.md](NORMALIZATION.md) → "Bilinen Tutarsızlıklar" = gerçek **latent bug**, düzeltilmeli (quirk DEĞİL).
+> **INVARIANTS vs QUIRKS vs latent bug — know the difference:**
+> - [INVARIANTS.md](INVARIANTS.md) = a rule that must not break ("always DO it this way").
+> - **KNOWN_QUIRKS (this file)** = weird but correct, deliberately this way ("don't be surprised, DON'T TOUCH").
+> - [NORMALIZATION.md](NORMALIZATION.md) → "Known Inconsistencies" = actual **latent bug**, must be fixed (NOT a quirk).
 >
-> **Yeni bir "bug" bulduğunu düşünüyorsan:** önce burada ve [INCIDENTS.md](INCIDENTS.md)'de ara. Burada yazıyorsa kasıtlıdır — düzeltmeden önce sor.
+> **If you think you've found a new "bug":** first search here and in [INCIDENTS.md](INCIDENTS.md). If it's written here it's intentional — ask before fixing.
 
-**Kolonlar:** Davranış · Neden böyle (kasıtlı) · Dokunursan ne olur · Kaynak.
+**Columns:** Behavior · Why it's this way (intentional) · What happens if you touch it · Source.
 
 ---
 
-## İçindekiler
-1. [Veri Modeli](#1-veri-modeli)
+## Table of Contents
+1. [Data Model](#1-data-model)
 2. [Parser & Aggregator](#2-parser--aggregator)
-3. [Güvenlik & Public Sayfalar](#3-güvenlik--public-sayfalar)
+3. [Security & Public Pages](#3-security--public-pages)
 4. [UI & Grid](#4-ui--grid)
-5. [Deploy & Altyapı](#5-deploy--altyapı)
-6. [Geçici Quirk'ler (bir faz sonra düzelecek)](#6-geçici-quirkler-bir-faz-sonra-düzelecek)
+5. [Deploy & Infrastructure](#5-deploy--infrastructure)
+6. [Temporary Quirks (will be fixed after a phase)](#6-temporary-quirks-will-be-fixed-after-a-phase)
 
 ---
 
-## 1. Veri Modeli
+## 1. Data Model
 
-| Davranış | Neden böyle (kasıtlı) | Dokunursan | Kaynak |
+| Behavior | Why it's this way (intentional) | If you touch it | Source |
 |----------|----------------------|-----------|--------|
-| Walk-in booking'de `date` alanı **YOK**, sadece `startTime` (Timestamp) | `createWalkIn` böyle yazıyor; walk-in anlıktır | Date-based query walk-in'leri **kaçırır** → `startTime` range ile sorgula | CLAUDE §Booking |
-| `barberId` tutarsız: walk-in = lowercase barber **adı**; online = barber **doc id** + `barberName` | İki farklı yazma yolu, tarihsel | Tek forma göre eşlersen yarısı düşer → **ikisini de** eşle | CLAUDE §Booking |
-| `endTime` şekli değişken: Dashboard = label **string**; Bookings.jsx/Clients.jsx = raw **Timestamp** | Farklı ekranlar farklı üretti | `conflictUtils.getExistingRangeMinutes` ikisini de handle eder — kendi parse'ını yazma | CLAUDE §Booking |
-| `bookingId` = `WCB-…` / `SALE-…` / `BLOCKED-…` — Firestore **doc id DEĞİL** | İş-anlamlı id + doc id ayrı | Doc id sanıp `doc(id)` ile okursan bulunmaz | CLAUDE §Booking |
-| `price` alanı bazen para-simgeli string (`"£20.00"`) — import kalıntısı | Booksy/Fresha/Treatwell import mirası | Ham `Number()` → `NaN` → `pp()` kullan (INV-PARA-1) | INC 2026-06-22 |
-| Finance `dateKey`'i stored alandan değil `startTime`'dan **türetir** | Parser dateKey yazmasa da booking görünsün | "dateKey neden yok" diye ekleme; türetme kasıtlı | INC 2026-06-26 |
-| `reset service` = tüm servisleri sil + refresh → `config.js`'ten **21 hardcoded servis auto-seed** | Pilot hızlı sıfırlama | "Servisler silindi/geri geldi" panik yapma; tasarım bu | [reset services](FEATURE_FLAGS.md) |
+| A walk-in booking has **NO** `date` field, only `startTime` (Timestamp) | `createWalkIn` writes it this way; a walk-in is instantaneous | A date-based query **misses** walk-ins → query with a `startTime` range | CLAUDE §Booking |
+| `barberId` is inconsistent: walk-in = lowercase barber **name**; online = barber **doc id** + `barberName` | Two different write paths, historical | If you match on a single form half of them drop → match **both** | CLAUDE §Booking |
+| `endTime` shape varies: Dashboard = label **string**; Bookings.jsx/Clients.jsx = raw **Timestamp** | Different screens produced it differently | `conflictUtils.getExistingRangeMinutes` handles both — don't write your own parse | CLAUDE §Booking |
+| `bookingId` = `WCB-…` / `SALE-…` / `BLOCKED-…` — **NOT** a Firestore doc id | Business-meaningful id and doc id are separate | If you assume it's the doc id and read with `doc(id)` it won't be found | CLAUDE §Booking |
+| `price` field is sometimes a currency-symbol string (`"£20.00"`) — import residue | Legacy from Booksy/Fresha/Treatwell imports | Raw `Number()` → `NaN` → use `pp()` (INV-PARA-1) | INC 2026-06-22 |
+| Finance **derives** its `dateKey` from `startTime`, not from a stored field | So the booking shows even if the parser didn't write dateKey | Don't add it thinking "dateKey is missing"; the derivation is intentional | INC 2026-06-26 |
+| `reset service` = delete all services + refresh → **auto-seed 21 hardcoded services** from `config.js` | Fast pilot reset | Don't panic "the services were deleted/came back"; that's by design | [reset services](FEATURE_FLAGS.md) |
 
 ## 2. Parser & Aggregator
 
-| Davranış | Neden böyle (kasıtlı) | Dokunursan | Kaynak |
+| Behavior | Why it's this way (intentional) | If you touch it | Source |
 |----------|----------------------|-----------|--------|
-| Treatwell booking **per-booking** prepaid VEYA pay-at-venue olabilir (global ayar değil) — `twPaymentMode` email `Status`'tan gelir | Gerçek dünyada ikisi karışık | Tek global `paymentType` gösterirsen yanlış (çift-tahsilat riski) → "Both" modu | INC 2026-06-26 |
-| Aggregator barber adı formatı tenant ile aynı **olmayabilir** (Treatwell tam ad, sistem ilk ad) | Platformlar tam ad gönderir | Matcher'a fuzzy ekleme → parser'da kanonik isme map'le | INC 2026-06-26 |
-| `checkDuplicateInFirestore` (whitecross-site) locked rules altında **fails-open** | Booking'i düşürmemek > mükemmel dedup | "Neden hep true dönüyor" diye kırma; kabul edilebilir, booking devam eder | INCIDENTS §Notlar |
-| Whitecross Stripe hâlâ `whitecross-site/functions` (**us-central1**), salown-app'te değil | Migration henüz Phase 5 değil | salown-app'e Stripe eklerken whitecross akışını karıştırma | CLAUDE §Related repos |
+| A Treatwell booking can be **per-booking** prepaid OR pay-at-venue (not a global setting) — `twPaymentMode` comes from the email `Status` | In the real world the two are mixed | If you show a single global `paymentType` it's wrong (double-charge risk) → "Both" mode | INC 2026-06-26 |
+| The aggregator barber name format **may not** be the same as the tenant's (Treatwell full name, system first name) | Platforms send the full name | Don't add fuzzy to the matcher → map to the canonical name in the parser | INC 2026-06-26 |
+| `checkDuplicateInFirestore` (whitecross-site) **fails open** under locked rules | Not dropping a booking > perfect dedup | Don't break it over "why does it always return true"; acceptable, the booking continues | INCIDENTS §Notes |
+| Whitecross Stripe is still in `whitecross-site/functions` (**us-central1**), not in salown-app | The migration isn't at Phase 5 yet | When adding Stripe to salown-app don't mix in the whitecross flow | CLAUDE §Related repos |
 
-## 3. Güvenlik & Public Sayfalar
+## 3. Security & Public Pages
 
-| Davranış | Neden böyle (kasıtlı) | Dokunursan | Kaynak |
+| Behavior | Why it's this way (intentional) | If you touch it | Source |
 |----------|----------------------|-----------|--------|
-| `tenants/{id}` root doc **world-readable** (herkese açık) | Public booking sayfası tenant meta'sını okumalı | Buraya sır koyma (INV-SEC-3); public read'i "kapatayım" deme, booking sayfası kırılır | [MULTI_TENANT_NOTES.md](MULTI_TENANT_NOTES.md) |
-| `success.html` booking'i **`sessionStorage.pendingBooking`**'ten okur (Firestore'dan değil) | Booking read auth-only (GDPR); public sorgu 403 | "Neden Firestore'dan okumuyor" diye değiştirme → 403 boş ekran döner. Çıplak `?id=` URL yeni sekmede çalışmaz (normal) | INC 2026-06-26 |
-| Booking read 403 dönüyor (giriş yapmadan) | GDPR — booking PII auth-gated | Bu bir bug değil; public okuma AÇMA | INC 2026-06-26 |
-| `salownGetBusySlots` + `salownRescheduleByToken` expired PENDING (`expiresAt < now`) booking'i **skip** eder | Abandoned Stripe session 0–20dk slot ghost-block etmesin | Skip'i kaldırma → terk edilmiş ödemeler slot kilitler | INCIDENTS §Notlar |
+| The `tenants/{id}` root doc is **world-readable** (public) | The public booking page must read tenant meta | Don't put secrets here (INV-SEC-3); don't say "let me close public read", the booking page breaks | [MULTI_TENANT_NOTES.md](MULTI_TENANT_NOTES.md) |
+| `success.html` reads the booking from **`sessionStorage.pendingBooking`** (not from Firestore) | Booking read is auth-only (GDPR); a public query 403s | Don't change it over "why doesn't it read from Firestore" → returns a 403 blank screen. A bare `?id=` URL doesn't work in a new tab (normal) | INC 2026-06-26 |
+| Booking read returns 403 (when not logged in) | GDPR — booking PII is auth-gated | This is not a bug; do NOT open public read | INC 2026-06-26 |
+| `salownGetBusySlots` + `salownRescheduleByToken` **skip** expired PENDING (`expiresAt < now`) bookings | So an abandoned Stripe session doesn't ghost-block a slot for 0–20 min | Don't remove the skip → abandoned payments lock slots | INCIDENTS §Notes |
 
 ## 4. UI & Grid
 
-| Davranış | Neden böyle (kasıtlı) | Dokunursan | Kaynak |
+| Behavior | Why it's this way (intentional) | If you touch it | Source |
 |----------|----------------------|-----------|--------|
-| Booking kartı: **arka plan = source rengi**, sol kenar (3px) = **barber rengi** | 2026-06-14 bilinçli redesign; `sourceColors.js` tek kaynak | "Renkler karışmış" diye değiştirme; ikili kodlama kasıtlı | [source badges](FEATURE_FLAGS.md) |
-| Checked-out kart `min(scheduled, actual)` ile **sadece kısalır**, uzamaz | Geç checkout kartı şişirmesin (cascade) | Cap'i kaldırırsan INC 2026-06-27 geri gelir (🔴 Regressed) | INC 2026-06-27 |
-| `actualDuration` = booking başlangıcı ↔ **checkout'a basma anı** (servisin gerçek süresi değil, clamp 5..240dk) | Squeeze-in için "erken bitti, slotu boşalt" sinyali | Servis süresi sanıp kapasite/çakışmada ham kullanma → cap'le (INV-BK-5) | INC 2026-06-27 |
+| Booking card: **background = source color**, left edge (3px) = **barber color** | Deliberate redesign 2026-06-14; `sourceColors.js` is the single source | Don't change it over "the colors are mixed up"; the dual coding is intentional | [source badges](FEATURE_FLAGS.md) |
+| A checked-out card **only shortens** with `min(scheduled, actual)`, never grows | So a late checkout doesn't inflate the card (cascade) | If you remove the cap, INC 2026-06-27 comes back (🔴 Regressed) | INC 2026-06-27 |
+| `actualDuration` = booking start ↔ **the moment checkout is pressed** (not the real service duration, clamp 5..240 min) | A "finished early, free the slot" signal for squeeze-in | Don't assume it's the service duration and use it raw in capacity/conflict → cap it (INV-BK-5) | INC 2026-06-27 |
 
-## 5. Deploy & Altyapı
+## 5. Deploy & Infrastructure
 
-| Davranış | Neden böyle (kasıtlı) | Dokunursan | Kaynak |
+| Behavior | Why it's this way (intentional) | If you touch it | Source |
 |----------|----------------------|-----------|--------|
-| `hosting/public-bundle/` ve `staff-bundle/` **gitignored** (build output) | Artefakt commit'lenmez; predeploy hook üretir | Elle düzenleme boşa gider; ham `firebase deploy` (build atlayan) bundle'ı siler | INC 2026-06-29 |
-| `FORCE_SALOWN_SENDER_TENANTS=['whitecross']` → whitecross email'i Brevo `noreply@salown.com`'dan gider | Multi-tenant email birleştirme | Bu listeden çıkarırsan whitecross email göndericisi değişir | INC 2026-06-26 · [EMAIL_ARCHITECTURE.md](EMAIL_ARCHITECTURE.md) |
-| barber-panel / barber-mobile = **LEGACY**; FCM disabled 2026-06-19. Canlı staff = `staff.salown.com` (Salown Staff App) | salown-app'e taşındı | Eski panellere feature ekleme; salown-app'te yap | CLAUDE §Notification · [whitecross tenant](MULTI_TENANT_NOTES.md) |
-| `alex/` kökü git repo **değil**; `docs/` ayrı `salown-docs` (private) repo; app'ler ayrı repo | Bilinçli çok-repo yapısı | Kökü `git init` etme (nested repo karmaşası) | [DECISIONS.md](DECISIONS.md) 2026-07-02 |
+| `hosting/public-bundle/` and `staff-bundle/` are **gitignored** (build output) | The artifact isn't committed; the predeploy hook produces it | Manual editing is wasted; a raw `firebase deploy` (skipping build) deletes the bundle | INC 2026-06-29 |
+| `FORCE_SALOWN_SENDER_TENANTS=['whitecross']` → whitecross email goes from Brevo `noreply@salown.com` | Multi-tenant email consolidation | If you remove it from this list, whitecross's email sender changes | INC 2026-06-26 · [EMAIL_ARCHITECTURE.md](EMAIL_ARCHITECTURE.md) |
+| barber-panel / barber-mobile = **LEGACY**; FCM disabled 2026-06-19. Live staff = `staff.salown.com` (salOWN Staff App) | Moved to salown-app | Don't add features to the old panels; do it in salown-app | CLAUDE §Notification · [whitecross tenant](MULTI_TENANT_NOTES.md) |
+| The `alex/` root is **not** a git repo; `docs/` is a separate `salown-docs` (private) repo; the apps are separate repos | Deliberate multi-repo structure | Don't `git init` the root (nested repo mess) | [DECISIONS.md](DECISIONS.md) 2026-07-02 |
 
-## 6. Geçici Quirk'ler (bir faz sonra düzelecek)
+## 6. Temporary Quirks (will be fixed after a phase)
 
-> Bunlar kasıtlı ama **kalıcı değil** — ilgili faz gelince düzeltilecek. O zamana kadar "böyle bırak".
+> These are intentional but **not permanent** — they'll be fixed when the relevant phase arrives. Until then "leave it as is".
 
-| Davranış | Ne zaman düzelecek | Kaynak |
+| Behavior | When it will be fixed | Source |
 |----------|-------------------|--------|
-| `salownNotifyBookingCreated` PENDING bookings için de Telegram gönderiyor | Phase 5 (Stripe aktif) olunca | CLAUDE §Notification |
-| Deposit flow INCOMPLETE: webhook yok, `expiresAt` yok → `features.stripe` / `websiteDepositsEnabled` **AÇMA** | Phase 5 | CLAUDE §Deposit · [BUSINESS_RULES](BUSINESS_RULES.md) |
-| Finance/Reports kart/nakit bahşiş ayrımı hâlâ servis `paymentMethod`'unu kullanıyor (staff app düzeltildi) | `tipPaymentMethod` helper'ına geçiş (whitecross onayı bekliyor) | INC 2026-06-28 |
-| app-password Settings'te düz metin saklanıyor (sızıntı kapalı ama saklama plain) | Secret Manager'a taşıma (T-b) | [security sprint](SECURITY.md) |
+| `salownNotifyBookingCreated` sends Telegram for PENDING bookings too | When Phase 5 (Stripe active) arrives | CLAUDE §Notification |
+| Deposit flow INCOMPLETE: no webhook, no `expiresAt` → do NOT enable `features.stripe` / `websiteDepositsEnabled` | Phase 5 | CLAUDE §Deposit · [BUSINESS_RULES](BUSINESS_RULES.md) |
+| Finance/Reports card/cash tip split still uses the service `paymentMethod` (the staff app was fixed) | Migration to the `tipPaymentMethod` helper (awaiting whitecross approval) | INC 2026-06-28 |
+| app-password is stored as plain text in Settings (leak closed but storage is plain) | Move to Secret Manager (T-b) | [security sprint](SECURITY.md) |
 
 ---
 
-## Bakım
-- Bir davranış "tuhaf ama kasıtlı" olduğu her anlaşıldığında (özellikle bir session onu "bug" sanıp sorduğunda) buraya ekle.
-- Bir quirk **gerçekten** düzeltilmesi gereken bir bug'a dönüşürse → [NORMALIZATION.md](NORMALIZATION.md) "Bilinen Tutarsızlıklar"a veya bir ROADMAP maddesine taşı, buradan çıkar.
-- Geçici quirk düzeltilince (Bölüm 6) satırı sil + ilgili incident/karar kaydını güncelle.
+## Maintenance
+- Every time a behavior is understood to be "weird but intentional" (especially when a session mistakes it for a "bug" and asks), add it here.
+- If a quirk **actually** turns into a bug that must be fixed → move it to [NORMALIZATION.md](NORMALIZATION.md) "Known Inconsistencies" or a ROADMAP item, and remove it from here.
+- When a temporary quirk is fixed (Section 6), delete the row + update the relevant incident/decision record.
 - Commit: `cd alex/docs && git commit KNOWN_QUIRKS.md && git push`.

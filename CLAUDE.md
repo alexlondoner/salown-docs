@@ -1,69 +1,69 @@
 <!--
-  KANONİK KAYNAK. Bu dosya alex/CLAUDE.md üzerinden symlink ile tüketilir (Claude Code root context).
-  Düzenlemeyi HER ZAMAN burada (docs/CLAUDE.md) yap → commit + push → her makinede güncel.
-  İçindeki `docs/...` linkleri alex/ köküne göredir (symlink oradan çözülür); docs/ içinden doğrudan
-  açarsan linkler bir dizin şaşar — bu kasıtlı, tüketim yeri alex/ köküdür.
-  Yeni makine bootstrap: bkz docs/README.md → "Bootstrap".
+  CANONICAL SOURCE. This file is consumed via a symlink through alex/CLAUDE.md (Claude Code root context).
+  ALWAYS edit here (docs/CLAUDE.md) → commit + push → up to date on every machine.
+  The `docs/...` links inside are relative to the alex/ root (the symlink resolves from there); if you open
+  it directly from within docs/ the links are off by one directory — this is intentional, the consumption point is the alex/ root.
+  New machine bootstrap: see docs/README.md → "Bootstrap".
 -->
-# Salown — AI Context Index
+# salOWN — AI Context Index
 
 Multi-tenant SaaS barbershop booking platform. Firebase project `havuz-44f70` (europe-west2).
-Tüm tenant verisi `tenants/{tenantId}/...` altında.
+All tenant data lives under `tenants/{tenantId}/...`.
 
-**Ana repo:** `salown-app/` (Vite + .jsx). Diğer klasörlere bkz: [SYSTEM_ARCHITECTURE.md](docs/SYSTEM_ARCHITECTURE.md)
+**Main repo:** `salown-app/` (Vite + .jsx). For other folders see: [SYSTEM_ARCHITECTURE.md](docs/SYSTEM_ARCHITECTURE.md)
 
 ---
 
-## Dokümantasyon
+## Documentation
 
-| Dosya | İçerik |
+| File | Contents |
 |-------|--------|
-| [README.md](docs/README.md) | **GİRİŞ KAPISI** — yeni gelen (PM/mühendis/tasarımcı) buradan başlar: 60-sn özet, role göre okuma sırası, doküman haritası, kayıt sistemi |
-| [GLOSSARY.md](docs/GLOSSARY.md) | Terim sözlüğü — tenant/Class A-B/walk-in/aggregator/squeeze-in/canary/SSOT/`pp()`/`toDateKey()`... jargonda takılınca bak |
-| [MANIFESTO.md](docs/MANIFESTO.md) | Neden var, "grabbing" felsefesi, hedef |
-| [SYSTEM_ARCHITECTURE.md](docs/SYSTEM_ARCHITECTURE.md) | Repo map, Firebase, stack, key files, DO NOT listesi |
-| [TENANTS.md](docs/TENANTS.md) | Whitecross/HeroHairs/EeKurt detayları, Class A/B tanımı |
-| [PEOPLE.md](docs/PEOPLE.md) | Kişiler, roller, emailler |
-| [FIRESTORE_SCHEMA.md](docs/FIRESTORE_SCHEMA.md) | Veri yapısı, booking model quirk'leri, client identity |
+| [README.md](docs/README.md) | **ENTRY POINT** — newcomers (PM/engineer/designer) start here: 60-sec summary, reading order by role, doc map, record system |
+| [GLOSSARY.md](docs/GLOSSARY.md) | Term glossary — tenant/Class A-B/walk-in/aggregator/squeeze-in/canary/SSOT/`pp()`/`toDateKey()`... check here when stuck on jargon |
+| [MANIFESTO.md](docs/MANIFESTO.md) | Why it exists, "grabbing" philosophy, goal |
+| [SYSTEM_ARCHITECTURE.md](docs/SYSTEM_ARCHITECTURE.md) | Repo map, Firebase, stack, key files, DO NOT list |
+| [TENANTS.md](docs/TENANTS.md) | Whitecross/HeroHairs/EeKurt details, Class A/B definition |
+| [PEOPLE.md](docs/PEOPLE.md) | People, roles, emails |
+| [FIRESTORE_SCHEMA.md](docs/FIRESTORE_SCHEMA.md) | Data structure, booking model quirks, client identity |
 | [BUSINESS_RULES.md](docs/BUSINESS_RULES.md) | Cancel/reschedule policy, slot generation, deposit flow |
-| [BUSY_SLOT_V2.md](docs/BUSY_SLOT_V2.md) | TASARIM: processing-time / çok-aralıklı busy motoru + kanal mimarisi, test matrisi, fazlar |
-| [SERVICE_CONFIG_V2.md](docs/SERVICE_CONFIG_V2.md) | TASARIM: detaylı servis config (Booksy+Fresha+Treatwell superset), segment dizisi modeli (service/processing/blocked), editör bölümleri |
-| [SERVICE_EDITOR_DESIGN_BRIEF.md](docs/SERVICE_EDITOR_DESIGN_BRIEF.md) | Servis editörü REDESIGN brief'i (tasarımcıya): tüm alanlar, bölümler, wait/squeeze-in hero modülü, durumlar, marka token'ları, "sadece görsel" kuralı |
-| [FEATURE_FLAGS.md](docs/FEATURE_FLAGS.md) | Flag listesi + ne yapıyor, loyalty/telegram config |
-| [EMAIL_ARCHITECTURE.md](docs/EMAIL_ARCHITECTURE.md) | Brevo, "via Salown", GDPR unsubscribe, IMAP parser |
-| [DEPLOY.md](docs/DEPLOY.md) | Build/deploy komutları, symlink, güvenlik sırası |
-| [INCIDENTS.md](docs/INCIDENTS.md) | Geçmiş kazalar + çıkarılan dersler — **bug teşhisine başlamadan ÖNCE oku** (bkz Hızlı Kural #7) |
-| [INVARIANTS.md](docs/INVARIANTS.md) | **Bozulursa sistem kırılır** — para/tarih/booking/eşleşme/güvenlik/deploy değişmezleri, kaynak atıflı; ilgili alana dokunmadan ÖNCE oku |
-| [KNOWN_QUIRKS.md](docs/KNOWN_QUIRKS.md) | Tuhaf ama **kasıtlı** davranışlar — "bug sanıp düzeltme"; INVARIANTS/latent-bug farkı içeride |
-| [DECISIONS.md](docs/DECISIONS.md) | **Neden böyle yaptık** (ADR): email/ödeme/POS/silme/repo kararları + gerekçe + elenen alternatifler |
-| [PRINCIPLES.md](docs/PRINCIPLES.md) | **Nasıl mühendislik yapıyoruz** (P1-P14) — her ilke ⚙️ machine-enforceable / 🧠 human-discipline etiketli. (DECISIONS=neden, INVARIANTS=ne bozulmaz, PRINCIPLES=nasıl) |
-| [PARSER_NOTES.md](docs/PARSER_NOTES.md) | Booksy/Fresha/Treatwell parser mimarisi, dedup sistemi, tekrarlayan bug kalıpları |
-| [STRIPE_CONNECT_PLAN.md](docs/STRIPE_CONNECT_PLAN.md) | TASARIM: Salown ödeme = Stripe Connect Standard + Checkout Session; sabit £ deposit; per-tenant policy; kapalı/future |
-| [TIERS_AND_UPGRADE.md](docs/TIERS_AND_UPGRADE.md) | TASARIM: tier'lar (Free/Starter/Pro/Pro+) + tenant'ın **hesap-içi** plan yükseltmesi ("Anthropic gibi"); Faz 1 request→approve (tahsilatsız), Faz 2 Stripe **Billing** abonelik (Connect≠Billing), Pro+ = premium website+SEO; ROADMAP **Monetization** teması |
-| [MIGRATION_PATTERNS.md](docs/MIGRATION_PATTERNS.md) | TS migration'da kanıtla keşfedilen 21 mühendislik kalıbı (bayt-nötr çözüm alfabesi, Kalıp 20 TS import-elision teşhis reçetesi, bayt-kanıt v2 yöntemi) — dilim çevirirken AÇIK TUT |
-| [SECURITY.md](docs/SECURITY.md) | **Firestore rules & güvenlik TEK KAYNAK**: rules mimarisi, Phase 1 (done), açık gate'ler G1–G5 (kod karşı analiz + blast radius + fix), booking akış güvenliği |
-| [STAFF_SETTINGS_AUDIT.md](docs/STAFF_SETTINGS_AUDIT.md) | Staff müsaitlik/ayar denetimi (2026-07-12): leave 5 yüzeyde 5 farklı davranış, Finance hayalet-maaş riski, hedef model (tek resolver) + uygulama sırası — ROADMAP G5 |
-| [STAFF_MANAGEMENT_DESIGN.md](docs/STAFF_MANAGEMENT_DESIGN.md) | TASARIM: Staff Management & Compensation (ROADMAP **Employment Model** teması, S1-S3) — staffComp koleksiyonu, wage/commission/self-employed hesap kuralları, göç planı, Staff hub UI, 3 faz |
-| [NORMALIZATION.md](docs/NORMALIZATION.md) | Tüm normalize/match/casing kuralları, helper tablosu, bilinen tutarsızlıklar |
-| [MULTI_TENANT_NOTES.md](docs/MULTI_TENANT_NOTES.md) | Class A/B guard'ları, whitecross migration tablosu |
-| [ROADMAP.md](docs/ROADMAP.md) | **Company roadmap** (2026-07-16 yeniden yapılandırıldı): önem-sıralı iş temaları + 5 etiket (✅/🔄/🔵 Planned/⏸ Waiting/💡 Future); aktif=tek-satır, tamamlananlar altta **Completed**'da; item ID'leri (A1/B3/C8/S1…) korundu |
-| [TESTS.md](docs/TESTS.md) | **Tüm test kayıtları TEK KAYNAK**: rules (otomatik), güvenlik gate manuel, Stripe canlı, Staff App, Post-Class-A, busy-slot pointer |
-| [PROMPTS.md](docs/PROMPTS.md) | Claude Code prompt template'leri |
+| [BUSY_SLOT_V2.md](docs/BUSY_SLOT_V2.md) | DESIGN: processing-time / multi-interval busy engine + channel architecture, test matrix, phases |
+| [SERVICE_CONFIG_V2.md](docs/SERVICE_CONFIG_V2.md) | DESIGN: detailed service config (Booksy+Fresha+Treatwell superset), segment array model (service/processing/blocked), editor sections |
+| [SERVICE_EDITOR_DESIGN_BRIEF.md](docs/SERVICE_EDITOR_DESIGN_BRIEF.md) | Service editor REDESIGN brief (for the designer): all fields, sections, wait/squeeze-in hero module, states, brand tokens, "visual only" rule |
+| [FEATURE_FLAGS.md](docs/FEATURE_FLAGS.md) | Flag list + what it does, loyalty/telegram config |
+| [EMAIL_ARCHITECTURE.md](docs/EMAIL_ARCHITECTURE.md) | Brevo, "via salOWN", GDPR unsubscribe, IMAP parser |
+| [DEPLOY.md](docs/DEPLOY.md) | Build/deploy commands, symlink, safety order |
+| [INCIDENTS.md](docs/INCIDENTS.md) | Past incidents + lessons learned — **read BEFORE starting bug diagnosis** (see Quick Rule #7) |
+| [INVARIANTS.md](docs/INVARIANTS.md) | **Breaks the system if violated** — money/date/booking/matching/security/deploy invariants, with source citations; read BEFORE touching the relevant area |
+| [KNOWN_QUIRKS.md](docs/KNOWN_QUIRKS.md) | Odd but **intentional** behaviors — "don't mistake for a bug and fix"; INVARIANTS/latent-bug distinction inside |
+| [DECISIONS.md](docs/DECISIONS.md) | **Why we did it this way** (ADR): email/payment/POS/deletion/repo decisions + rationale + rejected alternatives |
+| [PRINCIPLES.md](docs/PRINCIPLES.md) | **How we engineer** (P1-P14) — each principle tagged ⚙️ machine-enforceable / 🧠 human-discipline. (DECISIONS=why, INVARIANTS=what won't break, PRINCIPLES=how) |
+| [PARSER_NOTES.md](docs/PARSER_NOTES.md) | Booksy/Fresha/Treatwell parser architecture, dedup system, recurring bug patterns |
+| [STRIPE_CONNECT_PLAN.md](docs/STRIPE_CONNECT_PLAN.md) | DESIGN: salOWN payment = Stripe Connect Standard + Checkout Session; fixed £ deposit; per-tenant policy; disabled/future |
+| [TIERS_AND_UPGRADE.md](docs/TIERS_AND_UPGRADE.md) | DESIGN: tiers (Free/Starter/Pro/Pro+) + tenant's **in-account** plan upgrade ("like Anthropic"); Phase 1 request→approve (no charge), Phase 2 Stripe **Billing** subscription (Connect≠Billing), Pro+ = premium website+SEO; ROADMAP **Monetization** theme |
+| [MIGRATION_PATTERNS.md](docs/MIGRATION_PATTERNS.md) | 21 engineering patterns discovered with proof during the TS migration (byte-neutral solution alphabet, Pattern 20 TS import-elision diagnosis recipe, byte-proof v2 method) — KEEP OPEN when translating a slice |
+| [SECURITY.md](docs/SECURITY.md) | **Firestore rules & security SINGLE SOURCE**: rules architecture, Phase 1 (done), open gates G1–G5 (code counter-analysis + blast radius + fix), booking flow security |
+| [STAFF_SETTINGS_AUDIT.md](docs/STAFF_SETTINGS_AUDIT.md) | Staff availability/settings audit (2026-07-12): leave has 5 different behaviors across 5 surfaces, Finance ghost-wage risk, target model (single resolver) + implementation order — ROADMAP G5 |
+| [STAFF_MANAGEMENT_DESIGN.md](docs/STAFF_MANAGEMENT_DESIGN.md) | DESIGN: Staff Management & Compensation (ROADMAP **Employment Model** theme, S1-S3) — staffComp collection, wage/commission/self-employed accounting rules, migration plan, Staff hub UI, 3 phases |
+| [NORMALIZATION.md](docs/NORMALIZATION.md) | All normalize/match/casing rules, helper table, known inconsistencies |
+| [MULTI_TENANT_NOTES.md](docs/MULTI_TENANT_NOTES.md) | Class A/B guards, whitecross migration table |
+| [ROADMAP.md](docs/ROADMAP.md) | **Company roadmap** (restructured 2026-07-16): priority-ordered work themes + 5 tags (✅/🔄/🔵 Planned/⏸ Waiting/💡 Future); active=single-line, completed at the bottom under **Completed**; item IDs (A1/B3/C8/S1…) preserved |
+| [TESTS.md](docs/TESTS.md) | **All test records SINGLE SOURCE**: rules (automated), security gate manual, Stripe live, Staff App, Post-Class-A, busy-slot pointer |
+| [PROMPTS.md](docs/PROMPTS.md) | Claude Code prompt templates |
 
 ---
 
 ## salown-app/CLAUDE.md
 
-Teknik detaylar (booking model, conflict utils, reschedule invariant'ları, GDPR rules) orada.
+Technical details (booking model, conflict utils, reschedule invariants, GDPR rules) live there.
 
 ---
 
-## Hızlı Kurallar
+## Quick Rules
 
-1. **Deploy öncesi:** tenant + URL'yi söyle, onay bekle
-2. **Yeni salown-app trigger:** self-managed tenant guard ekle (bkz: MULTI_TENANT_NOTES.md)
-3. **Tarih:** `toDateKey()` kullan, asla `.toISOString().split('T')[0]`
-4. **Bulk delete:** export → dry-run CSV → onay → write
-5. **Feature flag:** tenant doc'tan oku, hardcode etme
-6. **Fix:** tek bug, changed lines raporu, sonra diğerine geç
-7. **Bug/incident:** Bir sorun (email gitmiyor, booking düşmüyor/görünmüyor, sayfa boş, 404, ödeme/confirmation) teşhisine başlamadan **ÖNCE [docs/INCIDENTS.md](docs/INCIDENTS.md)** oku — aynı kalıplar tekrar ediyor, kök neden + teşhis yöntemi muhtemelen orada. Çözülen ciddi olayı da oraya **standart şablonla** ekle: `## YYYY-MM-DD — başlık` + metadata satırı (**Severity** 🔴/🟠/🟡/🟢 · **Owner** · **Status** ✅/🟡/🔴) + **Impact/Root Cause/Resolution/Prevention** + **Dersler**. Şablon dosyanın başında; Prevention'a mümkünse kalıcı guard/test yaz. Aynı bug geri gelirse Status = 🔴 Regressed.
+1. **Before deploy:** state tenant + URL, wait for confirmation
+2. **New salown-app trigger:** add self-managed tenant guard (see: MULTI_TENANT_NOTES.md)
+3. **Date:** use `toDateKey()`, never `.toISOString().split('T')[0]`
+4. **Bulk delete:** export → dry-run CSV → confirm → write
+5. **Feature flag:** read from tenant doc, don't hardcode
+6. **Fix:** one bug, changed lines report, then move to the next
+7. **Bug/incident:** Before starting to diagnose a problem (email not sending, booking not landing/showing, blank page, 404, payment/confirmation), **read [docs/INCIDENTS.md](docs/INCIDENTS.md) FIRST** — the same patterns recur, the root cause + diagnosis method is probably there. Also add a resolved serious incident there with the **standard template**: `## YYYY-MM-DD — title` + metadata line (**Severity** 🔴/🟠/🟡/🟢 · **Owner** · **Status** ✅/🟡/🔴) + **Impact/Root Cause/Resolution/Prevention** + **Lessons**. The template is at the top of the file; where possible write a permanent guard/test into Prevention. If the same bug returns, Status = 🔴 Regressed.

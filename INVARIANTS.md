@@ -1,140 +1,140 @@
-# INVARIANTS.md — bozulursa sistem kırılır
+# INVARIANTS.md — breaks the system if violated
 
-> **Bu dosya nedir:** Kodun her zaman uyması gereken **değişmezler** (invariants). Her biri geçmişte bir incident'tan, bir tasarım kararından veya sert bir kuraldan doğdu.
+> **What this file is:** the **invariants** the code must always obey. Each one was born from a past incident, a design decision, or a hard rule.
 >
-> **Nasıl kullanılır:** İlgili bir alana dokunmadan ÖNCE (para hesabı, tarih, booking yazma, parser, email, rules...) buradaki ilgili bölümü oku. Bir invariant'ı bozacaksan bu **bilinçli bir karar** olmalı — sebebini [DECISIONS.md](DECISIONS.md)'e yaz, tek satır "düzeltme" olarak geçme.
+> **How to use it:** BEFORE touching a related area (money math, dates, booking writes, parser, email, rules...) read the relevant section here. If you're going to break an invariant it must be a **conscious decision** — write the reason in [DECISIONS.md](DECISIONS.md), don't slip it in as a one-line "fix".
 >
-> **İlgili dosyalar:** kasıtlı tuhaflıklar → [KNOWN_QUIRKS.md](KNOWN_QUIRKS.md) · neden kararları → [DECISIONS.md](DECISIONS.md) · geçmiş kazalar → [INCIDENTS.md](INCIDENTS.md) · detaylı kurallar → [BUSINESS_RULES.md](BUSINESS_RULES.md) / [NORMALIZATION.md](NORMALIZATION.md) / [SECURITY.md](SECURITY.md).
+> **Related files:** intentional oddities → [KNOWN_QUIRKS.md](KNOWN_QUIRKS.md) · why-decisions → [DECISIONS.md](DECISIONS.md) · past accidents → [INCIDENTS.md](INCIDENTS.md) · detailed rules → [BUSINESS_RULES.md](BUSINESS_RULES.md) / [NORMALIZATION.md](NORMALIZATION.md) / [SECURITY.md](SECURITY.md).
 
-**Kaynak kısaltmaları:** `INC <tarih>` = INCIDENTS.md kaydı · `CLAUDE §X` = salown-app/CLAUDE.md bölümü · sibling doküman adları linklidir.
-**Kırılganlık:** 🔴 bozulursa canlı kesinti/veri-para/güvenlik · 🟠 özellik kırılır · 🟡 yanlış gösterim/sessiz veri kaybı.
+**Source abbreviations:** `INC <date>` = INCIDENTS.md record · `CLAUDE §X` = salown-app/CLAUDE.md section · sibling document names are linked.
+**Fragility:** 🔴 breaks → live outage/data-money/security · 🟠 feature breaks · 🟡 wrong display/silent data loss.
 
 ---
 
-## İçindekiler
-1. [Para & Muhasebe](#1-para--muhasebe)
-2. [Tarih & Zaman (UK)](#2-tarih--zaman-uk)
-3. [Booking Modeli](#3-booking-modeli)
-4. [Barber & Client Eşleşme](#4-barber--client-eşleşme)
-5. [Email & Bildirim](#5-email--bildirim)
-6. [Güvenlik & GDPR](#6-güvenlik--gdpr)
+## Contents
+1. [Money & Accounting](#1-money--accounting)
+2. [Date & Time (UK)](#2-date--time-uk)
+3. [Booking Model](#3-booking-model)
+4. [Barber & Client Matching](#4-barber--client-matching)
+5. [Email & Notification](#5-email--notification)
+6. [Security & GDPR](#6-security--gdpr)
 7. [Deploy](#7-deploy)
 8. [Multi-tenant](#8-multi-tenant)
 9. [Parser](#9-parser)
-10. [Kanal Senkronizasyonu (iCal OUT)](#10-kanal-senkronizasyonu-ical-out)
+10. [Channel Synchronization (iCal OUT)](#10-channel-synchronization-ical-out)
 
 ---
 
-## 1. Para & Muhasebe
+## 1. Money & Accounting
 
-| ID | Değişmez | Bozulursa | 🔴 | Kaynak |
+| ID | Invariant | If broken | 🔴 | Source |
 |----|----------|-----------|----|--------|
-| INV-PARA-1 | Firestore para alanları (`price`, `paidAmount`, `tip`…) ASLA ham `parseFloat`/`Number` ile toplanmaz → `pp()` / `parsePrice()` ya da `(Number(x)\|\|0)` guard | Import kalıntısı `"£20.00"` → `NaN`; **tek NaN tüm toplamı zehirler** | 🟡 | INC 2026-06-22 · CLAUDE §Money |
-| INV-PARA-2 | `paidAmount` = **brüt tahsilat** (bahşiş dahil), gelir DEĞİL. Gelir için `− pp(tip)` veya `bookingNetWithoutTip` | Bahşiş gelire karışır; ekranlar tutmaz; HMRC-anlamlı rakam yanlış | 🟡 | INC 2026-06-28 |
-| INV-PARA-3 | `paidAmount` (deposit) + `platformDepositAmount` edit/reschedule'da **SIFIRLANMAZ** | Ödenmiş depozito kaybolur, müşteriden tekrar istenir | 🟠 | CLAUDE §Money / §Reschedule |
-| INV-PARA-4 | Bahşiş asla gelir değildir; kart/nakit bahşiş ayrımı `tipPaymentMethod`'dan yapılır (servis `paymentMethod`'undan değil) | "Kartla ödedi, bahşişi nakit" → kart-bahşiş toplamı yanlış | 🟡 | INC 2026-06-28 |
-| INV-PARA-5 | Aggregator brüt fiyatı ≠ işletme net; komisyon (+VAT) **otomatik gider** modellenir, brüt görünür kalır | Defterler geliri şişirir | 🟡 | INC 2026-06-26 (Treatwell) · [muhasebe](../salown-app) |
-| INV-PARA-6 | `pp()` negatif değerleri **korur** (refund'lar) — clamp'leme | İadeler kaybolur/pozitife döner | 🟡 | CLAUDE §Money |
+| INV-PARA-1 | Firestore money fields (`price`, `paidAmount`, `tip`…) are NEVER summed with raw `parseFloat`/`Number` → `pp()` / `parsePrice()` or a `(Number(x)\|\|0)` guard | Import residue `"£20.00"` → `NaN`; **a single NaN poisons the whole total** | 🟡 | INC 2026-06-22 · CLAUDE §Money |
+| INV-PARA-2 | `paidAmount` = **gross collection** (tip included), NOT revenue. For revenue use `− pp(tip)` or `bookingNetWithoutTip` | Tip mixes into revenue; screens don't add up; the HMRC-meaningful figure is wrong | 🟡 | INC 2026-06-28 |
+| INV-PARA-3 | `paidAmount` (deposit) + `platformDepositAmount` are **NOT RESET** on edit/reschedule | The paid deposit is lost, requested from the customer again | 🟠 | CLAUDE §Money / §Reschedule |
+| INV-PARA-4 | A tip is never revenue; the card/cash tip distinction is made from `tipPaymentMethod` (not from the service `paymentMethod`) | "Paid by card, tip in cash" → the card-tip total is wrong | 🟡 | INC 2026-06-28 |
+| INV-PARA-5 | Aggregator gross price ≠ business net; commission (+VAT) is modelled as an **automatic expense**, gross stays visible | The books inflate revenue | 🟡 | INC 2026-06-26 (Treatwell) · [accounting](../salown-app) |
+| INV-PARA-6 | `pp()` **preserves** negative values (refunds) — no clamping | Refunds are lost/turn positive | 🟡 | CLAUDE §Money |
 
-## 2. Tarih & Zaman (UK)
+## 2. Date & Time (UK)
 
-| ID | Değişmez | Bozulursa | 🔴 | Kaynak |
+| ID | Invariant | If broken | 🔴 | Source |
 |----|----------|-----------|----|--------|
-| INV-DATE-1 | ASLA `date.toISOString().split('T')[0]` → `toDateKey()` (`src/utils/timeUtils.js`) | BST'de (yaz saati) gün **bir gün kayar** → booking yanlış güne düşer | 🟠 | CLAUDE §Dates · [BUSINESS_RULES](BUSINESS_RULES.md) |
-| INV-DATE-2 | UK DST hesapları `isUkDst` helper'ları ile (Mart/Ekim son Pazar, 01:00 UTC) | Saat ±1h kayar | 🟡 | CLAUDE §Dates |
+| INV-DATE-1 | NEVER `date.toISOString().split('T')[0]` → `toDateKey()` (`src/utils/timeUtils.js`) | In BST (summer time) the day **shifts by one day** → booking lands on the wrong day | 🟠 | CLAUDE §Dates · [BUSINESS_RULES](BUSINESS_RULES.md) |
+| INV-DATE-2 | UK DST calculations via the `isUkDst` helpers (last Sunday of March/October, 01:00 UTC) | Time shifts ±1h | 🟡 | CLAUDE §Dates |
 
-## 3. Booking Modeli
+## 3. Booking Model
 
-| ID | Değişmez | Bozulursa | 🔴 | Kaynak |
+| ID | Invariant | If broken | 🔴 | Source |
 |----|----------|-----------|----|--------|
-| INV-BK-1 | **İş kuralı, veriye yazan/taşıyan TÜM yollarda olmalı** (booking + reschedule + walk-in). Yeni kısıt eklerken tüm yazma yollarını grep'le | Bir yol kuralı atlar → tutarsız/hayalet kayıt | 🟠 | INC 2026-06-29 (hayalet booking) |
-| INV-BK-2 | Barber müsaitlik kısıtı hem UI'da gösterilir hem **server-side reddedilir** (off-day booking yazılamaz) | UI bypass + grid görünmezliği = yönetilemez kayıt | 🟠 | INC 2026-06-29 |
-| INV-BK-3 | Reschedule **yönden bağımsız** — daima **en yeni email'in geliş zamanı** kazanır (booking tarihinin yönü değil) | Geriye/erken reschedule uygulanmaz, booking eski tarihte takılır | 🟠 | INC 2026-06-20 |
-| INV-BK-4 | Reschedule conflict check (`hasTimeConflict(..., ignoreBookingId)`) save'den **ÖNCE**; `barberValue` **lowercased**; `barberId = barbers.find(b=>b.name===sel).id` (display name'den fabricate etme) | Çift-booking veya yanlış barber'a atama | 🟠 | CLAUDE §Reschedule · [BUSINESS_RULES](BUSINESS_RULES.md) |
-| INV-BK-5 | `actualDuration` ≠ servis süresi (checkout'a basma anı). Geometri/çakışma/kapasitede daima `min(scheduledDuration, actualDuration)` ile cap'le — kart sadece KISALABİLİR | Geç checkout kartı şişirir → sahte cascade/örtüşme | 🟡 | INC 2026-06-27 · [processing-time](BUSY_SLOT_V2.md) |
-| INV-BK-6 | Slot üretimi: son bookable start = kapanış − 15dk (`LAST_START_GAP_MINS`). `start + duration <= close` check'i **geri getirilmez** (spillover analytics kullanılıyor) | Slotlar yanlış kesilir veya spillover verisi bozulur | 🟡 | CLAUDE §Slot |
-| INV-BK-7 | Status daima yüklemede uppercase normalize (`normalizeBookingStatus`). Blocking statüler: `CONFIRMED, PENDING, UNPAID, BLOCKED` | Import'tan gelen lowercase `checked_out` filtrelerden kaçar | 🟡 | CLAUDE §Booking · [status norm](FIRESTORE_SCHEMA.md) |
-| INV-BK-8 | `booking.duration` service lookup'tan önce `parseInt()` | String duration → yanlış/eksik servis eşleşmesi | 🟡 | CLAUDE §Booking |
+| INV-BK-1 | **A business rule must exist on ALL paths that write/carry to data** (booking + reschedule + walk-in). When adding a new constraint, grep all write paths | One path skips the rule → inconsistent/ghost record | 🟠 | INC 2026-06-29 (ghost booking) |
+| INV-BK-2 | The barber availability constraint is both shown in the UI and **rejected server-side** (an off-day booking cannot be written) | UI bypass + grid invisibility = unmanageable record | 🟠 | INC 2026-06-29 |
+| INV-BK-3 | Reschedule is **direction-independent** — always **the arrival time of the newest email** wins (not the direction of the booking date) | A backward/earlier reschedule is not applied, the booking sticks at the old date | 🟠 | INC 2026-06-20 |
+| INV-BK-4 | Reschedule conflict check (`hasTimeConflict(..., ignoreBookingId)`) **BEFORE** save; `barberValue` **lowercased**; `barberId = barbers.find(b=>b.name===sel).id` (don't fabricate from the display name) | Double-booking or assignment to the wrong barber | 🟠 | CLAUDE §Reschedule · [BUSINESS_RULES](BUSINESS_RULES.md) |
+| INV-BK-5 | `actualDuration` ≠ service duration (the moment checkout is pressed). In geometry/overlap/capacity always cap with `min(scheduledDuration, actualDuration)` — the card can only SHRINK | A late checkout inflates the card → fake cascade/overlap | 🟡 | INC 2026-06-27 · [processing-time](BUSY_SLOT_V2.md) |
+| INV-BK-6 | Slot generation: last bookable start = closing − 15min (`LAST_START_GAP_MINS`). The `start + duration <= close` check is **not brought back** (spillover analytics is in use) | Slots are cut wrong or spillover data is corrupted | 🟡 | CLAUDE §Slot |
+| INV-BK-7 | Status always uppercase-normalized on load (`normalizeBookingStatus`). Blocking statuses: `CONFIRMED, PENDING, UNPAID, BLOCKED` | Lowercase `checked_out` from import escapes the filters | 🟡 | CLAUDE §Booking · [status norm](FIRESTORE_SCHEMA.md) |
+| INV-BK-8 | `booking.duration` gets `parseInt()` before the service lookup | String duration → wrong/missing service match | 🟡 | CLAUDE §Booking |
 
-## 4. Barber & Client Eşleşme
+## 4. Barber & Client Matching
 
-| ID | Değişmez | Bozulursa | 🔴 | Kaynak |
+| ID | Invariant | If broken | 🔴 | Source |
 |----|----------|-----------|----|--------|
-| INV-MATCH-1 | Barber eşleşmesi **exact case-insensitive** (`barberKey()`); partial/substring/ilk-kelime fallback YOK. Yanlış kaynak isim → **kaynakta düzelt** | Aggregator tam-ad ("Arda Uzun") ≠ sistem ("Arda") → booking görünmez | 🟡 | INC 2026-06-26 · [matching politikası](NORMALIZATION.md) |
-| INV-MATCH-2 | Parser'da ilk-ad eşleşmesi **ambiguity-safe**: iki barber aynı ilk adı paylaşıyorsa tahmin etme, raw bırak | Yanlış barber'a booking yazılır (sessiz) | 🟡 | INC 2026-06-26 |
-| INV-MATCH-3 | `barberName` HER parser write'ında yazılmalı (matcher fallback'i) | Grid eşleşmesi tek `barberId`'ye bağlı kalır, kırılgan | 🟡 | INC 2026-06-26 |
-| INV-MATCH-4 | Client lookup sırası: `clientManualId` → exact phone/email → `_aliases` → normalized phone (son 10 hane) → **name-only fallback (SON çare)**. Phone/email varken ASLA sadece isimle eşleme | Yanlış client'a booking/geçmiş bağlanır (GDPR + veri) | 🟠 | CLAUDE §Client identity |
-| INV-MATCH-5 | Phone/email değişince eski değer `_aliases`'a `arrayUnion` ile eklenir | Booking geçmişi kopar | 🟡 | CLAUDE §Client identity |
-| INV-MATCH-6 | Client edit → tüm assigned booking'lere **batch propagate** (client kimliği booking'e snapshot'lanır) | Client doc güncel, booking eski/bozuk kalır → yanlış adrese email | 🟡 | INC 2026-06-24 |
-| INV-MATCH-7 | Telefon "son 4 hane" tek başına eşleşme anahtarı olarak kullanılmaz | Farklı kişiler çakışır | 🟡 | [parser standardı](NORMALIZATION.md) |
+| INV-MATCH-1 | Barber matching is **exact case-insensitive** (`barberKey()`); NO partial/substring/first-word fallback. Wrong source name → **fix it at the source** | Aggregator full-name ("Arda Uzun") ≠ system ("Arda") → booking invisible | 🟡 | INC 2026-06-26 · [matching policy](NORMALIZATION.md) |
+| INV-MATCH-2 | First-name matching in the parser is **ambiguity-safe**: if two barbers share the same first name, don't guess, leave raw | Booking written to the wrong barber (silently) | 🟡 | INC 2026-06-26 |
+| INV-MATCH-3 | `barberName` must be written on EVERY parser write (matcher fallback) | Grid matching stays bound to a single `barberId`, fragile | 🟡 | INC 2026-06-26 |
+| INV-MATCH-4 | Client lookup order: `clientManualId` → exact phone/email → `_aliases` → normalized phone (last 10 digits) → **name-only fallback (LAST resort)**. When phone/email is present, NEVER match by name alone | Booking/history bound to the wrong client (GDPR + data) | 🟠 | CLAUDE §Client identity |
+| INV-MATCH-5 | When phone/email changes, the old value is added to `_aliases` via `arrayUnion` | Booking history is severed | 🟡 | CLAUDE §Client identity |
+| INV-MATCH-6 | Client edit → **batch propagate** to all assigned bookings (client identity is snapshotted onto the booking) | Client doc is current, booking stays old/broken → email to the wrong address | 🟡 | INC 2026-06-24 |
+| INV-MATCH-7 | Phone "last 4 digits" is not used as a match key on its own | Different people collide | 🟡 | [parser standard](NORMALIZATION.md) |
 
-## 5. Email & Bildirim
+## 5. Email & Notification
 
-| ID | Değişmez | Bozulursa | 🔴 | Kaynak |
+| ID | Invariant | If broken | 🔴 | Source |
 |----|----------|-----------|----|--------|
-| INV-MAIL-1 | Email'de ASLA optimistik "sent" gösterme — gerçek durum sunucudan (bayrak/live snapshot) | Başarısız gönderim "başarılı" görünür, teşhis günlerce gecikir | 🟡 | INC 2026-06-24 |
-| INV-MAIL-2 | Dış API (Brevo) çağrısı HER ZAMAN try/catch içinde; başarısızlıkta idempotency bayrağını sıfırla | Yakalanmayan hata → **stuck flag** → fonksiyon bir daha tetiklenmez | 🟠 | INC 2026-06-24 |
-| INV-MAIL-3 | Tetikleyici bayrak (`false→true`) tasarımında manuel retry önce `false` sonra `true` yazar | Takılı `true`'dan çıkış olmaz | 🟡 | INC 2026-06-24 |
-| INV-MAIL-4 | Tüm email giriş noktalarında `isValidEmail` (format) — sadece "boş mu" yetmez | `name@gmailcom` kaydedilir → Brevo 400 zinciri | 🟡 | INC 2026-06-24 |
-| INV-MAIL-5 | Email göndermeden önce `client.emailOptOut !== true` kontrolü (GDPR); her emailde unsubscribe → `salownEmailOptOut` | GDPR ihlali | 🔴 | CLAUDE §Email |
-| INV-MAIL-6 | Gönderici stratejisi değişince (Gmail→Brevo) o yola giren TÜM fonksiyonların `secrets` listesini grep'le (`BREVO_API_KEY`) | Secret'i olmayan fn sessizce kırılır | 🟠 | INC 2026-06-26 |
+| INV-MAIL-1 | NEVER show an optimistic "sent" in email — the real state comes from the server (flag/live snapshot) | A failed send looks "successful", diagnosis is delayed for days | 🟡 | INC 2026-06-24 |
+| INV-MAIL-2 | An external API (Brevo) call is ALWAYS inside try/catch; on failure reset the idempotency flag | Uncaught error → **stuck flag** → the function never fires again | 🟠 | INC 2026-06-24 |
+| INV-MAIL-3 | In a trigger flag (`false→true`) design, a manual retry writes `false` first then `true` | No way out of a stuck `true` | 🟡 | INC 2026-06-24 |
+| INV-MAIL-4 | `isValidEmail` (format) at all email entry points — "is it empty" alone is not enough | `name@gmailcom` gets saved → Brevo 400 chain | 🟡 | INC 2026-06-24 |
+| INV-MAIL-5 | `client.emailOptOut !== true` check before sending email (GDPR); unsubscribe on every email → `salownEmailOptOut` | GDPR violation | 🔴 | CLAUDE §Email |
+| INV-MAIL-6 | When the sender strategy changes (Gmail→Brevo), grep the `secrets` list of ALL functions on that path (`BREVO_API_KEY`) | A fn without the secret breaks silently | 🟠 | INC 2026-06-26 |
 
-## 6. Güvenlik & GDPR
+## 6. Security & GDPR
 
-| ID | Değişmez | Bozulursa | 🔴 | Kaynak |
+| ID | Invariant | If broken | 🔴 | Source |
 |----|----------|-----------|----|--------|
-| INV-SEC-1 | Booking `get`/`list`/`update` = auth-only. `create` = public ama **financial fields blocked**. Cancel/reschedule = server-side callable only | Yetkisiz okuma/yazma, fiyat manipülasyonu | 🔴 | CLAUDE §Security · [SECURITY.md](SECURITY.md) |
-| INV-SEC-2 | Booking **ASLA public-readable yapılmaz** (GDPR). Public sayfa (success/cancel/manage) veriyi `sessionStorage`'dan veya sınırlı-alan callable'dan alır | Tüm müşteri PII'si dünyaya açılır | 🔴 | INC 2026-06-26 |
-| INV-SEC-3 | `tenants/{id}` root doc **world-readable** → ASLA sır koyma; telegram/stripe token → `settings/integrations` subdoc; public veri → `tenants/{id}/public/{doc}` projeksiyonu | Sır sızıntısı | 🔴 | [tenant root public](MULTI_TENANT_NOTES.md) |
-| INV-SEC-4 | Deploy sırası (güvenlik değişikliği): **functions → hosting → rules EN SON**. Canlı rules'ı önce API'den çek, path'leri haritala | Rules kör değişimi booking create/reschedule/settings okumayı kırdı (geçmişte) | 🔴 | CLAUDE §Commands · [rules safety](SECURITY.md) |
-| INV-SEC-5 | Silme işlemleri (bu aşamada) SADECE super-admin (`isSuperAdmin` claim) — owner'lar dahil herkes kaybetti (pilot) | Yetki eskalasyonu / veri kaybı | 🔴 | [DECISIONS.md](DECISIONS.md) · INC 2026-07-02 |
-| INV-SEC-6 | `serviceAccountKey.json` ASLA git'e commit edilmez (`.gitignore`'da) | Admin SDK credential sızıntısı | 🔴 | INC (Key Exposure) |
-| INV-SEC-7 | Bulk Firestore silme: export → dry-run CSV → owner onayı → write. Asla kör bulk-delete | Geri dönülemez veri kaybı | 🔴 | CLAUDE §Commands |
+| INV-SEC-1 | Booking `get`/`list`/`update` = auth-only. `create` = public but **financial fields blocked**. Cancel/reschedule = server-side callable only | Unauthorized read/write, price manipulation | 🔴 | CLAUDE §Security · [SECURITY.md](SECURITY.md) |
+| INV-SEC-2 | A booking is **NEVER made public-readable** (GDPR). A public page (success/cancel/manage) gets the data from `sessionStorage` or a limited-field callable | All customer PII is exposed to the world | 🔴 | INC 2026-06-26 |
+| INV-SEC-3 | `tenants/{id}` root doc is **world-readable** → NEVER put a secret in it; telegram/stripe token → `settings/integrations` subdoc; public data → `tenants/{id}/public/{doc}` projection | Secret leak | 🔴 | [tenant root public](MULTI_TENANT_NOTES.md) |
+| INV-SEC-4 | Deploy order (security change): **functions → hosting → rules LAST**. Fetch the live rules from the API first, map the paths | Blind rules change broke booking create/reschedule/settings read (in the past) | 🔴 | CLAUDE §Commands · [rules safety](SECURITY.md) |
+| INV-SEC-5 | Delete operations (at this stage) are ONLY super-admin (`isSuperAdmin` claim) — everyone, including owners, lost it (pilot) | Privilege escalation / data loss | 🔴 | [DECISIONS.md](DECISIONS.md) · INC 2026-07-02 |
+| INV-SEC-6 | `serviceAccountKey.json` is NEVER committed to git (it's in `.gitignore`) | Admin SDK credential leak | 🔴 | INC (Key Exposure) |
+| INV-SEC-7 | Bulk Firestore delete: export → dry-run CSV → owner approval → write. Never a blind bulk-delete | Irreversible data loss | 🔴 | CLAUDE §Commands |
 
 ## 7. Deploy
 
-| ID | Değişmez | Bozulursa | 🔴 | Kaynak |
+| ID | Invariant | If broken | 🔴 | Source |
 |----|----------|-----------|----|--------|
-| INV-DEP-1 | salown-app tek deploy kaynağı = `hosting/`. Build atlayan HER `firebase deploy` bundle'ı siler → `firebase.json` **predeploy hook** garanti eder | Tüm SPA (login/signup/book/manage) 404'e düşer | 🔴 | INC 2026-06-29 · [ci gap](../salown-app) |
-| INV-DEP-2 | Deploy öncesi tenant + URL'yi **söyle, onay bekle** | Yanlış hedefe/eskiye deploy | 🟠 | CLAUDE · [deploy safety](DEPLOY.md) |
-| INV-DEP-3 | Her edit'ten önce `git status` + `git log origin/main..HEAD` | Başkasının uncommitted işini/unpushed commit'i ezme | 🟠 | CLAUDE §Process |
-| INV-DEP-4 | **Multi-session:** sadece kendi dosyanı **explicit path** ile commit/deploy et. ASLA `git add .` / `git restore .` / `git checkout .` / `git reset --hard` | Başka session'ın uncommitted işi silinir | 🔴 | [git isolation](DEPLOY.md) |
-| INV-DEP-5 | Landing'in tek canlı kaynağı `salown-app/hosting/index.html` (DEPLOY.md'deki symlink KIRIK) | Landing eskiye döner / değişiklik kaybolur | 🟡 | [landing source](DEPLOY.md) |
-| INV-DEP-6 | Post-deploy smoke test: kritik rotalar 200 dönmezse deploy fail (bkz INC 2026-06-29 curl bloğu) | Sessiz kesinti haftalarca fark edilmez | 🟠 | INC 2026-06-29 |
+| INV-DEP-1 | salown-app single deploy source = `hosting/`. EVERY `firebase deploy` that skips build deletes the bundle → `firebase.json` **predeploy hook** guarantees it | The whole SPA (login/signup/book/manage) falls to 404 | 🔴 | INC 2026-06-29 · [ci gap](../salown-app) |
+| INV-DEP-2 | Before deploy **state** the tenant + URL, **wait for confirmation** | Deploy to the wrong target/old version | 🟠 | CLAUDE · [deploy safety](DEPLOY.md) |
+| INV-DEP-3 | `git status` + `git log origin/main..HEAD` before every edit | Overwriting someone else's uncommitted work/unpushed commit | 🟠 | CLAUDE §Process |
+| INV-DEP-4 | **Multi-session:** commit/deploy only your own file with an **explicit path**. NEVER `git add .` / `git restore .` / `git checkout .` / `git reset --hard` | Another session's uncommitted work is deleted | 🔴 | [git isolation](DEPLOY.md) |
+| INV-DEP-5 | The single live source of the landing is `salown-app/hosting/index.html` (the symlink in DEPLOY.md is BROKEN) | Landing reverts to old / change is lost | 🟡 | [landing source](DEPLOY.md) |
+| INV-DEP-6 | Post-deploy smoke test: if critical routes don't return 200 the deploy fails (see INC 2026-06-29 curl block) | Silent outage goes unnoticed for weeks | 🟠 | INC 2026-06-29 |
 
 ## 8. Multi-tenant
 
-| ID | Değişmez | Bozulursa | 🔴 | Kaynak |
+| ID | Invariant | If broken | 🔴 | Source |
 |----|----------|-----------|----|--------|
-| INV-MT-1 | Yeni salown-app trigger → **self-managed tenant guard** ekle | Trigger tüm tenant'larda ateşler, izole edilemez | 🟠 | CLAUDE · [MULTI_TENANT_NOTES.md](MULTI_TENANT_NOTES.md) |
-| INV-MT-2 | Feature flag daima tenant doc'tan okunur, hardcode edilmez | Bir tenant'ın flag'i herkese yayılır | 🟠 | CLAUDE §Feature flag |
-| INV-MT-3 | `Reports.jsx` platform-wide (tenant-specific isim hardcode YOK); `Finance.jsx` şimdilik whitecross-only. İkisini karıştırma | Bir tenant'ın mantığı diğerine sızar | 🟠 | CLAUDE §Page ownership |
-| INV-MT-4 | `/signup` + `provisionTenant` (self-onboarding) ASLA kapatılmaz/gate'lenmez ("satmıyoruz, test ediyoruz") | Test akışı ölür | 🟠 | [DECISIONS.md](DECISIONS.md) |
+| INV-MT-1 | New salown-app trigger → add a **self-managed tenant guard** | The trigger fires on all tenants, can't be isolated | 🟠 | CLAUDE · [MULTI_TENANT_NOTES.md](MULTI_TENANT_NOTES.md) |
+| INV-MT-2 | A feature flag is always read from the tenant doc, not hardcoded | One tenant's flag spreads to everyone | 🟠 | CLAUDE §Feature flag |
+| INV-MT-3 | `Reports.jsx` is platform-wide (NO hardcoded tenant-specific name); `Finance.jsx` is whitecross-only for now. Don't mix the two | One tenant's logic leaks into another | 🟠 | CLAUDE §Page ownership |
+| INV-MT-4 | `/signup` + `provisionTenant` (self-onboarding) is NEVER disabled/gated ("we're not selling, we're testing") | The test flow dies | 🟠 | [DECISIONS.md](DECISIONS.md) |
 
 ## 9. Parser
 
-| ID | Değişmez | Bozulursa | 🔴 | Kaynak |
+| ID | Invariant | If broken | 🔴 | Source |
 |----|----------|-----------|----|--------|
-| INV-PAR-1 | `externalId` dedup zorunlu; geçmiş tarihten re-run güvenli olmalı | Duplicate booking | 🟡 | CLAUDE §Email parsers |
-| INV-PAR-2 | İki parser aynı inbox'ı okuyorsa `externalId` formatları **tam eşleşmeli**; tombstone = son güvenlik ağı | Aynı rezervasyon iki doc olur | 🟡 | INC 2026-06-17 |
-| INV-PAR-3 | "Seen" bir email ASLA booking kaybına dönüşmez — idempotency guard'lar seen-skip'in yerini alır | Okunmuş email'in booking'i sessizce düşer | 🟠 | INC 2026-06-20, 2026-06-24 |
-| INV-PAR-4 | Refactor-orphan: bir değişkenin tanımını/adını değiştirince TÜM kullanımlarını grep'le (`node -c` runtime ReferenceError'ı yakalamaz) | Öksüz değişken → sessiz ReferenceError → booking düşmez (11 gün kayıp örneği) | 🟠 | INC 2026-06-24 |
-| INV-PAR-5 | Bir parser'da bug bulunca diğer İKİsinde de aynı satırı grep'le (Booksy/Fresha/Treatwell aynı kalıbı tekrarlar). "Benzer yorum var" ≠ "aynı davranış" | Yarım fix; bug diğer parser'da yaşar | 🟠 | INC 2026-06-24 · [PARSER_NOTES.md](PARSER_NOTES.md) |
-| INV-PAR-6 | Parser değişikliği yalnız `firebase deploy --only functions` ile yayına girer | Değişiklik canlıya inmez | 🟡 | CLAUDE §Email parsers |
+| INV-PAR-1 | `externalId` dedup is mandatory; a re-run from a past date must be safe | Duplicate booking | 🟡 | CLAUDE §Email parsers |
+| INV-PAR-2 | If two parsers read the same inbox the `externalId` formats must **match exactly**; the tombstone = last safety net | The same reservation becomes two docs | 🟡 | INC 2026-06-17 |
+| INV-PAR-3 | A "seen" email NEVER turns into a lost booking — idempotency guards take the place of seen-skip | The booking of a read email silently drops | 🟠 | INC 2026-06-20, 2026-06-24 |
+| INV-PAR-4 | Refactor-orphan: when you change a variable's definition/name, grep ALL its uses (`node -c` does not catch a runtime ReferenceError) | Orphan variable → silent ReferenceError → booking doesn't land (an example of 11 days lost) | 🟠 | INC 2026-06-24 |
+| INV-PAR-5 | When you find a bug in one parser, grep the same line in the other TWO (Booksy/Fresha/Treatwell repeat the same pattern). "There's a similar comment" ≠ "same behavior" | Half fix; the bug lives on in the other parser | 🟠 | INC 2026-06-24 · [PARSER_NOTES.md](PARSER_NOTES.md) |
+| INV-PAR-6 | A parser change goes live only with `firebase deploy --only functions` | The change doesn't reach production | 🟡 | CLAUDE §Email parsers |
 
 ---
 
-## 10. Kanal Senkronizasyonu (iCal OUT)
+## 10. Channel Synchronization (iCal OUT)
 
-| ID | Değişmez | Bozulursa | 🔴 | Kaynak |
+| ID | Invariant | If broken | 🔴 | Source |
 |----|----------|-----------|----|--------|
-| INV-SYNC-1 | İki-yönlü takvim feed'i (`salownIcalFeed`) bir booking'i **geldiği platforma geri yansıtmaz** → tüketici-başına `?exclude=<Source>` ile o abone kendi source'unu filtreler (param yoksa Treatwell default, back-compat). Diğer TÜM source (walk-in/website/Booksy/Fresha/BLOCKED/busy-time) feed'de KALIR | Platform kendi randevusunu **çift** sayar (Treatwell'de çift görüntü) | 🟡 | `index.js` salownIcalFeed · edit_log 2026-07-07(c) |
-| INV-SYNC-2 | "Tek paylaşılan feed'de tüm aggregator source'ları hariç tut" **YAPILMAZ** — her tüketici yalnız **kendi** source'unu hariç tutmalı (Treatwell, Booksy/Fresha booking'lerini görüp o slotları bloklamalı) | Cross-platform **çift-booking** (Treatwell, Booksy'nin dolu slotunu boş sanır) | 🟠 | `index.js` salownIcalFeed |
+| INV-SYNC-1 | The two-way calendar feed (`salownIcalFeed`) does **not reflect a booking back to the platform it came from** → per-consumer `?exclude=<Source>` lets that subscriber filter its own source (if the param is missing, Treatwell default, back-compat). ALL OTHER sources (walk-in/website/Booksy/Fresha/BLOCKED/busy-time) STAY in the feed | The platform counts its own appointment **double** (duplicate display in Treatwell) | 🟡 | `index.js` salownIcalFeed · edit_log 2026-07-07(c) |
+| INV-SYNC-2 | "Exclude all aggregator sources in a single shared feed" is **NOT DONE** — each consumer must exclude only **its own** source (Treatwell should see Booksy/Fresha bookings and block those slots) | Cross-platform **double-booking** (Treatwell thinks Booksy's full slot is empty) | 🟠 | `index.js` salownIcalFeed |
 
 ---
 
-## Bakım (bu dosyayı nasıl güncel tutarız)
-- Yeni bir incident **kalıcı bir kural** üretiyorsa (INCIDENTS "Prevention/Dersler"), buraya bir satır ekle + kaynağı göster.
-- Bir invariant'ı **bilinçli** değiştiriyorsan: önce [DECISIONS.md](DECISIONS.md)'e gerekçeyle yaz, sonra buradaki satırı güncelle.
-- Kural "kasıtlı tuhaflık" ise (bozuk değil, öyle tasarlandı) → INVARIANTS değil [KNOWN_QUIRKS.md](KNOWN_QUIRKS.md).
-- Bu repo'da (`salown-docs`) değişiklik: `cd alex/docs && git commit INVARIANTS.md && git push`.
+## Maintenance (how we keep this file current)
+- If a new incident produces a **permanent rule** (INCIDENTS "Prevention/Lessons"), add a line here + cite the source.
+- If you **consciously** change an invariant: first write it with rationale in [DECISIONS.md](DECISIONS.md), then update the line here.
+- If the rule is an "intentional oddity" (not broken, designed that way) → not INVARIANTS, [KNOWN_QUIRKS.md](KNOWN_QUIRKS.md).
+- A change in this repo (`salown-docs`): `cd alex/docs && git commit INVARIANTS.md && git push`.

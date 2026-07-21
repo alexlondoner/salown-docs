@@ -1,83 +1,83 @@
 # ARCHITECTURE REVIEW — 2026-07-02
 
-> Dış-göz mimari değerlendirmesi. **İki kaynak birleşimi:**
-> - **GPT (SaaS pattern lensi):** mimari şekli, olgunluk teşhisi, orta-vadeli borç önerileri.
-> - **Claude (repo lensi):** GPT'nin çağrılarını gerçek koda karşı doğrulama + yeniden sıralama.
+> Outside-eye architecture assessment. **Union of two sources:**
+> - **GPT (SaaS pattern lens):** architectural shape, maturity diagnosis, mid-term debt suggestions.
+> - **Claude (repo lens):** verifying GPT's claims against the real code + re-prioritizing.
 >
-> **Neden ikisi birlikte:** GPT SaaS pattern'lerinden akıl yürütür (dosyaları görmez); Claude
-> `firestore.rules` / `functions/index.js` / `Reports.jsx`'i okur. Ayrıştıkları yerde **kod kazanır** —
-> bu doküman farkın *nerede* olduğunu kaydeder.
+> **Why both together:** GPT reasons from SaaS patterns (does not see the files); Claude
+> reads `firestore.rules` / `functions/index.js` / `Reports.jsx`. Where they diverge, **code wins** —
+> this document records *where* the difference is.
 >
-> Durum kaynağı değildir → aksiyona dönen maddeler [ROADMAP.md](ROADMAP.md)'de yaşar. Bu dosya *teşhis*.
+> This is not a source of state → actionable items live in [ROADMAP.md](ROADMAP.md). This file is *diagnosis*.
 
 ---
 
-## 🟢 Güçlü taraflar (GPT — Claude teyit etti)
+## 🟢 Strengths (GPT — confirmed by Claude)
 
-| # | Bulgu | Claude notu (koddan) |
+| # | Finding | Claude note (from code) |
 |---|-------|----------------------|
-| 1 | **Multi-tenant temeli doğru** — `tenants/{tenantId}/...` | Sadece path değil, **claim-based**: `tenantId` Firebase custom claim'de (`AuthContext.jsx`, `firestore.rules:18`). App-state'te değil JWT'de olması migration'ı da kurtarıyor. En zor iş başta çözülmüş. |
-| 2 | **Booking modeli gerçek dünyadan** — walk-in quirks, `barberId` tutarsızlığı, DST, status normalize, parser tombstones | Teyit. Bunlar "gerçek kullanıcı sistemi kırdı → düzeltildi" izi = olgunluk. `FIRESTORE_SCHEMA.md`'de belgeli. |
-| 3 | **Notification 3 kanal** — Email · Push · Telegram | Teyit: FCM staff app'te gerçek (`StaffApp.jsx`, `fcmTokens/`), Telegram `settings/integrations`. Sonradan eklemesi zor katman. |
-| 4 | **Public booking güvenliği doğru** — server-side | Teyit: `salownCancelByToken` / `salownRescheduleByToken` onCall (`index.js:1315,1384`), token'lı email link, unauthenticated Firestore write yok. |
-| 5 | **IMAP parser** (Booksy/Fresha/Treatwell tek ekran) = differentiator | Teyit **ama uyarı var** → aşağıda 🔴-2 (güç ve kırılganlık aynı yerde). |
-| 6 | **Ask salOWN** — tek DB'de booking+finance+marketing+clients+loyalty → AI verimli | Teyit: `askAI` onCall, **Anthropic Claude Haiku 4.5** (`index.js:3362`, secret `ANTHROPIC_API_KEY`). Tek AI dokunuş noktası. |
+| 1 | **Multi-tenant foundation is correct** — `tenants/{tenantId}/...` | Not just path, but **claim-based**: `tenantId` in Firebase custom claim (`AuthContext.jsx`, `firestore.rules:18`). Being in the JWT rather than app-state also saves the migration. The hardest work was solved up front. |
+| 2 | **Booking model is from the real world** — walk-in quirks, `barberId` inconsistency, DST, status normalize, parser tombstones | Confirmed. These are the trail of "a real user broke the system → it was fixed" = maturity. Documented in `FIRESTORE_SCHEMA.md`. |
+| 3 | **Notifications across 3 channels** — Email · Push · Telegram | Confirmed: FCM is real in the staff app (`StaffApp.jsx`, `fcmTokens/`), Telegram in `settings/integrations`. A layer that is hard to add later. |
+| 4 | **Public booking security is correct** — server-side | Confirmed: `salownCancelByToken` / `salownRescheduleByToken` onCall (`index.js:1315,1384`), token-based email link, no unauthenticated Firestore write. |
+| 5 | **IMAP parser** (Booksy/Fresha/Treatwell in one screen) = differentiator | Confirmed **but with a warning** → see 🔴-2 below (strength and fragility in the same place). |
+| 6 | **Ask salOWN** — booking+finance+marketing+clients+loyalty in a single DB → AI is efficient | Confirmed: `askAI` onCall, **Anthropic Claude Haiku 4.5** (`index.js:3362`, secret `ANTHROPIC_API_KEY`). Single AI touch point. |
 
 ---
 
-## 🟡 Orta-vadeli borçlar (GPT — Claude teyit + nüans)
+## 🟡 Mid-term debts (GPT — Claude confirms + nuance)
 
-1. **`functions/index.js` 4541 satır → böl.** GPT önerisi: `bookings/ marketing/ notifications/ parsers/ stripe/ ai/ staff/ clients/`.
-   **Claude nüansı:** v2 functions olduğu için refactor **düşük riskli/mekanik** (her export bağımsız redeploy). Korkulacak borç değil — **ilk ödenecek** borç, çünkü ucuz ve okunabilirliği hemen açar.
-2. **`settings/emailConfig` app-password düz metin → Secret Manager.** Zaten `T-b` olarak takipte. Ölçekte önem kazanır.
-3. **Tek Firebase project** (`havuz-44f70`). Şu an sorun değil; ileride `dev/staging/prod` ayrımı istenebilir.
-4. **Canonical booking model borcu** (`barberId` id-vs-isim, `endTime` string-vs-Timestamp, walk-in'de `date` yok). Biliniyor olması iyi; her yeni query'de tuzak.
-
----
-
-## 🔴 Yeniden sıralama — GPT ile Claude'un AYRIŞTIĞI yer
-
-> Bu bölüm dokümanın asıl değeri: dışarıdan büyük görünen ≠ içeride yakan.
-
-### GPT'nin 🔴'sı: "Finance hardcoded Whitecross = en büyük teknik risk"
-**Claude: 🔴 değil, 🟡.** Finance izole — tek dosya (`Finance.jsx` 1905), tek tenant, veri bütünlüğü tehdidi yok. "İkinci salon finance ister" → **feature-rebuild**, felaket değil. Contained. Dışarıdan satır sayısı büyük duruyor; içeride sınırlı.
-
-### Claude'un gerçek 🔴'ları (GPT kuralları/kodu okumadığı için göremedi):
-
-- **🔴-1 · `allow read: if true` yüzeyi + world-readable tenant root.**
-  Public booking siteleri okusun diye çoğu koleksiyon herkese açık okunuyor (`firestore.rules`), `tenants/{id}` root doc dünyaya açık. 10 salonda görünmez; **1000 salonda PII enumerate + Firestore read-cost bombası**. Ve 1000 tenant bu davranışa güvenince geri sarması zor → **sistemik, geri alması zor.** (`prescale_hardening` Tier 1.)
-
-- **🔴-2 · Parser kırılganlığı differentiator'ın *aynı yerinde*.**
-  API entegrasyonu değil — salon Gmail'ini IMAP+regex ile okuyan cron (`salownParseEmails`). Booksy/Fresha email formatını değiştirirse parser **sessizce** kırılır (exception değil, sadece 0 import). En güçlü özellik, en sessiz başarısızlık moduna sahip.
-  → **En yüksek ROI'li 20 satır:** "beklenen sayıdan az import → alarm" canary'si.
-
-### Zamanlama düzeltmesi: "10 salon sorunsuz" — bir istisna
-**`delete = super-admin only`** (yalnız `aerulas@`, `firestore.rules` tüm koleksiyonlarda `allow delete: if isSuperAdmin()`). Güvenlik içgüdüsü doğru ama bu **1000'de değil ~3. salonda** operasyonel darboğaz: her yanlış-booking silme talebi tek kişiye düşer. Bus-factor + operasyon riski burada birleşir.
+1. **`functions/index.js` 4541 lines → split it.** GPT suggestion: `bookings/ marketing/ notifications/ parsers/ stripe/ ai/ staff/ clients/`.
+   **Claude nuance:** because these are v2 functions the refactor is **low-risk/mechanical** (each export redeploys independently). Not a debt to fear — the **first to pay off**, because it's cheap and immediately opens up readability.
+2. **`settings/emailConfig` app-password in plaintext → Secret Manager.** Already tracked as `T-b`. Gains importance at scale.
+3. **Single Firebase project** (`havuz-44f70`). Not a problem now; later a `dev/staging/prod` split may be wanted.
+4. **Canonical booking model debt** (`barberId` id-vs-name, `endTime` string-vs-Timestamp, no `date` on walk-in). Good that it's known; a trap in every new query.
 
 ---
 
-## 📈 Ölçek okuması (GPT tablosu + Claude eklemesi)
+## 🔴 Re-prioritization — where GPT and Claude DIVERGE
 
-| Ölçek | GPT | Claude eklemesi |
+> This section is the document's real value: what looks big from the outside ≠ what burns on the inside.
+
+### GPT's 🔴: "Finance hardcoded to Whitecross = biggest technical risk"
+**Claude: not 🔴, it's 🟡.** Finance is isolated — single file (`Finance.jsx` 1905), single tenant, no data-integrity threat. "The second salon wants finance" → **feature-rebuild**, not a disaster. Contained. From the outside the line count looks big; inside it's limited.
+
+### Claude's real 🔴's (GPT couldn't see them because it didn't read the rules/code):
+
+- **🔴-1 · The `allow read: if true` surface + world-readable tenant root.**
+  So that public booking sites can read them, most collections are world-readable (`firestore.rules`), and the `tenants/{id}` root doc is open to the world. Invisible at 10 salons; **at 1000 salons a PII enumerate + Firestore read-cost bomb**. And once 1000 tenants rely on this behavior it's hard to roll back → **systemic, hard to undo.** (`prescale_hardening` Tier 1.)
+
+- **🔴-2 · Parser fragility is in the *same place* as the differentiator.**
+  Not an API integration — a cron that reads the salon's Gmail via IMAP+regex (`salownParseEmails`). If Booksy/Fresha change their email format the parser breaks **silently** (not an exception, just 0 imports). The strongest feature has the quietest failure mode.
+  → **The 20 highest-ROI lines:** a "fewer imports than expected → alarm" canary.
+
+### Timing correction: "10 salons no problem" — one exception
+**`delete = super-admin only`** (only `aerulas@`, in `firestore.rules` `allow delete: if isSuperAdmin()` across all collections). The security instinct is right but this becomes an operational bottleneck **not at 1000 but at ~the 3rd salon**: every wrong-booking deletion request lands on a single person. Bus-factor + operational risk combine here.
+
+---
+
+## 📈 Scale reading (GPT table + Claude addition)
+
+| Scale | GPT | Claude addition |
 |-------|-----|-----------------|
-| **10 salon** | Sorunsuz | ⚠️ İstisna: delete-bottleneck ~3. salonda vurur (yukarı). |
-| **100 salon** | Biraz optimizasyon | **Reporting'i işaretle:** `Reports.jsx` client-side aggregation (Firestore→JS `reduce`). 1000'i beklemeden, ~100'de tarayıcıda çöker → cloud function / pre-aggregated `stats/` doc'a taşı. |
-| **1000 salon** | parser scheduling · Firestore cost · index · cold start · reporting aggregation | Teyit + 🔴-1 (read:true cost) burada patlar. |
+| **10 salons** | No problem | ⚠️ Exception: the delete-bottleneck hits at ~the 3rd salon (above). |
+| **100 salons** | Some optimization | **Flag reporting:** `Reports.jsx` is client-side aggregation (Firestore→JS `reduce`). Without waiting for 1000, it crashes in the browser at ~100 → move to a cloud function / pre-aggregated `stats/` doc. |
+| **1000 salons** | parser scheduling · Firestore cost · index · cold start · reporting aggregation | Confirmed + 🔴-1 (read:true cost) blows up here. |
 
 ---
 
-## ✅ En ucuz ilk hamleler (öncelik sırası)
+## ✅ Cheapest first moves (priority order)
 
-1. **Parser canary** — beklenenden az import → alarm. (~20 satır, en yüksek ROI, differentiator'ı korur.)
-2. **`functions/index.js` split** — mekanik, düşük risk, okunabilirlik açar.
-3. **Reporting pre-aggregation planı** — 100 salon gelmeden `stats/` doc tasarımı.
-4. **🔴-1 read:true daraltma** — Pre-Scale Hardening Gate Tier 1 (tenant #4 öncesi).
+1. **Parser canary** — fewer imports than expected → alarm. (~20 lines, highest ROI, protects the differentiator.)
+2. **`functions/index.js` split** — mechanical, low risk, opens up readability.
+3. **Reporting pre-aggregation plan** — design the `stats/` doc before 100 salons arrive.
+4. **🔴-1 read:true narrowing** — Pre-Scale Hardening Gate Tier 1 (before tenant #4).
 
 ---
 
-## 🧭 Çalışma bölüşümü (bu review'ın çıkardığı meta-ders)
+## 🧭 Division of labor (the meta-lesson this review produced)
 
-- **GPT** → SaaS yönü / pattern / "ne inşa etmeli".
-- **Founder (Alex)** → mimariyi okur, kararı verir.
-- **Claude** → repo'ya karşı doğrular + yazar + tasarlar.
-- **Kural:** GPT'ye yön sor, Claude'a "bu kodda gerçekten öyle mi" diye doğrulat. Ayrışırlarsa **kod kazanır.**
+- **GPT** → SaaS direction / patterns / "what to build".
+- **Founder (Alex)** → reads the architecture, makes the decision.
+- **Claude** → verifies against the repo + writes + designs.
+- **Rule:** ask GPT for direction, have Claude verify "is it really so in this code". If they diverge, **code wins.**

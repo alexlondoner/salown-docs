@@ -1,7 +1,7 @@
-# SERVICE_EDITOR_DESIGN_BRIEF.md — Salown "Edit Service" Redesign
+# SERVICE_EDITOR_DESIGN_BRIEF.md — salOWN "Edit Service" Redesign
 
 > **For:** the designer (Claude Design / any tool). **Goal:** a modern, clean service
-> editor for Salown — at least as good as Booksy/Fresha/Treatwell, with our own
+> editor for salOWN — at least as good as Booksy/Fresha/Treatwell, with our own
 > **squeeze-in / wait-time** concept as a first-class feature.
 > **Hard rule:** this is a **visual redesign only**. The data model, calendar engine, and
 > conflict/squeeze-in logic are DONE and must not change — design the *presentation*, we
@@ -10,7 +10,7 @@
 ---
 
 ## 1. Context — what this screen is
-Salown is a multi-channel salon platform (aggregates Booksy/Fresha/Treatwell + walk-ins
+salOWN is a multi-channel salon platform (aggregates Booksy/Fresha/Treatwell + walk-ins
 into one calendar). The **Service editor** is where a salon owner defines a service:
 name, price, duration, who performs it, and — our differentiator — **processing/wait time**
 so a stylist can take another client during a wait (e.g. hair colour developing).
@@ -24,7 +24,7 @@ Today it's a single expanding card in a list. We want a **sectioned, modern edit
 - **Fresha** "Edit service": left-nav sections (Basic details, Team, Resources, Add-ons,
   Online booking…), segment-based duration ("Add extra time": Servicing / Processing / Blocked).
 - **Treatwell**: tabs (Services & Pricing, Description, Fine print, Distribution), cleanup time, team.
-- **Salown's edge:** the **squeeze-in** — the wait window is a *bookable gap* shown on the
+- **salOWN's edge:** the **squeeze-in** — the wait window is a *bookable gap* shown on the
   calendar; another client can be "squeezed in" there. This must feel intentional & premium.
 
 ## 3. Brand / style tokens (use these)

@@ -1,74 +1,74 @@
-# BUSY_SLOT_V2_TESTPLAN.md — Kapsamlı Test Listesi (deploy ÖNCESİ)
+# BUSY_SLOT_V2_TESTPLAN.md — Comprehensive Test List (BEFORE deploy)
 
-> Processing-time / segment / channel özelliklerinin **deploy edilmeden önce** HeroHairs
-> üzerinde test edilmesi gereken her şey + olabilecek sorunlar. Pilot tenant: **HeroHairs**
-> (Treatwell + panel erişimi var). Tasarım: `BUSY_SLOT_V2.md`, `SERVICE_CONFIG_V2.md`.
-> Riskler: `BUSY_SLOT_V2_RISKS.md`. **Şu an: flag KAPALI, deploy YOK.**
+> Everything that needs to be tested on HeroHairs **before the processing-time / segment / channel
+> features are deployed** + the problems that could occur. Pilot tenant: **HeroHairs**
+> (has Treatwell + panel access). Design: `BUSY_SLOT_V2.md`, `SERVICE_CONFIG_V2.md`.
+> Risks: `BUSY_SLOT_V2_RISKS.md`. **Currently: flag OFF, NO deploy.**
 
 ## 🔴 GLOBAL KILL-SWITCH
-Sorun → HeroHairs tenant doc `features.processingTime = false`. Her şey v1'e döner
-(motor delegasyon + flag-gate sayesinde birebir eski davranış).
+Problem → HeroHairs tenant doc `features.processingTime = false`. Everything reverts to v1
+(byte-identical old behavior thanks to engine delegation + flag-gate).
 
-## Önkoşul
-1. `tenants/herohairs` doc → `features.processingTime: true` (SADECE HeroHairs).
-2. Bölüm D/E (Treatwell) için `firebase deploy --only functions` — **deploy onayı ayrı alınacak.**
+## Prerequisite
+1. `tenants/herohairs` doc → `features.processingTime: true` (ONLY HeroHairs).
+2. For sections D/E (Treatwell) `firebase deploy --only functions` — **deploy approval to be obtained separately.**
 
 ---
 
-## A — Servis config / segment editörü (DEPLOY GEREKMEZ, panel)
-- [ ] A1. Flag açık HeroHairs → Services → servis aç → **"Timing — processing & buffer"** bölümü görünür.
-- [ ] A2. Flag kapalı tenant (Whitecross) → bölüm **görünmez**.
-- [ ] A3. Segment ekle: Service 20 + Processing 30 + Service 20 → "Segments total 70 / 70 · ✓ active".
-- [ ] A4. Toplam ≠ duration → kırmızı "⚠ must equal duration". Kaydet → motor bunu **uygulamaz** (solid).
-- [ ] A5. Processing segment'i yok (sadece Service'ler) → "⚠ needs a Processing segment".
-- [ ] A6. Blocked segment ekle (buffer) → kaydet → busy sayılır ama serbest değil (D'de doğrulanır).
-- [ ] A7. Kaydet → yenile → segment'ler aynen geldi (persist). Firestore'da `service.segments[]` var.
-- [ ] A8. Variation'lı servis → segment editörü görünmez (sadece base servis).
-- [ ] A9. Segment'leri sil → kaydet → `service.segments = null`, servis normal davranır.
+## A — Service config / segment editor (NO DEPLOY NEEDED, panel)
+- [ ] A1. Flag-on HeroHairs → Services → open a service → the **"Timing — processing & buffer"** section appears.
+- [ ] A2. Flag-off tenant (Whitecross) → the section is **not visible**.
+- [ ] A3. Add segment: Service 20 + Processing 30 + Service 20 → "Segments total 70 / 70 · ✓ active".
+- [ ] A4. Total ≠ duration → red "⚠ must equal duration". Save → the engine **does not apply** it (solid).
+- [ ] A5. No Processing segment (only Services) → "⚠ needs a Processing segment".
+- [ ] A6. Add a Blocked segment (buffer) → save → counts as busy but not free (verified in D).
+- [ ] A7. Save → refresh → segments came back exactly (persist). `service.segments[]` exists in Firestore.
+- [ ] A8. Service with variations → segment editor is not visible (base service only).
+- [ ] A9. Delete the segments → save → `service.segments = null`, service behaves normally.
 
 ## B — Booking create + snapshot (panel)
-- [ ] B1. Segment'li servisle **walk-in** oluştur → Firestore booking'de `segments[]` snapshot var.
-- [ ] B2. Segment'li servisle **panel booking** (BookingForm) → `segments[]` var.
-- [ ] B3. Servisin segment'ini sonradan değiştir → **eski booking** eski segment'i korur (snapshot dondu).
-- [ ] B4. Variation seçili booking → `segments` yazılmaz (base-only kuralı).
+- [ ] B1. Create a **walk-in** with a segmented service → the Firestore booking has a `segments[]` snapshot.
+- [ ] B2. **Panel booking** (BookingForm) with a segmented service → `segments[]` exists.
+- [ ] B3. Change the service's segment later → the **old booking** keeps the old segment (snapshot frozen).
+- [ ] B4. Booking with a variation selected → `segments` is not written (base-only rule).
 
-## C — Motor / çakışma + render (panel)
-- [ ] C1. Günlük takvimde segment'li booking'in processing pencereleri **taralı bant** gösterir (çoklu gap dahil).
-- [ ] C2. Processing penceresine **sığan** 2. booking → **kabul** (eskiden "slot dolu").
-- [ ] C3. Pencereyi **aşan** booking (aktif/blocked segmente giren) → **"slot dolu"**.
-- [ ] C4. İki processing penceresi olan servis → iki ayrı bant + her ikisine de booking alınır.
-- [ ] C5. Reschedule: booking'i processing'li bir slotun gap'ine taşı → izin/red doğru.
-- [ ] C6. **Regresyon (flag kapalı tenant):** normal booking/çakışma/reschedule/walk-in eskisi gibi.
-- [ ] C7. **Regresyon (flag açık ama segment'siz servis):** normal davranır, hiç gap yok.
+## C — Engine / conflict + render (panel)
+- [ ] C1. On the daily calendar, the segmented booking's processing windows show a **hatched band** (including multiple gaps).
+- [ ] C2. A 2nd booking that **fits** in the processing window → **accepted** (previously "slot full").
+- [ ] C3. A booking that **exceeds** the window (enters an active/blocked segment) → **"slot full"**.
+- [ ] C4. Service with two processing windows → two separate bands + a booking can be taken into both.
+- [ ] C5. Reschedule: move a booking into the gap of a processing slot → allow/deny correct.
+- [ ] C6. **Regression (flag-off tenant):** normal booking/conflict/reschedule/walk-in as before.
+- [ ] C7. **Regression (flag-on but segment-less service):** behaves normally, no gap at all.
 
-## D — iCal feed çıktısı (FUNCTIONS DEPLOY GEREKİR)
-- [ ] D1. Feed: `…/salownIcalFeed?tenantId=herohairs` → segment'li booking için **çoklu VEVENT** (UID `x`, `x-1`…), aralarında boşluk.
-- [ ] D2. Blocked segment → VEVENT'e dahil (busy), processing → dahil DEĞİL (boş).
-- [ ] D3. Flag kapalı tenant feed'i → tek VEVENT (tüm span) — eskisi gibi.
-- [ ] D4. Segment toplamı ≠ duration → tek solid VEVENT (güvenli fallback).
-- [ ] D5. UID çakışması yok (2 segment ayrı UID).
+## D — iCal feed output (FUNCTIONS DEPLOY REQUIRED)
+- [ ] D1. Feed: `…/salownIcalFeed?tenantId=herohairs` → **multiple VEVENTs** for a segmented booking (UID `x`, `x-1`…), with a gap between them.
+- [ ] D2. Blocked segment → included in VEVENT (busy), processing → NOT included (empty).
+- [ ] D3. Flag-off tenant's feed → single VEVENT (whole span) — as before.
+- [ ] D4. Segment total ≠ duration → single solid VEVENT (safe fallback).
+- [ ] D5. No UID clash (2 segments separate UIDs).
 
-## E — Treatwell uçtan uca (DEPLOY + Treatwell)
-- [ ] E1. Treatwell feed'i poll edince processing penceresi **boş/bookable** görünür; aktif/blocked dolu.
-- [ ] E2. Treatwell'den o boş pencereye booking → alınır; Salown'a email parser ile döner.
-- [ ] E3. Latency: poll gecikmesi makul mü (dk—saat); çift-booking riski gözlemle.
+## E — Treatwell end-to-end (DEPLOY + Treatwell)
+- [ ] E1. When Treatwell polls the feed, the processing window appears **empty/bookable**; active/blocked full.
+- [ ] E2. Booking from Treatwell into that empty window → taken; comes back to salOWN via the email parser.
+- [ ] E3. Latency: is the poll delay reasonable (min—hours); observe the double-booking risk.
 
-## F — Olabilecek sorunlar / kenar durumlar (özellikle dene)
-- [ ] F1. **Source→channel key uyuşmazlığı:** Treatwell/Booksy booking'inin `source` değeri channelProfile key'iyle eşleşmezse processing **sessizce** uygulanmaz. (`getServiceSegments` normalize: lowercase + boşluk/alt-çizgi→tire.)
-- [ ] F2. **Online site booking (BookingPage):** şu an snapshot YAZMIYOR → online müşteri booking'i gap taşımaz. (Kasıtlı, follow-up.)
-- [ ] F3. **Email parser booking'leri:** Treatwell/Fresha/Booksy import'u snapshot YAZMIYOR → gap taşımaz. (Kasıtlı.)
-- [ ] F4. **Day-view squeeze-in:** 2. (gap'e alınan) kart hâlâ üst üste biner (column-split yok). Görsel; booking doğru.
-- [ ] F5. **Hafta görünümü:** processing render'ı yok (sadece günlük).
-- [ ] F6. **BLOCKED booking** + yanlışlıkla segment → solid kalmalı (gap açılmamalı).
-- [ ] F7. **Çok kısa gap** (örn. 5dk, en kısa servisten kısa) → kimse dolduramaz, sorun çıkarmaz.
-- [ ] F8. **Firestore rules:** segment'li servis/booking yazımı rules'a takılmıyor (panel auth; create whitelist'siz — doğrulandı).
-- [ ] F9. **Reschedule self-ignore:** segment'li booking kendi gap'ine çakışmıyor (`ignoreBookingId`).
-- [ ] F10. **No-show/iptal:** segment'li booking iptal → gap'e alınan 2. booking etkilenmez (FIFO, koruma yok — kasıtlı).
+## F — Possible problems / edge cases (try these especially)
+- [ ] F1. **Source→channel key mismatch:** if a Treatwell/Booksy booking's `source` value doesn't match the channelProfile key, processing is **silently** not applied. (`getServiceSegments` normalizes: lowercase + space/underscore→hyphen.)
+- [ ] F2. **Online site booking (BookingPage):** currently does NOT write a snapshot → the online customer booking carries no gap. (Intentional, follow-up.)
+- [ ] F3. **Email parser bookings:** Treatwell/Fresha/Booksy import does NOT write a snapshot → carries no gap. (Intentional.)
+- [ ] F4. **Day-view squeeze-in:** the 2nd card (taken into the gap) still overlaps (no column-split). Visual; booking is correct.
+- [ ] F5. **Week view:** no processing render (daily only).
+- [ ] F6. **BLOCKED booking** + accidental segment → must stay solid (no gap should open).
+- [ ] F7. **Very short gap** (e.g. 5min, shorter than the shortest service) → nobody can fill it, causes no problem.
+- [ ] F8. **Firestore rules:** writing a segmented service/booking doesn't hit rules (panel auth; create without whitelist — verified).
+- [ ] F9. **Reschedule self-ignore:** a segmented booking doesn't conflict with its own gap (`ignoreBookingId`).
+- [ ] F10. **No-show/cancel:** cancelling a segmented booking → the 2nd booking taken into the gap is unaffected (FIFO, no protection — intentional).
 
-## Geri alma
-- Kill-switch `features.processingTime=false` → anında v1.
-- Functions geri alınacaksa: flag-off zaten tek-VEVENT veriyor; gerekirse revert+redeploy.
+## Rollback
+- Kill-switch `features.processingTime=false` → instant v1.
+- If functions must be rolled back: flag-off already gives single-VEVENT; revert+redeploy if needed.
 
-## Otomatik testler (geliştirici)
-- `npm test` → `conflictUtils.test.js` 24/24 (parity + v1-equivalence + segment modeli + back-compat).
-- Build: `npm run build` sıfır error. `node --check functions/index.js`.
+## Automated tests (developer)
+- `npm test` → `conflictUtils.test.js` 24/24 (parity + v1-equivalence + segment model + back-compat).
+- Build: `npm run build` zero errors. `node --check functions/index.js`.

@@ -1,32 +1,32 @@
-# C5 — Lapsed Re-engage Dedup: Tam Fix Planı
+# C5 — Lapsed Re-engage Dedup: Full Fix Plan
 
-> Durum: **PLAN (kod yazılmadı).** Teşhis + karar kaydı: memory `lapsed-dedup-limitation`, ROADMAP C5 item-3, edit_log 2026-07-02.
-> Bu belge paste-hazır; gözetimli (onaylı) uygulanmalı — backend client doc yazar.
+> Status: **PLAN (no code written).** Diagnosis + decision record: memory `lapsed-dedup-limitation`, ROADMAP C5 item-3, edit_log 2026-07-02.
+> This document is paste-ready; it must be applied under supervision (approved) — the backend writes a client doc.
 
-## Problem (özet)
-Re-engage dedup yalnızca **kayıtlı client doc'u (manualId) olan** kişilerde çalışıyor. Walk-in/aggregator müşterisi client doc'una sahip değil → send'de `clientId=null` (`SendCampaignPanel.jsx:127`) → backend `if(clientId)` bloğu (`functions/index.js:3562`) stamp'i **atlıyor** → Home lapsed listesinde tekrar tekrar çıkıyor. Birthday bağışık (birthday sadece client doc'unda).
+## Problem (summary)
+Re-engage dedup only works for people who **have a saved client doc (manualId)**. A walk-in/aggregator customer does not have a client doc → on send `clientId=null` (`SendCampaignPanel.jsx:127`) → the backend `if(clientId)` block (`functions/index.js:3562`) **skips** the stamp → they keep showing up again and again in the Home lapsed list. Birthday is immune (birthday only lives on the client doc).
 
-## Önerilen çözüm: **A — backend find-or-create** (en temiz, mevcut mantığı yeniden kullanır)
-`resolveMemberDocId` (`Clients.jsx:255-263`) zaten **find-or-create** yapıyor: phone→email→name ile mevcut doc'u arar, yoksa yaratır. Bunu **server-side** aynala: `sendMarketingEmail` `clientId` null olduğunda client doc'u bul-ya-da-yarat, sonra stamp'le. Böylece:
-- Stamp her zaman bir doc'a düşer (walk-in dahil).
-- Doc oluşunca kişi bir sonraki Home yüklemesinde `clients` dizisine girer (Clients.jsx merge/dedup) → **mevcut suppress mantığı ekstra kod olmadan yakalar**.
-- Yan etki (kullanıcının da istediği): re-engage ettikçe müşteri DB'si kurulur.
+## Proposed solution: **A — backend find-or-create** (cleanest, reuses existing logic)
+`resolveMemberDocId` (`Clients.jsx:255-263`) already does **find-or-create**: it looks up an existing doc by phone→email→name, and creates one if none exists. Mirror this **server-side**: when `sendMarketingEmail` `clientId` is null, find-or-create the client doc, then stamp it. This way:
+- The stamp always lands on a doc (walk-in included).
+- Once the doc exists, the person enters the `clients` array on the next Home load (Clients.jsx merge/dedup) → **the existing suppress logic catches it with no extra code**.
+- Side effect (which the user also wants): the more you re-engage, the more the customer DB gets built up.
 
-Neden A > B: B (ayrı `reengagements` koleksiyonu) Home'a yeni eşleştirme kodu gerektirir ve mevcut identity dedup'ını kullanmaz. A, `resolveMemberDocId`'nin kanıtlı find-first mantığını yeniden kullanır → daha az yeni kod, daha doğru eşleşme.
+Why A > B: B (a separate `reengagements` collection) requires new matching code on Home and does not use the existing identity dedup. A reuses `resolveMemberDocId`'s proven find-first logic → less new code, more accurate matching.
 
-## Uygulama
+## Implementation
 
-### 1. Backend — `functions/index.js`, `sendMarketingEmail` (opt-out geçtikten SONRA, stamp bloğunda)
-`if (clientId)` bloğunu, clientId yoksa bul-ya-da-yarat edecek şekilde genişlet. Yeni helper:
+### 1. Backend — `functions/index.js`, `sendMarketingEmail` (AFTER opt-out passes, in the stamp block)
+Extend the `if (clientId)` block so that when clientId is missing it does find-or-create. New helper:
 
 ```js
-// find-or-create — resolveMemberDocId'nin (Clients.jsx) server-side aynası.
-// Sadece re-engage gibi "kalıcı ilişki" gönderimlerinde çağır; opt-out ZATEN kontrol edildi.
+// find-or-create — server-side mirror of resolveMemberDocId (Clients.jsx).
+// Only call for "durable relationship" sends like re-engage; opt-out is ALREADY checked.
 async function _resolveClientDocId(db, tenantId, { clientName, clientEmail, clientPhone }) {
     const norm = p => String(p || '').replace(/[\s\-().+]/g, '').toLowerCase();
     const email = String(clientEmail || '').toLowerCase();
     const name  = String(clientName  || '').toLowerCase();
-    if (!email && !name) return null;                  // eşleşecek/yaratacak kimlik yok
+    if (!email && !name) return null;                  // no identity to match/create
     const col = db.collection(`tenants/${tenantId}/clients`);
     const snap = await col.get();
     let found = null;
@@ -43,10 +43,10 @@ async function _resolveClientDocId(db, tenantId, { clientName, clientEmail, clie
 }
 ```
 
-Stamp bloğunu güncelle (mevcut `if (clientId) { ... }` yerine):
+Update the stamp block (replacing the existing `if (clientId) { ... }`):
 
 ```js
-// re-engage: doc yoksa bul-ya-da-yarat, sonra stamp (walk-in/aggregator dahil kapsansın)
+// re-engage: if no doc, find-or-create, then stamp (so walk-in/aggregator are covered too)
 let stampId = clientId;
 const isReengage = campaignType === 're-engagement' || campaignType === 're-engage';
 if (!stampId && isReengage) {
@@ -62,31 +62,31 @@ if (stampId) {
 }
 ```
 
-### 2. Frontend (opsiyonel, eşleşmeyi güçlendirir) — `SendCampaignPanel.jsx` doSend payload
-`clientPhone: client?.phone || null` ekle (backend phone ile daha iyi eşleştirir). Tek satır, düşük risk.
+### 2. Frontend (optional, strengthens matching) — `SendCampaignPanel.jsx` doSend payload
+Add `clientPhone: client?.phone || null` (the backend matches better with phone). One line, low risk.
 
-### 3. Home — DEĞİŞİKLİK YOK
-Doc oluşunca kişi `clients` dizisine girer → mevcut `recentlyReengaged` suppress'i yakalar. (İsim-only eşleşme kısıtı sürer ama artık walk-in de kapsanır → bugünden kesinlikle daha iyi.)
+### 3. Home — NO CHANGE
+Once the doc exists, the person enters the `clients` array → the existing `recentlyReengaged` suppress catches it. (The name-only matching limitation remains, but now walk-ins are covered too → definitely better than today.)
 
 ## Guard / edge case
-- Opt-out **önce** kontrol edilir (mevcut kod) → opt-out'a doc yaratma yok.
-- `email` ve `name` ikisi de boşsa doc yaratma (`_resolveClientDocId` null döner) → çöp doc yok.
-- find-first phone→email→name → aynı kişiye ikinci doc açma riski düşük (aynı-isim farklı-kişi residual risk sürer, mevcut davranışla aynı seviyede).
-- Sadece re-engage'te create; custom/loyalty/birthday'de clientId yoksa create YOK (kapsamı dar tut).
+- Opt-out is checked **first** (existing code) → no doc creation for an opt-out.
+- If both `email` and `name` are empty, no doc is created (`_resolveClientDocId` returns null) → no junk doc.
+- find-first phone→email→name → low risk of opening a second doc for the same person (the same-name different-person residual risk remains, at the same level as current behavior).
+- Create only on re-engage; for custom/loyalty/birthday there is NO create when clientId is missing (keep the scope narrow).
 
-## Test planı
-1. **Kayıtlı client** (manualId var) → re-engage → `reengagementSentAt` yazılır, Home'dan düşer (regresyon yok).
-2. **Walk-in (doc yok), email VAR** → re-engage → yeni client doc yaratılır + stamp; Home yenilenince düşer.
-3. **Walk-in, email YOK ad VAR** → aynı ada sahip mevcut doc'a bağlanır ya da yeni yaratılır; çöp doc yok.
-4. **Aynı kişiye 2. re-engage** → find-first mevcut doc'u bulur, **duplicate yaratmaz**.
-5. **Opt-out'lu kişi** → doc yaratılmaz, gönderim yok.
+## Test plan
+1. **Registered client** (has manualId) → re-engage → `reengagementSentAt` is written, drops off Home (no regression).
+2. **Walk-in (no doc), HAS email** → re-engage → a new client doc is created + stamp; drops off when Home refreshes.
+3. **Walk-in, NO email but HAS name** → linked to an existing doc with the same name or a new one created; no junk doc.
+4. **2nd re-engage to the same person** → find-first finds the existing doc, **does not create a duplicate**.
+5. **Opted-out person** → no doc created, no send.
 
-## Rollout (gözetimli)
-1. Backend `sendMarketingEmail` düzenle → `node --check`.
-2. (Ops.) `SendCampaignPanel.jsx` clientPhone payload.
-3. Deploy: `firebase deploy --only functions:salown:sendMarketingEmail` (+ frontend push varsa CI hosting).
-4. Canlı smoke: whitecross'ta bir walk-in lapsed kişiye test re-engage → client doc oluştu + `reengagementSentAt` set + Home'dan düştü mü.
+## Rollout (supervised)
+1. Edit backend `sendMarketingEmail` → `node --check`.
+2. (Opt.) `SendCampaignPanel.jsx` clientPhone payload.
+3. Deploy: `firebase deploy --only functions:salown:sendMarketingEmail` (+ CI hosting if there is a frontend push).
+4. Live smoke: test re-engage a walk-in lapsed person on whitecross → did the client doc get created + `reengagementSentAt` set + drop off Home.
 5. Edit log + ROADMAP C5 item-3 → ✅.
 
 ## Risk
-🟡 Orta-düşük. Yazım kapsamı: yeni client doc'ları (find-first ile dedup'lı). Geri alınabilir (yanlış doc silinebilir). Müşteriye otomatik gönderim YOK (send yine owner-tetikli). Auth/rules'a dokunmaz.
+🟡 Medium-low. Write scope: new client docs (deduped via find-first). Reversible (a wrong doc can be deleted). NO automatic send to the customer (send is still owner-triggered). Does not touch auth/rules.

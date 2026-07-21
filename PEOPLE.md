@@ -1,18 +1,18 @@
 # PEOPLE.md
 
-## Roller
+## Roles
 
-| Kişi | Rol | Email |
+| Person | Role | Email |
 |------|-----|-------|
-| Alfa (geliştirici) | Platform Super Admin + Whitecross sahibi | aerulas@gmail.com |
+| Alfa (developer) | Platform Super Admin + Whitecross owner | aerulas@gmail.com |
 | Dursun Kahraman | Super Admin (platform) | durvezek@gmail.com |
 | Alex | Admin (Whitecross tenant) | — |
 | Arda | Admin (Whitecross tenant) | — |
 | — | Staff (Whitecross) | whitecross@gmail.com |
 | — | HeroHairs owner | alex2ayyildiz3@gmail.com |
 
-## Önemli Notlar
+## Important Notes
 
-- **Arda** business email paylaşıyor — parser notification email'lerini okundu işaretlerse IMAP parser tetiklenmez.
-- **Alfa** hem geliştirici hem pilot tenant sahibi — bu dual perspective her feature'ı gerçek kullanıcı gözüyle test etmeyi sağlıyor.
-- **HeroHairs**: tam erişim, trial süresi yok, pilot client statüsünde.
+- **Arda** shares the business email — if he marks parser notification emails as read, the IMAP parser won't be triggered.
+- **Alfa** is both the developer and the pilot tenant owner — this dual perspective allows every feature to be tested through a real user's eyes.
+- **HeroHairs**: full access, no trial period, in pilot client status.

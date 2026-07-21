@@ -1,388 +1,385 @@
-# SECURITY.md — Firestore Rules & Güvenlik (tek kaynak)
+# SECURITY.md — Firestore Rules & Security (single source)
 
-> **Amaç:** Firebase/Firestore güvenliğiyle ilgili HER ŞEY burada. Daha önce dağınıktı
-> (ROADMAP.md, DEPLOY.md, firestore.rules yorumları, .LIVE/.DRAFT/.ROLLBACK artifact'ları).
-> Aynı yerlere tekrar tekrar gelmemek için kategorize edildi. Güvenlik işi = bu dosya.
+> **Purpose:** EVERYTHING related to Firebase/Firestore security is here. It used to be scattered
+> (ROADMAP.md, DEPLOY.md, firestore.rules comments, .LIVE/.DRAFT/.ROLLBACK artifacts).
+> It was categorized so we don't keep coming back to the same places. Security work = this file.
 >
-> **Canonical kural dosyası:** `salown-app/firestore.rules` (firebase.json buna bağlı).
-> **Canlı ruleset:** G1+G4 (`0f8de7e`, 2026-06-27) — `tenantRole==null` fallback KALDIRILDI + catch-all
-> write→false. Öncesi: G2+G3 (`851efeb`, ruleset `22bdc429`, 2026-06-24) → Phase 1 (`ef31d16a`, 06-21).
-> **Bu doc'un kapsamı:** Firestore rules + custom claims + booking create/cancel/reschedule
-> akış güvenliği. **⚠️ İŞ DURUMU burada değil — TEK KAYNAK [ROADMAP.md](ROADMAP.md) Pre-Scale Gate'tir;**
-> bu doc teknik detay tutar. İlgili: [DEPLOY.md](DEPLOY.md) (deploy disiplini), memory `feedback-firestore-rules-safety`.
+> **Canonical rules file:** `salown-app/firestore.rules` (firebase.json points to it).
+> **Live ruleset:** G1+G4 (`0f8de7e`, 2026-06-27) — `tenantRole==null` fallback REMOVED + catch-all
+> write→false. Before: G2+G3 (`851efeb`, ruleset `22bdc429`, 2026-06-24) → Phase 1 (`ef31d16a`, 06-21).
+> **Scope of this doc:** Firestore rules + custom claims + booking create/cancel/reschedule
+> flow security. **⚠️ WORK STATUS is not here — the SINGLE SOURCE is [ROADMAP.md](ROADMAP.md) Pre-Scale Gate;**
+> this doc holds technical detail. Related: [DEPLOY.md](DEPLOY.md) (deploy discipline), memory `feedback-firestore-rules-safety`.
 
 ---
 
-## 0. Hızlı durum tablosu
+## 0. Quick status table
 
-| # | Konu | Durum | Risk |
+| # | Topic | Status | Risk |
 |---|------|-------|------|
-| Phase 1 | Cross-tenant izolasyonu (global fallback `isAuth`→`isSuperAdmin`) | ✅ **DONE** (2026-06-21, ruleset `ef31d16a`) | — |
-| Phase 1 | Tek canonical rules dosyası (`salown-app/firestore.rules`) | ✅ **DONE** | — |
-| **G1** | Rol-claim backfill (`tenantRole == null → admin` fallback) | ✅ **CANLIDA** (2026-06-27, commit `0f8de7e`) — fallback kaldırıldı, claim'ler zaten tamdı, test 49/49 | 🔴→✅ |
-| **G2** | `bookings read: if true` → tenant-scoped | ✅ **CANLIDA** (ruleset `22bdc429`, 2026-06-24) | 🟠 Orta |
-| **G3** | Public create financial forge (`paidAmount/discount/tip`) | ✅ **CANLIDA** (ruleset `22bdc429`, 2026-06-24) | 🟢 Düşük |
-| **G4** | staff-doc recursive catch-all (staff self-escalate) | ✅ **CANLIDA** (2026-06-27, commit `0f8de7e`) — catch-all write→false + 14 koleksiyon explicit, test 49/49. ⚠️ Takip: `AppRouter.jsx:104` `isAdmin=true` hardcoded → yeni staff web panele girmeden önce gerçek role'e bağla | 🟠→✅ |
-| **G5** | Tek global ruleset blast radius | ⚠️ Kısmen (deploy disiplini var, yapısal çözüm yok) | 🟠 Orta |
-| **S1** | staffComp finansal veri koruması | ✅ **CANLIDA** (ruleset `1474907b`, 2026-07-16) — `match /staffComp/{barberId}` read/write=`isSuperAdmin()\|\|isOwner(tenantId)` (admin/staff comp GÖREMEZ, Finance gate parity). Catch-all READ `{coll}/{document=**}`+`coll!='staffComp'` ile daraltıldı — OR-semantiği gereği explicit blok tek başına yetmezdi (G4 dersi). Comp world-readable barbers'a ASLA yazılmaz. Test 95/95 (12 S1 vakası + catch-all regresyon), deploy öncesi canlı-çek+diff, deploy sonrası byte-aynı doğrulandı | 🟢 Düşük |
+| Phase 1 | Cross-tenant isolation (global fallback `isAuth`→`isSuperAdmin`) | ✅ **DONE** (2026-06-21, ruleset `ef31d16a`) | — |
+| Phase 1 | Single canonical rules file (`salown-app/firestore.rules`) | ✅ **DONE** | — |
+| **G1** | Role-claim backfill (`tenantRole == null → admin` fallback) | ✅ **LIVE** (2026-06-27, commit `0f8de7e`) — fallback removed, claims were already complete, test 49/49 | 🔴→✅ |
+| **G2** | `bookings read: if true` → tenant-scoped | ✅ **LIVE** (ruleset `22bdc429`, 2026-06-24) | 🟠 Medium |
+| **G3** | Public create financial forge (`paidAmount/discount/tip`) | ✅ **LIVE** (ruleset `22bdc429`, 2026-06-24) | 🟢 Low |
+| **G4** | staff-doc recursive catch-all (staff self-escalate) | ✅ **LIVE** (2026-06-27, commit `0f8de7e`) — catch-all write→false + 14 collections explicit, test 49/49. ⚠️ Follow-up: `AppRouter.jsx:104` `isAdmin=true` hardcoded → bind to real role before a new staff enters the web panel | 🟠→✅ |
+| **G5** | Single global ruleset blast radius | ⚠️ Partial (deploy discipline exists, no structural fix) | 🟠 Medium |
+| **S1** | staffComp financial data protection | ✅ **LIVE** (ruleset `1474907b`, 2026-07-16) — `match /staffComp/{barberId}` read/write=`isSuperAdmin()\|\|isOwner(tenantId)` (admin/staff CANNOT SEE comp, Finance gate parity). Catch-all READ narrowed with `{coll}/{document=**}`+`coll!='staffComp'` — because of OR-semantics an explicit block alone was not enough (G4 lesson). Comp is NEVER written to the world-readable barbers. Test 95/95 (12 S1 cases + catch-all regression), pre-deploy live-fetch+diff, post-deploy byte-identical verified | 🟢 Low |
 
-> **2026-06-24 ilerlemesi:**
-> - **G2 + G3 CANLIYA ALINDI** — `firestore.rules` main'e merge+push (`851efeb`), `firebase deploy
->   --only firestore:rules` → ruleset **`22bdc429-9501-4bd5-ae43-df4a694bd850`** (API'den doğrulandı,
->   [G2]/[G3] mevcut). Test API 25/25; whitecross/herohairs/panel akışları korunuyor kanıtlandı.
-> - **G1 dry-run yapıldı.** Sadece 4 kullanıcının staff doc'u var (herohairs owner; whitecross
->   owner/admin/staff). ⚠️ tenantId claim'i olup staff doc'u olmayan ~6 kullanıcı (eekurt
->   `eekurt`↔`ee-kurt-barbers` uyuşmazlığı) → **fallback kaldırılırsa onlar admin'i kaybeder.**
->   `--apply` çalıştırılmadı (fallback aktifken işlevsiz, fallback kaldırma audit'siz riskli).
-> - **G4 exhaustive enumere edildi** (~20 koleksiyon: settings/*, clients/*/campaignsSent,
+> **2026-06-24 progress:**
+> - **G2 + G3 WENT LIVE** — `firestore.rules` merged+pushed to main (`851efeb`), `firebase deploy
+>   --only firestore:rules` → ruleset **`22bdc429-9501-4bd5-ae43-df4a694bd850`** (verified via API,
+>   [G2]/[G3] present). Test API 25/25; whitecross/herohairs/panel flows proven preserved.
+> - **G1 dry-run done.** Only 4 users have a staff doc (herohairs owner; whitecross
+>   owner/admin/staff). ⚠️ ~6 users that have a tenantId claim but no staff doc (eekurt
+>   `eekurt`↔`ee-kurt-barbers` mismatch) → **if the fallback is removed they lose admin.**
+>   `--apply` was not run (ineffective while fallback is active, removing fallback without audit is risky).
+> - **G4 exhaustively enumerated** (~20 collections: settings/*, clients/*/campaignsSent,
 >   finance_expenses/_payments, investment_transactions, auditLogs, campaigns, notifications,
->   team, fcmTokens, dashboardPrefs, ledger... + storage olabilecekler logo/cover/photo).
->   Catch-all write kaldırıp enumerate etmek tek koleksiyon atlanınca panel yazımını canlıda kırar
->   → kapsamlı test + review gerektiren AYRI iş; canlıya alınmadı.
-> - functions/index.js'e dokunulmadı (busy-slot v2 turu kirletmiş). Test takibi: [TESTS.md](TESTS.md).
+>   team, fcmTokens, dashboardPrefs, ledger... + possible storage ones logo/cover/photo).
+>   Removing the catch-all write and enumerating breaks panel writes live if a single collection is missed
+>   → a SEPARATE job needing comprehensive test + review; not taken live.
+> - functions/index.js was not touched (the busy-slot v2 round had dirtied it). Test tracking: [TESTS.md](TESTS.md).
 
-> ⚠️ ROADMAP "tenant #4'ten önce" diyor ama **3 tenant zaten canlı** (whitecross, eekurt,
-> herohairs). Bu gate'ler bugün de aktif risk. En kritik: **G1**.
+> ⚠️ ROADMAP says "before tenant #4" but **3 tenants are already live** (whitecross, eekurt,
+> herohairs). These gates are active risk today too. Most critical: **G1**.
 
-> **🔴 2026-06-27 BULGUSU — catch-all her şeyi eziyor (G1↔G4 bağı):** Rules Test API probe'ları
-> (scratchpad/probe.py) kanıtladı ki tenant-içi `match /{document=**}` `write: if isTenantAny`
-> kuralı, daha spesifik TÜM kuralları override ediyor (Firestore kuralları OR'lanır):
-> - `tenantRole`'süz user **tenant-root'a `profileStatus` yazabiliyor → ALLOW** → `[P1-D]`
->   publication-control koruması fiilen ETKİSİZ (herhangi tenant üyesi publish/unpublish edebilir).
-> - `tenantRole`'süz user **booking silebiliyor → ALLOW** → bookings `delete: if isAdmin` ezilmiş
->   (delete=admin-only fiilen yok; hedef delete=superadmin-only ile çelişiyor).
-> - **staff kendi `staff/{uid}.permissions`'ını yazabiliyor → ALLOW** (G4 self-escalate, canlı).
+> **🔴 2026-06-27 FINDING — catch-all overrides everything (G1↔G4 link):** Rules Test API probes
+> (scratchpad/probe.py) proved that the in-tenant `match /{document=**}` `write: if isTenantAny`
+> rule overrides ALL more-specific rules (Firestore rules are OR'ed):
+> - a user without `tenantRole` **can write `profileStatus` to the tenant-root → ALLOW** → `[P1-D]`
+>   publication-control protection is effectively INEFFECTIVE (any tenant member can publish/unpublish).
+> - a user without `tenantRole` **can delete a booking → ALLOW** → bookings `delete: if isAdmin` is overridden
+>   (delete=admin-only is effectively gone; conflicts with the target delete=superadmin-only).
+> - **a staff can write their own `staff/{uid}.permissions` → ALLOW** (G4 self-escalate, live).
 >
-> **Sonuç:** `isAdmin/isStaff/P1-D` rules düzeyinde fiilen ölü; gerçek kilit catch-all'ı daraltmak (**G4**).
-> **G1 fallback-kaldırma TEK BAŞINA deploy edilmemeli** (güvenli ama faydasız tiyatro). G1+G4 birlikte.
-> Audit (2026-06-27): 6 canlı tenant user'ının HEPSİ doğru `tenantRole` claim'ine sahip (backfill
-> zaten uygulanmış); `tenantId` var ama `tenantRole` yok olan 3 user yalnız ölü/test tenant'larında
-> (ee-kurt-barbers/the-hair-lab/the-test-lab) → fallback kaldırmak canlıyı etkilemez (25/25 yeşil).
+> **Conclusion:** `isAdmin/isStaff/P1-D` are effectively dead at the rules level; the real lock is narrowing the catch-all (**G4**).
+> **G1 fallback-removal must NOT be deployed ON ITS OWN** (safe but useless theater). G1+G4 together.
+> Audit (2026-06-27): ALL 6 live tenant users have the correct `tenantRole` claim (backfill
+> already applied); the 3 users that have `tenantId` but no `tenantRole` are only in dead/test tenants
+> (ee-kurt-barbers/the-hair-lab/the-test-lab) → removing the fallback does not affect live (25/25 green).
 
 ---
 
-## 1. Rules mimarisi (mevcut, kanıtlı)
+## 1. Rules architecture (current, proven)
 
-### Helper katmanları (`firestore.rules:14-23`)
+### Helper layers (`firestore.rules:14-23`)
 ```
 isAuth()        → request.auth != null
-isSuperAdmin()  → token.superAdmin == true          (alish; silme + cross-tenant)
-isTenant(tid)   → token.tenantId == tid             (kullanıcının kendi tenant'ı)
-isAdmin(tid)    → isTenant && (tenantRole == null || in ['owner','admin'])   ← G1 buradan sızıyor
+isSuperAdmin()  → token.superAdmin == true          (alish; delete + cross-tenant)
+isTenant(tid)   → token.tenantId == tid             (the user's own tenant)
+isAdmin(tid)    → isTenant && (tenantRole == null || in ['owner','admin'])   ← G1 leaks from here
 isStaff(tid)    → isTenant && (tenantRole == null || in ['owner','admin','staff'])
-isTenantAny(tid)→ isTenant(tid)                      (rol bakmaz; sadece doğru tenant)
+isTenantAny(tid)→ isTenant(tid)                      (no role check; only correct tenant)
 ```
 
-### Erişim katmanları (yukarıdan aşağıya)
-1. **`/tenants/{tenantId}`** root doc — `read: if true` (public booking siteleri okuyor),
-   write `isSuperAdmin() || isAdmin()`, publication-control alanları korumalı (`[P1-D]`).
-2. **Tenant alt-koleksiyonları** — bookings/services/barbers/gallery/announcements (public read),
+### Access layers (top to bottom)
+1. **`/tenants/{tenantId}`** root doc — `read: if true` (public booking sites read it),
+   write `isSuperAdmin() || isAdmin()`, publication-control fields protected (`[P1-D]`).
+2. **Tenant sub-collections** — bookings/services/barbers/gallery/announcements (public read),
    staff (auth read), parserTombstones (tenant-only).
-3. **Tenant catch-all** (`firestore.rules:105-108`, `[P1-B]`) — `{document=**}` derin path'ler
-   için `isSuperAdmin() || isTenantAny()`. G4 zafiyeti bu katmanda.
-4. **`/superAdmin/**`** — yalnız `isSuperAdmin()`.
-5. **Global fallback** (`firestore.rules:122-124`, `[P1-A]`) — kapsanmayan her path yalnız
-   `isSuperAdmin()`. **Phase 1'de buradaki `isAuth()` deliği kapatıldı.**
+3. **Tenant catch-all** (`firestore.rules:105-108`, `[P1-B]`) — for deep `{document=**}` paths
+   `isSuperAdmin() || isTenantAny()`. The G4 vulnerability is at this layer.
+4. **`/superAdmin/**`** — only `isSuperAdmin()`.
+5. **Global fallback** (`firestore.rules:122-124`, `[P1-A]`) — every uncovered path only
+   `isSuperAdmin()`. **In Phase 1 the `isAuth()` hole here was closed.**
 
 ---
 
-## 2. Phase 1 — yapıldı (2026-06-21)
+## 2. Phase 1 — done (2026-06-21)
 
-**Sorun:** Global fallback `allow read, write: if isAuth()` idi → giriş yapan HERKES
-(herhangi bir tenant kullanıcısı) BAŞKA tenant'ların verisine erişebiliyordu. Asıl
-cross-tenant güvenlik açığı.
+**Problem:** The global fallback was `allow read, write: if isAuth()` → EVERYONE who logs in
+(any tenant user) could access OTHER tenants' data. The real
+cross-tenant security hole.
 
-**Fix:** `[P1-A]` global fallback `isSuperAdmin()`'e indirildi; `[P1-B]` tenant catch-all
-`{document=**}`'a genişletildi (same-tenant derin erişim kırılmasın diye); `[P1-C]` geçici
-backwards-compat (tenantRole null→admin — bu G1'i doğurdu).
+**Fix:** `[P1-A]` global fallback lowered to `isSuperAdmin()`; `[P1-B]` tenant catch-all
+extended to `{document=**}` (so same-tenant deep access isn't broken); `[P1-C]` temporary
+backwards-compat (tenantRole null→admin — this gave birth to G1).
 
-**Kanıt:** Rules Test API 16/16 (`docs/test-firestore-rules.py`); canlı ruleset
-`ef31d16a` securityRules API ile doğrulandı (createTime 2026-06-21 13:38 GMT).
+**Proof:** Rules Test API 16/16 (`docs/test-firestore-rules.py`); live ruleset
+`ef31d16a` verified via securityRules API (createTime 2026-06-21 13:38 GMT).
 Rollback: `docs/firestore.rules.ROLLBACK.txt`. Snapshot: `docs/firestore.rules.LIVE`.
 
 ---
 
-## 3. Açık gate'ler — kod karşı doğrulama + fix planı
+## 3. Open gates — verification against code + fix plan
 
-> Aşağıdaki blast-radius analizleri **gerçek koda karşı** yapıldı (2026-06-24). Her birinde
-> "ROADMAP iddiası doğru mu?" sorusu yanıtlandı.
+> The blast-radius analyses below were done **against real code** (2026-06-24). For each,
+> the question "is the ROADMAP claim correct?" was answered.
 
-### 🔴 G1 — Rol-claim backfill (EN KRİTİK)
+### 🔴 G1 — Role-claim backfill (MOST CRITICAL)
 
-**İddia:** `tenantRole == null → admin` yüzünden tüm permission sistemi ölü; tenant'ı olan
-herkes admin sayılıyor. **→ DOĞRU.** `firestore.rules:21-22` `== null` fallback'i var;
-2026-06-21 denetimi mevcut ~10 user'ın HİÇBİRİNDE `tenantRole` claim'i olmadığını saptamış.
-`setCustomUserClaims(... tenantRole ...)` çağrısı kod tabanında **HİÇ YOK** (grep: sıfır).
+**Claim:** Because of `tenantRole == null → admin` the whole permission system is dead; everyone
+who has a tenant is treated as admin. **→ CORRECT.** `firestore.rules:21-22` has the `== null` fallback;
+the 2026-06-21 audit found that NONE of the current ~10 users had a `tenantRole` claim.
+The `setCustomUserClaims(... tenantRole ...)` call does **NOT EXIST AT ALL** in the codebase (grep: zero).
 
-**Sonuç:** owner/admin/staff ayrımı rules düzeyinde fiilen yok. Permission UI (Settings'teki
-7 izin) sadece app-içi; rules tarafında bir staff, admin gibi yazabiliyor.
+**Conclusion:** the owner/admin/staff distinction is effectively absent at the rules level. The permission UI (the
+7 permissions in Settings) is only in-app; on the rules side a staff can write like an admin.
 
-**✅ Backfill script YAZILDI: `salown-app/scripts/backfillTenantRoles.cjs`** (henüz çalıştırılmadı).
-Dry-run default; `tenants/*/staff/{uid}.role`'u okuyup `setCustomUserClaims(uid, {...mevcut,
-tenantId, tenantRole})` ile MERGE eder (tenantId/superAdmin korunur). Konvansiyon:
-`migrateWhitecrossServices.cjs` ile aynı (service account `../../salown-panel/serviceAccountKey.json`).
+**✅ Backfill script WRITTEN: `salown-app/scripts/backfillTenantRoles.cjs`** (not yet run).
+Dry-run default; reads `tenants/*/staff/{uid}.role` and MERGES with `setCustomUserClaims(uid, {...existing,
+tenantId, tenantRole})` (tenantId/superAdmin preserved). Convention:
+same as `migrateWhitecrossServices.cjs` (service account `../../salown-panel/serviceAccountKey.json`).
 
-**Fix sırası (yanlış sıra herkesi kilitler):**
-1. `node scripts/backfillTenantRoles.cjs` → **dry-run**, çıktıyı incele (10 user, role eşleşmeleri).
-2. `node scripts/backfillTenantRoles.cjs --apply` → claim'leri yaz.
-3. Kullanıcıların token'ı yenilenmeli (re-login veya `getIdToken(true)`).
-4. **ANCAK ondan sonra** `firestore.rules:21-22`'den `tenantRole == null ||` fallback'ini kaldır.
-5. Test API ile doğrula → deploy (rules EN SON).
-> ⚠️ Adım 4'ü backfill'den ÖNCE yaparsan claim'siz tüm admin'ler kilitlenir (Settings yazamaz).
+**Fix order (wrong order locks everyone out):**
+1. `node scripts/backfillTenantRoles.cjs` → **dry-run**, review output (10 users, role matches).
+2. `node scripts/backfillTenantRoles.cjs --apply` → write the claims.
+3. Users' tokens must refresh (re-login or `getIdToken(true)`).
+4. **ONLY after that** remove the `tenantRole == null ||` fallback from `firestore.rules:21-22`.
+5. Verify with Test API → deploy (rules LAST).
+> ⚠️ If you do step 4 BEFORE the backfill, all admins without a claim are locked out (can't write Settings).
 
-**🔴 AUDIT BULGUSU (2026-06-24) — fallback kaldırma GÜVENLİ DEĞİL:** Aktif tenant = **yalnız whitecross +
-herohairs** (eekurt/the-hair-lab/test canlı değil → önemsiz). Auth audit (`auth.listUsers` + staff doc kontrolü):
-- ✓ staff doc VAR: aerulas@ (whitecross owner+superAdmin), auzun9499@ (whitecross admin),
-  muhammedkanidagli74@ (whitecross staff), durvezek@ (herohairs owner) → backfill bunlara doğru tenantRole basar.
-- ❌ **staff doc YOK ama tenantId claim'i VAR (2 CANLI user):** `whitecrossbarbers@gmail.com` (whitecross,
-  superAdmin:false — **owner'ın kendi hesabı**) ve `alex2ayyildiz3@gmail.com` (herohairs). Bunlara backfill
-  `tenantRole` basamaz (staff doc yok) → **fallback kaldırılırsa bu ikisi whitecross/herohairs admin'i kaybeder.**
+**🔴 AUDIT FINDING (2026-06-24) — removing the fallback is NOT SAFE:** Active tenant = **only whitecross +
+herohairs** (eekurt/the-hair-lab/test not live → irrelevant). Auth audit (`auth.listUsers` + staff doc check):
+- ✓ staff doc EXISTS: aerulas@ (whitecross owner+superAdmin), auzun9499@ (whitecross admin),
+  muhammedkanidagli74@ (whitecross staff), durvezek@ (herohairs owner) → backfill stamps the correct tenantRole on these.
+- ❌ **staff doc MISSING but tenantId claim EXISTS (2 LIVE users):** `whitecrossbarbers@gmail.com` (whitecross,
+  superAdmin:false — **the owner's own account**) and `alex2ayyildiz3@gmail.com` (herohairs). Backfill cannot stamp
+  `tenantRole` on these (no staff doc) → **if the fallback is removed these two lose whitecross/herohairs admin.**
 
-**Adım 4 (fallback kaldırma) öncesi ZORUNLU:** bu 2 user'a karar ver — (a) staff doc oluştur (uygun role:
-whitecrossbarbers@=owner?/admin?, alex2ayyildiz3@=?), VEYA (b) tenantRole claim'ini elle ata. Sonra backfill'i
-tekrar koş → token propagasyonu (re-login/getIdToken(true) veya ~1sa) → ANCAK ondan sonra fallback kaldır + deploy.
+**MANDATORY before step 4 (fallback removal):** decide about these 2 users — (a) create a staff doc (appropriate role:
+whitecrossbarbers@=owner?/admin?, alex2ayyildiz3@=?), OR (b) manually assign the tenantRole claim. Then re-run the backfill
+→ token propagation (re-login/getIdToken(true) or ~1h) → ONLY after that remove the fallback + deploy.
 
-**Risk:** Backfill'den ÖNCE fallback kaldırılırsa, claim'i olmayan tüm admin'ler kilitlenir
-(Settings'ten tenant-doc yazamaz → Stripe/features kırılır). Bu yüzden script önce.
+**Risk:** If the fallback is removed BEFORE the backfill, all admins without a claim are locked out
+(can't write the tenant doc from Settings → Stripe/features break). That's why the script comes first.
 
 ---
 
-### 🟠 G2 — `bookings read: if true` (whitecross client-side bağımlılığı var — KARAR GEREKİYOR)
+### 🟠 G2 — `bookings read: if true` (whitecross has a client-side dependency — DECISION REQUIRED)
 
-**İddia:** Herkes (auth olmasa bile) tüm müşteri booking'lerini okuyabiliyor (GDPR); whitecross
-dup-check buna dayanıyor. **→ Açık DOĞRU. İlk değerlendirme "düşük risk" idi; whitecross-site
-kodunu okuyunca DÜZELTİLDİ → orta risk, karar gerektiriyor.**
+**Claim:** Everyone (even unauthenticated) can read all customer bookings (GDPR); whitecross
+dup-check relies on it. **→ CLEARLY CORRECT. The first assessment was "low risk"; after reading whitecross-site
+code it was CORRECTED → medium risk, requires a decision.**
 
-**Kod karşı analiz (2026-06-24):**
-- `firestore.rules:39` → `allow read: if true` aynen açık.
-- **salown-app (herohairs dahil) public hiçbir yer bookings okumuyor.** `BookingPage.jsx:313-317`
-  yalnız services/serviceCategories/barbers okuyor; busy slot'ları `salownGetBusySlots`
-  **callable**'dan alıyor (`functions/index.js:1088`, Admin SDK → rules bypass). → herohairs G2'den
-  ETKİLENMEZ.
-- Panel/staff bookings'i `firestoreActions.js`'te `${TENANT}/bookings` ile **authenticated**
-  okuyor → tenant-scoped kurala düşer, kırılmaz.
-- ⚠️ **whitecross-site (ayrı kod tabanı) 3 yerde unauthenticated bookings OKUyor:**
-  1. `script.js:471` dup-check — `try/catch` **fails-open** → booking devam eder. ✅ Güvenli.
-  2. `script.js:1809` grup-confirm read (Stripe dönüşü sonrası client-side CONFIRMED yazmak için)
-     — kod yorumu "webhook also does this server-side" → DENY olunca webhook telafi eder. Degrade.
-  3. `script.js:1846` Stripe-back cancel read (PENDING'i iptal) — DENY olunca client iptal edemez;
-     `salownCleanupExpiredPending` 15dk sonra temizler. Degrade (anlık değil).
+**Analysis against code (2026-06-24):**
+- `firestore.rules:39` → `allow read: if true` is exactly open.
+- **salown-app (including herohairs) reads bookings nowhere public.** `BookingPage.jsx:313-317`
+  only reads services/serviceCategories/barbers; it gets busy slots from the `salownGetBusySlots`
+  **callable** (`functions/index.js:1088`, Admin SDK → rules bypass). → herohairs is NOT AFFECTED by G2.
+- The panel/staff reads bookings with `${TENANT}/bookings` **authenticated** in
+  `firestoreActions.js` → falls under the tenant-scoped rule, not broken.
+- ⚠️ **whitecross-site (separate codebase) READS bookings unauthenticated in 3 places:**
+  1. `script.js:471` dup-check — `try/catch` **fails-open** → booking continues. ✅ Safe.
+  2. `script.js:1809` group-confirm read (to write CONFIRMED client-side after Stripe return)
+     — code comment "webhook also does this server-side" → when DENYed the webhook compensates. Degrade.
+  3. `script.js:1846` Stripe-back cancel read (cancel a PENDING) — when DENYed the client cannot cancel;
+     `salownCleanupExpiredPending` cleans up after 15min. Degrade (not instant).
 
-**Sonuç:** G2 booking OLUŞTURMAYI bozmaz (her iki tenant da), ama whitecross'un iki post-Stripe
-client-side kolaylığını (grup-confirm + Stripe-back anlık iptal) server fallback'e indirir.
-"Akışı bozma" kırmızı çizgisi gereği bu KARAR kullanıcıya ait — sessizce uygulanmadı.
+**Conclusion:** G2 does NOT break booking CREATE (both tenants), but it downgrades whitecross's two post-Stripe
+client-side conveniences (group-confirm + Stripe-back instant cancel) to server fallback.
+Per the "don't break the flow" red line this DECISION belongs to the user — it was not applied silently.
 
-**Seçenekler:**
-- **(a) Şimdi uygula, degrade'i kabul et:** webhook + 15dk cleanup zaten telafi ediyor; GDPR deliği
-  hemen kapanır. Risk: whitecross konsolunda permission-denied logları, nadir webhook gecikmesinde
-  grup booking confirm gecikmesi.
-- **(b) Ertele:** önce whitecross-site'ın 3 read'ini kaldır/callable'a taşı, sonra G2 deploy.
-  Ama bu whitecross-site'a dokunmak demek (busy-slot turu functions'ı kirletmiş; ayrı tur).
+**Options:**
+- **(a) Apply now, accept the degrade:** webhook + 15min cleanup already compensate; the GDPR hole
+  closes immediately. Risk: permission-denied logs in the whitecross console, a group booking confirm delay
+  on a rare webhook delay.
+- **(b) Defer:** first remove/move-to-callable whitecross-site's 3 reads, then deploy G2.
+  But that means touching whitecross-site (the busy-slot round dirtied functions; separate round).
 
-**Fix (uygulanınca):** `firestore.rules:39` → `allow read: if isSuperAdmin() || isTenantAny(tenantId);`
+**Fix (when applied):** `firestore.rules:39` → `allow read: if isSuperAdmin() || isTenantAny(tenantId);`
 
 ---
 
 ### 🟢 G3 — Public create financial forge
 
-**İddia:** Public create'te `paidAmount`/`discount`/`tip` doğrulaması yok → forge edilebilir.
-**→ DOĞRU.** `firestore.rules:40-42` create yalnız `status in ['PENDING','CONFIRMED']`
-kontrol ediyor; finansal alan kontrolü yok. (Update path'te whitelist var, korunuyor.)
+**Claim:** Public create has no validation of `paidAmount`/`discount`/`tip` → they can be forged.
+**→ CORRECT.** `firestore.rules:40-42` create only checks `status in ['PENDING','CONFIRMED']`;
+no financial-field check. (The update path has a whitelist, protected.)
 
-**Kod karşı analiz:** Meşru public create payload'ı (`BookingPage.jsx:541-563`) **paidAmount/
-discount/tip/platformDepositAmount YAZMIYOR** — yalnız `price` (servis fiyatı, display) yazıyor.
+**Analysis against code:** The legitimate public create payload (`BookingPage.jsx:541-563`) **does NOT write
+paidAmount/discount/tip/platformDepositAmount** — it only writes `price` (service price, display).
 
-**Sonuç:** Create kuralına "bu finansal alanlar create'te BULUNMAMALI" kısıtı eklemek meşru
-akışı bozmaz (zaten göndermiyor), ama saldırganın `paidAmount: 999` forge etmesini engeller.
+**Conclusion:** Adding a constraint "these financial fields MUST NOT be present at create" to the create rule does not break
+the legitimate flow (it doesn't send them anyway), but it prevents an attacker from forging `paidAmount: 999`.
 
-**⚠️ whitecross-site doğrulaması (2026-06-24):** `writeBookingStatus` (script.js:1136) ve grup
-create (script.js:1360) `paymentState`/`paymentType`/`depositPerPerson` YAZIYOR ama `paidAmount`/
-`discount`/`tip` yazMIYOR (grep: sıfır). salown-app `BookingPage` de yazmıyor. → Blocklist
-**yalnız `paidAmount`/`discount`/`tip`** olmalı; `paymentState`'i blocklarsak whitecross create kırılır.
+**⚠️ whitecross-site verification (2026-06-24):** `writeBookingStatus` (script.js:1136) and group
+create (script.js:1360) WRITE `paymentState`/`paymentType`/`depositPerPerson` but do NOT write `paidAmount`/
+`discount`/`tip` (grep: zero). salown-app `BookingPage` doesn't write them either. → The blocklist
+**should be only `paidAmount`/`discount`/`tip`**; if we block `paymentState` whitecross create breaks.
 
-**✅ UYGULANDI (`firestore.rules:38-46`, deploy bekliyor):**
+**✅ APPLIED (`firestore.rules:38-46`, awaiting deploy):**
 ```
 allow create: if isSuperAdmin() || isTenantAny(tenantId) || (
   request.resource.data.status in ['PENDING','CONFIRMED'] &&
   !request.resource.data.keys().hasAny(['paidAmount', 'discount', 'tip'])
 );
 ```
-(`price`/`paymentState` forge'u ayrı/düşük konu — display + state; gerçek para callable/webhook
-tarafında yazılır. İstenirse Faz 2 `salownCreateBooking` transactional'da sunucu-taraf doğrulama.)
+(`price`/`paymentState` forge is a separate/low topic — display + state; real money is written on the
+callable/webhook side. If desired, Phase 2 server-side validation in `salownCreateBooking` transactional.)
 
 ---
 
 ### 🟠 G4 — staff-doc recursive catch-all (staff self-escalate)
 
-**İddia:** Spesifik staff kuralı (`firestore.rules:89`) admin-only ama catch-all `{document=**}`
-(`:105-108`) aynı path'i `isTenantAny`'e açıyor; kurallar OR'lanır → staff kendi
-`permissions`'ını yazabilir. **→ DOĞRU** (Firestore'da match kuralları OR'lanır; en geniş izin kazanır).
+**Claim:** The specific staff rule (`firestore.rules:89`) is admin-only but the catch-all `{document=**}`
+(`:105-108`) opens the same path to `isTenantAny`; rules are OR'ed → a staff can write their own
+`permissions`. **→ CORRECT** (in Firestore match rules are OR'ed; the broadest permission wins).
 
-**Tehlike:** `canViewRevenue:false` bir staff, kendi staff doc'undaki `permissions`'ı doğrudan
-yazıp `canViewRevenue:true` yapabilir → app-içi permission sistemi (G1 ile birlikte) tamamen delik.
+**Danger:** A staff with `canViewRevenue:false` can directly write the `permissions` in their own staff doc
+and set `canViewRevenue:true` → the in-app permission system (together with G1) is completely holed.
 
-**Neden basit yama YETMEZ:** Firestore match kuralları OR'lanır; daha spesifik `match /staff/{uid}`
-kuralı admin-only olsa bile catch-all `{document=**}` write'ı `isTenantAny` verdiği için staff yazısı
-geçer. "Daha sıkı spesifik kural ekle" işe yaramaz (union, intersection değil). Tek çözüm: **catch-all
-write'ını kaldır + auth kullanıcıların yazdığı koleksiyonları enumerate et.**
+**Why a simple patch is NOT ENOUGH:** Firestore match rules are OR'ed; even if the more-specific `match /staff/{uid}`
+rule is admin-only, because the catch-all `{document=**}` write grants `isTenantAny` the staff write
+passes. "Add a stricter specific rule" doesn't work (union, not intersection). The only solution: **remove the catch-all
+write + enumerate the collections that authed users write.**
 
-**Enumerasyon (2026-06-24, `grep tenants/{id}/<col>` src):**
-- Zaten explicit eşleşen: `bookings, services, serviceCategories, barbers, gallery, announcements,
+**Enumeration (2026-06-24, `grep tenants/{id}/<col>` src):**
+- Already explicitly matched: `bookings, services, serviceCategories, barbers, gallery, announcements,
   staff, parserTombstones, public`.
-- **Yalnız catch-all'a bağlı (yeni explicit kural gerekir):** `advances, auditLogs, campaigns,
-  clients (+ derin: clients/{id}/campaignsSent), cover, expenses, finance, investment, logo,
+- **Only bound to the catch-all (needs a new explicit rule):** `advances, auditLogs, campaigns,
+  clients (+ deep: clients/{id}/campaignsSent), cover, expenses, finance, investment, logo,
   notifications, products, team, settings, fcmTokens`.
 
-**Önerilen fix (DRAFT — Rules Test API'siz deploy ETME):**
+**Proposed fix (DRAFT — do NOT deploy without Rules Test API):**
 ```
-// staff hariç her tenant alt-koleksiyonu auth tenant üyesine açık (recursive — derin path'ler için)
+// every tenant sub-collection except staff is open to the auth tenant member (recursive — for deep paths)
 match /clients/{document=**}  { allow read, write: if isSuperAdmin() || isTenantAny(tenantId); }
 match /campaigns/{document=**} { allow read, write: if isSuperAdmin() || isTenantAny(tenantId); }
 match /settings/{document=**}  { allow read, write: if isSuperAdmin() || isTenantAny(tenantId); }
 ... (advances, auditLogs, cover, expenses, finance, investment, logo, notifications, products, team, fcmTokens)
-// catch-all: READ açık kalır, WRITE kalkar → staff/{uid} yalnız üstteki admin-only kuralından yazılır
+// catch-all: READ stays open, WRITE goes away → staff/{uid} is written only from the admin-only rule above
 match /{document=**} {
   allow read:  if isSuperAdmin() || isTenantAny(tenantId);
-  allow write: if false;   // tüm yazılabilir koleksiyonlar yukarıda explicit
+  allow write: if false;   // all writable collections are explicit above
 }
 ```
-- ⚠️ **Doğrulama ŞART:** değişiklik öncesi/sonrası `docs/test-firestore-rules.py` ile panel + staff
-  app'in TÜM yazma yolları (booking, walk-in, checkout, client merge, campaign, settings, finance,
-  audit) yeşil kalmalı. Eksik bırakılan tek koleksiyon = o panel özelliği kırılır (whitecross/herohairs).
-- **Bu yüzden G4 henüz `firestore.rules`'a UYGULANMADI** — enumerasyon listesi tam mı, test ile kanıtlanmalı.
+- ⚠️ **Verification IS MANDATORY:** before/after the change, ALL write paths of the panel + staff
+  app (booking, walk-in, checkout, client merge, campaign, settings, finance,
+  audit) must stay green with `docs/test-firestore-rules.py`. A single missed collection = that panel feature breaks (whitecross/herohairs).
+- **That's why G4 is not yet APPLIED to `firestore.rules`** — whether the enumeration list is complete must be proven with tests.
 
 ---
 
-### 🟠 G5 — Tek global ruleset blast radius
+### 🟠 G5 — Single global ruleset blast radius
 
-**Durum:** Tüm tenant'lar tek ruleset paylaşıyor → bir hata her tenant'ı vurur. Yapısal çözüm
-(per-tenant ruleset) Firestore'da pratik değil. Mevcut azaltıcılar:
-- TEK KAYNAK kuralı (`DEPLOY.md:24`): rules yalnız `salown-app/firestore.rules`'tan deploy.
+**Status:** All tenants share a single ruleset → one mistake hits every tenant. A structural fix
+(per-tenant ruleset) is not practical in Firestore. Existing mitigations:
+- SINGLE SOURCE rule (`DEPLOY.md:24`): rules deploy only from `salown-app/firestore.rules`.
 - Test-before-deploy: `python3 docs/test-firestore-rules.py salown-app/firestore.rules`.
-- Rollback hazır: `docs/firestore.rules.ROLLBACK.txt`.
-- Canlı doğrulama: securityRules API'den ruleset çek, en son deploy kazanır.
+- Rollback ready: `docs/firestore.rules.ROLLBACK.txt`.
+- Live verification: fetch ruleset from securityRules API, the latest deploy wins.
 
-**Kalan:** Bu disiplini bir CI check'e bağlamak (deploy öncesi otomatik test). Düşük öncelik.
+**Remaining:** Wire this discipline into a CI check (automatic test before deploy). Low priority.
 
 ---
 
-## 4. Booking akış güvenliği (create / cancel / reschedule) — BOZMA HARİTASI
+## 4. Booking flow security (create / cancel / reschedule) — BREAKAGE MAP
 
-> Gate fix'leri bu akışları BOZMAMALI. Her akışın rules'a bağımlılığı:
+> Gate fixes MUST NOT BREAK these flows. Each flow's dependency on rules:
 
-| Akış | Mekanizma | Rules'a bağımlı mı? | Gate etkisi |
+| Flow | Mechanism | Depends on rules? | Gate effect |
 |------|-----------|---------------------|-------------|
-| **Public booking create** | `BookingPage.jsx:541` `addDoc` (client) | ✅ Evet — `bookings create` | G3 burayı sıkar (güvenli; payload finansal alan yazmıyor) |
-| **Busy slot sorgu** | `salownGetBusySlots` callable (Admin SDK) | ❌ Hayır (bypass) | G2'den etkilenmez |
-| **Cancel (müşteri)** | `salownCancelByToken` callable (Admin SDK) | ❌ Hayır (bypass) | hiçbir gate'ten etkilenmez |
-| **Reschedule (müşteri)** | `salownRescheduleByToken` callable (Admin SDK) | ❌ Hayır (bypass) | hiçbir gate'ten etkilenmez |
-| **Panel/staff okuma** | `${TENANT}/bookings` authenticated | ✅ Evet — `bookings read` | G2 sonrası `isTenantAny` ile çalışır |
-| **Panel/staff yazma** | walk-in/checkout addDoc/update | ✅ Evet — catch-all/bookings | G4 daraltmasında test edilmeli |
+| **Public booking create** | `BookingPage.jsx:541` `addDoc` (client) | ✅ Yes — `bookings create` | G3 tightens here (safe; payload doesn't write financial fields) |
+| **Busy slot query** | `salownGetBusySlots` callable (Admin SDK) | ❌ No (bypass) | not affected by G2 |
+| **Cancel (customer)** | `salownCancelByToken` callable (Admin SDK) | ❌ No (bypass) | not affected by any gate |
+| **Reschedule (customer)** | `salownRescheduleByToken` callable (Admin SDK) | ❌ No (bypass) | not affected by any gate |
+| **Panel/staff read** | `${TENANT}/bookings` authenticated | ✅ Yes — `bookings read` | works with `isTenantAny` after G2 |
+| **Panel/staff write** | walk-in/checkout addDoc/update | ✅ Yes — catch-all/bookings | must be tested in the G4 narrowing |
 
-**Altın kural:** Cancel/reschedule **server-side callable** olduğu için rules sıkılaştırması
-onları HİÇ etkilemez. Asıl dikkat: (a) public create (G3) ve (b) panel yazma yolları (G4).
+**Golden rule:** Because cancel/reschedule are **server-side callables**, tightening the rules
+NEVER affects them. The real attention: (a) public create (G3) and (b) panel write paths (G4).
 
-### ⚠️ whitecross-site = ayrı kod tabanı, AYNI Firestore'a doğrudan yazıyor (rules'ı bağlar)
+### ⚠️ whitecross-site = separate codebase, writes directly to the SAME Firestore (binds the rules)
 
-> whitecrossbarbers.com (`whitecross-site/script.js`) salown-app DEĞİL — ama `tenants/whitecross/bookings`'e
-> doğrudan, çoğu **unauthenticated** erişiyor. Her rules değişikliği bunları da etkiler. Harita:
+> whitecrossbarbers.com (`whitecross-site/script.js`) is NOT salown-app — but it accesses `tenants/whitecross/bookings`
+> directly, mostly **unauthenticated**. Every rules change affects these too. Map:
 
-| Satır | İşlem | Alanlar | Rules dalı | Gate etkisi |
+| Line | Operation | Fields | Rules branch | Gate effect |
 |-------|-------|---------|-----------|-------------|
-| `script.js:471` | **read** dup-check (clientPhone) | — | `bookings read` | G2 → DENY ama `try/catch` fails-open, booking devam |
-| `script.js:1136/1360` | **create** (writeBookingStatus/grup) | paymentState, paymentType, depositPerPerson (paidAmount/discount/tip YOK) | `bookings create` | G3 → güvenli (bu alanları yazmıyor) |
-| `script.js:1809` | **read** grup-confirm | — | `bookings read` | G2 → DENY; webhook server-side telafi |
-| `script.js:1813` | **update** grup-confirm | status, paymentState, paidAt | `bookings update` whitelist | paymentState/paidAt whitelist'te YOK → bugün de DENY, sessiz fail, webhook yapar (regresyon yok) |
-| `script.js:1846` | **read** Stripe-back cancel | — | `bookings read` | G2 → DENY; 15dk cleanup telafi |
-| `script.js:1850` | **update** Stripe-back cancel | status, cancelledAt | `bookings update` whitelist | whitelist'te VAR → bugün çalışıyor; G2 read'i kesince tetiklenemez |
+| `script.js:471` | **read** dup-check (clientPhone) | — | `bookings read` | G2 → DENY but `try/catch` fails-open, booking continues |
+| `script.js:1136/1360` | **create** (writeBookingStatus/group) | paymentState, paymentType, depositPerPerson (paidAmount/discount/tip NONE) | `bookings create` | G3 → safe (doesn't write these fields) |
+| `script.js:1809` | **read** group-confirm | — | `bookings read` | G2 → DENY; webhook compensates server-side |
+| `script.js:1813` | **update** group-confirm | status, paymentState, paidAt | `bookings update` whitelist | paymentState/paidAt NOT in whitelist → DENY today too, silent fail, webhook does it (no regression) |
+| `script.js:1846` | **read** Stripe-back cancel | — | `bookings read` | G2 → DENY; 15min cleanup compensates |
+| `script.js:1850` | **update** Stripe-back cancel | status, cancelledAt | `bookings update` whitelist | IN the whitelist → works today; can't be triggered once G2 cuts the read |
 
-**Çıkarım:** whitecross booking CREATE hiçbir gate'ten kırılmaz. G2 yalnız 2 client-side
-post-Stripe kolaylığını server fallback'e indirir (bkz §3 G2 kararı). whitecross-site'a
-dokunmadan tüm gate'ler rules + script ile kapatılabilir.
-
----
-
-## 5. Önerilen uygulama sırası (düşük riskten yükseğe)
-
-1. **G3** (financial forge) — saf rules, meşru akış zaten finansal alan yazmıyor. En güvenli.
-2. **G2** (bookings read) — saf rules, salown-app etkilenmez, whitecross fails-open.
-3. **G4** (staff catch-all) — rules, ama panel/staff yazma testleri şart.
-4. **G1** (rol-claim backfill) — script + token yenileme + rules; en kritik, en dikkatli.
-5. **G5** — deploy disiplinini CI'a bağla (opsiyonel).
-
-**Her adım:** değiştir → `docs/test-firestore-rules.py` ile test → onay → deploy
-(sıra: functions varsa önce, **rules EN SON**). Aynı turda birden fazla gate'i deploy etme;
-tek tek doğrula (G5 blast radius mantığı).
-
-> ⚠️ **functions/index.js şu an kirli** (busy-slot v2 / processing-time çalışması, başka session).
-> G2'nin opsiyonel "PII'sız dup-check callable"ı functions'a dokunur → o işe GİRME, busy-slot
-> turuyla çakışır. Gate'lerin tamamı **yalnız `firestore.rules` + yeni script dosyası** ile
-> kapatılabilir (functions'a dokunmadan). Bkz §3.
+**Takeaway:** whitecross booking CREATE is not broken by any gate. G2 only downgrades 2 client-side
+post-Stripe conveniences to server fallback (see §3 G2 decision). All gates can be closed with rules + script
+without touching whitecross-site.
 
 ---
 
-## 6. Artifact & araç envanteri
+## 5. Recommended application order (low to high risk)
 
-| Dosya | Tür | Amaç |
+1. **G3** (financial forge) — pure rules, legit flow doesn't write financial fields anyway. Safest.
+2. **G2** (bookings read) — pure rules, salown-app not affected, whitecross fails-open.
+3. **G4** (staff catch-all) — rules, but panel/staff write tests are mandatory.
+4. **G1** (role-claim backfill) — script + token refresh + rules; most critical, most careful.
+5. **G5** — wire deploy discipline into CI (optional).
+
+**Each step:** change → test with `docs/test-firestore-rules.py` → approval → deploy
+(order: functions first if any, **rules LAST**). Don't deploy more than one gate in the same round;
+verify one by one (G5 blast radius logic).
+
+> ⚠️ **functions/index.js is currently dirty** (busy-slot v2 / processing-time work, another session).
+> G2's optional "PII-less dup-check callable" touches functions → DON'T GO INTO that job, it collides with
+> the busy-slot round. All gates can be closed with **only `firestore.rules` + a new script file**
+> (without touching functions). See §3.
+
+---
+
+## 6. Artifact & tool inventory
+
+| File | Type | Purpose |
 |-------|-----|------|
-| `salown-app/firestore.rules` | canlı kod | TEK canonical kaynak (firebase.json) |
-| `docs/firestore.rules.LIVE` | snapshot | Deploy edilenin kopyası (drift kontrolü) |
-| `docs/firestore.rules.ROLLBACK.txt` | rollback | Acil geri dönüş |
-| `docs/firestore.rules.DRAFT` | taslak | Phase 1 draft (eski; `[P1-D]` yok) — referans |
-| `docs/test-firestore-rules.py` | test | Rules Test API (Java/emulator gerekmez) |
+| `salown-app/firestore.rules` | live code | THE single canonical source (firebase.json) |
+| `docs/firestore.rules.LIVE` | snapshot | Copy of what's deployed (drift check) |
+| `docs/firestore.rules.ROLLBACK.txt` | rollback | Emergency revert |
+| `docs/firestore.rules.DRAFT` | draft | Phase 1 draft (old; no `[P1-D]`) — reference |
+| `docs/test-firestore-rules.py` | test | Rules Test API (no Java/emulator needed) |
 
 ---
 
-## 7. Roller & yetki modeli (hedef + mevcut) — 2026-06-24
+## 7. Roles & authorization model (target + current) — 2026-06-24
 
-> **Owner kararı (2026-06-24):** Yetkilendirme şu an "herkes admin" (null→admin fallback) modunda
-> çalışıyor; gerçek rol sistemi devrede değil. Hedef **dinamik** rol mimarisi: ileride
-> `superadmin / admin / manager / staff` atamaları **tasarımla** yapılacak → yapı buna hazır olmalı
-> (rol+izinler veri-odaklı, hardcode değil).
+> **Owner decision (2026-06-24):** Authorization currently runs in "everyone is admin" (null→admin fallback)
+> mode; the real role system is not in force. Target is a **dynamic** role architecture: in the future
+> `superadmin / admin / manager / staff` assignments will be done **by design** → the structure must be ready for it
+> (roles+permissions data-driven, not hardcoded).
 
-### Hedef yetki matrisi (interim — dinamik tasarıma kadar)
-| Rol | Kapsam |
+### Target authorization matrix (interim — until the dynamic design)
+| Role | Scope |
 |-----|--------|
-| **superadmin** | HER ŞEY, cross-tenant. Tenant root/staff/settings/auditLogs/finance silme YALNIZ superadmin. |
-| **owner** | Kendi tenant'ında her şey + **kendi VERİSİNİ silme** (E1b, 2026-07-11): bookings/services/serviceCategories/gallery/announcements/discountCodes/clients/campaigns/products/**barbers** (barbers UI'da güçlü onay modallı). Cross-tenant HİÇBİR ŞEY. |
-| **admin** | Her şeyi görür + değiştirir (create/update), **silemez**. |
-| **manager** | (ileride tasarlanacak — admin/staff arası) |
-| **staff** | Sınırlı; `permissions` objesiyle izinler (canCreateBookings/canCheckOut/... toggles) |
+| **superadmin** | EVERYTHING, cross-tenant. Deleting tenant root/staff/settings/auditLogs/finance is ONLY superadmin. |
+| **owner** | Everything in their own tenant + **deleting their own DATA** (E1b, 2026-07-11): bookings/services/serviceCategories/gallery/announcements/discountCodes/clients/campaigns/products/**barbers** (barbers has a strong-confirm modal in the UI). NOTHING cross-tenant. |
+| **admin** | Sees + modifies everything (create/update), **cannot delete**. |
+| **manager** | (to be designed later — between admin/staff) |
+| **staff** | Limited; permissions via a `permissions` object (canCreateBookings/canCheckOut/... toggles) |
 
-> ✅ **E1b CANLI (2026-07-11, ruleset test 83/83):** delete = `isSuperAdmin() || isOwner(tenantId)`
-> (yukarıdaki owner satırındaki koleksiyonlarda). `isOwner(tid)` = tenantId eşleşir + tenantRole=='owner'.
-> Admin/staff/cross-tenant delete DENY — testli. Super-only kalanlar: tenant root, staff, settings,
-> auditLogs, finance ailesi, Clients merge-drag. "Silme YALNIZ superadmin" dönemi (2026-07-02→07-11)
-> pilot politikasıydı; E1b onu tenant-scoped owner'a genişletti (durum kaydı: ROADMAP E1b).
-> Bkz memory `feedback-delete-superadmin-only`.
+> ✅ **E1b LIVE (2026-07-11, ruleset test 83/83):** delete = `isSuperAdmin() || isOwner(tenantId)`
+> (on the collections in the owner row above). `isOwner(tid)` = tenantId matches + tenantRole=='owner'.
+> Admin/staff/cross-tenant delete DENY — tested. Super-only remaining: tenant root, staff, settings,
+> auditLogs, finance family, Clients merge-drag. The "Delete ONLY superadmin" period (2026-07-02→07-11)
+> was a pilot policy; E1b extended it to the tenant-scoped owner (status record: ROADMAP E1b).
+> See memory `feedback-delete-superadmin-only`.
 
-### Mevcut kullanıcılar (2026-06-24, canlı = whitecross + herohairs)
-| Email | Tenant | Rol (staff doc) | superAdmin claim | Not |
+### Current users (2026-06-24, live = whitecross + herohairs)
+| Email | Tenant | Role (staff doc) | superAdmin claim | Note |
 |-------|--------|-----------------|------------------|-----|
-| aerulas@gmail.com | whitecross | owner | **YES** | **Owner'ın superadmin hesabı — silme yetkisi yalnız burada** |
-| auzun9499@gmail.com (Arda) | whitecross | admin | false | Her şey hariç silme |
-| muhammedkanidagli74@gmail.com | whitecross | staff | false | İzinler permissions objesinde |
-| whitecrossbarbers@gmail.com | whitecross | **staff** ✅ | false | 2026-06-24 staff doc oluşturuldu (önce rolü yoktu, fallback'le admin görünüyordu) |
-| durvezek@gmail.com | herohairs | owner | false | herohairs sahibi |
-| alex2ayyildiz3@gmail.com | herohairs | **owner** ✅ | false | 2026-06-24 owner doc oluşturuldu |
+| aerulas@gmail.com | whitecross | owner | **YES** | **The owner's superadmin account — delete authority is only here** |
+| auzun9499@gmail.com (Arda) | whitecross | admin | false | Everything except delete |
+| muhammedkanidagli74@gmail.com | whitecross | staff | false | Permissions in the permissions object |
+| whitecrossbarbers@gmail.com | whitecross | **staff** ✅ | false | 2026-06-24 staff doc created (previously had no role, appeared as admin via fallback) |
+| durvezek@gmail.com | herohairs | owner | false | herohairs owner |
+| alex2ayyildiz3@gmail.com | herohairs | **owner** ✅ | false | 2026-06-24 owner doc created |
 
-> ✅ **Tüm canlı kullanıcıların rolü TAM** (2026-06-24) → G1 backfill artık engelsiz.
+> ✅ **All live users' roles are COMPLETE** (2026-06-24) → G1 backfill is now unblocked.
 
-### Açık TODO (sonraki oturum)
-- [ ] **G1 tamamla:** `node scripts/backfillTenantRoles.cjs --apply` → token propagasyonu (re-login/~1sa)
-      → `firestore.rules:21-22` `tenantRole==null ||` fallback kaldır → Test API → deploy. ⚠️ Aktif
-      kullanıcı varken fallback kaldırma anlık admin-düşüşü yapar; token yenilenmesini bekle.
-- [ ] **Dinamik rol sistemi** (superadmin/admin/manager/staff, veri-odaklı izinler) — tasarım + impl.
-- [ ] **delete = superadmin-only** rules refactor (kapsamlı; dinamik rolle birlikte).
-- [ ] **Signup koruması:** `salownSelfSignup` public → bot kaydı mümkün (2026-06-24 spam hesabı silindi).
-      Email confirmation / doğrulama kodu / CAPTCHA ekle.
+### Open TODO (next session)
+- [ ] **Complete G1:** `node scripts/backfillTenantRoles.cjs --apply` → token propagation (re-login/~1h)
+      → remove the `tenantRole==null ||` fallback from `firestore.rules:21-22` → Test API → deploy. ⚠️ Removing the fallback
+      while active users are present causes an instant admin-drop; wait for token refresh.
+- [ ] **Dynamic role system** (superadmin/admin/manager/staff, data-driven permissions) — design + impl.
+- [ ] **delete = superadmin-only** rules refactor (comprehensive; together with the dynamic role).
+- [ ] **Signup protection:** `salownSelfSignup` is public → bot registration is possible (2026-06-24 a spam account was deleted).
+      Add email confirmation / verification code / CAPTCHA.
 
-## İlgili dokümanlar
-- [DEPLOY.md](DEPLOY.md) — rules deploy disiplini, TEK KAYNAK kuralı, deploy sırası
+## Related documents
+- [DEPLOY.md](DEPLOY.md) — rules deploy discipline, SINGLE SOURCE rule, deploy order
 - [ROADMAP.md](ROADMAP.md) — #9 (Rules Phase 2) + PRE-SCALE HARDENING GATE (G1–G5)
-- [BUSINESS_RULES.md](BUSINESS_RULES.md) — booking create/cancel/reschedule iş kuralları
-- [INCIDENTS.md](INCIDENTS.md) — geçmiş güvenlik/rules kazaları
+- [BUSINESS_RULES.md](BUSINESS_RULES.md) — booking create/cancel/reschedule business rules
+- [INCIDENTS.md](INCIDENTS.md) — past security/rules accidents
 - memory `feedback-firestore-rules-safety`, `feedback-tenant-root-doc-public`,
   `feedback-delete-superadmin-only`, `project-salown-prescale-hardening`
-</content>
-</invoke>

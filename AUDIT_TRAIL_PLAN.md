@@ -1,76 +1,76 @@
-# AUDIT_TRAIL_PLAN — Tam kapsamlı audit trail (ROADMAP I4)
+# AUDIT_TRAIL_PLAN — Full-coverage audit trail (ROADMAP I4)
 
-> Kaynak: owner istek 2026-07-12 (Muhamed leave-wipe vakası — INCIDENTS 2026-07-12:
-> "kim yaptı" sorusuna cevap yoktu çünkü barber değişiklikleri loglanmıyor).
-> Owner ilkesi: **"sistemde yapılan her işlem için olması gerekmez mi?"** → evet,
-> her YAZMA işlemi; okuma loglanmaz (gürültü + maliyet + değeri yok).
-> **Gate: TS migration freeze — kod 2026-07-14'ten önce yazılmaz.** Durum SSOT: ROADMAP I4.
+> Source: owner request 2026-07-12 (Muhamed leave-wipe case — INCIDENTS 2026-07-12:
+> the "who did it" question had no answer because barber changes are not logged).
+> Owner principle: **"shouldn't there be one for every operation done in the system?"** → yes,
+> every WRITE operation; reads are not logged (noise + cost + no value).
+> **Gate: TS migration freeze — no code is written before 2026-07-14.** State SSOT: ROADMAP I4.
 
-## 1. Bugünkü durum (2026-07-12 envanteri, grep'le doğrulandı)
+## 1. Current state (2026-07-12 inventory, verified with grep)
 
-**Altyapı var ve iyi:** `src/utils/auditLogger.ts` `logAudit(action, details)` —
-actor'ı (uid/email/name) otomatik ekliyor, `tenants/{id}/auditLogs`'a yazıyor,
-fail-silent. Viewer: `src/pages/AuditLog.tsx`. Functions tarafı ham `.add()`.
+**Infrastructure exists and is good:** `src/utils/auditLogger.ts` `logAudit(action, details)` —
+adds the actor (uid/email/name) automatically, writes to `tenants/{id}/auditLogs`,
+fail-silent. Viewer: `src/pages/AuditLog.tsx`. Functions side uses raw `.add()`.
 
-**Kapsanan (~25 tip):**
-| Alan | Tipler | Kaynak |
+**Covered (~25 types):**
+| Area | Types | Source |
 |---|---|---|
 | Booking ops | CHECKOUT, WALK_IN_CREATED, BOOKING_EDITED, RESCHEDULE, CANCEL_BOOKING, DELETE_BOOKING, NO_SHOW, BLOCK_TIME_ADDED/REMOVED, PRODUCT_SALE_CREATED | firestoreActions + BookingDetailPanel/CheckoutPanel/Bookings/BlockTimeForm |
-| Müşteri-kaynaklı | BOOKING_CANCELLED_BY_CUSTOMER, BOOKING_RESCHEDULED_BY_CUSTOMER | functions (cancel/reschedule callables) |
-| Finans | EXPENSE_ADDED/UPDATED/DELETED, PAYMENT_ADDED/DELETED, INVESTMENT_TX_*, INVESTMENT_REQUIRED_SET, FINANCE_LEDGER_UPLOADED, PARTNER_SETTLEMENT_SIGNED/REVERSED, EXIT_AGREEMENT_* | Finance.tsx + ExitSettlementCard |
+| Customer-sourced | BOOKING_CANCELLED_BY_CUSTOMER, BOOKING_RESCHEDULED_BY_CUSTOMER | functions (cancel/reschedule callables) |
+| Finance | EXPENSE_ADDED/UPDATED/DELETED, PAYMENT_ADDED/DELETED, INVESTMENT_TX_*, INVESTMENT_REQUIRED_SET, FINANCE_LEDGER_UPLOADED, PARTNER_SETTLEMENT_SIGNED/REVERSED, EXIT_AGREEMENT_* | Finance.tsx + ExitSettlementCard |
 | Loyalty | manual_points_adjustment | Clients.tsx |
 
-**Kör noktalar (loglanmayan mutasyonlar):**
-- **Barbers:** status/leave (bugünkü vaka!), working hours/dayHours, shiftChanges (off-today/quick block'un shift kısmı), create/delete, renk/rol/order.
-- **Clients:** create/edit (alias zinciri dahil!), delete, **merge (drag-drop, yıkıcı)**, consent (Stop/Resume emails), member promote/demote, trusted (gelince).
-- **Katalog:** services/products/categories create/edit/delete — **fiyat değişikliği para-etkili**, şu an tamamen iz bırakmıyor.
-- **Settings:** permissions (7 izin!), notification toggles, integrations (telegram/stripe), emailConfig, loyalty config, plan/trial (super-admin app).
-- **Diğer:** discount codes create/delete, campaign send'leri (campaignsSent subcol'da var ama audit'te değil), staff-user create/delete (functions), gallery/announcements, super-admin panel aksiyonları (cross-tenant!).
+**Blind spots (unlogged mutations):**
+- **Barbers:** status/leave (today's case!), working hours/dayHours, shiftChanges (the shift part of off-today/quick block), create/delete, color/role/order.
+- **Clients:** create/edit (including the alias chain!), delete, **merge (drag-drop, destructive)**, consent (Stop/Resume emails), member promote/demote, trusted (when it arrives).
+- **Catalog:** services/products/categories create/edit/delete — **price change is money-affecting**, and currently leaves no trace at all.
+- **Settings:** permissions (7 permissions!), notification toggles, integrations (telegram/stripe), emailConfig, loyalty config, plan/trial (super-admin app).
+- **Other:** discount codes create/delete, campaign sends (present in the campaignsSent subcol but not in audit), staff-user create/delete (functions), gallery/announcements, super-admin panel actions (cross-tenant!).
 
-## 2. Tasarım
+## 2. Design
 
-### 2a. Standart zarf (envelope) — tek helper, iki taraf
+### 2a. Standard envelope — one helper, two sides
 ```
-{ action: 'BARBER_STATUS_CHANGED',        // SCREAMING_SNAKE, alan öneki
-  actor:  { uid, email, name, role },     // logAudit zaten yapıyor; + role EKLE
+{ action: 'BARBER_STATUS_CHANGED',        // SCREAMING_SNAKE, area prefix
+  actor:  { uid, email, name, role },     // logAudit already does this; ADD role
   source: 'panel'|'staff-app'|'booking-site'|'function:<fnName>'|'super-admin',
-  target: { collection:'barbers', docId, label:'Muhamed' },   // İNSAN-OKUR label ŞART
-  changes: { status:['leave','active'], leaveUntil:['2026-07-20',null] },  // önce→sonra, SADECE değişen alanlar
+  target: { collection:'barbers', docId, label:'Muhamed' },   // HUMAN-READABLE label REQUIRED
+  changes: { status:['leave','active'], leaveUntil:['2026-07-20',null] },  // before→after, ONLY changed fields
   timestamp: serverTimestamp() }
 ```
-- `changes` özet olmalı (değişen alanlar), full-doc snapshot DEĞİL (maliyet + PII genişlemesi).
-- Frontend: `logAudit` genişletilir (source+target+changes paramları; mevcut çağrılar kırılmaz — geriye uyumlu).
-- Functions: `logAuditServer(db, tenantId, {...})` ortak helper (şu an 3 yerde el yazması `.add()`).
-- Super-admin app: cross-tenant aksiyonlar hedef tenant'ın auditLogs'una `source:'super-admin'` ile yazar.
+- `changes` must be a summary (changed fields), NOT a full-doc snapshot (cost + PII expansion).
+- Frontend: `logAudit` is extended (source+target+changes params; existing calls don't break — backward-compatible).
+- Functions: `logAuditServer(db, tenantId, {...})` shared helper (currently 3 places with hand-written `.add()`).
+- Super-admin app: cross-tenant actions write to the target tenant's auditLogs with `source:'super-admin'`.
 
-### 2b. Neyi LOGLAMAYIZ (bilinçli)
-- Okumalar/görüntülemeler — asla.
-- Makine-hacimli olaylar: parser booking import'ları (externalId+parserStats zaten iz),
-  scheduled cleanup'lar, trigger'ların kendi iç yazmaları (loyaltyEmailSent marker vb).
-  İstisna: parser bir client DOC'u yaratıyorsa (C5-A) o loglanabilir (kimlik-etkili).
-- Booking create (online/walk-in) zaten kapsanıyor; booking doc'unun kendi meta
-  alanları (cancelledBy vb) audit'in yerine geçmez ama tekrarına da gerek yok —
-  audit SİLME/EDIT gibi yıkıcı/yönetimsel aksiyonlara odaklanır.
+### 2b. What we DON'T log (deliberately)
+- Reads/views — never.
+- Machine-volume events: parser booking imports (externalId+parserStats are already a trail),
+  scheduled cleanups, triggers' own internal writes (loyaltyEmailSent marker etc).
+  Exception: if the parser creates a client DOC (C5-A) that can be logged (identity-affecting).
+- Booking create (online/walk-in) is already covered; the booking doc's own meta
+  fields (cancelledBy etc) don't replace audit but there's also no need to duplicate them —
+  audit focuses on destructive/administrative actions like DELETE/EDIT.
 
-### 2c. Güvenlik & yaşam döngüsü
-- **Rules: append-only** — create: staff+; update/delete: KİMSE (super-admin dahil;
-  düzeltme = yeni kayıt). Read: owner/admin (staff kendi aksiyonlarını görür mü → owner kararı).
-- **Retention:** Firestore TTL policy (`expireAt`, öneri 24 ay) — maliyet kontrolü;
-  finans/exit kayıtları TTL'siz (yasal değer taşıyabilir).
-- Zarfın `changes`'ında sır ASLA (appPassword vb → `changes:{appPassword:['***','***']}`).
+### 2c. Security & lifecycle
+- **Rules: append-only** — create: staff+; update/delete: NOBODY (including super-admin;
+  a correction = a new record). Read: owner/admin (does staff see their own actions → owner's call).
+- **Retention:** Firestore TTL policy (`expireAt`, suggested 24 months) — cost control;
+  finance/exit records without TTL (may carry legal value).
+- Never a secret in the envelope's `changes` (appPassword etc → `changes:{appPassword:['***','***']}`).
 
 ### 2d. Viewer (AuditLog.tsx)
-Kategori filtresi (Bookings/Finance/Team/Clients/Catalog/Settings) + actor + tarih
-aralığı + target-arama. "Muhamed'e ne oldu?" tek sorguda cevaplanmalı.
+Category filter (Bookings/Finance/Team/Clients/Catalog/Settings) + actor + date
+range + target-search. "What happened to Muhamed?" must be answerable in a single query.
 
-## 3. Fazlar (dilim = deploy edilebilir, her faz kendi başına değer)
-- **Faz A (önce — bugünkü vakanın sınıfı):** barbers (status/leave/hours/create/delete
-  + G1 confirm modal birlikte) + clients (edit/delete/merge/consent/member). ~10 çağrı noktası.
-- **Faz B:** katalog (fiyat!) + settings (permissions/integrations) + discount codes.
-- **Faz C:** staff-user fn'leri + super-admin panel + campaign send + kalanlar + TTL + viewer filtreleri.
-- Her fazda TESTS.md'ye manuel doğrulama satırı (aksiyon yap → kaydı gör).
+## 3. Phases (a slice = deployable, each phase delivers value on its own)
+- **Phase A (first — the class of today's case):** barbers (status/leave/hours/create/delete
+  + G1 confirm modal together) + clients (edit/delete/merge/consent/member). ~10 call sites.
+- **Phase B:** catalog (price!) + settings (permissions/integrations) + discount codes.
+- **Phase C:** staff-user fns + super-admin panel + campaign send + the rest + TTL + viewer filters.
+- Each phase adds a manual-verification line to TESTS.md (do the action → see the record).
 
-## 4. Bağlar
-- ROADMAP **I4** (durum SSOT) · G1 `BARBER_STATUS_CHANGED` = öncü dilim ·
-  INCIDENTS 2026-07-12 (tetikleyici vaka) · SECURITY.md (append-only rules değişikliği
-  oraya da işlenir) · memory `feedback_firestore_rules_safety` (rules EN SON deploy).
+## 4. Links
+- ROADMAP **I4** (state SSOT) · G1 `BARBER_STATUS_CHANGED` = pioneer slice ·
+  INCIDENTS 2026-07-12 (triggering case) · SECURITY.md (the append-only rules change
+  is recorded there too) · memory `feedback_firestore_rules_safety` (rules deploy LAST).

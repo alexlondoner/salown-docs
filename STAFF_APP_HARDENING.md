@@ -1,108 +1,108 @@
-# Staff App — Pre-Capacitor Sağlamlaştırma (Çalışma Raporu)
+# Staff App — Pre-Capacitor Hardening (Working Report)
 
-> **Amaç:** Staff app'i native'e (D1 Capacitor — bkz [D1_CAPACITOR_NATIVE_PLAN.md](D1_CAPACITOR_NATIVE_PLAN.md)) sarmadan ÖNCE tutarsızlıkları ve eksikleri kapatmak. Native'e sarınca her düzeltme iki katman (web+store) demek; o yüzden temizlik ŞİMDİ, PWA'dayken yapılır.
+> **Goal:** Close inconsistencies and gaps BEFORE wrapping the staff app in native (D1 Capacitor — see [D1_CAPACITOR_NATIVE_PLAN.md](D1_CAPACITOR_NATIVE_PLAN.md)). Once wrapped in native, every fix means two layers (web+store); so the cleanup is done NOW, while still a PWA.
 >
-> **Kaynak:** 3 paralel ajan denetimi (veri-tutarlılığı · UX/eksik-durum · aggregator kaynak-tutarlılığı) + owner'ın "244" olayı (bkz [[edit-log-salown]]). Tarih: 2026-07-14/15.
+> **Source:** 3 parallel agent audits (data-consistency · UX/missing-state · aggregator source-consistency) + the owner's "244" incident (see [[edit-log-salown]]). Date: 2026-07-14/15.
 >
-> **Statü anahtarı:** ✅ CANLI (düzeltildi+deploy) · 🔧 KALAN (kod işi, sıraya girdi) · 🎨 TASARIM (owner kararı/mimari gerekir) · ⚪ KABUL (bilinçli bırakıldı).
+> **Status key:** ✅ LIVE (fixed+deployed) · 🔧 REMAINING (code work, queued) · 🎨 DESIGN (owner decision/architecture needed) · ⚪ ACCEPTED (deliberately left).
 >
-> **Multi-device:** Bu dosya diğer makinelerde `git pull` ile çekilir. Bir madde bitince statüyü ✅ + commit-hash yap, [[edit-log-salown]]'a kayıt düş.
+> **Multi-device:** This file is pulled on other machines via `git pull`. When an item is done, set the status to ✅ + commit-hash, and log a record in [[edit-log-salown]].
 
 ---
 
-## 📌 OTURUM DURUMU — 2026-07-14/15 (son güncelleme snapshot'ı)
+## 📌 SESSION STATUS — 2026-07-14/15 (last-update snapshot)
 
-### ✅ YAPILDI (hepsi canlı + push'lu)
-| İş | Commit | Durum |
+### ✅ DONE (all live + pushed)
+| Work | Commit | Status |
 |---|---|---|
-| Sales/Week ciro `bookingNetWithoutTip` (panelle eşitlendi) | Salown `79d034a` | ✅ CANLI |
-| Today "Est. revenue" yakınsayan tahmin (checkout=net, gelmemiş=price) | Salown `b725434` | ✅ CANLI |
-| Pre-Capacitor Tier 1-2: parsed £0-checkout, ham-statü, müşteri-harcama net, "Today" sabit-tarih, Booksy boş-berber, Sales satır/gruplama | Salown `0df2beb` (bundle `staff-DJvCvRYK.js`) | ✅ CANLI |
-| D1 Capacitor native plan (hazır bekliyor, acele yok) | docs `fa25129` (`D1_CAPACITOR_NATIVE_PLAN.md`) | 🅿️ BEKLİYOR |
-| Bu rapor + ROADMAP D0/D1 + T3-8 kaynak-bazlı düzeltme | docs `ab1dc59`/`042da6c`/`ce9b9ff` | ✅ KAYITLI |
+| Sales/Week revenue `bookingNetWithoutTip` (synced with panel) | salOWN `79d034a` | ✅ LIVE |
+| Today "Est. revenue" converging estimate (checkout=net, not-arrived=price) | salOWN `b725434` | ✅ LIVE |
+| Pre-Capacitor Tier 1-2: parsed £0-checkout, raw-status, customer-spend net, "Today" fixed-date, Booksy empty-barber, Sales row/grouping | salOWN `0df2beb` (bundle `staff-DJvCvRYK.js`) | ✅ LIVE |
+| D1 Capacitor native plan (ready and waiting, no rush) | docs `fa25129` (`D1_CAPACITOR_NATIVE_PLAN.md`) | 🅿️ WAITING |
+| This report + ROADMAP D0/D1 + T3-8 source-based fix | docs `ab1dc59`/`042da6c`/`ce9b9ff` | ✅ RECORDED |
 
-### 🔜 KALAN — sıradaki (owner yönü: "Salown master, editi koru")
-1. **🟢 Cancel tombstone** — `cancelBooking` → `parserTombstones` (geç email iptal edileni diriltmesin). *En güvenli, önce bu.*
-2. **🔴 Parser clobber guard** — booking manuel editlenince alan-bazlı bayrak (`barberManuallySet`); `booksy.ts:280` reschedule-apply barber'ı ezmesin (saat gelebilir). ⚠️ canlı boru → testli+hedefli deploy.
-3. **🟠 Staff app'e barber yeniden-atama** — telefondan mis-assignment düzeltme (şu an panel-only); yazınca #2 bayrağını set eder.
-4. **🔧 UX kalanlar** (aşağıdaki tier'larda): push sessiz-hata banner (T2-7), boş-durum/erişim mesajı (T4-10), reschedule saat-guard (T4-11), sessiz-hata yutma (T4-12).
-5. **🅿️ D1 Capacitor** — ürün olgunlaşınca (owner acele etmiyor).
+### 🔜 REMAINING — up next (owner direction: "salOWN is master, preserve the edit")
+1. **🟢 Cancel tombstone** — `cancelBooking` → `parserTombstones` (so a late email can't resurrect a cancelled one). *Safest, do this first.*
+2. **🔴 Parser clobber guard** — a field-level flag when a booking is manually edited (`barberManuallySet`); `booksy.ts:280` reschedule-apply should not overwrite the barber (the time may come). ⚠️ live pipeline → tested+targeted deploy.
+3. **🟠 Barber re-assignment in the staff app** — fixing mis-assignment from the phone (currently panel-only); when written it sets flag #2.
+4. **🔧 UX remainders** (in the tiers below): push silent-error banner (T2-7), empty-state/access message (T4-10), reschedule hour-guard (T4-11), silent-error swallowing (T4-12).
+5. **🅿️ D1 Capacitor** — when the product matures (owner is not rushing).
 
-**Sıradaki aksiyon önerisi:** #1 → (#2+#3 birlikte). Owner onayı bekliyor.
+**Suggested next action:** #1 → (#2+#3 together). Awaiting owner approval.
 
 ---
 
-## ✅ Bu turda düzeltildi — `Salown 0df2beb` (2026-07-15, CI staff deploy, bundle `staff-DJvCvRYK.js`)
+## ✅ Fixed this round — `salOWN 0df2beb` (2026-07-15, CI staff deploy, bundle `staff-DJvCvRYK.js`)
 
-Hepsi paylaşılan yardımcıları kullanır (`bookingNetWithoutTip` / `normalizeBookingStatus` / `resolveBarber`) → ekranlar web panel ile uyuşur, geçmiş kayıtlar da doğru render olur.
+All of these use shared helpers (`bookingNetWithoutTip` / `normalizeBookingStatus` / `resolveBarber`) → the screens match the web panel, and past records also render correctly.
 
-| # | Sorun | Dosya | Fix |
+| # | Problem | File | Fix |
 |---|---|---|---|
-| T1-1 | Parsed booking £0'a checkout (sessiz ciro kaybı) | `staff/sheets/CheckoutSheet.tsx:37` | `basePrice` boş `price`'ta `paidAmount`/`platformDepositAmount`'a fallback |
-| T1-2 | Sales ham statü karşılaştırması → eski/varyant statüler düşüyor | `staff/views/SalesView.tsx:88` | `normalizeBookingStatus(b.status)` ile filtre |
-| T1-3 | Müşteri toplam harcama ham `price`'tan (Sales ile çelişik) | `staff/sheets/ClientDetailSheet.tsx:110,134` | `bookingNetWithoutTip(data)` → `netRevenue` |
-| T2-4 | Booking detayında hep "Today" (yanlış gün riski) | `staff/sheets/BookingDetailSheet.tsx:172` | `startTime`/`date`'ten gerçek tarih etiketi |
-| T2-5 | Booksy/online booking'de berber "—"/boş | `BookingDetailSheet.tsx` + `CheckoutSheet.tsx` (+ StaffRouter prop) | `resolveBarber(booking, barbers)` |
-| T2-6 | Sales işlem satırları başlık toplamıyla tutmuyor + berber gruplama walk-in/online ayrışması | `staff/views/SalesView.tsx:373,146,162` | satır `bookingNetWithoutTip`; gruplama `resolveBarber` ile birleşik |
+| T1-1 | Parsed booking checked out at £0 (silent revenue loss) | `staff/sheets/CheckoutSheet.tsx:37` | `basePrice` falls back to `paidAmount`/`platformDepositAmount` when `price` is empty |
+| T1-2 | Sales raw status comparison → old/variant statuses drop | `staff/views/SalesView.tsx:88` | filter with `normalizeBookingStatus(b.status)` |
+| T1-3 | Customer total spend from raw `price` (conflicts with Sales) | `staff/sheets/ClientDetailSheet.tsx:110,134` | `bookingNetWithoutTip(data)` → `netRevenue` |
+| T2-4 | Booking detail always "Today" (wrong-day risk) | `staff/sheets/BookingDetailSheet.tsx:172` | real date label from `startTime`/`date` |
+| T2-5 | Barber "—"/empty on Booksy/online booking | `BookingDetailSheet.tsx` + `CheckoutSheet.tsx` (+ StaffRouter prop) | `resolveBarber(booking, barbers)` |
+| T2-6 | Sales transaction rows don't match the header total + barber grouping splits walk-in/online | `staff/views/SalesView.tsx:373,146,162` | row `bookingNetWithoutTip`; grouping unified via `resolveBarber` |
 
-**Önceki ilgili düzeltmeler (aynı hafta):** Sales/Week ciro `bookingNetWithoutTip` (`79d034a`), Today "Est. revenue" yakınsayan tahmin (`b725434`).
-
----
-
-## 🔧 KALAN — kod işi (sıradaki turlar)
-
-### T2-7 · Push kaydı sessizce başarısız (yüksek)
-`staff/StaffApp.tsx:159` — izin reddedilir/token alınamazsa sadece `console.warn`; kullanıcı hiç bildirim almaz ama bilmez. **Yapılacak:** izin durumunu state'te tut; `ProfileView`'e "Bildirimler kapalı — açmak için dokun" banner'ı + Settings'e yönlendirme. (Native'e geçince push kritik → D1 öncesi kapat.)
-
-### T4-10 · Yanıltıcı boş durum (orta)
-`staff/views/TodayView.tsx:340` — `canViewAllBookings=false` + berber-bağı yok → dolu günde "All clear · No bookings" gösteriyor. **Yapılacak:** izin yoksa "You don't have access to the schedule" mesajı (boş-gün ≠ erişim-yok).
-
-### T4-11 · Reschedule çalışma-saati guard'ı yok (orta)
-`staff/sheets/RescheduleSheet.tsx` — slotlar sabit 08:00–22:00, kapanış uyarısı yok (NewBookingSheet'te var). **Yapılacak:** açılış saatlerini baz al ya da en azından "outside opening hours" uyarısı.
-
-### T4-12 · Sessiz hata yutma → mükerrer müşteri (orta)
-`staff/components/ClientSearch.tsx` + `TodayView.tsx:279` — `.catch(()=>{})`. Müşteri listesi yüklenmezse arama boş döner, barber mükerrer kayıt açar. **Yapılacak:** hata durumunda küçük "couldn't load — retry" göstergesi.
-
-### T4-16 · CheckoutSheet discard-guard yok (düşük)
-Yanlışlıkla kapatınca girilen tip/indirim/method uyarısız gider (diğer sheet'lerde `window.confirm` var). **Yapılacak:** dirty-guard.
-
-### Diğer düşük
-- **T4-13** MEMBER rozeti bilerek yanlış veriden (`ClientsView.tsx:35`, `ClientDetailSheet.tsx:137`) — backfill'e kadar rozeti gizle. ⚪/🔧
-- **T4-14** Bildirimler sadece bellekte (`StaffRouter.tsx:62`) — yenilemede zil sıfırlanıyor. Firestore'a taşınabilir (G1 kişi-bazlı bildirim işiyle birleştir).
-- **T4-15** Detayda kaynak iki yerde farklı ("salOWN" pill vs ham "salown" satır) `BookingDetailSheet.tsx:174`; WeekView'de kaynak hiç yok.
-- **T2-9** Booksy `duration` yoksa 30dk varsayılıyor `RescheduleSheet.tsx:87` — parser duration yazmıyor.
+**Prior related fixes (same week):** Sales/Week revenue `bookingNetWithoutTip` (`79d034a`), Today "Est. revenue" converging estimate (`b725434`).
 
 ---
 
-## 🎨 TASARIM — owner kararı / mimari gerekir
+## 🔧 REMAINING — code work (upcoming rounds)
 
-### T3-8 · Dış senkron — KAYNAK-BAZLI (owner netleştirdi 2026-07-15)
-Denetimin "hiç geri-yazım yok" genellemesi YANLIŞTI. Gerçek durum kaynağa göre değişir:
+### T2-7 · Push registration silently fails (high)
+`staff/StaffApp.tsx:159` — if permission is denied/token can't be obtained, only a `console.warn`; the user gets no notification but doesn't know. **To do:** keep the permission state in state; add a "Notifications off — tap to enable" banner to `ProfileView` + redirect to Settings. (Once native, push is critical → close before D1.)
 
-| Kaynak | Sync kanalı | Durum | Salown'daki güvenilirlik |
+### T4-10 · Misleading empty state (medium)
+`staff/views/TodayView.tsx:340` — `canViewAllBookings=false` + no barber-binding → shows "All clear · No bookings" on a full day. **To do:** if no permission, show "You don't have access to the schedule" (empty-day ≠ no-access).
+
+### T4-11 · No reschedule opening-hours guard (medium)
+`staff/sheets/RescheduleSheet.tsx` — slots are fixed 08:00–22:00, no closing warning (present in NewBookingSheet). **To do:** base it on opening hours or at least an "outside opening hours" warning.
+
+### T4-12 · Silent error swallowing → duplicate customer (medium)
+`staff/components/ClientSearch.tsx` + `TodayView.tsx:279` — `.catch(()=>{})`. If the customer list doesn't load, search returns empty, the barber creates a duplicate record. **To do:** a small "couldn't load — retry" indicator on error.
+
+### T4-16 · No CheckoutSheet discard-guard (low)
+Closing by accident loses the entered tip/discount/method without warning (other sheets have `window.confirm`). **To do:** dirty-guard.
+
+### Other low
+- **T4-13** MEMBER badge from knowingly wrong data (`ClientsView.tsx:35`, `ClientDetailSheet.tsx:137`) — hide the badge until backfill. ⚪/🔧
+- **T4-14** Notifications only in memory (`StaffRouter.tsx:62`) — the bell resets on refresh. Could move to Firestore (merge with the G1 per-person notification work).
+- **T4-15** Source differs in two places in detail ("salOWN" pill vs raw "salown" row) `BookingDetailSheet.tsx:174`; no source at all in WeekView.
+- **T2-9** Booksy `duration` defaults to 30 min when absent `RescheduleSheet.tsx:87` — the parser doesn't write duration.
+
+---
+
+## 🎨 DESIGN — owner decision / architecture needed
+
+### T3-8 · External sync — SOURCE-BASED (owner clarified 2026-07-15)
+The audit's "no write-back at all" generalization was WRONG. The real situation varies by source:
+
+| Source | Sync channel | Status | Reliability in salOWN |
 |---|---|---|---|
-| **Treatwell** | **iCal import** (`functions/src/parsers/ical.ts`) | ✅ CANLI | Tam yaşam-döngüsü gelir — event `STATUS:CANCELLED` → Salown booking CANCELLED (ical.ts:98-107), reschedule de (`:179`). Treatwell tarafı Salown'a otomatik yansır. |
-| **Fresha** | iCal import | ⏳ YAKINDA | Aynı mekanizma gelince Treatwell gibi güvenilir olacak. |
-| **Booksy** | Sadece email-parse | ⚠️ KIRILGAN | Takvim/iCal feed'i YOK. Geri-yazım imkânsız. İki yol: **(a) köprü kur** (büyük iş) **veya (b) şimdilik BUFFER + MANUEL BLOK** ile çift-rezervasyonu önle. |
+| **Treatwell** | **iCal import** (`functions/src/parsers/ical.ts`) | ✅ LIVE | Full lifecycle comes through — event `STATUS:CANCELLED` → salOWN booking CANCELLED (ical.ts:98-107), reschedule too (`:179`). The Treatwell side reflects into salOWN automatically. |
+| **Fresha** | iCal import | ⏳ SOON | When the same mechanism arrives it will be reliable like Treatwell. |
+| **Booksy** | Email-parse only | ⚠️ FRAGILE | NO calendar/iCal feed. Write-back is impossible. Two paths: **(a) build a bridge** (big job) **or (b) for now BUFFER + MANUAL BLOCK** to prevent double-booking. |
 
-**iCal not:** iCal INBOUND'dur (dış platform → Salown). Salown'dan Treatwell/Fresha'ya geri PUSH yoktur; ama o platformlar kendi kaynağı olduğu için orada yönetmek + Salown'un yansıtması doğru akış. Yani staff'ın Salown'da bir Treatwell/Fresha booking'ini editlemesi anlamsız (bir sonraki iCal pull ezer).
+**iCal note:** iCal is INBOUND (external platform → salOWN). There is no PUSH-back from salOWN to Treatwell/Fresha; but since those platforms are their own source, managing there + salOWN reflecting is the correct flow. So staff editing a Treatwell/Fresha booking in salOWN is meaningless (the next iCal pull overwrites it).
 
-**Owner iş modeli (2026-07-15, KRİTİK):** "Asıl toplanacak doğru yer BİZİZ (Salown master)." Booksy rastgele barber atıyor; seçilen barber müsait değilse **Salown'da hemen doğru barber'a çeviriyoruz.** Yani external booking editlemek İSTENİR — "editi kapat" YANLIŞ olur. Booksy'ye geri push zaten imkânsız/gereksiz (müşteri Booksy'de görür, dükkân Salown'da çalışır).
+**Owner business model (2026-07-15, CRITICAL):** "The real place to consolidate correctly is US (salOWN master)." Booksy assigns a random barber; if the chosen barber isn't available, **we switch to the correct barber immediately in salOWN.** So editing an external booking IS WANTED — "disable the edit" would be WRONG. Push-back to Booksy is anyway impossible/unnecessary (the customer sees it in Booksy, the shop works in salOWN).
 
-**Gerçek risk (kod-doğrulandı):** `functions/src/parsers/booksy.ts:277-285` reschedule-apply → `existingRef.update({ startTime, ...(r.newBarber ? { barberId: r.newBarber } : {}) })`. Booksy reschedule email'i "with {barber}" taşıdığı için, **manuel yapılan barber düzeltmesini geri EZİYOR.** Koruyucu bayrak repo'da YOK. Ayrıca staff app'te barber yeniden-atama UI'ı YOK (`RescheduleSheet` sadece saat) → owner bunu şu an panelden yapıyor.
+**Real risk (code-verified):** `functions/src/parsers/booksy.ts:277-285` reschedule-apply → `existingRef.update({ startTime, ...(r.newBarber ? { barberId: r.newBarber } : {}) })`. Because the Booksy reschedule email carries "with {barber}", it **overwrites the manually made barber correction.** No protective flag exists in the repo. Also there is NO barber re-assignment UI in the staff app (`RescheduleSheet` is time only) → the owner is currently doing this from the panel.
 
-**Doğru iş (owner modeline göre, "Salown master + editi koru"):**
-1. **🔴 Parser clobber guard (backend, en yüksek değer):** booking manuel editlenince `manualOverride`/`barberManuallySet` bayrağı yaz; parser reschedule-apply bu bayrakta `barberId`'yi (ve gerekiyorsa saati) EZMESİN. ⚠️ `booksy.ts` = canlı boru, en hassas (CLAUDE.md "parser en son") → karakterizasyon testiyle, hedefli deploy.
-2. **🟠 Staff app'e barber yeniden-atama:** RescheduleSheet'e (veya BookingDetail'e) barber seçici — owner telefondan da mis-assignment'ı düzeltsin (şu an panel-only). Yazınca #1'in bayrağını set etsin.
-3. **🟢 Cancel tombstone:** `cancelBooking`'i delete gibi `parserTombstones`'a yaz → geç gelen reschedule-email cancelled booking'i diriltmesin. Kaynaktan bağımsız güvenli.
-4. **Buffer + manuel blok:** Booksy takvim feed'i olmadığı için kapasite güvenliği operasyonel (Quick Block zaten var). Köprü = ileride.
+**Correct work (per the owner model, "salOWN master + preserve the edit"):**
+1. **🔴 Parser clobber guard (backend, highest value):** when a booking is manually edited write a `manualOverride`/`barberManuallySet` flag; the parser reschedule-apply should NOT overwrite the `barberId` (and the time if needed) when this flag is set. ⚠️ `booksy.ts` = live pipeline, most sensitive (CLAUDE.md "parser last") → with a characterization test, targeted deploy.
+2. **🟠 Barber re-assignment in the staff app:** a barber picker in RescheduleSheet (or BookingDetail) — let the owner fix mis-assignment from the phone too (currently panel-only). When written it should set flag #1.
+3. **🟢 Cancel tombstone:** write `cancelBooking` to `parserTombstones` like delete → so a late reschedule-email can't resurrect a cancelled booking. Safe independent of source.
+4. **Buffer + manual block:** since Booksy has no calendar feed, capacity safety is operational (Quick Block already exists). A bridge = later.
 
-> ESKİ (yanlış) yön "Booksy reschedule'ı kapat/uyar" İPTAL — owner Salown'u master kabul ediyor, edit İSTENİR; korunması gereken şey edit'in kalıcılığı.
+> The OLD (wrong) direction "disable/warn on Booksy reschedule" is CANCELLED — the owner treats salOWN as master, the edit IS WANTED; what must be protected is the edit's persistence.
 
 ---
 
-## Kapsam notu (ferah/grid'siz estetik)
-Owner kararı: app **ferah, liste-odaklı, grid değil**. Yukarıdaki hiçbir madde grid/sıkıştırma gerektirmez — hepsi mantık düzeltmesi veya küçük etiket/uyarı. Öneriler bu estetiğe göre verilmiştir.
+## Scope note (spacious/grid-free aesthetic)
+Owner decision: the app is **spacious, list-focused, not a grid**. None of the items above require a grid/compression — they are all logic fixes or small labels/warnings. The suggestions are given per this aesthetic.
 
-## Doğru çalıştığı doğrulanan (yeniden denetlenmesin)
-Empty state'ler + skeleton'lar on-brand; Cancel/No-show iki-dokunuş inline confirm; SaveOverlay success feedback tutarlı; revenue permission gating (canViewRevenue) SalesView/WeekView/BottomNav'de tutarlı; tarih/tz her yerde `ukDayRange`/`ukWeekRange` (BST-güvenli), staff view/sheet'lerde `toISOString().split` YOK.
+## Verified working correctly (do not re-audit)
+Empty states + skeletons on-brand; Cancel/No-show two-tap inline confirm; SaveOverlay success feedback consistent; revenue permission gating (canViewRevenue) consistent in SalesView/WeekView/BottomNav; date/tz everywhere `ukDayRange`/`ukWeekRange` (BST-safe), NO `toISOString().split` in staff views/sheets.

@@ -1,308 +1,308 @@
 # ROADMAP.md
 
-> **Etiketler:** `✅ Done` · `🔄 In Progress` · `🔵 Planned` (kararlı, başlamadı) · `⏸ Waiting` (dış bağımlılık / bilinçli bekleme) · `💡 Future` (ölçek/yatırım sonrası) · `⚠️` (dikkat/çelişki).
-> **Format:** aktif kısım = tema başlığı + tek-satır maddeler; her ✅'ün detayı/commit'i en alttaki **Completed** bölümünde. Temalar **önem sırasına** göre.
-> **Son revizyon: 2026-07-16** — belge "feature list"ten "company roadmap"e yeniden yapılandırıldı: tamamlananlar Completed'a indirildi, temalar iş-alanına göre gruplandı, Employment Model birinci-sınıf tema yapıldı. Kod-doğrulamalı audit (4 paralel ajan) ile 🔵/🟡 maddeler gerçek durumlarına çekildi. Önceki uzun sürüm git geçmişinde.
+> **Labels:** `✅ Done` · `🔄 In Progress` · `🔵 Planned` (stable, not started) · `⏸ Waiting` (external dependency / deliberate hold) · `💡 Future` (post scale/investment) · `⚠️` (caution/conflict).
+> **Format:** active section = theme heading + one-line items; the detail/commit of each ✅ is in the **Completed** section at the bottom. Themes are ordered by **importance**.
+> **Last revision: 2026-07-16** — document restructured from a "feature list" into a "company roadmap": completed items moved down to Completed, themes grouped by work area, Employment Model made a first-class theme. With a code-verified audit (4 parallel agents), 🔵/🟡 items were pulled to their real status. The previous long version is in git history.
 
 ---
 
-## 🔄 TEK DURUM KAYNAĞI (Single Source of Truth) — her session OKUSUN
+## 🔄 SINGLE SOURCE OF TRUTH — every session should READ this
 
-> **Kural: bir işin GÜNCEL DURUMU sadece burada, ROADMAP.md'de yaşar.** Detay dokümanları
-> (SECURITY.md, TESTS.md, INCIDENTS.md, `*_PLAN.md`) *teknik detayı* tutar — durum rozetini DEĞİL.
-> Durum çelişkisi çıkarsa **ROADMAP kazanır**; detay dokümanı buraya link verir.
+> **Rule: the CURRENT STATUS of a piece of work lives only here, in ROADMAP.md.** Detail documents
+> (SECURITY.md, TESTS.md, INCIDENTS.md, `*_PLAN.md`) hold the *technical detail* — NOT the status badge.
+> If a status conflict arises, **ROADMAP wins**; the detail document links here.
 >
-> **İş bitince (her session, istisnasız):**
-> 1. İlgili maddeyi ilgili tema altında ✅ yap + **commit hash** + "CANLI" yaz; detayı Completed'a taşı.
-> 2. Deploy edildiyse gerçekten `origin/main`'de mi doğrula (`git branch -r --contains <hash>`).
-> 3. Kod değişikliğini [edit-log-salown]/[edit-log-whitecross] memory'sine ekle.
-> 4. Detay dokümanına (varsa) yalnız *teknik* güncelleme.
+> **When work is done (every session, no exceptions):**
+> 1. Mark the relevant item ✅ under its theme + **commit hash** + write "LIVE"; move the detail to Completed.
+> 2. If deployed, verify it is actually on `origin/main` (`git branch -r --contains <hash>`).
+> 3. Add the code change to the [edit-log-salown]/[edit-log-whitecross] memory.
+> 4. Only a *technical* update to the detail document (if any).
 >
-> **⚠️ Audit dersi (2026-07-16):** bir maddeyi "Done" işaretlemeden önce (a) **migration commit'ini değil, gerçek feature commit'ini** bul (`git log -S --follow`); (b) davranışa dayalı maddede **kod satırı ≠ çalışıyor** — sahadaki gözlemle çelişiyorsa canlı doğrulamadan kapatma (bkz G1 in-app notif). Aksi hâlde belge "geçmiş yolculuğun izini" taşır, proje o noktayı geçmiş görünür.
+> **⚠️ Audit lesson (2026-07-16):** before marking an item "Done", (a) find the **real feature commit, not the migration commit** (`git log -S --follow`); (b) for a behavior-based item, a **line of code ≠ working** — if it conflicts with the field observation, don't close it without live verification (see G1 in-app notif). Otherwise the document carries "traces of the past journey" and the project appears to be past that point.
 
 ---
 
-## 📍 Nerede duruyoruz
+## 📍 Where we stand
 
-**Platform canlı ve gerçek kullanımda; proje "sıfırdan feature" fazını geçti.** Kalan iş çoğunlukla **ölçeklenme, operasyon ve ticari olgunlaşma**: staff/finansal model, ödeme canlıya alma, metrik/kanıt toplama, güvenlik gate'i, teknik borç.
+**The platform is live and in real use; the project is past the "feature from scratch" phase.** The remaining work is mostly **scaling, operations, and commercial maturation**: staff/financial model, taking payments live, metric/evidence collection, security gate, technical debt.
 
-- **2 tenant canlıda** (whitecross · herohairs), hepsi Class A. *(eekurt 2026-07-18 itibarıyla platformu bıraktı — inaktif; veri/rules silinmedi.)*
-- **Gerçek sinyaller:** müşteriler loyalty puanı redeem ediyor · transactional+loyalty mailleri düzenli · website'ten booking düzenli geliyor · parser borusu (H4) organik mailde uçtan uca kanıtlı.
-- **⚠️ Ticari not:** Stripe Connect **tamamen TEST modunda** — hiçbir tenant gerçek para almıyor. "Go LIVE" owner kararı + live keys bekliyor (Payments teması).
+- **2 tenants live** (whitecross · herohairs), all Class A. *(eekurt left the platform as of 2026-07-18 — inactive; data/rules not deleted.)*
+- **Real signals:** customers are redeeming loyalty points · transactional+loyalty emails going out regularly · bookings coming in regularly from the website · the parser pipeline (H4) is proven end-to-end on organic email.
+- **⚠️ Commercial note:** Stripe Connect is **entirely in TEST mode** — no tenant is taking real money. "Go LIVE" awaits an owner decision + live keys (Payments theme).
 
-**Tek gerçek kapı:** Pre-Scale Hardening Gate (Security & Scale teması). Tier 1 ✅ kapandı; tenant #4'ten önce Tier 2 + takip işleri.
+**The one real gate:** Pre-Scale Hardening Gate (Security & Scale theme). Tier 1 ✅ closed; Tier 2 + follow-up work before tenant #4.
 
 ---
 
-## 🎯 Şu an odak
+## 🎯 Current focus
 
-> **🏁 COMPLETION SPRINT (owner kararı 2026-07-20):** vizyon işine (marketplace / billing / hub) geçmeden ÖNCE, roadmap'te *başlanmış ama kapanmamış* her şeyi bitir. Aşağıdaki liste bir **sıralı index + kapanış kapısı** — durum rozeti hâlâ ilgili tema altında yaşar (SSOT), burası sadece "bitmemiş kuyrukları" tek yerde toplar ve sırayı tutar. Bir madde bitince: tema altında ✅ + commit, sonra buradaki kutuyu işaretle. **Sprint bitmeden vizyon temalarına (💡) girme.**
+> **🏁 COMPLETION SPRINT (owner decision 2026-07-20):** BEFORE moving to vision work (marketplace / billing / hub), finish everything on the roadmap that is *started but not closed*. The list below is a **sequential index + closing gate** — the status badge still lives under its theme (SSOT); this is just to gather the "unfinished tails" in one place and keep the order. When an item is done: ✅ + commit under the theme, then check the box here. **Do not enter vision themes (💡) before the sprint is finished.**
 >
-> **🧪 Test edilecekler (kod hazır → owner canlı doğrulaması bekliyor; akışı bloklamaz):**
-> - [ ] **In-app notification (reschedule/cancel) canlı test** — *kod denetimi ✅ 2026-07-20:* boru uçtan uca doğru bağlı (yazma `notifications/index.ts:66` → trigger `index.ts:2056/2095`, gate `ns.customerCancel/Reschedule !== false` = varsayılan AÇIK → bell `NotificationBell.tsx:80`, filtre yok). Reschedule bildirimi staff/customer ayrımı yapmıyor (`index.ts:2094`) → **panelden gerçek (walk-in değil) booking'i reschedule et, zil+🔄 diff çıkmalı.** Çıkarsa ✅ kapanır; çıkmazsa canlı `salownNotifyBookingUpdated` stale → hedefli redeploy.
+> **🧪 To be tested (code ready → awaits owner live verification; does not block the flow):**
+> - [ ] **In-app notification (reschedule/cancel) live test** — *code review ✅ 2026-07-20:* the pipe is wired correctly end-to-end (write `notifications/index.ts:66` → trigger `index.ts:2056/2095`, gate `ns.customerCancel/Reschedule !== false` = default ON → bell `NotificationBell.tsx:80`, no filter). The reschedule notification doesn't distinguish staff/customer (`index.ts:2094`) → **reschedule a real (not walk-in) booking from the panel, the bell + 🔄 diff should appear.** If it appears ✅ closes; if not, the live `salownNotifyBookingUpdated` is stale → targeted redeploy.
 >
-> **A — bir ✅'ü kapatmayı bekleyen açık uçlar (önce; küçük):**
-> - [ ] **A1 stylist cap enforce** — `stylistLimitReached` helper var ama `Barbers.tsx`'te çağrılmıyor. *(Payments teması)*
-> - [ ] **A3 inventory stockQty** — numerik alan + tek `applyStockDelta(soldProducts, sign)` helper + düşük-stok uyarısı. *(Payments teması)*
-> - [ ] **C3 abandoned-cart scheduled** — manuel buton ✅; X-saat sonra scheduled trigger + tek-sefer guard + opt-out. *(Marketing teması)*
+> **A — open ends waiting to close a ✅ (first; small):**
+> - [ ] **A1 stylist cap enforce** — `stylistLimitReached` helper exists but isn't called in `Barbers.tsx`. *(Payments theme)*
+> - [ ] **A3 inventory stockQty** — numeric field + single `applyStockDelta(soldProducts, sign)` helper + low-stock warning. *(Payments theme)*
+> - [ ] **C3 abandoned-cart scheduled** — manual button ✅; X-hours-later scheduled trigger + one-time guard + opt-out. *(Marketing theme)*
 >
-> **B — aktif in-progress (🔄):**
-> - [ ] **I2 Faz 2 parsers dilimi** — 5 parser fn → domain modülü (aşağıdaki eski odak maddesi). *(Tech Debt)*
-> - [ ] **H4 kalanı** — herohairs parse-inbox geçişi + Treatwell ilk mail + whitecross IMAP emekliliği. *(Onboarding teması)*
+> **B — active in-progress (🔄):**
+> - [ ] **I2 Phase 2 parsers slice** — 5 parser fns → domain module (the old focus item below). *(Tech Debt)*
+> - [ ] **H4 remainder** — herohairs parse-inbox migration + Treatwell first mail + whitecross IMAP retirement. *(Onboarding theme)*
 >
-> **C — shipped feature'ların "kalanı":**
-> - [ ] **B2 booking settings** — off-day reschedule davranışı + barber-değişim UI + slot aralığı configurable. *(Booking)*
-> - [ ] **B4 telefon ülke kodu** — tek paylaşılan component (5 giriş noktası, IE +353). *(Booking)*
-> - [ ] **C8 audience scope** — member sızıntısı + server-side guard (`sendCampaignBulk`). *(Marketing)*
-> - [ ] **Marketing Slice 3b** — Revenue SSOT (OverviewPanel vs Reports tek kaynağa). *(Marketing)*
-> - [ ] **S1 + S3 Employment** — passive barber hayalet-maaş + Reports silinen barber istatistiği. *(Employment Model)*
-> - [ ] **G3 unsaved-changes guard** — 6 form (ConfirmDiscard ortak bileşen). *(Tech Debt)*
+> **C — the "remainder" of shipped features:**
+> - [ ] **B2 booking settings** — off-day reschedule behavior + barber-change UI + configurable slot interval. *(Booking)*
+> - [ ] **B4 phone country code** — single shared component (5 entry points, IE +353). *(Booking)*
+> - [ ] **C8 audience scope** — member leak + server-side guard (`sendCampaignBulk`). *(Marketing)*
+> - [ ] **Marketing Slice 3b** — Revenue SSOT (OverviewPanel vs Reports to a single source). *(Marketing)*
+> - [ ] **S1 + S3 Employment** — passive barber ghost-wage + Reports deleted-barber statistic. *(Employment Model)*
+> - [ ] **G3 unsaved-changes guard** — 6 forms (ConfirmDiscard shared component). *(Tech Debt)*
 
-- 🔄 **I2 Faz 2 — functions modülerleştirme** (owner seçimi 2026-07-14). Dilim 1 (askAI + auth guard) ✅ CANLI (`bccd828`). **Sıradaki dilim: parsers** (`salownParseEmails`/`salownInboundEmail`/`salownParseInboxDispatch`/`salownManualImport`/`salownIcalFeed` → domain modüllerine; 5'i de hâlâ `index.ts`'te inline, kod-teyitli). Sonra notifications → marketing; **stripe/bookings EN SON**. Altın kural: export adı+config birebir, saf taşıma, dilim başına tek commit + hedefli deploy. Detay: **Tech Debt** teması.
-- 🔄 **Employment Model Faz C** (aşağıdaki tema) — owner'ın vurguladığı bir sonraki büyük modül.
+- 🔄 **I2 Phase 2 — functions modularization** (owner choice 2026-07-14). Slice 1 (askAI + auth guard) ✅ LIVE (`bccd828`). **Next slice: parsers** (`salownParseEmails`/`salownInboundEmail`/`salownParseInboxDispatch`/`salownManualImport`/`salownIcalFeed` → to domain modules; all 5 still inline in `index.ts`, code-confirmed). Then notifications → marketing; **stripe/bookings LAST**. Golden rule: export name+config exactly matched, pure move, one commit + targeted deploy per slice. Detail: **Tech Debt** theme.
+- 🔄 **Employment Model Phase C** (theme below) — the next big module the owner emphasized.
 
 ---
 
 ## 👥 Employment Model & Staff Management
 
-> **Sıradan bir "Staff" maddesi DEĞİL — salonun finansal modelini temsil ediyor.** Aynı sistemde **maaşlı + komisyonlu + chair-rent (self-employed)** çalışan bir arada yaşıyor; her birinin P&L'e etkisi bambaşka (+ UK'de self-employed≠employee yasal ayrımı). Booksy/Fresha/Treatwell'de "barber eklemek" kolay; asıl problem **employment model yönetmek**. Tasarım: [STAFF_MANAGEMENT_DESIGN.md](STAFF_MANAGEMENT_DESIGN.md). Omurga: `tenants/{tid}/staffComp/{barberId}` + append-only tarih-etkili `history[]` + "passive = comp dönemi kapalı" + salt-türetim.
+> **NOT an ordinary "Staff" item — it represents the salon's financial model.** In the same system, **salaried + commission + chair-rent (self-employed)** staff coexist; each affects P&L completely differently (+ the UK legal distinction self-employed≠employee). "Adding a barber" is easy in Booksy/Fresha/Treatwell; the real problem is **managing the employment model**. Design: [STAFF_MANAGEMENT_DESIGN.md](STAFF_MANAGEMENT_DESIGN.md). Backbone: `tenants/{tid}/staffComp/{barberId}` + append-only date-effective `history[]` + "passive = comp period closed" + pure-derivation.
 
-- ✅ **Lifecycle** — active / leave (tarihli, otomatik döner) / passive / deleted; leave arşivi (`barber.leaves[]`), 5 yüzey tek önceliğe çekildi (override>leave>passive>workingDays), whitecross-site portu dahil. *(detay: Completed › G5)*
-- ✅ **Compensation model UI (Faz B)** — Staff Hub sekmeli drawer (Profile/Availability/Pay/History), PayModelChip, 3-adım CompChangeFlow, wage periyotları hour..year + fiilî-çalışma tahakkuk semantiği, paid-leave toggle, passive=comp-dönem-kapat. Rules deploy (`1474907b`, staffComp=owner+super). *(detay: Completed › S2)*
-- ✅ **Archive / snapshot güvenliği (delik 1)** — ürün satışı + blok `barberName` snapshot'lıyor (`0db230c`); silme yalnız super-admin+owner, güçlü onay modalı, `BARBER_DELETED` audit.
-- 🔵 **Payroll / accrual engine (Faz C)** — wage worked-time accrual (hour..year gün/saat oranı) + paid-leave günleri normal oranla + commission booking-bazlı + chair-rent takvim tahakkuku.
-- 🔵 **Settlement + Finance/Reports entegrasyonu (Faz C)** — M1 migration (partnerConfig→staffComp, dry-run CSV) · Finance staffComp'tan oku + örtük £100 fallback kaldır (parity kanıtıyla) · Balance satırı "Tracked in Finance".
-- 🔵 **S1 delik 2** — Reports "Barbers" sekmesi listeyi yalnız CANLI barber'dan kuruyor (`Reports.tsx:182`) → silinen/pasif barber'ın geçmiş istatistik satırı yok oluyor. Fix: geçmiş booking isimlerini "Arşiv/eski personel" olarak dahil et. *(kod-teyitli açık 2026-07-16)*
-- 🔵 **S3 Finance/Occupancy bug'ları** — (a) passive barber Finance'ta hâlâ günlük maaş tahakkuk ediyor (`Finance.tsx:265` leave var, passive filtresi YOK); (b) izindeki barber occupancy kapasite paydasında sayılıyor (`OccupancyPanel.tsx:54` `barberWorksOn` leave-check'siz). İkisi de Faz C comp motoruyla temiz çözülür. *(kod-teyitli açık 2026-07-16)*
-- 🔵 **§7 emniyet fix'leri (ayrı mini-koşu)** — occupancy resolver, legacy active-okuyucular→barberStatusOf, Reports arşiv. **Keep Scope Narrow.**
-- 🔵 **G5 adım 6 kalanı** — staff-app geçişi (diğer cihaz koordinasyonu); per-barber Staff Hub UI ✅ (yukarıda). §8'de 4 açık owner sorusu (kod öncesi cevaplanmalı).
+- ✅ **Lifecycle** — active / leave (dated, returns automatically) / passive / deleted; leave archive (`barber.leaves[]`), 5 surfaces pulled to a single precedence (override>leave>passive>workingDays), including the whitecross-site port. *(detail: Completed › G5)*
+- ✅ **Compensation model UI (Phase B)** — Staff Hub tabbed drawer (Profile/Availability/Pay/History), PayModelChip, 3-step CompChangeFlow, wage periods hour..year + actual-work accrual semantics, paid-leave toggle, passive=close-comp-period. Rules deploy (`1474907b`, staffComp=owner+super). *(detail: Completed › S2)*
+- ✅ **Archive / snapshot safety (hole 1)** — product sale + block snapshot `barberName` (`0db230c`); deletion is super-admin+owner only, strong confirmation modal, `BARBER_DELETED` audit.
+- 🔵 **Payroll / accrual engine (Phase C)** — wage worked-time accrual (hour..year day/hour rate) + paid-leave days at normal rate + commission booking-based + chair-rent calendar accrual.
+- 🔵 **Settlement + Finance/Reports integration (Phase C)** — M1 migration (partnerConfig→staffComp, dry-run CSV) · Finance reads from staffComp + remove implicit £100 fallback (with parity proof) · Balance line "Tracked in Finance".
+- 🔵 **S1 hole 2** — the Reports "Barbers" tab builds the list only from LIVE barbers (`Reports.tsx:182`) → a deleted/passive barber's historical statistic row disappears. Fix: include historical booking names as "Archive/former staff". *(code-confirmed open 2026-07-16)*
+- 🔵 **S3 Finance/Occupancy bugs** — (a) a passive barber still accrues a daily wage in Finance (`Finance.tsx:265` has leave, NO passive filter); (b) a barber on leave is counted in the occupancy capacity denominator (`OccupancyPanel.tsx:54` `barberWorksOn` without a leave-check). Both cleanly resolved by the Phase C comp engine. *(code-confirmed open 2026-07-16)*
+- 🔵 **§7 safety fixes (separate mini-run)** — occupancy resolver, legacy active-readers→barberStatusOf, Reports archive. **Keep Scope Narrow.**
+- 🔵 **G5 step 6 remainder** — staff-app migration (coordination with the other device); per-barber Staff Hub UI ✅ (above). §8 has 4 open owner questions (must be answered before code).
 
 ---
 
 ## 🔒 Security, Scale & Pre-Scale Gate
 
-> **Zihniyet:** "whitecross pilot, ne çalışıyorsa" → 1000 müşteride bu kararlar **herkesi** vurur. Roadmap'i gate oku. Detay: memory `project-salown-prescale-hardening`, [SECURITY.md](SECURITY.md), [ARCHITECTURE_REVIEW_2026-07-02.md](ARCHITECTURE_REVIEW_2026-07-02.md).
+> **Mindset:** "whitecross pilot, whatever works" → at 1000 customers these decisions hit **everyone**. Read the roadmap as a gate. Detail: memory `project-salown-prescale-hardening`, [SECURITY.md](SECURITY.md), [ARCHITECTURE_REVIEW_2026-07-02.md](ARCHITECTURE_REVIEW_2026-07-02.md).
 
-**Tier 1 gate — ✅ KAPANDI** (doğrulandı 2026-07-02): Gate-G1 rol-claim backfill (`0f8de7e`) · Gate-G2 bookings read tenant-scoped (`851efeb`) · Gate-G3 public-create financial forge guard (`851efeb`) · Gate-G4 staff-doc catch-all→false (`0f8de7e`). Test 49/49. + Takip: T-a1 silme=super-admin (`7e95d40`) · T-a2 admin rol-bazlı (`643c8ce`) · T-d self-escalate kapandı (`643c8ce`). *(detay: Completed › Security)*
-- 🔄 **Gate-G5 blast radius** — tek global ruleset; disiplin var (API'den çek, en son deploy, rollback hazır), yapısal çözüm yok. **Süregelen.**
+**Tier 1 gate — ✅ CLOSED** (verified 2026-07-02): Gate-G1 role-claim backfill (`0f8de7e`) · Gate-G2 bookings read tenant-scoped (`851efeb`) · Gate-G3 public-create financial forge guard (`851efeb`) · Gate-G4 staff-doc catch-all→false (`0f8de7e`). Test 49/49. + Follow-up: T-a1 delete=super-admin (`7e95d40`) · T-a2 admin role-based (`643c8ce`) · T-d self-escalate closed (`643c8ce`). *(detail: Completed › Security)*
+- 🔄 **Gate-G5 blast radius** — single global ruleset; discipline exists (pull from API, latest deploy, rollback ready), no structural solution. **Ongoing.**
 
-**Delete politikası — ✅ CANLI (E1b):** delete = `isSuperAdmin() || isOwner(tenantId)`, 10 koleksiyon (barbers dahil, güçlü onay modallı); owner yalnız kendi tenant'ında; staff/finance/settings/merge super-only (`8670051`+`2af303c`, test 83/83). *(detay: Completed › Security)*
+**Delete policy — ✅ LIVE (E1b):** delete = `isSuperAdmin() || isOwner(tenantId)`, 10 collections (including barbers, with a strong confirmation modal); owner only within their own tenant; staff/finance/settings/merge super-only (`8670051`+`2af303c`, test 83/83). *(detail: Completed › Security)*
 
-**🔑 P0 — Shared secret namespacing (INCIDENTS 2026-07-21'den):** *Kurumsal ilke: secret'lar **application boundary**'ye aittir, tenant boundary'ye değil; hiçbir secret adı iki farklı uygulama tarafından PAYLAŞILMAMALI.* Bu bir "Stripe bug'ı" değil, shared-infrastructure naming problemi.
-- 🔵 **Split `STRIPE_SECRET_KEY`** → `WC_STRIPE_SECRET_KEY` + `SALOWN_STRIPE_SECRET_KEY` (+ gerekirse `ADMIN_…`). Whitecross ödeme fn'leri (`createCheckoutSession`/`stripeWebhook`/`checkBookingPayment`/`createMobileCheckout`) yeni isim okusun + redeploy + `cs_live` smoke. ~1-2 saat. **Neden P0:** paylaşılan `STRIPE_SECRET_KEY` yüzünden Salown Connect sandbox kurulumu whitecross **canlı** ödemesini ezdi (2 gerçek müşteri kaybı). Bugün v4 destroyed + canlı geri yüklendi AMA isim hâlâ paylaşıldığı için `secrets:set STRIPE_SECRET_KEY` tekrar çalışırsa **incident tekrar eder.**
-- 🔵 **Namespace all shared secrets before tenant #4** — aynı prensip tüm paylaşılan credential'lar için: `BREVO_API_KEY`→`SALOWN_BREVO_API_KEY`, Telegram/OpenAI/Google OAuth vb. app-prefix. Küçük ama kalıcı; ölçekte büyük riski kaldırır. *(Not: Salown TENANT'ları zaten secret tutmaz — sadece `acct_`, Connect modeli; bu madde uygulama-sınırı içindir, tenant-sınırı değil.)*
+**🔑 P0 — Shared secret namespacing (from INCIDENTS 2026-07-21):** *Corporate principle: secrets belong to the **application boundary**, not the tenant boundary; no secret name should be SHARED by two different applications.* This is not a "Stripe bug" but a shared-infrastructure naming problem.
+- 🔵 **Split `STRIPE_SECRET_KEY`** → `WC_STRIPE_SECRET_KEY` + `SALOWN_STRIPE_SECRET_KEY` (+ `ADMIN_…` if needed). Whitecross payment fns (`createCheckoutSession`/`stripeWebhook`/`checkBookingPayment`/`createMobileCheckout`) should read the new name + redeploy + `cs_live` smoke. ~1-2 hours. **Why P0:** because of the shared `STRIPE_SECRET_KEY`, the salOWN Connect sandbox setup overwrote whitecross's **live** payment (2 real customers lost). Today v4 was destroyed + live restored BUT since the name is still shared, if `secrets:set STRIPE_SECRET_KEY` runs again the **incident recurs.**
+- 🔵 **Namespace all shared secrets before tenant #4** — the same principle for all shared credentials: `BREVO_API_KEY`→`SALOWN_BREVO_API_KEY`, Telegram/OpenAI/Google OAuth etc. app-prefix. Small but permanent; removes a big risk at scale. *(Note: salOWN TENANTS already hold no secret — only `acct_`, the Connect model; this item is within the application-boundary, not the tenant-boundary.)*
 
-**Tier 2 — ölçekte patlar, onboarding'i bloklamaz:**
-- 🔵 **read:true yüzeyi → root doc kilidi** — asıl PII (`clients`/`products`) zaten auth-only; kalan meşru-public (`services`/`barbers`/`gallery`/…) + `tenants/{id}` root doc world-readable. **Tek iş:** `BookingPage.tsx:386` ham root yerine `public/booking` projeksiyonundan okusun (Faz 1 projeksiyon trigger + backfill ✅ `2db8721`; Faz 2 oku+fallback; Faz 3 rules `read:true`→`isTenantAny` EN SON). *(kod-teyitli: BookingPage hâlâ ham root okuyor 2026-07-16)*
-- 🔵 **B3 `salownCreateBooking` transactional** — bkz Booking teması (double-booking race).
-- 🔵 **A1 plan enforcement kalanı** — bkz Payments teması (stylist cap + hard-gate).
+**Tier 2 — blows up at scale, does not block onboarding:**
+- 🔵 **read:true surface → root doc lock** — the real PII (`clients`/`products`) is already auth-only; the remaining legitimately-public (`services`/`barbers`/`gallery`/…) + `tenants/{id}` root doc is world-readable. **The one task:** `BookingPage.tsx:386` should read from the `public/booking` projection instead of the raw root (Phase 1 projection trigger + backfill ✅ `2db8721`; Phase 2 read+fallback; Phase 3 rules `read:true`→`isTenantAny` LAST). *(code-confirmed: BookingPage still reads the raw root 2026-07-16)*
+- 🔵 **B3 `salownCreateBooking` transactional** — see Booking theme (double-booking race).
+- 🔵 **A1 plan enforcement remainder** — see Payments theme (stylist cap + hard-gate).
 
-**Tier 3 — tenant-local, güvenli (contained):** Finance/partnerConfig · Muhamed wage · workingDays. *(review: "en büyük risk değil, contained"; 🔴 değil.)*
+**Tier 3 — tenant-local, safe (contained):** Finance/partnerConfig · Muhamed wage · workingDays. *(review: "not the biggest risk, contained"; not 🔴.)*
 
-**Takip işleri (Tier 1'den kalan):**
-- 🔵 **T-b app-password → Secret Manager** — `tenants/{id}/settings/emailConfig.appPassword` hâlâ düz metin, client-okunabilir (`index.ts:315` IMAP oradan okuyor). ⚠️ **H4'e bağlı** — parse-inbox modeli yerleşince app-password komple kalkar → T-b **buharlaşır**; H4 kararı beklenmeli. *(kod-teyitli: hâlâ plaintext 2026-07-16)*
-- 🔵 **T-c auth user temizliği** — KORU `durvezek@`/`aerulas@`/`auzun9499@`; gerisi dök→CSV onay→sil. Körlemesine silme YOK.
-- 🔵 **E1 Phase 2 scale** — owner kendi staff/barber'ını yönetsin (staff-atama hâlâ super-only) · super-admin panelden cross-tenant izin yönetimi · nihai: delete butonlarını tamamen kaldır · Staff App delete parity. ⚠️ review: delete-bottleneck 1000'de değil **~3. salonda** darboğaz.
-- 🔵 **I3 reporting pre-aggregation** — `Reports.tsx` client-side aggregation yapıyor → ~100 salonda tarayıcıda çöker (1000'e kalmaz). Yön: `tenants/{id}/stats/{period}` pre-agg doc (trigger/job). *(kod-teyitli açık 2026-07-16)*
-- 🔵 **I4 audit trail Faz B/C** — Faz A ✅ (staff/client, `2ab0328`). Faz B: katalog/fiyat + settings + discount codes (kod-teyitli: Services/Products/Settings/DiscountCodes `logAudit` çağırmıyor). Faz C: staff-user fn'leri, super-admin, TTL, viewer filtreleri, append-only rules. Tasarım: [AUDIT_TRAIL_PLAN.md](AUDIT_TRAIL_PLAN.md).
-- 🔵 Tek Firebase projesi quota/blast radius (ölçek).
+**Follow-up work (remaining from Tier 1):**
+- 🔵 **T-b app-password → Secret Manager** — `tenants/{id}/settings/emailConfig.appPassword` is still plaintext, client-readable (`index.ts:315` IMAP reads from there). ⚠️ **depends on H4** — once the parse-inbox model settles, the app-password is removed entirely → T-b **evaporates**; must wait for the H4 decision. *(code-confirmed: still plaintext 2026-07-16)*
+- 🔵 **T-c auth user cleanup** — KEEP `durvezek@`/`aerulas@`/`auzun9499@`; dump the rest→CSV confirm→delete. NO blind deletion.
+- 🔵 **E1 Phase 2 scale** — let the owner manage their own staff/barbers (staff-assignment still super-only) · cross-tenant permission management from the super-admin panel · final: remove delete buttons entirely · Staff App delete parity. ⚠️ review: the delete-bottleneck is a chokepoint not at 1000 but at **~the 3rd salon**.
+- 🔵 **I3 reporting pre-aggregation** — `Reports.tsx` does client-side aggregation → crashes in the browser at ~100 salons (won't last to 1000). Direction: `tenants/{id}/stats/{period}` pre-agg doc (trigger/job). *(code-confirmed open 2026-07-16)*
+- 🔵 **I4 audit trail Phase B/C** — Phase A ✅ (staff/client, `2ab0328`). Phase B: catalog/price + settings + discount codes (code-confirmed: Services/Products/Settings/DiscountCodes don't call `logAudit`). Phase C: staff-user fns, super-admin, TTL, viewer filters, append-only rules. Design: [AUDIT_TRAIL_PLAN.md](AUDIT_TRAIL_PLAN.md).
+- 🔵 Single Firebase project quota/blast radius (scale).
 
 ---
 
 ## 💳 Payments (Stripe Connect)
 
-> **⚠️⚠️ TAMAMEN TEST MODUNDA — GERÇEK PARA YOK.** Tüm modlar Stripe **sandbox** ("Turquoise Swing") ile test edildi; `features.stripe`/`websiteDepositsEnabled` canlı-modda AÇILMADI. Yön: Standard + Direct charge, sabit £ deposit, per-tenant policy. Plan: [STRIPE_CONNECT_PLAN.md](STRIPE_CONNECT_PLAN.md).
+> **⚠️⚠️ ENTIRELY IN TEST MODE — NO REAL MONEY.** All modes were tested with the Stripe **sandbox** ("Turquoise Swing"); `features.stripe`/`websiteDepositsEnabled` were NOT turned on in live mode. Direction: Standard + Direct charge, fixed £ deposit, per-tenant policy. Plan: [STRIPE_CONNECT_PLAN.md](STRIPE_CONNECT_PLAN.md).
 
-- ✅ **A2 Connect — TEST modunda uçtan uca doğrulandı (2026-07-04):** Faz 0 onboarding (`salownConnect*`, tenant secret HİÇ tutulmaz) · Faz 1 Checkout (`salownCreateCheckoutSession` + paralel `salownConnectWebhook`, `863e3db`) · UI Settings→Integrations "Online payments" kartı (`8747fea`) · Faz 2 policy (paymentMode + defaultDepositAmount) · Faz 3 refund + configurable windows (`e3221cd`). Owner tüm modları test etti (deposit/full/optional/pay-at-venue/off). *(detay: Completed › Payments)*
-- ⏸ **Go LIVE (gerçek para)** — kod tarafı HAZIR (2026-07-17, `138e8d7`): mode-mismatch guard (`salownCreateCheckoutSession` live-key altında test `acct_`'yi net "reconnect" hatasına çevirir; `salownConnectStatus` `modeMismatch` flag'i) + Settings reconnect banner + adım-adım **Go-Live Runbook** ([STRIPE_CONNECT_PLAN.md](STRIPE_CONNECT_PLAN.md)). Kod key-agnostic → test→live = secret-swap + hedefli functions deploy (tek blok). **Tek blokör = owner'ın live keys'i** (`sk_live_`/live `ca_`/live `whsec_`). İlk canlı deneme whitecross online profili; sonra komisyon aktivasyonu (`application_fee` %0 kablolu) + success'e refund testi. **Waiting (live keys).**
-- 🔵 **Premium deposit rules (Booksy modeli) — design KESİN, build bekliyor** *(owner 2026-07-16)* — kural-bazlı: N tane deposit kuralı (`%/£` + tutar + `mode:deposit/full`) → istenen servislere atanır (`depositRules` koleksiyonu, world-readable; servis→kural çözümleme booking anında; atanmayan=deposit yok). **Kanal ayrımı:** premium custom site (whitecross-site) vs salown-hosted online-profil **bağımsız** master switch; depositRules paylaşılır. Group=kişi-başı. Server=tutar otoritesi (client'a güvenme, güvenlik fix'i). Köprü ✅ (`public/booking` `2db8721`). **Build fazları:** F1 depositRules + Settings "Deposits" UI (Booksy-benzeri, CANLI RİSK YOK) → F2 whitecross-site wiring (⚠️ **canlı-gelir-yolu, owner test-booking şart**) → F3 salown-hosted'a genişlet. Açık: premium gating (Pro+?). Spec: [STRIPE_CONNECT_PLAN.md](STRIPE_CONNECT_PLAN.md) §G.
-- 🔵 **A1 stylist cap (plan enforcement Faz 4)** — plan enforcement büyük ölçüde ✅ (planLimits config `0a31141` + super-admin editör `e2cd4b4` + FeatureLock `8189df4` + usage nudge `2723220`, hepsi SOFT+pilot muaf). Kalan: `Barbers.tsx`'te `stylistLimitReached` helper VAR ama çağrılmıyor → cap enforce edilmiyor (kod-teyitli); + hard-gate kararı (para alımı başlayınca soft→hard).
-- 🔵 **A3 product inventory / stok** — temel ✅ (`soldProducts` SSOT, `84635ed`+`b5cebac`). Kalan: numerik `stockQty` alanı (şu an sadece `inStock` boolean) + tek `applyStockDelta(soldProducts, sign)` helper (checkout+createProductSale ortak) + geri-alma diff + `productId` garanti + düşük-stok uyarısı. *(kod-teyitli: stockQty yok 2026-07-16)*
-- 🧹 **Orphan cleanup** — `havuz-44f70`/us-central1'de 27 legacy fonksiyon (migration'dan, kodda yok). Blanket `deploy --only functions` bunları silmeyi önerir → bilinçli ayrı iş; eski endpoint çağrılmıyor mu doğrula.
-- 🔵 **Whitecross Stripe checkout markalama** (owner istedi) — Seviye 1 Dashboard branding (owner, kod yok) · Seviye 2 küçük kod (whitecross-site `createCheckoutSession`: `product_data.images`+`custom_text`+`locale:'en-GB'`) · Seviye 3 embedded Elements → Phase 5'e ertelendi.
+- ✅ **A2 Connect — verified end-to-end in TEST mode (2026-07-04):** Phase 0 onboarding (`salownConnect*`, tenant secret NEVER stored) · Phase 1 Checkout (`salownCreateCheckoutSession` + parallel `salownConnectWebhook`, `863e3db`) · UI Settings→Integrations "Online payments" card (`8747fea`) · Phase 2 policy (paymentMode + defaultDepositAmount) · Phase 3 refund + configurable windows (`e3221cd`). Owner tested all modes (deposit/full/optional/pay-at-venue/off). *(detail: Completed › Payments)*
+- ⏸ **Go LIVE (real money)** — the code side is READY (2026-07-17, `138e8d7`): mode-mismatch guard (`salownCreateCheckoutSession` under a live key turns a test `acct_` into a clear "reconnect" error; `salownConnectStatus` `modeMismatch` flag) + Settings reconnect banner + step-by-step **Go-Live Runbook** ([STRIPE_CONNECT_PLAN.md](STRIPE_CONNECT_PLAN.md)). The code is key-agnostic → test→live = secret-swap + targeted functions deploy (single block). **The only blocker = the owner's live keys** (`sk_live_`/live `ca_`/live `whsec_`). First live attempt is whitecross's online profile; then commission activation (`application_fee` wired at 0%) + a refund test on success. **Waiting (live keys).**
+- 🔵 **Premium deposit rules (Booksy model) — design FINAL, build pending** *(owner 2026-07-16)* — rule-based: N deposit rules (`%/£` + amount + `mode:deposit/full`) → assigned to desired services (`depositRules` collection, world-readable; service→rule resolution at booking time; unassigned=no deposit). **Channel split:** premium custom site (whitecross-site) vs salown-hosted online-profile have **independent** master switches; depositRules is shared. Group=per-person. Server=amount authority (don't trust the client, a security fix). Bridge ✅ (`public/booking` `2db8721`). **Build phases:** F1 depositRules + Settings "Deposits" UI (Booksy-like, NO LIVE RISK) → F2 whitecross-site wiring (⚠️ **live-revenue path, owner test-booking required**) → F3 extend to salown-hosted. Open: premium gating (Pro+?). Spec: [STRIPE_CONNECT_PLAN.md](STRIPE_CONNECT_PLAN.md) §G.
+- 🔵 **A1 stylist cap (plan enforcement Phase 4)** — plan enforcement largely ✅ (planLimits config `0a31141` + super-admin editor `e2cd4b4` + FeatureLock `8189df4` + usage nudge `2723220`, all SOFT+pilot exempt). Remaining: the `stylistLimitReached` helper EXISTS in `Barbers.tsx` but isn't called → cap not enforced (code-confirmed); + hard-gate decision (soft→hard once money-taking starts).
+- 🔵 **A3 product inventory / stock** — basics ✅ (`soldProducts` SSOT, `84635ed`+`b5cebac`). Remaining: numeric `stockQty` field (currently only `inStock` boolean) + single `applyStockDelta(soldProducts, sign)` helper (shared by checkout+createProductSale) + undo diff + `productId` guarantee + low-stock warning. *(code-confirmed: no stockQty 2026-07-16)*
+- 🧹 **Orphan cleanup** — 27 legacy functions in `havuz-44f70`/us-central1 (from the migration, not in code). A blanket `deploy --only functions` proposes to delete them → deliberate separate task; verify the old endpoints aren't being called.
+- 🔵 **Whitecross Stripe checkout branding** (owner requested) — Level 1 Dashboard branding (owner, no code) · Level 2 small code (whitecross-site `createCheckoutSession`: `product_data.images`+`custom_text`+`locale:'en-GB'`) · Level 3 embedded Elements → deferred to Phase 5.
 
 ---
 
 ## 💰 Monetization & Self-Serve Upgrade
 
-> **Vizyon:** tier'ı bugün **yalnız super-admin** flag'liyor; tenant kendi **Settings**'inden plan
-> yükseltebilmeli ("Anthropic gibi hesap-içi upgrade"). Tier motoru (limit/feature çözümleme) hazır
-> ve doğru (`planLimits.ts` tek kaynak, SOFT enforcement); eksik = **(a)** hesap-içi talep yüzeyi,
-> **(b)** approve queue, **(c)** ileride gerçek tahsilat borusu. ⚠️ salOWN tenant'tan para **çekemiyor**
-> (Stripe yalnız Connect/deposit + TEST modu; **abonelik borusu YOK**). Tam tasarım: [TIERS_AND_UPGRADE.md](TIERS_AND_UPGRADE.md).
+> **Vision:** today the tier is flagged **only by super-admin**; a tenant should be able to
+> upgrade its own plan from **Settings** ("in-account upgrade like Anthropic"). The tier engine (limit/feature resolution) is ready
+> and correct (`planLimits.ts` single source, SOFT enforcement); what's missing = **(a)** the in-account request surface,
+> **(b)** the approve queue, **(c)** later a real billing pipeline. ⚠️ salOWN **cannot** take money from a tenant
+> (Stripe is only Connect/deposit + TEST mode; there is **NO subscription pipeline**). Full design: [TIERS_AND_UPGRADE.md](TIERS_AND_UPGRADE.md).
 
-- 🔵 **M1 hesap-içi upgrade (Faz 1 — request→approve, tahsilatsız)** — Settings'e **"Plan" sekmesi**
-  (4 tier kartı + karşılaştırma + mevcut usage bar taşınır) + `requestPlanChange`/`decidePlanChange`
-  callable'ları + **super-admin "Upgrade requests" queue** (`collectionGroup('planRequests')`). Akış:
-  tenant "Upgrade" → `tenants/{id}/planRequests` doc → super-admin onaylar → flag flip + tenant e-posta.
-  UX self-serve *hissettirir*, backend queue. Canlı-gelir riski YOK, enforcement SOFT kalır. Ayrı odak-günü işi.
-- 🔵 **M2 Pro+ = premium website + SEO paketi** — top tier "Let's talk" kalır; `PlanFeatureFlags`'a
-  **`premiumWebsite: boolean`** eklenir (proplus=true), whitecross paketini temsil eder: hosted premium
-  site + custom domain + SEO (schema/meta/perf) + white-label email + öncelikli destek. Premium site
-  teslimi kod değil operasyon → [Premium Themes F1](ROADMAP.md#-premium-themes-gelir-kalemi) ile aynı aile.
-- 💡 **M3 gerçek self-serve Stripe *Billing* (Faz 2 — VİZYON)** — ⚠️ Connect'ten **AYRI** boru
-  (Connect=müşteri deposit'i; Billing=**salOWN'un tenant'ı abonelikle ücretlendirmesi**). Bileşenler:
+- 🔵 **M1 in-account upgrade (Phase 1 — request→approve, no charging)** — a **"Plan" tab** in Settings
+  (4 tier cards + comparison + the current usage bar moved in) + `requestPlanChange`/`decidePlanChange`
+  callables + a **super-admin "Upgrade requests" queue** (`collectionGroup('planRequests')`). Flow:
+  tenant "Upgrade" → `tenants/{id}/planRequests` doc → super-admin approves → flag flip + tenant email.
+  UX *feels* self-serve, backend is a queue. NO live-revenue risk, enforcement stays SOFT. A separate focus-day task.
+- 🔵 **M2 Pro+ = premium website + SEO package** — the top tier stays "Let's talk"; add
+  **`premiumWebsite: boolean`** to `PlanFeatureFlags` (proplus=true), representing the whitecross package: hosted premium
+  site + custom domain + SEO (schema/meta/perf) + white-label email + priority support. Premium site
+  delivery is operations, not code → same family as [Premium Themes F1](ROADMAP.md#-premium-themes-gelir-kalemi).
+- 💡 **M3 real self-serve Stripe *Billing* (Phase 2 — VISION)** — ⚠️ a **SEPARATE** pipe from Connect
+  (Connect=customer deposit; Billing=**salOWN charging the tenant via subscription**). Components:
   Stripe Products/Prices (Starter/Pro Price ID) · `createBillingCheckout` (subscription Checkout) ·
-  `billingWebhook` (lifecycle→`plan/status`, plan'in yeni otoritesi) · `createBillingPortalSession`
-  (Stripe Customer Portal = "Manage billing"). Billing alanları `settings/billing` subdoc'a (root=public,
-  sır koyma). Ön koşul: owner "para alıyoruz" kararı + salOWN platform-merchant Stripe + live keys.
-- 💡 **M4 olgunlaşma (Faz 3)** — proration (Stripe default) · invoice/receipt e-posta · dunning
-  (`payment_failed`→retry→`past_due`→grace→downgrade) · enforcement **soft→hard** (A1 stylist cap tetiği,
-  para alımı başlayınca). Bugün DEĞİL.
-- 💡 **M5 public pricing sayfası (Future)** — landing bugün fiyat göstermiyor (vetted "Request a demo",
-  bilinçli). Self-serve tahsilat (M3) canlı + tier'lar stabil olunca `/pricing` açılır (ölü `.pricing-grid`
-  CSS'i zaten `index.html:156` var); self-signup korunur (memory `keep-self-onboarding-active`). *(H3 "Billing sayfası placeholder" bu tema altına taşındı.)*
+  `billingWebhook` (lifecycle→`plan/status`, the new authority for plan) · `createBillingPortalSession`
+  (Stripe Customer Portal = "Manage billing"). Billing fields go in the `settings/billing` subdoc (root=public,
+  keep no secrets). Precondition: owner "we're taking money" decision + salOWN platform-merchant Stripe + live keys.
+- 💡 **M4 maturation (Phase 3)** — proration (Stripe default) · invoice/receipt email · dunning
+  (`payment_failed`→retry→`past_due`→grace→downgrade) · enforcement **soft→hard** (A1 stylist cap trigger,
+  once money-taking starts). NOT today.
+- 💡 **M5 public pricing page (Future)** — the landing shows no price today (vetted "Request a demo",
+  deliberate). Once self-serve billing (M3) is live + tiers are stable, `/pricing` opens (the dead `.pricing-grid`
+  CSS already exists `index.html:156`); self-signup is preserved (memory `keep-self-onboarding-active`). *(H3 "Billing page placeholder" moved under this theme.)*
 
 ---
 
 ## 📊 Evidence & Metrics
 
-> **Amaç:** her önemli üretim iddiası veriyle desteklensin — "çalıştığını düşünüyorum" değil "işte N aylık üretim verisi". **Operasyonel altyapı, pazarlama değil** (ağır stack YOK). ⏱ Platform+Reliability katmanları toplanmaya başlamadıkça BİRİKMEZ — bugün ölçülmeyen gün kayıp; bu yüzden EV1/EV2 küçük ama erken.
+> **Goal:** every important production claim should be backed by data — not "I think it works" but "here is N months of production data". **Operational infrastructure, not marketing** (NO heavy stack). ⏱ Nothing ACCUMULATES until the Platform+Reliability layers start being collected — a day unmeasured today is a lost day; that's why EV1/EV2 are small but early.
 
-- 🔵 **EV1 parser telemetri** ⏱ — her inbound email'in parse sonucu Firestore'a kalıcı yazılsın (başarı/başarısızlık+sebep, dedup, gecikme receivedAt→parsedAt). Şu an başarısızlıklar yalnız Cloud Logging'de (~30 gün) → tarih birikmiyor. Not: `recordParserRun` günlük AGGREGATE yazıyor (I1 canary), EV1 per-email FARKLI. Küçük iş, I2'yi beklemez. *(kod-teyitli: per-email telemetri yok 2026-07-16)*
-- 🔵 **EV2 health-check + uptime** ⏱ — scheduled fn kritik yüzeyleri yoklar (booking-create yolu, parser inbox, hosting 200), günlük doc'a yazar → aylık availability % kendiliğinden oluşur. INCIDENTS.md'nin sayısal kardeşi. *(kod-teyitli: health-check job yok 2026-07-16)*
-- 🔵 **EV3 auto-generated METRICS.md** — script Firestore'dan business metrikleri (booking hacmi, repeat oranı, loyalty redemption, kaynak dağılımı, aktif tenant, avg spend) + EV1/EV2 birikimini snapshot'la üretir; elle sayı çürür. **Sıra: I2 Faz 2 + Tier 2 sonrası.**
-- 🔵 **C7 otomasyon sonuç metrikleri** — her otomasyon kartı ("Birthday Treat", "Loyalty Boost", ileride C3) kendi sonucunu KARTIN ÜZERİNDE göstersin: **Sent / Opened / Booked (+£)**. *(kod-teyitli: kartlar en fazla "Sent" gösteriyor `Marketing.tsx:958`, Opened/Booked yok.)* İlke: yeni otomasyon Sent/Opened metriği olmadan "bitti" sayılmaz. Gate: scheduling cron (C3) + open-tracking ile aynı Faz-2 dalgası.
+- 🔵 **EV1 parser telemetry** ⏱ — the parse result of every inbound email should be written persistently to Firestore (success/failure+reason, dedup, latency receivedAt→parsedAt). Currently failures are only in Cloud Logging (~30 days) → history doesn't accumulate. Note: `recordParserRun` writes a daily AGGREGATE (I1 canary), EV1 per-email is DIFFERENT. Small task, doesn't wait for I2. *(code-confirmed: no per-email telemetry 2026-07-16)*
+- 🔵 **EV2 health-check + uptime** ⏱ — a scheduled fn probes the critical surfaces (booking-create path, parser inbox, hosting 200), writes to a daily doc → a monthly availability % forms by itself. The numeric sibling of INCIDENTS.md. *(code-confirmed: no health-check job 2026-07-16)*
+- 🔵 **EV3 auto-generated METRICS.md** — a script produces a snapshot of business metrics from Firestore (booking volume, repeat rate, loyalty redemption, source distribution, active tenants, avg spend) + the EV1/EV2 accumulation; hand-entered numbers rot. **Order: after I2 Phase 2 + Tier 2.**
+- 🔵 **C7 automation outcome metrics** — each automation card ("Birthday Treat", "Loyalty Boost", later C3) should show its own outcome ON THE CARD: **Sent / Opened / Booked (+£)**. *(code-confirmed: cards show at most "Sent" `Marketing.tsx:958`, no Opened/Booked.)* Principle: a new automation isn't "done" without a Sent/Opened metric. Gate: same Phase-2 wave as the scheduling cron (C3) + open-tracking.
 
 ---
 
 ## 🎫 Onboarding, Super-Admin & Parser Pipeline
 
-- ✅ **H1 early-access intake** (`a2689f9`) + **H2 davetiyeli onboarding** (demo funnel + Applications approve→provision, `ae495a1`/`57e3959`). Self-signup korundu (butonlar gizli, `/signup`+`provisionTenant` çalışıyor — memory `keep-self-onboarding-active`). *(detay: Completed › Onboarding)*
-- ✅ **H3a analytics doğruluk** (`fb92c8b`/`2e04a66`) · **H3b owner login görünürlüğü** (`adminGetOwnerActivity`, `f4aee2b`) · **H3c parse-inbox address yönetimi UI** (`a31538f`).
-- 🔄 **H4 parser mail girişi — parse-inbox hybrid + token izolasyon** · **PİLOT TAM CANLI** (2026-07-13/14): forwarding kuruldu, tam yaşam-döngüsü tatbikatı GEÇTİ (create/reschedule/chain/cancel × iki boru, sıfır çift kayıt), ilk organik müşteri maili + Fresha borusu canlıda kanıtlı. İzolasyon: token→tenant lookup, fail-closed (cross-tenant misroute yapısal imkânsız). *(detay: Completed › Onboarding)*
-  - 🔵 **Kalan:** herohairs parse-inbox geçişi (token rotate ✅ `herohairs_2e1355…`, forwarding yeni adresle kurulacak) · Treatwell borusu ilk mail gözlemi · whitecross IMAP emekliliği (owner istekli — 5dk cron yükü; app-password kaldır, feature flag'lere DOKUNMA → **T-b buharlaşır**).
-  - 🧹 **Ev işi:** tatbikatın UNSEEN test mailleri IMAP cron'unu 5dk'da bir aynı "not found" üçlüsünü yeniden loglatıyor (zararsız ama gürültü) → owner okundu işaretlesin YA DA parser'a terminal not-found mark-seen (out-of-order retry'ı bozmadan).
-- 🔵 **H3 kalanı** — cross-tenant user/izin yönetimi (=E1) · tenant metrik derinleştirme. *(Billing sayfası → **Monetization & Self-Serve Upgrade** temasına taşındı: M1/M5.)*
+- ✅ **H1 early-access intake** (`a2689f9`) + **H2 invite-based onboarding** (demo funnel + Applications approve→provision, `ae495a1`/`57e3959`). Self-signup preserved (buttons hidden, `/signup`+`provisionTenant` works — memory `keep-self-onboarding-active`). *(detail: Completed › Onboarding)*
+- ✅ **H3a analytics accuracy** (`fb92c8b`/`2e04a66`) · **H3b owner login visibility** (`adminGetOwnerActivity`, `f4aee2b`) · **H3c parse-inbox address management UI** (`a31538f`).
+- 🔄 **H4 parser email intake — parse-inbox hybrid + token isolation** · **PILOT FULLY LIVE** (2026-07-13/14): forwarding set up, full lifecycle drill PASSED (create/reschedule/chain/cancel × two pipes, zero duplicate records), first organic customer mail + Fresha pipe proven live. Isolation: token→tenant lookup, fail-closed (cross-tenant misroute structurally impossible). *(detail: Completed › Onboarding)*
+  - 🔵 **Remaining:** herohairs parse-inbox migration (token rotate ✅ `herohairs_2e1355…`, forwarding to be set up with the new address) · Treatwell pipe first-mail observation · whitecross IMAP retirement (owner keen — 5min cron overhead; remove the app-password, DON'T TOUCH the feature flags → **T-b evaporates**).
+  - 🧹 **Chore:** the drill's UNSEEN test emails cause the IMAP cron to re-log the same "not found" triple every 5min (harmless but noise) → owner should mark them read OR add a terminal not-found mark-seen to the parser (without breaking out-of-order retry).
+- 🔵 **H3 remainder** — cross-tenant user/permission management (=E1) · tenant metric deepening. *(Billing page → moved to the **Monetization & Self-Serve Upgrade** theme: M1/M5.)*
 
 ---
 
 ## 📅 Booking Experience
 
-- ✅ **B1 cancel/reschedule self-service UI** (`3d63c39`) — `/manage/{tenantId}/{bookingId}`, cancel+MiniCal reschedule, tüm tenant mailleri "Manage Booking" butonu taşıyor; owner uçtan uca test etti.
-- ✅ **B6 BookingDetailPanel boyut + compact** (`36d58a4`, CANLI 2026-07-18) — bildirim zilinden "View full details" açılan panel elle yazılmış sabit `380px` wrapper'daydı (dar + `overflowY` yok → alt kısım kırpılıyordu); Dashboard/Bookings'in `Drawer width="540px"` boyutuna eşitlendi (`PanelLayout.tsx`, maxWidth 96vw + overflowY:auto + border/shadow). Ayrıca detail-view dikey boşlukları ölçülü sıkıştırıldı (section/field/client-row; yalnız spacing, font/renk değişmedi) → tipik booking scroll'suz sığar. Tek component olduğu için tüm panel kullanımlarına yansır.
-- ⚠️ **Panel in-app notification (reschedule/cancel) — KOD VAR, SAHA-ÇELİŞKİLİ, canlı test gerek.** In-app `writeNotification('cancelled'/'rescheduled')` çağrıları kodda **2026-06-05'ten beri var** (`54ee368`, `index.ts:2056/2095`, `ns.customerCancel/Reschedule` gate'li) + tıkla→booking aç bağlı (`NotificationBell.tsx:116`). AMA owner 07-13 H4 tatbikatında panelde bildirim ALMADI → git çözmüyor. **Yapılacak:** gerçek reschedule/cancel ile panelde zil çıkıyor mu canlı test — çıkarsa ✅ kapanır, çıkmazsa trigger/tetikleme bug'ı. + 🔵 kişi-bazlı bildirim tercihi (fcmToken filtresi; token doc'ları `uid`/`barberName`/`role` taşıyor).
-- 🔵 **B2 booking settings (dinamik)** — cancel/reschedule pencereleri (8h/2h) ✅ CANLI Settings "Booking policy" (`Settings.tsx:1016`, `dcdf6e0`). **Kalan:** off-day reschedule davranışı (engelle/otomatik-geç/izin ver) tenant-configurable · müşteri reschedule'da barber değişimi (`newBarberId` var, UI kapalı) · min/max ileri tarih, slot aralığı (30dk hardcoded), aynı-gün izni → Settings→Booking altına topla.
-- 🔵 **B3 `salownCreateBooking` transactional (Tier 2)** — booking create hâlâ direkt client-side `addDoc` (`BookingPage.tsx:659`, fail-open pre-check var ama transaction YOK) → double-booking race. HeroHairs trafiği artınca risk. *(kod-teyitli açık 2026-07-16)*
-- 🔵 **B4 telefon ülke kodu standardizasyonu** (owner feedback'i var, İrlanda +353) — `COUNTRY_CODES` sadece `BookingForm.tsx:46`'da lokal (+353 YOK); diğer 4 giriş noktası serbest-metin. Telefon client-identity ana anahtarı → tutarsız kod aynı müşteriyi ikiye böler. İş: tek paylaşılan component (IE dahil) → 5 giriş noktası. *(kod-teyitli açık 2026-07-16)*
-- ⏸ **B5 2-way sync / auto-block** (⭐ differentiator) — salOWN doluluğunu Booksy+Fresha'da OTOMATİK kapatsın. **Durum:** Treatwell ✅ canlı (`salownIcalFeed` iCal OUT) · Fresha ⏳ "Import from external calendar URL = COMING SOON" (yayınlanınca feed'i yapıştır, sıfır kod) · Booksy ❌ kapalı → Puppeteer-veya-kabul kararı (owner Faz 2 Playwright robotuna KARAR VERDİ, tasarım ADR'i ayrı; SINIR: yalnız dışarı-yön slot-kilitleme, İÇERİ akış her zaman parser'da). Faz 0 doğrulama sonuçları [B5 arşiv]. *(GCal köprüsü ÖLÜ — platformlar dış takvimi dinlemiyor.)*
+- ✅ **B1 cancel/reschedule self-service UI** (`3d63c39`) — `/manage/{tenantId}/{bookingId}`, cancel+MiniCal reschedule, all tenant emails carry a "Manage Booking" button; owner tested end-to-end.
+- ✅ **B6 BookingDetailPanel size + compact** (`36d58a4`, LIVE 2026-07-18) — the panel opened via "View full details" from the notification bell was in a hand-written fixed `380px` wrapper (narrow + no `overflowY` → the bottom was clipped); equalized to Dashboard/Bookings' `Drawer width="540px"` size (`PanelLayout.tsx`, maxWidth 96vw + overflowY:auto + border/shadow). Also the detail-view vertical spacing was measuredly tightened (section/field/client-row; only spacing, font/color unchanged) → a typical booking fits without scroll. Because it's a single component, it reflects across all panel usages.
+- ⚠️ **Panel in-app notification (reschedule/cancel) — CODE EXISTS, FIELD-CONFLICTING, needs live test.** The in-app `writeNotification('cancelled'/'rescheduled')` calls have **existed in the code since 2026-06-05** (`54ee368`, `index.ts:2056/2095`, gated by `ns.customerCancel/Reschedule`) + click→open-booking wired (`NotificationBell.tsx:116`). BUT the owner did NOT get a notification in the panel during the 07-13 H4 drill → git doesn't resolve it. **To do:** live-test whether the bell appears in the panel on a real reschedule/cancel — if it appears ✅ closes, if not it's a trigger/firing bug. + 🔵 per-person notification preference (fcmToken filter; token docs carry `uid`/`barberName`/`role`).
+- 🔵 **B2 booking settings (dynamic)** — cancel/reschedule windows (8h/2h) ✅ LIVE in Settings "Booking policy" (`Settings.tsx:1016`, `dcdf6e0`). **Remaining:** off-day reschedule behavior (block/auto-shift/allow) tenant-configurable · barber change on customer reschedule (`newBarberId` exists, UI closed) · min/max lead date, slot interval (30min hardcoded), same-day allowance → gather under Settings→Booking.
+- 🔵 **B3 `salownCreateBooking` transactional (Tier 2)** — booking create is still a direct client-side `addDoc` (`BookingPage.tsx:659`, has a fail-open pre-check but NO transaction) → double-booking race. Risk once HeroHairs traffic grows. *(code-confirmed open 2026-07-16)*
+- 🔵 **B4 phone country code standardization** (owner has feedback, Ireland +353) — `COUNTRY_CODES` is local only in `BookingForm.tsx:46` (NO +353); the other 4 entry points are free-text. The phone is the main key of client-identity → an inconsistent code splits the same customer in two. Task: single shared component (including IE) → 5 entry points. *(code-confirmed open 2026-07-16)*
+- ⏸ **B5 2-way sync / auto-block** (⭐ differentiator) — salOWN should AUTOMATICALLY close its occupancy in Booksy+Fresha. **Status:** Treatwell ✅ live (`salownIcalFeed` iCal OUT) · Fresha ⏳ "Import from external calendar URL = COMING SOON" (when released, paste the feed, zero code) · Booksy ❌ closed → Puppeteer-or-accept decision (owner DECIDED on the Phase 2 Playwright robot, the design ADR is separate; BOUNDARY: outbound slot-locking only, INBOUND flow is always in the parser). Phase 0 verification results [B5 archive]. *(GCal bridge DEAD — the platforms don't listen to an external calendar.)*
 
 ---
 
 ## 📣 Marketing & Retention
 
-- ✅ **Kampanya altyapısı** — C1 redesign (`3e26610`/`2ce03b1`) · discount codes 4 faz (`3c6c81d`..`fe875aa`) · re-engagement attribution (`ef7f751`) · C2/C2b/C2c premium email+preview (`82e86d6`/`1e81915`/`42cd5d4`) · C5 lapsed dedup A+B (`3c4039f`/`5fa051a`/`1bf3416`) · Marketing Performance card (`5218d91`) · email open/click tracking (`c87c883`/`7730e7f`) · C6 Marketing↔Analytics ayrımı (Marketing=`TABS=['campaigns']`, `2a2e92d`). *(detay: Completed › Marketing)*
-- 🔵 **C3 abandoned-cart otomatik** — manuel "We've missed you" butonu ✅ CANLI. Kalan: terk sonrası X-saat scheduled trigger (tek-sefer guard + opt-out) · "You left something behind" prefill deep-link şablonu · dönüş-oranı funnel. *(kod-teyitli: yalnız manuel `sendAbandonedCart` onCall, scheduled yok.)* Motor C7/C3.1 scheduling ile ortak.
-- 🔵 **C8 audience scope** — kampanyaya `audienceScope` (Clients default / Members / Everyone) + server-side member guard (`sendCampaignBulk`'ta YOK, `index.ts:2290`) + kategori kütüphanesi + founding-clients segmenti. Member'lar client promolarını alıyor (sızıntı kampanya katmanında). Spec: [CAMPAIGNS_V2.md](CAMPAIGNS_V2.md). *(kod-teyitli açık 2026-07-16)*
-- 🔵 **C9 client kartı redesign** — Faz 1 ✅ CANLI (lifetime puan-harcama görünürlüğü + trusted client flag, `70247f0`). Faz 2: kart full-height premium drawer, hero header + inline edit (owner Claude Design ile yaptıracak → onay sonrası kod). Spec: [CLIENT_CARD_V2.md](CLIENT_CARD_V2.md).
-- 🔵 **Slice 3b kalanı** — (1) Revenue SSOT: OverviewPanel gross `bookingRev` vs Reports net/paidAmount tek kaynağa indir (Finance ile tut) *(kod-teyitli: OverviewPanel hâlâ bağımsız `bookingRev()` `OverviewPanel.tsx:48`)*; (2) tasarım polish (iki-kolon, rakamlar/% daha belirgin).
-- 🔵 **Discount codes kalanı** — kod uçtan uca canlı test (oncePerCustomer/limit/expiry) + %100-off online edge (£0 Stripe session).
+- ✅ **Campaign infrastructure** — C1 redesign (`3e26610`/`2ce03b1`) · discount codes 4 phases (`3c6c81d`..`fe875aa`) · re-engagement attribution (`ef7f751`) · C2/C2b/C2c premium email+preview (`82e86d6`/`1e81915`/`42cd5d4`) · C5 lapsed dedup A+B (`3c4039f`/`5fa051a`/`1bf3416`) · Marketing Performance card (`5218d91`) · email open/click tracking (`c87c883`/`7730e7f`) · C6 Marketing↔Analytics split (Marketing=`TABS=['campaigns']`, `2a2e92d`). *(detail: Completed › Marketing)*
+- 🔵 **C3 abandoned-cart automatic** — manual "We've missed you" button ✅ LIVE. Remaining: X-hours-after-abandonment scheduled trigger (one-time guard + opt-out) · "You left something behind" prefill deep-link template · return-rate funnel. *(code-confirmed: only manual `sendAbandonedCart` onCall, no scheduled.)* Engine shared with C7/C3.1 scheduling.
+- 🔵 **C8 audience scope** — `audienceScope` on a campaign (Clients default / Members / Everyone) + server-side member guard (NOT in `sendCampaignBulk`, `index.ts:2290`) + category library + founding-clients segment. Members receive client promos (a leak at the campaign layer). Spec: [CAMPAIGNS_V2.md](CAMPAIGNS_V2.md). *(code-confirmed open 2026-07-16)*
+- 🔵 **C9 client card redesign** — Phase 1 ✅ LIVE (lifetime point-spend visibility + trusted client flag, `70247f0`). Phase 2: card full-height premium drawer, hero header + inline edit (owner will have it done with Claude Design → code after approval). Spec: [CLIENT_CARD_V2.md](CLIENT_CARD_V2.md).
+- 🔵 **Slice 3b remainder** — (1) Revenue SSOT: reduce OverviewPanel gross `bookingRev` vs Reports net/paidAmount to a single source (keep aligned with Finance) *(code-confirmed: OverviewPanel still uses independent `bookingRev()` `OverviewPanel.tsx:48`)*; (2) design polish (two-column, numbers/% more prominent).
+- 🔵 **Discount codes remainder** — end-to-end live test of a code (oncePerCustomer/limit/expiry) + %100-off online edge (£0 Stripe session).
 
 ---
 
 ## 🤖 AI
 
-- ✅ **C10 salOWN AI doğruluk paketi + ürün-bilgisi** — buildContext DAILY TOTALS + DEFINITIONS, sohbet geçmişi, askAI auth guard (`1bd0885`/`695a61f`); `functions/src/ai/productGuide.ts` sitemap+~18 how-to (`58668af`). Bakım kuralı: user-visible feature çıkınca productGuide.ts'e satır ekle + askAI hedefli deploy. *(detay: Completed › AI)*
-- 🔵 **C10 kalanı** — feature-flag farkındalığı + tool-use → C4. *(kod-teyitli: productGuide statik string, tool-use yok.)*
-- 💡 **C4 Salown AI (cross-tenant veri asistanı)** — owner/super-admin doğal dille sorar, AI her tenant'ın Firestore'unu gezip derler. Parçalar: read-only tenant-scoped sorgu katmanı · Claude tool-use → aggregation fn'leri · NL→metrik/tablo · PII/GDPR/tenant izolasyon. ⚠️ cross-tenant erişim en hassas nokta. C1 suggestion + C3 funnel alt kümesi.
+- ✅ **C10 salOWN AI accuracy pack + product knowledge** — buildContext DAILY TOTALS + DEFINITIONS, chat history, askAI auth guard (`1bd0885`/`695a61f`); `functions/src/ai/productGuide.ts` sitemap+~18 how-to (`58668af`). Maintenance rule: when a user-visible feature ships, add a line to productGuide.ts + targeted askAI deploy. *(detail: Completed › AI)*
+- 🔵 **C10 remainder** — feature-flag awareness + tool-use → C4. *(code-confirmed: productGuide is a static string, no tool-use.)*
+- 💡 **C4 salOWN AI (cross-tenant data assistant)** — owner/super-admin asks in natural language, the AI walks each tenant's Firestore and compiles. Parts: read-only tenant-scoped query layer · Claude tool-use → aggregation fns · NL→metric/table · PII/GDPR/tenant isolation. ⚠️ cross-tenant access is the most sensitive point. A subset of C1 suggestion + C3 funnel.
 
 ---
 
 ## 📱 Mobile (Staff App)
 
-- ✅ **Staff App çekirdek** — D3 mobil stabilite (`4f1bd13`) · D4 modernizasyon: hız+haftalık+ikon sistemi+gün-kaydırma (`e3f3e9f`) · D5 walk-in Booksy-sepet redesign + iOS drift kök-fix (`7f46858`) · D7 haftalık program Day|Week (`20a3bcb`). Ayrıca: Setup/Shell/Today/Sheets/Clients/Sales/Reschedule/No-show/WorkingHours/Notification-bell hepsi ✅. *(detay: Completed › Mobile + Staff App)*
-- 🔵 **D0 hardening kalanı** — push sessiz-hata (T2-7: FCM init try/catch var ama UI'a yansımıyor, `StaffApp.tsx:159`) · reschedule saat-guard (RescheduleSheet conflict-guard var ama açılış-saati guard'ı YOK, `RescheduleSheet.tsx:141`) · boş-durum/erişim mesajı · sessiz-hata yutma. Tam rapor: [STAFF_APP_HARDENING.md](STAFF_APP_HARDENING.md). *(kod-teyitli 2026-07-16.)*
-- 🔵 **D2 Google/Apple sign-in + onboarding routing** — butonlar "coming soon" görsel (`LoginScreen.tsx:113`, provider wire YOK). Parçalar: Google provider · Apple ($99/yıl Service ID) · login-sonrası member-check · onboarding flow (yeni salon açan owner için, en büyük iş). *(kod-teyitli açık 2026-07-16)*
-- 🤔 **D6 mobil katalog (karar bekliyor)** — telefondan yeni servis/barber ekleme yapılsın mı, yoksa panel-only mi? Owner erteledi (2026-07-16). Yapılırsa: "+" FAB → ekle-menüsü (Walk-in/Yeni servis[ad+fiyat+süre+kategori]/Yeni barber[ad+renk]), schema parity. *(kod-teyitli: staff app'te add-service/barber UI yok — doğru.)*
-- ⏸ **D1 Capacitor / App Store** — iOS web push çalışmıyor → native wrap çözer. **HAZIR BEKLİYOR, acele YOK** (owner 2026-07-14: "app'in üzerinden daha çok geçmemiz lazım"). Hazırlık ✅ (D4 SVG ikon + D5 viewport fix "Capacitor-safe"). Plan: [D1_CAPACITOR_NATIVE_PLAN.md](D1_CAPACITOR_NATIVE_PLAN.md); ön koşul $99/yıl Apple+Mac+APNs. **Waiting.**
+- ✅ **Staff App core** — D3 mobile stability (`4f1bd13`) · D4 modernization: speed+weekly+icon system+day-swipe (`e3f3e9f`) · D5 walk-in Booksy-cart redesign + iOS drift root-fix (`7f46858`) · D7 weekly schedule Day|Week (`20a3bcb`). Also: Setup/Shell/Today/Sheets/Clients/Sales/Reschedule/No-show/WorkingHours/Notification-bell all ✅. *(detail: Completed › Mobile + Staff App)*
+- 🔵 **D0 hardening remainder** — push silent-failure (T2-7: FCM init try/catch exists but not surfaced in the UI, `StaffApp.tsx:159`) · reschedule time-guard (RescheduleSheet has a conflict-guard but NO opening-hours guard, `RescheduleSheet.tsx:141`) · empty-state/access message · silent-error swallowing. Full report: [STAFF_APP_HARDENING.md](STAFF_APP_HARDENING.md). *(code-confirmed 2026-07-16.)*
+- 🔵 **D2 Google/Apple sign-in + onboarding routing** — the buttons are "coming soon" visuals (`LoginScreen.tsx:113`, NO provider wire). Parts: Google provider · Apple ($99/yr Service ID) · post-login member-check · onboarding flow (for an owner opening a new salon, the biggest task). *(code-confirmed open 2026-07-16)*
+- 🤔 **D6 mobile catalog (decision pending)** — should adding a new service/barber from the phone be allowed, or panel-only? Owner deferred (2026-07-16). If done: "+" FAB → add-menu (Walk-in/New service[name+price+duration+category]/New barber[name+color]), schema parity. *(code-confirmed: no add-service/barber UI in the staff app — correct.)*
+- ⏸ **D1 Capacitor / App Store** — iOS web push doesn't work → a native wrap solves it. **READY & WAITING, NO rush** (owner 2026-07-14: "we need to go over the app more"). Prep ✅ (D4 SVG icons + D5 viewport fix "Capacitor-safe"). Plan: [D1_CAPACITOR_NATIVE_PLAN.md](D1_CAPACITOR_NATIVE_PLAN.md); precondition $99/yr Apple+Mac+APNs. **Waiting.**
 
 ---
 
 ## 🛠️ Tech Debt & Reliability
 
-- ✅ **TypeScript migration — v1.0.0 TAG'LENDİ (2026-07-13)** — codebase uçtan uca STRICT TS (frontend 1400→0, functions 355→0, bayt-kanıtlı). Post-1.0 ev işleri (release-blocker DEĞİL): ölü-kod chore (beklemede), any-daraltma, I2 split. Kalıplar: [MIGRATION_PATTERNS.md](MIGRATION_PATTERNS.md), [ARCHITECTURE_V2.md](ARCHITECTURE_V2.md). *(detay: Completed › Reliability)*
-- ✅ **I1 parser sessiz-kırılma canary** — `recordParserRun` İKİ boruda da (`tenants/{id}/parserStats/{source}`, günlük sayaç + 0-import alarmı).
-- 🔄 **I2 `functions/src/index.ts` split** — Faz 1 (helpers→domain modülleri) ✅ fiilen bitti (parity testli). Faz 2: 55 export'un gövdesini domain modüllerine taşı (index.ts 3816 satır). Dilim 1 (askAI+auth) ✅ `bccd828`; **sıradaki parsers** (bkz Şu an odak). 🔴 Altın kural: export adı+config birebir. Operasyon: tek TEMİZ pencerede, codebase-prefix'li deploy (`--only functions:salown`, ASLA blanket). Plan: [TYPESCRIPT_MIGRATION_PLAN.md](TYPESCRIPT_MIGRATION_PLAN.md).
-- 🔵 **G3 unsaved-changes guard'ları** — backdrop/Esc/✕ ile formlar sessizce veri kaybediyor. Altın standart WalkInForm'da (dirtyRef) → ortak `ConfirmDiscard` bileşeni. F1 (6 yüzey): Products · AddClientModal · Clients edit · BookingForm · BulkCampaign Compose · SendCampaignPanel. F2: CheckoutPanel/Settings. F3: staff app Sheet'leri. *(kod-teyitli: 0/6 yüzeyde guard var 2026-07-16)*
-- 🔵 **salOWN ToS/Privacy sayfaları** — landing footer Terms/Privacy `href="#"` ölü (`hosting/index.html:648-649`); salOWN'un kendi ToS/Privacy sayfası YOK (whitecross tenant tarafı ✅). Tenant onboarding ölçeklenmeden yazılmalı (SaaS ToS + GDPR privacy + loyalty çerçeve). *(kod-teyitli açık 2026-07-16)*
-- 🔵 **Küçük infra** — G2 SalownHub DNS (`salown.web.app/app`→`hub.salown.com`) · ~~EeKurt legacy site redirect~~ (tenant inaktif 2026-07-18, düştü) · `categoryId` migration · dead `isStaff` Firestore rule.
+- ✅ **TypeScript migration — v1.0.0 TAGGED (2026-07-13)** — codebase end-to-end STRICT TS (frontend 1400→0, functions 355→0, byte-proven). Post-1.0 chores (NOT release-blockers): dead-code chore (pending), any-narrowing, I2 split. Patterns: [MIGRATION_PATTERNS.md](MIGRATION_PATTERNS.md), [ARCHITECTURE_V2.md](ARCHITECTURE_V2.md). *(detail: Completed › Reliability)*
+- ✅ **I1 parser silent-breakage canary** — `recordParserRun` in BOTH pipes (`tenants/{id}/parserStats/{source}`, daily counter + 0-import alarm).
+- 🔄 **I2 `functions/src/index.ts` split** — Phase 1 (helpers→domain modules) ✅ effectively done (parity-tested). Phase 2: move the bodies of 55 exports into domain modules (index.ts 3816 lines). Slice 1 (askAI+auth) ✅ `bccd828`; **next is parsers** (see Current focus). 🔴 Golden rule: export name+config exactly matched. Operation: in a single CLEAN window, codebase-prefixed deploy (`--only functions:salown`, NEVER blanket). Plan: [TYPESCRIPT_MIGRATION_PLAN.md](TYPESCRIPT_MIGRATION_PLAN.md).
+- 🔵 **G3 unsaved-changes guards** — forms silently lose data via backdrop/Esc/✕. The gold standard is in WalkInForm (dirtyRef) → shared `ConfirmDiscard` component. F1 (6 surfaces): Products · AddClientModal · Clients edit · BookingForm · BulkCampaign Compose · SendCampaignPanel. F2: CheckoutPanel/Settings. F3: staff app Sheets. *(code-confirmed: guard exists on 0/6 surfaces 2026-07-16)*
+- 🔵 **salOWN ToS/Privacy pages** — the landing footer Terms/Privacy `href="#"` is dead (`hosting/index.html:648-649`); salOWN has NO ToS/Privacy page of its own (the whitecross tenant side ✅). Must be written before tenant onboarding scales (SaaS ToS + GDPR privacy + loyalty framework). *(code-confirmed open 2026-07-16)*
+- 🔵 **Small infra** — G2 salOWNHub DNS (`salown.web.app/app`→`hub.salown.com`) · ~~EeKurt legacy site redirect~~ (tenant inactive 2026-07-18, dropped) · `categoryId` migration · dead `isStaff` Firestore rule.
 
 ---
 
-## 🎨 Premium Themes (gelir kalemi)
+## 🎨 Premium Themes (revenue line)
 
-- 🔵 **F1 per-tenant public site temaları** — iki drop-in tema (`style.original.css`+`style.premium.css`) lokal, **deploy YOK**. Kalan: site canlı senkron (whitecross-site `siteTheme` onSnapshot+href swap) · panel "Available Themes" (`OnlineProfile.jsx`, Premium-gated) · theme registry · *(kod-teyitli: OnlineProfile'da theme picker yok; whitecross-site hardcoded DEFAULT_THEME.)* Detay: memory `project_premium_themes`.
-- 💡 **Subdomain temalı siteler** — `{tenant}.salown.com` themed public site (SalownHub DNS ile aynı altyapı ailesi).
+- 🔵 **F1 per-tenant public site themes** — two drop-in themes (`style.original.css`+`style.premium.css`) local, **NO deploy**. Remaining: live site sync (whitecross-site `siteTheme` onSnapshot+href swap) · panel "Available Themes" (`OnlineProfile.jsx`, Premium-gated) · theme registry · *(code-confirmed: no theme picker in OnlineProfile; whitecross-site hardcoded DEFAULT_THEME.)* Detail: memory `project_premium_themes`.
+- 💡 **Subdomain themed sites** — `{tenant}.salown.com` themed public site (same infra family as salOWNHub DNS).
 
 ---
 
 ## 🏪 Marketplace & Discovery
 
-- 💡 **J1 Trust Score — outcome-based salon ranking** · 🕓 Vizyon kilitli (ADR-016, marketplace fazı başlayınca açılır). salown.com consumer marketplace'inde sıralama iç Trust Score ile (verified CHECKOUT, repeat-client, no-show davranışı, rating tutarlılığı, longevity…). İlke: "reward outcomes, not activity" — Fresha sahte-booking gaming'ine yapısal panzehir. Skor iç kullanım. Spec: [DECISIONS.md ADR-016](DECISIONS.md).
+- 💡 **J1 Trust Score — outcome-based salon ranking** · 🕓 Vision locked (ADR-016, opens when the marketplace phase begins). Ranking in the salown.com consumer marketplace via an internal Trust Score (verified CHECKOUT, repeat-client, no-show behavior, rating consistency, longevity…). Principle: "reward outcomes, not activity" — a structural antidote to Fresha's fake-booking gaming. The score is for internal use. Spec: [DECISIONS.md ADR-016](DECISIONS.md).
 
 ---
 
-## 🧪 Test Listeleri → [TESTS.md](TESTS.md)
-Tüm test kayıtları tek yerde: Firestore Rules (otomatik, son ✅ 95/95) · Güvenlik gate manuel · Stripe canlı (TEST) · Staff App · Post-Class-A · Busy-slot v2.
+## 🧪 Test Lists → [TESTS.md](TESTS.md)
+All test records in one place: Firestore Rules (automatic, latest ✅ 95/95) · Security gate manual · Stripe live (TEST) · Staff App · Post-Class-A · Busy-slot v2.
 
 ---
 
-# ✅ Completed (arşiv)
+# ✅ Completed (archive)
 
-> Aktif temalardaki her ✅'ün detayı + commit'leri burada; en altta tarihli dated tablolar.
+> The detail + commits of each ✅ in the active themes; dated tables at the very bottom.
 
 ### 🔒 Security & Rules
-Tier 1 gate: Gate-G1 rol-claim (`0f8de7e`, `tenantRole==null→admin` fallback kaldırıldı, 49/49) · Gate-G2 bookings read tenant-scoped (`851efeb`, ruleset `22bdc429`) · Gate-G3 public-create financial forge guard (`851efeb`) · Gate-G4 staff-doc catch-all→false + 14 koleksiyon explicit (`0f8de7e`). Takip: T-a1 silme=super (`7e95d40`, AppRouter hardcoded `isAdmin=true` gerçek claim'e bağlandı) · T-a2 admin rol-bazlı (`643c8ce`, AuthContext tenantRole expose) · T-d self-escalate super arkasında (`643c8ce`). Delete=super/owner: `694a762` (super-only, 65/65) → E1b owner tenant-scoped (`8670051`, ruleset `1a818130`, 81/81, 9 koleksiyon) → E1b+ barbers (`2af303c`, 83/83) + güçlü onay modalı + '✓ Activate' (`25e6407`). Phase 1 cross-tenant açık (`ef31d16a`, 16/16, `firestore.rules` canonical).
+Tier 1 gate: Gate-G1 role-claim (`0f8de7e`, `tenantRole==null→admin` fallback removed, 49/49) · Gate-G2 bookings read tenant-scoped (`851efeb`, ruleset `22bdc429`) · Gate-G3 public-create financial forge guard (`851efeb`) · Gate-G4 staff-doc catch-all→false + 14 collections explicit (`0f8de7e`). Follow-up: T-a1 delete=super (`7e95d40`, AppRouter hardcoded `isAdmin=true` wired to the real claim) · T-a2 admin role-based (`643c8ce`, AuthContext exposes tenantRole) · T-d self-escalate behind super (`643c8ce`). Delete=super/owner: `694a762` (super-only, 65/65) → E1b owner tenant-scoped (`8670051`, ruleset `1a818130`, 81/81, 9 collections) → E1b+ barbers (`2af303c`, 83/83) + strong confirmation modal + '✓ Activate' (`25e6407`). Phase 1 cross-tenant hole (`ef31d16a`, 16/16, `firestore.rules` canonical).
 
 ### 👥 Employment Model & Staff (S + G4 + G5)
-S2 Faz B: Staff Hub UI 12 commit (`c1103af..b7208a7`) + rules deploy (ruleset `1474907b`, staffComp=owner+super, 95/95) — sekmeli drawer, PayModelChip, CompChangeFlow, wage hour..year + fiilî-çalışma accrual semantiği, paid-leave toggle, passive=comp-dönem-kapat, compUtils/staffCompActions unit-testli (59/59). S1 delik 1 barberName snapshot (`0db230c`). G4 haftalık wages ledger (`1405020`, Pzt–Paz devirli defter, salt-türetim, Arda £87-devir doğrulandı). G5 staff availability overhaul (owner "tam kaos"): 2a-ek public projeksiyon `salownRepublishOnSettingsEdit` (`81f2824`) · 2a resolver shiftChange override (`282e5ae`) · 2b+3 Dashboard/BookingPage leave (`ca82f76`, izin bitince otomatik döner) · adım 4 server reschedule leave-guard (`2af65a0`) · adım 5 semantik birleştirme OVERRIDE KAZANIR 5 yüzey (`e68dca8`) + Finance günlük P/L leave-guard (`4b7b592`) + leave-history arşivi `barber.leaves[]` (`3898eb0`) · whitecross-site resolver portu (`bc2f98ef`) · cycleStatus leave koruması + audit (`b582042`). Muhamed on-leave vakası [STAFF_SETTINGS_AUDIT.md](STAFF_SETTINGS_AUDIT.md).
+S2 Phase B: Staff Hub UI 12 commits (`c1103af..b7208a7`) + rules deploy (ruleset `1474907b`, staffComp=owner+super, 95/95) — tabbed drawer, PayModelChip, CompChangeFlow, wage hour..year + actual-work accrual semantics, paid-leave toggle, passive=close-comp-period, compUtils/staffCompActions unit-tested (59/59). S1 hole 1 barberName snapshot (`0db230c`). G4 weekly wages ledger (`1405020`, Mon–Sun carry-over ledger, pure-derivation, Arda £87-carry verified). G5 staff availability overhaul (owner "total chaos"): 2a-extra public projection `salownRepublishOnSettingsEdit` (`81f2824`) · 2a resolver shiftChange override (`282e5ae`) · 2b+3 Dashboard/BookingPage leave (`ca82f76`, returns automatically when leave ends) · step 4 server reschedule leave-guard (`2af65a0`) · step 5 semantic merge OVERRIDE WINS 5 surfaces (`e68dca8`) + Finance daily P/L leave-guard (`4b7b592`) + leave-history archive `barber.leaves[]` (`3898eb0`) · whitecross-site resolver port (`bc2f98ef`) · cycleStatus leave protection + audit (`b582042`). Muhamed on-leave case [STAFF_SETTINGS_AUDIT.md](STAFF_SETTINGS_AUDIT.md).
 
 ### 💳 Payments (A2, TEST mode)
-Faz 0 onboarding `salownConnect{Start,Callback,Disconnect,Status}` (OAuth, tenant secret HİÇ tutulmaz, sadece `acct_`) · Faz 1 Checkout `salownCreateCheckoutSession` + paralel `salownConnectWebhook` (`863e3db`, tutar sunucuda, Direct charge, cross-check) · UI "Online payments" kartı (`8747fea`, mod seçici + default deposit £ + gate) · Faz 2 policy · Faz 3 refund + configurable windows (`e3221cd`, `cancellationWindowHours`/`rescheduleWindowHours`). Owner tüm modları TEST'te uçtan uca doğruladı (2026-07-04). whitecross-site eski Payment Link modeli (Phase 5) canlı ama Connect emekliye ayırıyor.
+Phase 0 onboarding `salownConnect{Start,Callback,Disconnect,Status}` (OAuth, tenant secret NEVER stored, only `acct_`) · Phase 1 Checkout `salownCreateCheckoutSession` + parallel `salownConnectWebhook` (`863e3db`, amount on the server, Direct charge, cross-check) · UI "Online payments" card (`8747fea`, mode selector + default deposit £ + gate) · Phase 2 policy · Phase 3 refund + configurable windows (`e3221cd`, `cancellationWindowHours`/`rescheduleWindowHours`). Owner verified all modes end-to-end in TEST (2026-07-04). whitecross-site's old Payment Link model (Phase 5) is live but Connect is retiring it.
 
 ### 📣 Marketing
-C1 redesign Aşama 1+2 (`3e26610`/`2ce03b1`, landing zone A-D + Templates + Compose 4-adım) · re-engagement attribution (`ef7f751`) · discount codes 4 faz (`3c6c81d`/`e3841f7`/`c932ccf`/`fe875aa`, salon-içi+online aynı kod) · C2 premium campaign email (`82e86d6`) + C2b compose preview (`1e81915`) + C2c per-client preview DRY util (`42cd5d4`) · C5 lapsed dedup (`3c4039f`) + C5-A booking-only (`5fa051a`) + C5-B bulk damga (`1bf3416`) · Marketing Performance card (`5218d91`, recovered revenue/returned/redeemed) · email open/click tracking `salownBrevoWebhook`→`emailEvents` (`c87c883`/`7730e7f`) · Marketing↔Analytics ayrımı Slice 1 Occupancy (`e8e57b5`) + Slice 2 campaigns-first (`5f4c874`) + Slice 3a Customers→Reports (`b9c5b2e`) + Slice 3b Overview→Insights, Marketing=campaigns (`5744937`, C6 fiilen tamam) + client-identity SSOT (`eca8cc8`) + filtre-scope netliği (`1fb9b28`) + orphan helper cleanup (`28bf376`). C9 Faz 1 client kartı lifetime+trusted (`70247f0`).
+C1 redesign Stage 1+2 (`3e26610`/`2ce03b1`, landing zone A-D + Templates + Compose 4-step) · re-engagement attribution (`ef7f751`) · discount codes 4 phases (`3c6c81d`/`e3841f7`/`c932ccf`/`fe875aa`, in-salon+online same code) · C2 premium campaign email (`82e86d6`) + C2b compose preview (`1e81915`) + C2c per-client preview DRY util (`42cd5d4`) · C5 lapsed dedup (`3c4039f`) + C5-A booking-only (`5fa051a`) + C5-B bulk stamp (`1bf3416`) · Marketing Performance card (`5218d91`, recovered revenue/returned/redeemed) · email open/click tracking `salownBrevoWebhook`→`emailEvents` (`c87c883`/`7730e7f`) · Marketing↔Analytics split Slice 1 Occupancy (`e8e57b5`) + Slice 2 campaigns-first (`5f4c874`) + Slice 3a Customers→Reports (`b9c5b2e`) + Slice 3b Overview→Insights, Marketing=campaigns (`5744937`, C6 effectively done) + client-identity SSOT (`eca8cc8`) + filter-scope clarity (`1fb9b28`) + orphan helper cleanup (`28bf376`). C9 Phase 1 client card lifetime+trusted (`70247f0`).
 
 ### 🤖 AI
-C10 doğruluk paketi buildContext DAILY TOTALS+DEFINITIONS + sohbet geçmişi + askAI auth guard (`1bd0885`/`695a61f`) · productGuide.ts sitemap+how-to (`58668af`).
+C10 accuracy pack buildContext DAILY TOTALS+DEFINITIONS + chat history + askAI auth guard (`1bd0885`/`695a61f`) · productGuide.ts sitemap+how-to (`58668af`).
 
 ### 🎫 Onboarding & Parser Pipeline (H)
-H1 `addToWaitlist` intake (`a2689f9`) · H2 P1 self-signup gizle + P2 tam form + P3 Applications sekmesi `approveApplication`+`adminPurgeTenant` (`ae495a1`/`57e3959`) + approve 2 bug fix (domain fallback + claim-clobber guard, INCIDENTS 07-02) · H3a analytics doğruluk source/MRR (`fb92c8b`/`88b92cc`/`2e04a66`) · H3b owner-activity `adminGetOwnerActivity` (`5fb26e9`/`f4aee2b`/`b424aeb`) · H3c parse-inbox address UI (`a31538f`). H4 pilot: parse dispatch `salownParseInboxDispatch` + `messages.test.js` fork-yok (41/41, `c944b28`) + DNS+Brevo inbound webhook + token'lar (`1183f50` named token `<slug>_<32hex>`) + zarf-öncelikli routing fix (`0b829ba`) + tam yaşam-döngüsü tatbikatı GEÇTİ + ilk organik mail + Fresha borusu kanıtlı.
+H1 `addToWaitlist` intake (`a2689f9`) · H2 P1 hide self-signup + P2 full form + P3 Applications tab `approveApplication`+`adminPurgeTenant` (`ae495a1`/`57e3959`) + approve 2 bug fixes (domain fallback + claim-clobber guard, INCIDENTS 07-02) · H3a analytics accuracy source/MRR (`fb92c8b`/`88b92cc`/`2e04a66`) · H3b owner-activity `adminGetOwnerActivity` (`5fb26e9`/`f4aee2b`/`b424aeb`) · H3c parse-inbox address UI (`a31538f`). H4 pilot: parse dispatch `salownParseInboxDispatch` + `messages.test.js` no-fork (41/41, `c944b28`) + DNS+Brevo inbound webhook + tokens (`1183f50` named token `<slug>_<32hex>`) + envelope-priority routing fix (`0b829ba`) + full lifecycle drill PASSED + first organic mail + Fresha pipe proven.
 
 ### 📱 Mobile & Staff App
-D3 mobil stabilite 3-katman clamp (`4f1bd13`) · D4 modernizasyon hız+Week sekmesi+Icon.tsx 28 SVG+gün-kaydırma (`e3f3e9f`) · D5 walk-in Booksy-sepet WalkInFlow+orphan fix+iOS viewport kök-fix (`7f46858`) · D7 haftalık program Day|Week WeekScheduleGrid (`20a3bcb`). Staff App TAM (OAuth hariç): Setup/Shell/Today/Sheets/Clients · Panel Parity · Permissions (7 izin) · Notification bell (FCM) · Reschedule · No-show · WorkingHours validation · Sales · Login redesign.
+D3 mobile stability 3-layer clamp (`4f1bd13`) · D4 modernization speed+Week tab+Icon.tsx 28 SVG+day-swipe (`e3f3e9f`) · D5 walk-in Booksy-cart WalkInFlow+orphan fix+iOS viewport root-fix (`7f46858`) · D7 weekly schedule Day|Week WeekScheduleGrid (`20a3bcb`). Staff App COMPLETE (except OAuth): Setup/Shell/Today/Sheets/Clients · Panel Parity · Permissions (7 permissions) · Notification bell (FCM) · Reschedule · No-show · WorkingHours validation · Sales · Login redesign.
 
 ### 🛠️ Reliability
-TS migration v1.0.0: rc3 src→lib pipeline (`73ce8f8`, `v0.9.0-rc3`, 52/52 fn) → functions %100 TS (`7881cfe`) → strict her yerde functions 355→0 (`71312de`) + frontend 1400→0 (`eb348b7`), bayt-kanıt v2. I1 canary `recordParserRun`. I4 Faz A staff/client audit (`2ab0328`).
+TS migration v1.0.0: rc3 src→lib pipeline (`73ce8f8`, `v0.9.0-rc3`, 52/52 fn) → functions 100% TS (`7881cfe`) → strict everywhere functions 355→0 (`71312de`) + frontend 1400→0 (`eb348b7`), byte-proof v2. I1 canary `recordParserRun`. I4 Phase A staff/client audit (`2ab0328`).
 
 ### 🔧 Infra (G)
-Email observability stamp'ler (`56c8e5e`, confirmation/reschedule/cancellation EmailSentAt) · `dailyFirestoreBackup` düzeltildi + 30-gün lifecycle + failure-alarm (`740916b`, INCIDENTS 07-13) · www.whitecrossbarbers.com→apex 301 + GH Pages kapanışı · confirmation email buton email-safe table (`0d974f3`) + week-view source etiketi + staff push Londra tarihi · bounce-checker fix (`62d79fe3`) · G6 landing mobile (`288e566`) · loyalty legal terms no-cash-value (`2636d24` + whitecross `terms.html`).
+Email observability stamps (`56c8e5e`, confirmation/reschedule/cancellation EmailSentAt) · `dailyFirestoreBackup` fixed + 30-day lifecycle + failure-alarm (`740916b`, INCIDENTS 07-13) · www.whitecrossbarbers.com→apex 301 + GH Pages shutdown · confirmation email button email-safe table (`0d974f3`) + week-view source label + staff push London date · bounce-checker fix (`62d79fe3`) · G6 landing mobile (`288e566`) · loyalty legal terms no-cash-value (`2636d24` + whitecross `terms.html`).
 
 ---
 
-### 🗓️ Dated arşiv
+### 🗓️ Dated archive
 
-**2026-07-13** — Loyalty programı yasal şartları (no-cash-value): emailTemplates (`2636d24`) + whitecross terms.html/loyalty.html.
+**2026-07-13** — Loyalty program legal terms (no-cash-value): emailTemplates (`2636d24`) + whitecross terms.html/loyalty.html.
 
-**2026-07-03** — Online profil header resize+focal-point (`7d06c33`/`895a30a`) · Booking akışı reorder (Servis→Tarih→Saat→Barber-ops, `94b11f9`) · Barber chosen-vs-auto izleme + salon rozeti · Product-sale görünürlüğü soldProducts SSOT (`84635ed`/`b5cebac`).
+**2026-07-03** — Online profile header resize+focal-point (`7d06c33`/`895a30a`) · Booking flow reorder (Service→Date→Time→Barber-ops, `94b11f9`) · Barber chosen-vs-auto tracking + salon badge · Product-sale visibility soldProducts SSOT (`84635ed`/`b5cebac`).
 
-**2026-07-02** — Early-access hunisi H1+H2 (`a2689f9`/`ae495a1`/`57e3959`) · Approve 2 bug fix · Mimari review + docs beyin sistemi (ARCHITECTURE_REVIEW + tema I + README/GLOSSARY/4-katman hafıza).
+**2026-07-02** — Early-access funnel H1+H2 (`a2689f9`/`ae495a1`/`57e3959`) · Approve 2 bug fixes · Architecture review + docs brain system (ARCHITECTURE_REVIEW + theme I + README/GLOSSARY/4-layer memory).
 
-**2026-06-27→07-01** — Campaigns redesign Aşama 1+2 (`3e26610`/`2ce03b1`) · Plan enforcement Faz 1+3+5+6 (`0a31141`/`e2cd4b4`/`8189df4`/`2723220`) · Dashboard pill-customiser (`23f4191`) · Busy-slot v2 processing-time dinamik (`f958aee`) · whitecross→noreply@salown.com · Kampanya gönderen seçimi (`f519356`/`124321b`) · Abandoned-cart manuel buton.
+**2026-06-27→07-01** — Campaigns redesign Stage 1+2 (`3e26610`/`2ce03b1`) · Plan enforcement Phase 1+3+5+6 (`0a31141`/`e2cd4b4`/`8189df4`/`2723220`) · Dashboard pill-customiser (`23f4191`) · Busy-slot v2 processing-time dynamic (`f958aee`) · whitecross→noreply@salown.com · Campaign sender selection (`f519356`/`124321b`) · Abandoned-cart manual button.
 
-**2026-06-26** — Finance Partner Settlement Plan A (`8fae0d8`) · Platform "Both per booking" (`dc1a471`) · Treatwell fee %35+VAT (`5f69f86`/`83b484c`) · Landing "OUR STORY" (`b89986d`) · Whitecross success "Add to Calendar" (`28262d9b`) · Confirmation/cancel/reschedule email 3-katman fix + canlı test · Google review teşviki.
+**2026-06-26** — Finance Partner Settlement Plan A (`8fae0d8`) · Platform "Both per booking" (`dc1a471`) · Treatwell fee 35%+VAT (`5f69f86`/`83b484c`) · Landing "OUR STORY" (`b89986d`) · Whitecross success "Add to Calendar" (`28262d9b`) · Confirmation/cancel/reschedule email 3-layer fix + live test · Google review incentive.
 
-**2026-06-23** — Para NaN süpürmesi (`pp()`) · Yeni müşteri email seti (5 builder) · Walk-in vs booking (`bookingType`) · Notification politikası (tek bildirim CONFIRMED) · Yeni Settings toggle'ları · Source Salown≠Website.
+**2026-06-23** — Money NaN sweep (`pp()`) · New customer email set (5 builders) · Walk-in vs booking (`bookingType`) · Notification policy (single notification CONFIRMED) · New Settings toggles · Source salOWN≠Website.
 
-**2026-06-21** — 🔒 Firestore cross-tenant açığı kapatıldı (`ef31d16a`, 16/16) · Muhamed wage config · TEK KAYNAK `firestore.rules` · Staff App login redesign · Grid source-rengi · eekurt lingering auth fix. Araçlar: `test-firestore-rules.py`, `firestore.rules.LIVE/ROLLBACK`.
+**2026-06-21** — 🔒 Firestore cross-tenant hole closed (`ef31d16a`, 16/16) · Muhamed wage config · SINGLE SOURCE `firestore.rules` · Staff App login redesign · Grid source-color · eekurt lingering auth fix. Tools: `test-firestore-rules.py`, `firestore.rules.LIVE/ROLLBACK`.
 
-**Whitecross → Class A Migration ✅ TAM** — Booksy/Fresha/Treatwell parser · Loyalty email (Brevo) · Telegram+in-app notifications · Booking confirmation trigger · Cancel/reschedule email · `cleanupExpiredPending` multi-tenant · FCM push.
+**Whitecross → Class A Migration ✅ COMPLETE** — Booksy/Fresha/Treatwell parser · Loyalty email (Brevo) · Telegram+in-app notifications · Booking confirmation trigger · Cancel/reschedule email · `cleanupExpiredPending` multi-tenant · FCM push.
 
-**Platform ✅ TAM** — GDPR rules · Actor tracking · Client dedup engine · Service-eligibility no-preference · BST/UK timezone · Cancel/reschedule server-side callables · Booksy SLOT tombstone+externalId dedup · Race-check at submit · White screen on deploy fix.
+**Platform ✅ COMPLETE** — GDPR rules · Actor tracking · Client dedup engine · Service-eligibility no-preference · BST/UK timezone · Cancel/reschedule server-side callables · Booksy SLOT tombstone+externalId dedup · Race-check at submit · White screen on deploy fix.
 
-**Stripe Phase 5 (whitecross-site) ✅ Canlı parçalar** — `expiresAt` PENDING · `salownStripeWebhook` · `salownBookingConfirmedEmailTrigger` · Settings→Integrations→Stripe UI · E2E test · Canlı test (2026-06-26). *(salown.com/book Connect akışı = Payments teması.)*
+**Stripe Phase 5 (whitecross-site) ✅ Live parts** — `expiresAt` PENDING · `salownStripeWebhook` · `salownBookingConfirmedEmailTrigger` · Settings→Integrations→Stripe UI · E2E test · Live test (2026-06-26). *(salown.com/book Connect flow = Payments theme.)*
 
 ---
 
-### 📎 B5 Faz 0 arşiv (2-way sync doğrulama)
-❌ İki platform da dış takvimi CANLI dinlemiyor (Booksy/Fresha sync yalnız DIŞARI) → GCal köprüsü (Faz 1) ÖLÜ. 🎯 Fresha "Import events from external calendar URL = COMING SOON" (birincil kaynak, owner panelden gördü) → yayınlanınca `salownIcalFeed?tenantId=X` yapıştır = sıfır kod. Booksy verdiği yok → Puppeteer-veya-kabul. Yan kazanım: Fresha EXPORT feed alındı (`integrations.freshaIcalExportUrls`, parser çapraz-kontrol adayı). Booksy robotu KARARI: owner onayladı (yalnız dışarı-yön, Secret Manager, dar yetki, audit, kill-switch, izole Cloud Run; İÇERİ akış her zaman parser'da).
+### 📎 B5 Phase 0 archive (2-way sync verification)
+❌ Neither platform listens to an external calendar LIVE (Booksy/Fresha sync is OUTBOUND only) → the GCal bridge (Phase 1) is DEAD. 🎯 Fresha "Import events from external calendar URL = COMING SOON" (primary source, owner saw it in the panel) → when released, paste `salownIcalFeed?tenantId=X` = zero code. Booksy offers none → Puppeteer-or-accept. Side gain: the Fresha EXPORT feed was obtained (`integrations.freshaIcalExportUrls`, a parser cross-check candidate). Booksy robot DECISION: owner approved (outbound only, Secret Manager, narrow permission, audit, kill-switch, isolated Cloud Run; INBOUND flow always in the parser).

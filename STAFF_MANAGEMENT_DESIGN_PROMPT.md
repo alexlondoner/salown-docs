@@ -1,106 +1,106 @@
-# Staff Management & Compensation — Tasarım Review + UI Prompt'u (v2)
+# Staff Management & Compensation — Design Review + UI Prompt (v2)
 
-> **Nasıl kullanılır:** Yeni bir Claude oturumuna (Claude design) İKİ dosyayı birlikte yapıştır:
-> **(1) bu dosya + (2) [STAFF_MANAGEMENT_DESIGN.md](STAFF_MANAGEMENT_DESIGN.md)** (mevcut v1 tasarım).
-> Çıktı = iki bölümlü doküman: **A. Tasarım Review Raporu** + **B. Staff Hub UI/UX Tasarımı**.
-> Kod YAZDIRMA. Owner: whitecrossbarbers@gmail.com.
+> **How to use:** Paste TWO files together into a new Claude session (Claude design):
+> **(1) this file + (2) [STAFF_MANAGEMENT_DESIGN.md](STAFF_MANAGEMENT_DESIGN.md)** (the existing v1 design).
+> Output = a two-part document: **A. Design Review Report** + **B. Staff Hub UI/UX Design**.
+> DO NOT write code. Owner: whitecrossbarbers@gmail.com.
 >
-> *v2 notu (2026-07-14):* v1 prompt "sıfırdan tasarım ürettir" idi ve çalıştırıldı — çıktısı
-> STAFF_MANAGEMENT_DESIGN.md olarak bu repoda (kod haritası satır-atıflı doğrulanmış durumda).
-> Bu v2, [PROJECT_BRIEF.md](PROJECT_BRIEF.md)'in ürün bağlamı ile v1'in spesifikasyonunu birleştirir
-> ve görevi "aynı işi tekrar yap"tan **"mevcut tasarımı zorla + UI'ını çıkar"a** çevirir.
+> *v2 note (2026-07-14):* the v1 prompt was "produce a design from scratch" and it was run — its output is
+> in this repo as STAFF_MANAGEMENT_DESIGN.md (code map verified with line references).
+> This v2 combines the product context of [PROJECT_BRIEF.md](PROJECT_BRIEF.md) with v1's specification
+> and turns the task from "do the same work again" into **"stress the existing design + produce its UI."**
 
 ---
 
-## Rol
+## Role
 
-Sen iki şapkalı çalışacaksın: **(A) kıdemli SaaS ürün mimarı / veri modelcisi** — mevcut tasarımı
-adversarial review edeceksin; **(B) kıdemli product designer** — modülün ekran tasarımını çıkaracaksın.
+You will work wearing two hats: **(A) senior SaaS product architect / data modeler** — you will
+adversarially review the existing design; **(B) senior product designer** — you will produce the module's screen design.
 
-## Ürün bağlamı (repo erişimin yok — bu bölüm kendi başına yeter)
+## Product context (you have no repo access — this section is self-sufficient)
 
-**salOWN** — çok-kiracılı (multi-tenant) salon/barber yönetim SaaS'ı: booking, ödeme, loyalty,
-bildirimler, personel mobil uygulaması, admin panel, raporlama.
+**salOWN** — a multi-tenant salon/barber management SaaS: booking, payment, loyalty,
+notifications, staff mobile app, admin panel, reporting.
 
 - **Stack:** React + Vite + strict TypeScript · Firebase (Firestore, Cloud Functions
-  `europe-west2`, Hosting; proje `havuz-44f70`). Tüm tenant verisi `tenants/{tenantId}/...` altında.
-- **3 canlı tenant:** `whitecross` (premium pilot — her özellik önce burada), `herohairs`, `eekurt`.
-  Gerçek kullanım var: günlük online booking, loyalty redeem, transactional mail trafiği.
-- **Yüzeyler:** admin panel (salown.com) · salOWN-hosted booking/profil · whitecross premium sitesi
-  (ayrı statik repo) · staff mobil app (staff.salown.com).
-- **Deploy:** main'e push → CI otomatik hosting deploy. Değişiklikler önce whitecross pilotunda.
+  `europe-west2`, Hosting; project `havuz-44f70`). All tenant data lives under `tenants/{tenantId}/...`.
+- **3 live tenants:** `whitecross` (premium pilot — every feature lands here first), `herohairs`, `eekurt`.
+  There is real usage: daily online booking, loyalty redeem, transactional mail traffic.
+- **Surfaces:** admin panel (salown.com) · salOWN-hosted booking/profile · whitecross premium site
+  (separate static repo) · staff mobile app (staff.salown.com).
+- **Deploy:** push to main → CI auto hosting deploy. Changes land first in the whitecross pilot.
 
-## İş problemi
+## Business problem
 
-Personel **farklı ödeme modelleriyle** çalışıyor; sistem bugün yalnız sabit günlük wage biliyor
-(whitecross'a özel Finance sayfasındaki isim-anahtarlı `partnerConfig`). Gerçek dünya (UK):
+Staff work with **different pay models**; today the system knows only fixed daily wage
+(the name-keyed `partnerConfig` on the Finance page specific to whitecross). The real world (UK):
 
-- **wage** — sabit £/gün-hafta-ay; dükkan tüm hizmet gelirini alır, maaş sabit gider.
-- **commission** — kişi ürettiği NET cironun %'sini alır (hizmet/ürün ayrı %); dükkan geliri = ciro − komisyon.
-- **self-employed / koltuk kiracısı** — kişinin cirosu **dükkanın geliri değil**; dükkan kira
-  (sabit £ VEYA cironun %'si) toplar. UK yasal ayrımı: self-employed'a maaş/vardiya işletirsen
-  employee'ye döner (vergi/istihdam riski) — model bunu yapısal korumalı.
+- **wage** — fixed £/day-week-month; the shop takes all service revenue, salary is a fixed expense.
+- **commission** — the person takes a % of the NET revenue they produce (service/product separate %); shop revenue = revenue − commission.
+- **self-employed / chair renter** — the person's revenue is **not the shop's revenue**; the shop collects rent
+  (fixed £ OR a % of revenue). UK legal distinction: if you run a salary/shift on a self-employed person they revert
+  to an employee (tax/employment risk) — the model protects against this structurally.
 
-Üç model P&L'i bambaşka hesaplattığı için birinci-sınıf, multi-tenant bir **Staff Management**
-modülü gerekiyor.
+Because the three models compute P&L completely differently, a first-class, multi-tenant **Staff Management**
+module is needed.
 
-## Mevcut kod gerçekleri (tasarım bunlara oturdu — review'da varsay)
+## Current code facts (the design sits on these — assume in review)
 
-- `partnerConfig` = `tenants/whitecross/settings/finance_config` içinde, **isim-anahtarlı**:
-  `{share, wage, isPartner, creditTo, startDate}`. Config'siz gerçek barber'a **örtük £100/gün
-  fallback** var (tehlikeli default). Finance route/sidebar'da `tenantId==='whitecross'` hardcode.
-- **Barber doc'ları world-readable** (`firestore.rules` `read: if true` — public booking siteleri
-  okuyor). Comp verisi bu doc'a KONAMAZ.
-- Lifecycle CANLI ve sağlam (G5, 2026-07-13/14): `status: active|leave|passive` + tarih-aralıklı
-  `leaveFrom/Until` + `leaves[]` izin arşivi + otomatik dönüş. Tek resolver önceliği (owner kararı):
-  **`shiftChanges (açık) > leave > passive > workingDays/dayHours`** — izin içine girilen açık
-  özel-gün ÇALIŞIR ve ücrete sayılır.
-- Ciro ataması **isim-bazlı** (`normalizeName`); booking'ler `barberName` snapshot'lıyor (silinen
-  barber'ın geçmişi isimle kalır). Walk-in tuhaflığı: `barberId` = küçük-harf İSİM; online = doc id.
-- Net ciro helper'ı paylaşık: `bookingNetWithoutTip` (price + serviceCharge + ürün/addon − discount −
-  loyalty; **tip hiçbir hesapta yok**, bahşiş personelin).
-- **Bilinen 2 bug (tasarım yapısal çözüyor — review'da doğrula):** (1) passive barber Finance'ta
-  hâlâ günlük maaş tahakkuk ediyor; (2) izindeki barber occupancy kapasite paydasında sayılıyor.
-- Kısıtlar: Firestore'da toplu silme yok (export → dry-run CSV → owner onayı → yaz); booking para
-  alanlarının semantiği değiştirilemez; para/semantik değişikliği = önce rapor + owner onayı.
+- `partnerConfig` = inside `tenants/whitecross/settings/finance_config`, **name-keyed**:
+  `{share, wage, isPartner, creditTo, startDate}`. For a real barber without a config there is an **implicit £100/day
+  fallback** (dangerous default). `tenantId==='whitecross'` hardcoded in the Finance route/sidebar.
+- **Barber docs are world-readable** (`firestore.rules` `read: if true` — public booking sites
+  read them). Comp data CANNOT be placed in this doc.
+- The lifecycle is LIVE and solid (G5, 2026-07-13/14): `status: active|leave|passive` + date-ranged
+  `leaveFrom/Until` + `leaves[]` leave archive + automatic return. Single resolver priority (owner decision):
+  **`shiftChanges (open) > leave > passive > workingDays/dayHours`** — an open special-day entered within a
+  leave WORKS and counts toward pay.
+- Revenue attribution is **name-based** (`normalizeName`); bookings snapshot `barberName` (a deleted
+  barber's history stays by name). Walk-in oddity: `barberId` = lowercase NAME; online = doc id.
+- The net-revenue helper is shared: `bookingNetWithoutTip` (price + serviceCharge + product/addon − discount −
+  loyalty; **tip is in no calculation**, the tip is the staff's).
+- **2 known bugs (the design solves structurally — verify in review):** (1) a passive barber still accrues
+  daily wage in Finance; (2) a barber on leave is counted in the occupancy capacity denominator.
+- Constraints: no bulk delete in Firestore (export → dry-run CSV → owner approval → write); the semantics of booking
+  money fields cannot be changed; a money/semantics change = report first + owner approval.
 
-## GÖREV A — Tasarım Review Raporu
+## TASK A — Design Review Report
 
-Ekteki **STAFF_MANAGEMENT_DESIGN.md** (v1) için:
+For the attached **STAFF_MANAGEMENT_DESIGN.md** (v1):
 
-1. **Açık soruları cevapla (v1 §8'deki 4 soru):** komisyon brüt/net tabanı (+ aggregator kaynaklı
-   booking'lerde platform kesintisi), izinde kira default'u, `guaranteeMin` v1'e girsin mi, staff'ın
-   kendi komisyon görünümü. Her birine gerekçeli öneri + karşı-senaryo.
-2. **Adversarial zorla:** veri şeması (`staffComp/{barberId}`, append-only `history[]`,
-   "passive = dönem kapalı"), hesap kuralları (§2 formülleri, gün-orana indirgeme), göç planı (M1–M4
-   parity yaklaşımı), rules bloğu. Nerede kırılır? Hangi edge case eksik? Firestore okuma-maliyeti /
-   index ihtiyacı / offline-cache açısı? Her bulguyu **CONFIRMED** (somut senaryoyla kırılıyor) /
-   **PLAUSIBLE** (riskli ama senaryo kuramadın) olarak etiketle.
-3. **Eksik parça avı:** tasarımın hiç değinmediği ama bu modülün scale'de ihtiyaç duyacağı şeyler
-   (örn. çoklu-lokasyon, saatlik ücret, bordro export'u) — "v2 park listesi" olarak öner, kapsamı
-   şişirme.
+1. **Answer the open questions (the 4 questions in v1 §8):** commission gross/net base (+ platform cut on
+   aggregator-sourced bookings), rent default on leave, should `guaranteeMin` go into v1, staff's
+   own commission view. For each a reasoned recommendation + counter-scenario.
+2. **Stress adversarially:** the data schema (`staffComp/{barberId}`, append-only `history[]`,
+   "passive = period closed"), the calculation rules (§2 formulas, day-rate reduction), the migration plan (M1–M4
+   parity approach), the rules block. Where does it break? Which edge case is missing? The Firestore read-cost /
+   index need / offline-cache angle? Label each finding **CONFIRMED** (breaks with a concrete scenario) /
+   **PLAUSIBLE** (risky but you couldn't build a scenario).
+3. **Missing-piece hunt:** things the design never touches but this module will need at scale
+   (e.g. multi-location, hourly rate, payroll export) — propose as a "v2 parking list," don't
+   bloat the scope.
 
-## GÖREV B — Staff Hub UI/UX Tasarımı
+## TASK B — Staff Hub UI/UX Design
 
-v1 §4'teki kaba iskeleti gerçek ekran tasarımına dönüştür (v1'in veri modeli/fazlaması SABİT —
-UI onu değiştiremez):
+Turn the rough skeleton in v1 §4 into a real screen design (v1's data model/phasing is FIXED —
+the UI cannot change it):
 
-- **Ekran envanteri:** roster listesi + personel detay paneli (Availability / Pay / History
-  sekmeleri) + "Eski personel" arşiv bölümü + comp değiştirme akışı (tip seç → paramlar →
-  effectiveFrom → onay) + lifecycle aksiyonları (leave/passive/delete, mevcut güçlü-onay modalı korunur).
-- **Her ekran için:** markdown/ASCII wireframe + durum matrisi (boş/dolu/hata/yükleniyor;
-  comp-tanımsız uyarısı; izinli/pasif rozetleri) + mikro-copy önerileri (İngilizce UI metni).
-- **Rol görünürlüğü:** Pay sekmesi yalnız owner + super-admin; admin/staff sekmeyi hiç görmez.
-  Tenant'ta comp tanımsızsa boş-durum.
-- **3 comp tipinin görsel dili:** tip başına ayırt edici özet kartı (wage £/gün · commission %'ler ·
-  self-employed kira + "cirosu şirket geliri değildir" ibaresi) — owner tabloya bakınca kimin ne
-  modelde olduğunu 2 saniyede ayırt etmeli.
-- **Panel deseni:** mevcut salOWN admin paneliyle uyum (dark + light ikisi de), mobil-uyumlu;
-  "sadece görsel" kuralı — mevcut davranışları yeniden tasarlama, yerleşim/hiyerarşi/akış tasarla.
+- **Screen inventory:** roster list + staff detail panel (Availability / Pay / History
+  tabs) + "Former staff" archive section + comp-change flow (pick type → params →
+  effectiveFrom → confirm) + lifecycle actions (leave/passive/delete, existing strong-confirm modal preserved).
+- **For each screen:** markdown/ASCII wireframe + state matrix (empty/full/error/loading;
+  comp-undefined warning; leave/passive badges) + micro-copy suggestions (English UI text).
+- **Role visibility:** Pay tab only owner + super-admin; admin/staff never see the tab.
+  If comp is undefined on the tenant, empty state.
+- **Visual language of the 3 comp types:** a distinctive summary card per type (wage £/day · commission %'s ·
+  self-employed rent + "their revenue is not company revenue" note) — when the owner looks at the table they
+  should distinguish who is on which model in 2 seconds.
+- **Panel pattern:** consistent with the existing salOWN admin panel (both dark + light), mobile-friendly;
+  the "visual only" rule — do not redesign existing behaviors, design layout/hierarchy/flow.
 
-## İstenen çıktı formatı
+## Requested output format
 
-Tek markdown doküman, iki bölüm: **A. Review Raporu** (bulgular CONFIRMED/PLAUSIBLE etiketli,
-açık-soru cevapları, v2 park listesi) + **B. UI Tasarımı** (ekran envanteri, wireframe'ler, durum
-matrisleri, copy). Kod yazma; Firestore rules/şema önerilerini metin olarak ver. Çıktı bu repoya
-(`salown-docs`) işlenecek ve kod fazları (A/B/C, v1 §7) bu dokümana göre yürüyecek.
+A single markdown document, two sections: **A. Review Report** (findings tagged CONFIRMED/PLAUSIBLE,
+open-question answers, v2 parking list) + **B. UI Design** (screen inventory, wireframes, state
+matrices, copy). Do not write code; give Firestore rules/schema suggestions as text. The output will be committed to
+this repo (`salown-docs`) and the code phases (A/B/C, v1 §7) will proceed per this document.

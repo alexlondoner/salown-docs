@@ -1,110 +1,110 @@
-# Staff Settings & Availability — Denetim + Toparlama Planı
+# Staff Settings & Availability — Audit + Consolidation Plan
 
-> **Tarih:** 2026-07-12 (rc3+1 günü — SADECE analiz, kod yok) · **Tetik:** Muhamed on-leave (14 Tem–19 Ağu)
-> girildi ama Dashboard grid'inde görünmeye devam etti + owner: "staff settings tam bir kaos, ayarlar çok dağınık."
-> **Durum:** 🔴 Denetim tamam, fix'ler TS-freeze sonrası (2026-07-14+). İlgili: INCIDENTS 2026-07-12 (leave silme), ROADMAP G1.
+> **Date:** 2026-07-12 (rc3+1 day — ANALYSIS ONLY, no code) · **Trigger:** Muhamed on-leave (14 Jul–19 Aug)
+> was entered but kept showing in the Dashboard grid + owner: "staff settings are a total mess, the settings are all over the place."
+> **Status:** 🔴 Audit done, fixes after TS-freeze (2026-07-14+). Related: INCIDENTS 2026-07-12 (leave deletion), ROADMAP G1.
 
 ---
 
-## 1 · Anlık vaka: Muhamed neden hâlâ grid'de?
+## 1 · Immediate case: why is Muhamed still in the grid?
 
-Muhamed'in doc'u DOĞRU (`barber-1781007454543`: `status:'leave'`, `leaveFrom:'2026-07-14'`,
-`leaveUntil:'2026-08-19'`, `active:false`). Sorun veride değil, **grid'in leave'i hiç okumamasında**:
+Muhamed's doc is CORRECT (`barber-1781007454543`: `status:'leave'`, `leaveFrom:'2026-07-14'`,
+`leaveUntil:'2026-08-19'`, `active:false`). The problem is not in the data, but in **the grid never reading leave**:
 
-- `Dashboard.tsx:406` `activeBarbersForDay` kolonları `workingDays → shiftChanges → dayHours` ile kurar;
-  **`status`/`active`/`leaveFrom-Until` HİÇ kontrol edilmez.** Leave boyunca da kolon çizilir.
-- Not: bugün 12 Tem — leave 14'ünde başlıyor, yani bugün görünmesi zaten doğru. Ama 14 Tem–19 Ağu
-  arasına gidilse de görünecek; bug tarih değil, kaynak.
+- `Dashboard.tsx:406` `activeBarbersForDay` builds columns with `workingDays → shiftChanges → dayHours`;
+  **`status`/`active`/`leaveFrom-Until` are NEVER checked.** A column is drawn throughout the leave too.
+- Note: today is 12 Jul — leave starts on the 14th, so it showing today is actually correct. But it would also show
+  if you navigated to 14 Jul–19 Aug; the bug is not the date, it's the source.
 
-## 2 · Asıl bulgu: aynı soruya 5 yüzey 5 farklı cevap veriyor
+## 2 · The real finding: 5 surfaces give 5 different answers to the same question
 
-"Muhamed X gününde müsait mi?" sorusunun yüzeylere göre cevabı (canlı kod, satır atıflı):
+The answer to "is Muhamed available on day X?" by surface (live code, with line references):
 
-| Yüzey | Neye bakar | Muhamed için sonuç (leave 14 Tem–19 Ağu) |
+| Surface | What it looks at | Result for Muhamed (leave 14 Jul–19 Aug) |
 |---|---|---|
-| **Dashboard grid** (`Dashboard.tsx:406`) | workingDays + shiftChanges + dayHours | ❌ Leave boyunca da GÖRÜNÜR (owner'ın şikayeti) |
-| **Panel formları** WalkIn/Booking/BlockTime (`getAvailableBarbersForDate`, `bookingUtils.ts:163`) | status/leave tarih aralığı ✅ ama **shiftChanges'i OKUMAZ** | ⚠️ Leave aralığını doğru sayar AMA per-date override'lardan habersiz: off-gününde çalışmaya getirilen barber (örn. Muhamed 13 Tem `{open,close}` override'ı) form dropdown'larında GÖRÜNMEZ; markOffToday ile kapatılan barber formlarda görünmeye devam eder |
-| **Public BookingPage** (`BookingPage.tsx:396` `where('active','==',true)`) | sadece `active` boolean | ⚠️ İKİ YÖNLÜ YANLIŞ: leave girildiği AN online'dan düştü (14'ünü beklemedi) + 19 Ağu geçince de **kendiliğinden GERİ GELMEZ** (biri status'u elle 'active' yapana kadar; `active:false` doc'ta kalır) |
-| **Server reschedule** (`functions/src/index.js:1238` off-day guard) | shiftChanges + workingDays + dayHours | ❌ Leave sırasında müşteri email-linkiyle Muhamed'e RESCHEDULE EDEBİLİR (hayalet booking, 2026-06-29 incident'ının leave versiyonu) |
-| **Finance staff wages** (`Finance.tsx:425-432`) | workingDays + shiftChanges + startDate | 🔴 **PARA BUG'I:** leave'i bilmez → 14 Tem–19 Ağu arası Muhamed'e günlük £41.60 hakediş SAYMAYA DEVAM EDER. ~32 planlı gün ≈ **£1,331 hayalet maaş** tahakkuk eder |
-| Staff app (`src/staff/`) | leave referansı yok | ❌ kendi takvimi leave'den habersiz |
+| **Dashboard grid** (`Dashboard.tsx:406`) | workingDays + shiftChanges + dayHours | ❌ VISIBLE throughout the leave too (the owner's complaint) |
+| **Panel forms** WalkIn/Booking/BlockTime (`getAvailableBarbersForDate`, `bookingUtils.ts:163`) | status/leave date range ✅ but **does NOT read shiftChanges** | ⚠️ Counts the leave range correctly BUT is unaware of per-date overrides: a barber brought in to work on their off-day (e.g. Muhamed's 13 Jul `{open,close}` override) is NOT VISIBLE in the form dropdowns; a barber closed via markOffToday keeps showing in the forms |
+| **Public BookingPage** (`BookingPage.tsx:396` `where('active','==',true)`) | just the `active` boolean | ⚠️ WRONG IN BOTH DIRECTIONS: it dropped off online THE MOMENT leave was entered (didn't wait for the 14th) + it does NOT come **back automatically** after 19 Aug (until someone manually sets status to 'active'; `active:false` stays in the doc) |
+| **Server reschedule** (`functions/src/index.js:1238` off-day guard) | shiftChanges + workingDays + dayHours | ❌ During leave a customer CAN RESCHEDULE to Muhamed via the email link (a ghost booking, the leave version of the 2026-06-29 incident) |
+| **Finance staff wages** (`Finance.tsx:425-432`) | workingDays + shiftChanges + startDate | 🔴 **MONEY BUG:** it doesn't know about leave → it KEEPS COUNTING £41.60 daily earnings for Muhamed between 14 Jul–19 Aug. ~32 scheduled days ≈ **£1,331 ghost wage** accrues |
+| Staff app (`src/staff/`) | no leave reference | ❌ its own calendar is unaware of leave |
 
-**Kök neden:** müsaitlik kararı tek bir yerde değil — her yüzey kendi kopya mantığını yazmış,
-leave sonradan eklenince sadece `getAvailableBarbersForDate`'e işlenmiş.
+**Root cause:** the availability decision is not in one place — each surface wrote its own copy of the logic,
+and when leave was added later it was only wired into `getAvailableBarbersForDate`.
 
-## 3 · Veri modeli dağınıklığı (kaosun envanteri)
+## 3 · Data model mess (inventory of the chaos)
 
-Barber doc + çevresi, üst üste binen/yarışan alanlar:
+The barber doc + surroundings, with overlapping/competing fields:
 
-1. **`active` (boolean) vs `status` ('active'|'passive'|'leave') — İKİ gerçek kaynak.**
-   `Barbers.tsx:303` kayıtta `active = status==='active'` türetir; ama BookingPage query'si
-   `active`'e, panel helper'ları `status`'a bakar. Leave = gelecek tarihli bile olsa `active:false`
-   → online'dan ANINDA düşer; leave bitse de `active:false` kalır → online'a dönmez. Legacy doc'larda
-   yalnız `active` var (`barberStatusOf` back-compat).
-2. **`hours` (tek open/close) vs `dayHours` (gün-bazlı) — çift saat modeli.** `hours` artık
-   "primary day"den türetilen özet (`Barbers.tsx:310`); okuyanlar karışık.
-3. **`shiftChanges[dateKey]`** — tek-gün istisnası (closed / özel saat). Leave'le İLİŞKİSİZ iki ayrı
-   mekanizma; Finance yalnız bunu tanır. 36 günlük izni bugün Finance'e doğru anlatmanın tek yolu
-   36 ayrı shiftChange yazmak (kimse yazmaz).
-4. **`partnerConfig` (Finance) İSİM-anahtarlı** (`tenants/whitecross/settings/finance_config`),
-   barber doc'ları ID'li — rename'de kopar; wage/startDate barber'ın kendisinde değil.
-5. **Leave'in yaşam döngüsü yok:** `leaveUntil` geçince status kendiliğinden 'active'e dönmez
-   (helper'lar tarih aralığında false döner ama `active:false` + `status:'leave'` doc'ta kalır);
-   ayrıca leave tek aralık — ikinci izin girilemez, tarihler üst üste yazılır.
-6. **cycleStatus tek-tık leave silme** (INCIDENTS 2026-07-12, ROADMAP G1) + **barber değişiklikleri
-   auditLogs'a yazılmıyor** (kim/ne zaman izlenemiyor).
-7. Ayarların COĞRAFYASI dağınık: müsaitlik Barbers sayfasında, wage/startDate Finance ⚙'de,
-   izinler Settings'te, renk/sıra Barbers'ta — "bir çalışanın her şeyi" tek yerde görünmüyor.
-8. **Formlar shiftChanges'ten habersiz (2026-07-13 vakasıyla kanıtlandı):** `getAvailableBarbersForDate`
-   (`bookingUtils.ts:163`) yalnız status/leave/workingDays/dayHours okur — `shiftChanges` YOK. Oysa
-   Barbers sayfasının kendi quick-action'ları ("bring in today" `Barbers.tsx:383` / "mark off today"
-   `:371`) tam da bu override'ları yazıyor: **ürünün kendi özelliği, kendi formları tarafından
-   görülmüyor.** Grid + Finance override'ı sayar, formlar saymaz → aynı barber grid'de var,
-   walk-in dropdown'ında yok. Resolver (madde 4A) bunu da kapsamalı: öncelik `shiftChanges > leave > ...`.
-9. **İKİ ayrı "members" ekranı:** Team Members (Barbers sayfası, roster+quick actions) vs
-   Settings → Members (per-date shift override editörü). Owner 2026-07-13 rotasını girmek için
-   ikisi arasında gidip geldi; hangi ayar nerede belli değil. Staff hub (4F) bunu tek ekrana indirir.
+1. **`active` (boolean) vs `status` ('active'|'passive'|'leave') — TWO sources of truth.**
+   `Barbers.tsx:303` derives `active = status==='active'` on write; but the BookingPage query looks at
+   `active`, the panel helpers at `status`. Leave = even if future-dated `active:false`
+   → drops off online INSTANTLY; even when leave ends `active:false` stays → doesn't return online. In legacy docs
+   there is only `active` (`barberStatusOf` back-compat).
+2. **`hours` (single open/close) vs `dayHours` (per-day) — dual hours model.** `hours` is now
+   a summary derived from the "primary day" (`Barbers.tsx:310`); readers are confused.
+3. **`shiftChanges[dateKey]`** — a single-day exception (closed / special hours). UNRELATED to leave, two separate
+   mechanisms; Finance recognizes only this one. Today the only way to tell Finance about a 36-day leave correctly
+   is to write 36 separate shiftChanges (nobody does that).
+4. **`partnerConfig` (Finance) is NAME-keyed** (`tenants/whitecross/settings/finance_config`),
+   the barber docs are ID'd — breaks on rename; wage/startDate is not on the barber itself.
+5. **Leave has no lifecycle:** when `leaveUntil` passes, status does not automatically return to 'active'
+   (the helpers return false within the date range but `active:false` + `status:'leave'` stay in the doc);
+   also leave is a single range — a second leave can't be entered, the dates get overwritten.
+6. **cycleStatus one-tap leave deletion** (INCIDENTS 2026-07-12, ROADMAP G1) + **barber changes
+   are not written to auditLogs** (who/when can't be tracked).
+7. The GEOGRAPHY of the settings is scattered: availability on the Barbers page, wage/startDate in Finance ⚙,
+   leaves in Settings, color/order in Barbers — "everything about one employee" is not visible in one place.
+8. **Forms are unaware of shiftChanges (proven with the 2026-07-13 case):** `getAvailableBarbersForDate`
+   (`bookingUtils.ts:163`) reads only status/leave/workingDays/dayHours — NO `shiftChanges`. Yet
+   the Barbers page's own quick-actions ("bring in today" `Barbers.tsx:383` / "mark off today"
+   `:371`) write exactly these overrides: **the product's own feature is not seen by
+   its own forms.** The grid + Finance count the override, the forms don't → the same barber is in the grid,
+   not in the walk-in dropdown. The resolver (item 4A) must cover this too: priority `shiftChanges > leave > ...`.
+9. **TWO separate "members" screens:** Team Members (Barbers page, roster+quick actions) vs
+   Settings → Members (per-date shift override editor). On 2026-07-13 the owner went back and forth between
+   the two to enter the rota; which setting is where is unclear. The Staff hub (4F) brings this down to one screen.
 
-## 4 · Hedef model (öneri)
+## 4 · Target model (proposal)
 
-**A. Tek resolver:** `getBarberAvailability(barber, date) → {available, reason: 'off-day'|'leave'|'passive'|'shift-closed'|'shift-open'}`
-`bookingUtils`'te tek fonksiyon; **grid, formlar, BookingPage, staff app VE server callable** (functions'ta
-aynı mantığın JS kopyası — mevcut off-day guard'ın genişletilmişi) hepsi bunu kullanır. Öncelik:
+**A. Single resolver:** `getBarberAvailability(barber, date) → {available, reason: 'off-day'|'leave'|'passive'|'shift-closed'|'shift-open'}`
+one function in `bookingUtils`; **the grid, forms, BookingPage, staff app AND the server callable** (a JS copy of the
+same logic in functions — an extension of the existing off-day guard) all use it. Priority:
 `shiftChanges > leave > passive > workingDays/dayHours`.
 
-**B. `active`'i gerçek kaynak olmaktan çıkar:** BookingPage query'si `where('active'==true)` yerine
-tüm barber'ları çekip client-side resolver'dan geçirir (barbers zaten public-readable; N küçük).
-`active` alanı legacy uyumluluk için yazılmaya devam eder ama SADECE 'passive' için false olur
-(leave'de true kalır → tarih aralığı karar verir). Geri-dönüş bug'ı da böylece ölür.
-⚠️ `firestore.rules` etkisi yok (read zaten `if true`) ama INVARIANTS'a not düş.
+**B. Remove `active` from being a source of truth:** instead of the BookingPage query `where('active'==true)`,
+fetch all barbers and pass them through the client-side resolver (barbers are already public-readable; N is small).
+The `active` field keeps being written for legacy compatibility but is false ONLY for 'passive'
+(stays true during leave → the date range decides). The return bug thus dies too.
+⚠️ No `firestore.rules` impact (read is already `if true`) but note it in INVARIANTS.
 
-**C. Grid davranışı:** leave günündeki barber kolonu ya hiç çizilmez ya soluk "On leave · til 19 Aug"
-başlığıyla çizilir (o gün booking'i VARSA — hayalet önleme — soluk göster; yoksa gizle.
-2026-06-29 dersinin aynısı: görünmez kolon = yönetilemez booking).
+**C. Grid behavior:** the barber column on a leave day is either not drawn at all or drawn with a faded "On leave · til 19 Aug"
+header (if there IS a booking that day — ghost prevention — show faded; otherwise hide.
+Same as the 2026-06-29 lesson: an invisible column = an unmanageable booking).
 
-**D. Finance leave-farkındalığı:** staff/partner gün sayacına `isBarberOnLeaveForDate` eklenir
-(scheduled-day filtresine bir satır: leave günü sayılmaz). Muhamed vakası için tek başına ~£1,331'lik fix.
+**D. Finance leave-awareness:** add `isBarberOnLeaveForDate` to the staff/partner day counter
+(a line to the scheduled-day filter: a leave day is not counted). For the Muhamed case alone a ~£1,331 fix.
 
-**E. Yaşam döngüsü:** leaveUntil geçince görünür durum otomatik 'active' (yazma job'ı YERİNE
-`barberStatusOf`'un tarih-duyarlı hali: `status==='leave' && bugün>until` → 'active' say).
-cycleStatus'a leave-confirm ("Muhamed is on leave until 19 Aug — end leave?") + `BARBER_STATUS_CHANGED`
-audit kaydı (G1 ile birleşir).
+**E. Lifecycle:** when leaveUntil passes the visible status automatically becomes 'active' (INSTEAD of a write job,
+a date-aware version of `barberStatusOf`: `status==='leave' && today>until` → count as 'active').
+A leave-confirm on cycleStatus ("Muhamed is on leave until 19 Aug — end leave?") + a `BARBER_STATUS_CHANGED`
+audit record (merges with G1).
 
-**F. (Faz 2, ayrı iş) Staff hub:** Barbers kartında sekmeli tek ekran — Availability (workingDays/
-dayHours/leave/shift) · Pay (partnerConfig'i barber-ID'ye bağla) · Permissions · Appearance.
-Kaosun UX ayağı; A–E'den bağımsız planlanır, G4 (haftalık wage ledger) buraya oturur.
+**F. (Phase 2, separate work) Staff hub:** a tabbed single screen on the Barbers card — Availability (workingDays/
+dayHours/leave/shift) · Pay (bind partnerConfig to barber-ID) · Permissions · Appearance.
+The UX leg of the chaos; planned independently of A–E, and G4 (weekly wage ledger) sits here.
 
-## 5 · Uygulama sırası (freeze sonrası, 14 Tem+)
+## 5 · Implementation order (post-freeze, 14 Jul+)
 
-| Adım | İş | Boyut | Not |
+| Step | Work | Size | Note |
 |---|---|---|---|
-| 1 | D — Finance leave filtresi | S | para bug'ı, İLK bu; Muhamed 14 Tem'de izne çıkıyor |
-| 2 | A — resolver + grid/form/staff-app geçişi | M | davranış değişikliği tek yerde test edilir |
-| 3 | B — BookingPage active→resolver | S | online dönüş bug'ını da kapatır |
-| 4 | Server callable leave guard | S | off-day guard'a leave satırı |
-| 5 | E + G1 — lifecycle + confirm + audit | S | INCIDENTS 07-12 kapanışı |
-| 6 | F — Staff hub redesign | L | ayrı brief; G4 ledger dahil |
+| 1 | D — Finance leave filter | S | the money bug, FIRST this; Muhamed goes on leave on 14 Jul |
+| 2 | A — resolver + grid/form/staff-app migration | M | the behavior change is tested in one place |
+| 3 | B — BookingPage active→resolver | S | also closes the online return bug |
+| 4 | Server callable leave guard | S | a leave line to the off-day guard |
+| 5 | E + G1 — lifecycle + confirm + audit | S | closes INCIDENTS 07-12 |
+| 6 | F — Staff hub redesign | L | separate brief; includes G4 ledger |
 
-**Geçici işletme kuralı (kod gelene dek):** 14 Tem–19 Ağu arası Muhamed'in grid'de görünmesi
-kozmetik ama **Finance'teki hakediş gerçek para** — ya adım 1'i 14'ünden önce almalı (önerilen)
-ya da ay sonunda Muhamed'in Temmuz/Ağustos gün sayısı elle düşülmeli.
+**Interim business rule (until the code arrives):** Muhamed showing in the grid between 14 Jul–19 Aug is
+cosmetic but **the earnings in Finance are real money** — either take step 1 before the 14th (recommended)
+or manually deduct Muhamed's July/August day count at month end.

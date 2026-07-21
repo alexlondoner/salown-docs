@@ -1,77 +1,77 @@
-# PRINCIPLES.md — Engineering Principles (kurumsal mühendislik ilkeleri)
+# PRINCIPLES.md — Engineering Principles (corporate engineering principles)
 
-> **Bu dosya ne:** Incident'lardan, kararlardan ve tekrar eden hatalardan damıtılmış **cross-cutting mühendislik kuralları.** Kardeş belgelerle görev ayrımı korunur (birbirinin kopyası OLMAZ):
+> **What this file is:** **cross-cutting engineering rules** distilled from incidents, decisions, and recurring mistakes. The division of labor with sibling documents is preserved (they are NOT copies of each other):
 >
-> | Belge | Sorumluluğu |
+> | Document | Its responsibility |
 > |---|---|
-> | [DECISIONS.md](DECISIONS.md) | **Neden** bu yolu seçtik? (tekil ADR) |
-> | [INCIDENTS.md](INCIDENTS.md) | **Ne kırıldı?** (postmortem) |
-> | [INVARIANTS.md](INVARIANTS.md) | **Asla bozulmaması gerekenler** |
-> | **PRINCIPLES.md** | **Nasıl mühendislik yapıyoruz?** (her yere uygulanan kural) |
+> | [DECISIONS.md](DECISIONS.md) | **Why** did we choose this path? (individual ADR) |
+> | [INCIDENTS.md](INCIDENTS.md) | **What broke?** (postmortem) |
+> | [INVARIANTS.md](INVARIANTS.md) | **What must never be broken** |
+> | **PRINCIPLES.md** | **How do we engineer?** (a rule applied everywhere) |
 
-> **Meta-ilke:** *Bir prensip prose kaldıkça dekoratiftir.* Ama her ilke otomatik enforce EDİLEMEZ — bu onu değersiz yapmaz. O yüzden her ilkenin bir **Type**'ı var:
-> - **⚙️ Machine-enforceable** — guard/test/CI/lint'e gömülebilir. Bunlarda **Status:** `✅ enforced` veya `⏳ guard TODO`.
-> - **🧠 Human discipline** — doğası gereği otomatikleşmez (ör. "owner'ın saha bilgisini dinle"). Prose kalması DOĞRU; okuyanın beklentisini doğru kurar.
+> **Meta-principle:** *As long as a principle stays prose, it is decorative.* But not every principle CAN be auto-enforced — that doesn't make it worthless. So every principle has a **Type**:
+> - **⚙️ Machine-enforceable** — can be embedded in a guard/test/CI/lint. These have a **Status:** `✅ enforced` or `⏳ guard TODO`.
+> - **🧠 Human discipline** — inherently non-automatable (e.g. "listen to the owner's field knowledge"). Staying prose is CORRECT; it sets the reader's expectation right.
 >
-> ⚠️ **"enforced sayısı"nı KPI yapma.** Amaç "14'ün 12'si enforced" değil; amaç ⚙️ olanların guard'a taşınması, 🧠 olanların net ifade edilmesi. İki kategori okuyucuya doğru beklentiyi verir — hepsi bu.
+> ⚠️ **Don't make the "enforced count" a KPI.** The goal is not "12 of 14 enforced"; the goal is to move the ⚙️ ones into a guard and to express the 🧠 ones clearly. The two categories give the reader the right expectation — that's all.
 
-> Kaynak: bu ilkeler [INCIDENTS.md](INCIDENTS.md) + [ROADMAP.md](ROADMAP.md) + memory'de dağınıktı; owner önerisiyle (2026-07-21) tek yere toplandı.
+> Source: these principles were scattered across [INCIDENTS.md](INCIDENTS.md) + [ROADMAP.md](ROADMAP.md) + memory; gathered into one place at the owner's suggestion (2026-07-21).
 
 ---
 
 ## 1. Deploy Discipline
 
-**P1 — Targeted deploy, never blanket.** Fonksiyon deploy'u codebase prefix'iyle (`functions:salown:X` / `functions:whitecross:Y`); asla çıplak `--only functions`.
-- *Why:* çıplak deploy başka bölgedeki orphan'ları siler + alakasız fonksiyonları yeniden bağlar. · *Source:* memory `functions_deploy_gotcha`; INCIDENTS 2026-07-21.
-- **Type:** ⚙️ Machine-enforceable — **Status:** ✅ `whitecross-site/scripts/deploy-functions.sh` (fonksiyon ismi zorunlu; `all`/`functions`/blanket reddedilir; test edildi).
+**P1 — Targeted deploy, never blanket.** Function deploy with the codebase prefix (`functions:salown:X` / `functions:whitecross:Y`); never a bare `--only functions`.
+- *Why:* a bare deploy deletes orphans in another region + rebinds unrelated functions. · *Source:* memory `functions_deploy_gotcha`; INCIDENTS 2026-07-21.
+- **Type:** ⚙️ Machine-enforceable — **Status:** ✅ `whitecross-site/scripts/deploy-functions.sh` (function name required; `all`/`functions`/blanket rejected; tested).
 
-**P2 — Announce before deploy; confirm.** Deploy öncesi tenant + URL, onay bekle (istisna: incident'ta owner "önce düzelt" derse).
+**P2 — Announce before deploy; confirm.** Before deploy, tenant + URL, wait for confirmation (exception: if during an incident the owner says "fix first").
 - *Source:* CLAUDE.md #1; memory `deploy_safety`.
 - **Type:** 🧠 Human discipline.
 
-**P3 — Post-deploy smoke on the money path.** Ödeme/kritik fn deploy'undan sonra tek uçtan-uca teyit (yeni booking `cs_live` alıyor mu).
-- *Why:* sessiz kredensiyel/binding hataları koddan görünmez. · *Source:* INCIDENTS 2026-07-21 (17 gün gizli kalan test key).
-- **Type:** ⚙️ Machine-enforceable — **Status:** ✅ `whitecross-site/scripts/check-stripe-live-key.sh` (deploy öncesi/sonrası canlı slotun `sk_live` olduğunu doğrular; test key → deploy reddedilir).
+**P3 — Post-deploy smoke on the money path.** After a payment/critical fn deploy, one end-to-end check (does a new booking get a `cs_live`).
+- *Why:* silent credential/binding errors aren't visible in the code. · *Source:* INCIDENTS 2026-07-21 (a test key hidden for 17 days).
+- **Type:** ⚙️ Machine-enforceable — **Status:** ✅ `whitecross-site/scripts/check-stripe-live-key.sh` (verifies before/after deploy that the live slot is `sk_live`; test key → deploy rejected).
 
 ---
 
 ## 2. Data Integrity & SSOT
 
-**P4 — One source of truth per concept.** Her kavram (booking, normalize kuralı, slot üretimi, sourceColors) tek yerde; tüketen her yol oradan geçer.
-- *Why:* iki kopya ayrışır → saha-çelişkisi. · *Source:* booking=SSOT; `generateSlots` dış-scope; `sourceColors.js`.
+**P4 — One source of truth per concept.** Every concept (booking, normalization rule, slot generation, sourceColors) in one place; every consuming path goes through it.
+- *Why:* two copies drift → field-conflict. · *Source:* booking=SSOT; `generateSlots` outer-scope; `sourceColors.js`.
 - **Type:** 🧠 Human discipline (code review).
 
-**P5 — Never duplicate normalization.** Add-on/status/isim/tarih tek helper'dan (`normalizeSoldAddOns`, `barberKey()`, status uppercase, `toDateKey()`); ikinci yerel normalize YAZMA.
-- *Why:* üç katmanın aynı yanlışı = veri kaybı. · *Source:* INCIDENTS 2026-07-18.
-- **Type:** ⚙️ Machine-enforceable — **Status:** ✅ `soldAddOns.test.ts` (7 regression); ⏳ diğer helper'lar için lint/test genişletilebilir.
+**P5 — Never duplicate normalization.** Add-on/status/name/date from a single helper (`normalizeSoldAddOns`, `barberKey()`, status uppercase, `toDateKey()`); DON'T WRITE a second local normalize.
+- *Why:* three layers with the same mistake = data loss. · *Source:* INCIDENTS 2026-07-18.
+- **Type:** ⚙️ Machine-enforceable — **Status:** ✅ `soldAddOns.test.ts` (7 regression); ⏳ lint/test can be extended for the other helpers.
 
-**P6 — Dates: `toDateKey()`, asla `toISOString().split('T')[0]`.**
-- *Why:* timezone kayması → yanlış gün. · *Source:* CLAUDE.md #3.
-- **Type:** ⚙️ Machine-enforceable — **Status:** ⏳ guard TODO: lint kuralı `toISOString().split` yasağı.
+**P6 — Dates: `toDateKey()`, never `toISOString().split('T')[0]`.**
+- *Why:* timezone shift → wrong day. · *Source:* CLAUDE.md #3.
+- **Type:** ⚙️ Machine-enforceable — **Status:** ⏳ guard TODO: lint rule banning `toISOString().split`.
 
 ---
 
 ## 3. Secrets & Config
 
-**P7 — Secrets belong to the application boundary, not the tenant boundary. No secret name shared across two apps.** ❌ `STRIPE_SECRET_KEY` → ✅ `WC_STRIPE_SECRET_KEY` / `SALOWN_STRIPE_SECRET_KEY` / `ADMIN_…`; aynısı Brevo/Telegram/OpenAI/Google OAuth.
-- *Why:* paylaşılan isim = bir app'in Stripe testi diğerinin canlı ödemesini ezer. · *Source:* 🏛️ INCIDENTS 2026-07-21 (bu ilkenin doğduğu olay); ROADMAP P0. *(Tenant'lar zaten secret tutmaz — Connect `acct_` modeli; sorun app-sınırında.)*
-- **Type:** ⚙️ Machine-enforceable — **Status:** ⏳ guard TODO: secret split (ROADMAP P0) + canlı slota `sk_test` yazmayı reddeden validator. (P3 guard'ı ara-kalkan sağlıyor.)
+**P7 — Secrets belong to the application boundary, not the tenant boundary. No secret name shared across two apps.** ❌ `STRIPE_SECRET_KEY` → ✅ `WC_STRIPE_SECRET_KEY` / `SALOWN_STRIPE_SECRET_KEY` / `ADMIN_…`; the same for Brevo/Telegram/OpenAI/Google OAuth.
+- *Why:* a shared name = one app's Stripe test overwrites the other's live payment. · *Source:* 🏛️ INCIDENTS 2026-07-21 (the event that birthed this principle); ROADMAP P0. *(Tenants already hold no secret — the Connect `acct_` model; the problem is at the app-boundary.)*
+- **Type:** ⚙️ Machine-enforceable — **Status:** ⏳ guard TODO: secret split (ROADMAP P0) + a validator that rejects writing `sk_test` to the live slot. (The P3 guard provides an interim shield.)
 
-**P8 — Feature flags from tenant doc, before rollout.** Flag'i tenant doc'tan oku (hardcode etme); yeni feature flag arkasında çıkar, canlı test edip aç.
-- *Source:* CLAUDE.md #5; `EXTRAS_ENABLED` akışı.
+**P8 — Feature flags from tenant doc, before rollout.** Read the flag from the tenant doc (don't hardcode); ship behind a new feature flag, live-test, then turn it on.
+- *Source:* CLAUDE.md #5; the `EXTRAS_ENABLED` flow.
 - **Type:** 🧠 Human discipline.
 
 ---
 
 ## 4. Change Discipline
 
-**P9 — One bug at a time; report changed lines; keep scope narrow.** "Şunu düzelt" = tam onu; fırsatı bahset, onaysız yayma.
+**P9 — One bug at a time; report changed lines; keep scope narrow.** "Fix this" = exactly that; mention the opportunity, don't spread without approval.
 - *Source:* CLAUDE.md #6; memory `keep_scope_narrow`.
 - **Type:** 🧠 Human discipline.
 
 **P10 — Every fix ships a regression test that pins the bug.**
-- *Why:* aynı sınıf bug geri gelmesin. · *Source:* memory `incidents_discipline`.
-- **Type:** ⚙️ Machine-enforceable — **Status:** ✅ rules suite (95/95) + `npm test`; ⏳ PR template + CI check "değişen davranış için test?" (frontend geniş değil).
+- *Why:* so the same class of bug doesn't return. · *Source:* memory `incidents_discipline`.
+- **Type:** ⚙️ Machine-enforceable — **Status:** ✅ rules suite (95/95) + `npm test`; ⏳ PR template + CI check "test for the changed behavior?" (frontend not broad).
 
 **P11 — Check INCIDENTS.md before diagnosing.**
 - *Source:* CLAUDE.md #7; memory `check_incidents_first`.
@@ -81,12 +81,12 @@
 
 ## 5. Safety & Isolation
 
-**P12 — Best-effort side effects never break the main path.** Bildirim/email/telemetri/loyalty try/catch'le izole; ana akış onlara bağlı düşmez.
+**P12 — Best-effort side effects never break the main path.** Notification/email/telemetry/loyalty isolated with try/catch; the main flow doesn't fall with them.
 - *Source:* confirmation email `sendBrevoEmail` try/catch.
-- **Type:** 🧠 Human discipline (kod deseni).
+- **Type:** 🧠 Human discipline (code pattern).
 
-**P13 — Multi-session git isolation: explicit paths only.** Yalnız kendi dosyanı explicit path ile; asla `git restore .`/`checkout .`/`reset --hard`/`add .`.
-- *Why:* başkasının uncommitted işini siler. · *Source:* memory `multi_session_git_isolation`.
+**P13 — Multi-session git isolation: explicit paths only.** Only your own file with an explicit path; never `git restore .`/`checkout .`/`reset --hard`/`add .`.
+- *Why:* it deletes someone else's uncommitted work. · *Source:* memory `multi_session_git_isolation`.
 - **Type:** 🧠 Human discipline.
 
 **P14 — Destructive bulk ops: export → dry-run → confirm → write.**
@@ -95,7 +95,7 @@
 
 ---
 
-## Nasıl büyür
+## How it grows
 
-- Yeni incident tekrar eden kalıba işaret ediyorsa → buraya ilke ekle, **Source**'a incident'ı bağla.
-- **Asıl iş prose değil, ⚙️ olanları guard'a taşımak.** Loop: `Incident → Root Cause → Principle → Roadmap → Automation/Guard → tekrar edemez`. 🧠 olanlar prose kalır — bu bir eksik değil, doğru sınıflandırma.
+- If a new incident points to a recurring pattern → add a principle here, link the incident in **Source**.
+- **The real work is not prose but moving the ⚙️ ones into a guard.** Loop: `Incident → Root Cause → Principle → Roadmap → Automation/Guard → can't recur`. The 🧠 ones stay prose — this is not a gap but the correct classification.

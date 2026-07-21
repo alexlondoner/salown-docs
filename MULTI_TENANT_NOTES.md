@@ -1,56 +1,56 @@
 # MULTI_TENANT_NOTES.md
 
-## İki Tier Mimari (KALICI KURAL)
+## Two-Tier Architecture (PERMANENT RULE)
 
-### Class A — Salown-managed (standart)
-- `salown-app/functions` her şeyi yönetir
-- Feature flag ile capability açılır
-- Yeni trigger → feature flag ekle → done
-- Aktif Class A tenantlar: whitecross (2026-06-19'dan itibaren), herohairs. *(eekurt 2026-07-18'de inaktif oldu — veri korunuyor.)*
+### Class A — salOWN-managed (standard)
+- `salown-app/functions` manages everything
+- Capability is enabled via a feature flag
+- New trigger → add a feature flag → done
+- Active Class A tenants: whitecross (since 2026-06-19), herohairs. *(eekurt went inactive on 2026-07-18 — data preserved.)*
 
-### Class B — Self-managed (kendi codebase'i var)
-- `whitecross-site/functions` email, Telegram, push, in-app notif'i yönetir
-- `salown-app/functions` trigger'ları **guard'lanmış olmalı** — yoksa double-fire
-- **Şu an aktif Class B tenant yok.** whitecross 2026-06-19'da Class A'ya geçti.
+### Class B — Self-managed (has its own codebase)
+- `whitecross-site/functions` manages email, Telegram, push, in-app notif
+- `salown-app/functions` triggers **must be guarded** — otherwise double-fire
+- **There is currently no active Class B tenant.** whitecross moved to Class A on 2026-06-19.
 
-**Neden kritik:** Her iki codebase aynı Firebase project'e deploy (`havuz-44f70`). Salown-app Firestore trigger'ları whitecross booking'leri için de tetiklenir.
+**Why critical:** Both codebases deploy to the same Firebase project (`havuz-44f70`). salown-app Firestore triggers fire for whitecross bookings too.
 
 ## Guard Patterns
 
-**Yeni salown-app Firestore trigger/email function eklerken:**
+**When adding a new salown-app Firestore trigger/email function:**
 
-1. **Feature flag guard** (tercih edilen):
+1. **Feature flag guard** (preferred):
    ```js
    if (!tenantData.features?.salownXxx) return;
    ```
-   Kullanılan: `salownSendLoyaltyEmail`
+   Used by: `salownSendLoyaltyEmail`
 
 2. **Hard tenantId guard** (fallback):
    ```js
    if (tenantId === 'whitecross') return;
    ```
-   Kullanılan: `salownNotifyBookingCreated`, `salownNotifyBookingUpdated` (cancel branch)
+   Used by: `salownNotifyBookingCreated`, `salownNotifyBookingUpdated` (cancel branch)
 
-**Yeni trigger ekleme kuralı:** Tüm tenantları etkileyen trigger yazmadan önce Class B olabilecek tenant var mı kontrol et. Guard'ı hangi codebase'in o tenant'ı yönettiğini belirten comment'la belgele.
+**New trigger rule:** before writing a trigger that affects all tenants, check whether there's a tenant that could be Class B. Document the guard with a comment stating which codebase manages that tenant.
 
-## Notification Kanalları (her booking için)
+## Notification Channels (per booking)
 
-| Olay | Kanal | Fonksiyon | Sayı |
+| Event | Channel | Function | Count |
 |------|-------|-----------|------|
-| Yeni booking (CONFIRMED) | Telegram + in-app | `salownNotifyBookingCreated` | 1 |
-| Yeni booking (CONFIRMED) | FCM push | `salownNotifyBookingPush` | 1 |
-| Yeni booking (CONFIRMED) | Client email | `salownBookingConfirmationTrigger` | 1 |
+| New booking (CONFIRMED) | Telegram + in-app | `salownNotifyBookingCreated` | 1 |
+| New booking (CONFIRMED) | FCM push | `salownNotifyBookingPush` | 1 |
+| New booking (CONFIRMED) | Client email | `salownBookingConfirmationTrigger` | 1 |
 | PENDING→CONFIRMED | FCM push | `salownNotifyBookingConfirmedPush` | 1 |
-| Cancel (müşteri) | Telegram + in-app + email | `salownNotifyBookingUpdated` + `salownCancelByToken` | 1 her |
+| Cancel (customer) | Telegram + in-app + email | `salownNotifyBookingUpdated` + `salownCancelByToken` | 1 each |
 | Cancel (staff) | in-app only | `salownNotifyBookingUpdated` | 1 |
-| Reschedule (müşteri) | Telegram + in-app + email | `salownNotifyBookingUpdated` + `salownRescheduleByToken` | 1 her |
+| Reschedule (customer) | Telegram + in-app + email | `salownNotifyBookingUpdated` + `salownRescheduleByToken` | 1 each |
 | Checkout | Loyalty email | `salownSendLoyaltyEmail` | 1 |
 
-⚠️ **Stripe Phase 5 notu:** `salownNotifyBookingCreated` PENDING booking'leri için de Telegram gönderiyor. PENDING→CONFIRMED geçişinde `salownNotifyBookingUpdated` da tetiklenir — source 'Salown' ONLINE listesinde olmadığı için duplicate Telegram yok, ama PENDING'de "New Booking" mesajı biraz yanıltıcı. Phase 5'te düzeltilmeli.
+⚠️ **Stripe Phase 5 note:** `salownNotifyBookingCreated` sends Telegram for PENDING bookings too. On the PENDING→CONFIRMED transition `salownNotifyBookingUpdated` also fires — since the source 'salOWN' isn't in the ONLINE list there's no duplicate Telegram, but the "New Booking" message on PENDING is a bit misleading. To be fixed in Phase 5.
 
-## Whitecross Migration — TAMAMLANDI (2026-06-19)
+## Whitecross Migration — COMPLETED (2026-06-19)
 
-| Function | Durum | salown-app karşılığı |
+| Function | Status | salown-app equivalent |
 |----------|-------|---------------------|
 | `parseBooksyConfirmations` | ❌ disabled 2026-06-17 | `salownParseEmails` |
 | `parseBooksyCancellations` | ❌ disabled 2026-06-17 | `salownParseEmails` |
@@ -63,23 +63,23 @@
 | `sendLoyaltyCardEmail` | ❌ disabled 2026-06-19 | `salownSendLoyaltyEmail` (flag: `salownLoyaltyEmail: true`) |
 | `cleanupExpiredPending` | ❌ disabled 2026-06-19 | `salownCleanupExpiredPending` (multi-tenant) |
 | `onNewBookingPush` / `onBookingConfirmedPush` | ❌ disabled 2026-06-19 | `salownNotifyBookingPush` / `salownNotifyBookingConfirmedPush` |
-| FCM token kayıt (barber-mobile) | ❌ disabled 2026-06-19 | Salown Staff App (`salown-staff.web.app`) |
+| FCM token registration (barber-mobile) | ❌ disabled 2026-06-19 | salOWN Staff App (`salown-staff.web.app`) |
 | `createCheckoutSession` + `stripeWebhook` | ✅ active | ⏳ Phase 5 |
 
-## Whitecross-site'ta Kasıtlı Kalanlar
+## Deliberately Kept in whitecross-site
 
-- `createCheckoutSession` + `stripeWebhook` — Stripe deposit, Phase 5'e kadar
-- Static public website (`cancel.html`, `reschedule.html`, `whitecrossbarbers.com`) — premium üye özelliği, legacy değil
+- `createCheckoutSession` + `stripeWebhook` — Stripe deposit, until Phase 5
+- Static public website (`cancel.html`, `reschedule.html`, `whitecrossbarbers.com`) — premium member feature, not legacy
 
-## whitecross-site Kuralı
+## whitecross-site Rule
 
-`whitecross-site/`'a yeni logic ekleme. Whitecross Class A'dır.
+Don't add new logic to `whitecross-site/`. Whitecross is Class A.
 
-**`whitecrossbarbers.com` — legacy değil, premium üye özelliği.**
-"Kendi domain'inde custom web sitesi" = Salown premium tier feature. Functions mimarisi Class A, web sitesi ayrı konudur.
+**`whitecrossbarbers.com` — not legacy, a premium member feature.**
+"Custom website on your own domain" = a salOWN premium tier feature. The functions architecture is Class A; the website is a separate matter.
 
-## SalownHub Vision
+## salOWNHub Vision
 
-- `hub.salown.com` = partner portal (şu an `salown.web.app/app`)
+- `hub.salown.com` = partner portal (currently `salown.web.app/app`)
 - `salown.com` = consumer marketplace
-- DNS migrasyonu Phase 4 planında
+- DNS migration is in the Phase 4 plan

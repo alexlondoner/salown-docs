@@ -1,74 +1,74 @@
-# ARCHITECTURE V2 — TypeScript-sonrası mimari (v1.0.0, 2026-07-13)
+# ARCHITECTURE V2 — post-TypeScript architecture (v1.0.0, 2026-07-13)
 
-> TYPESCRIPT_MIGRATION_PLAN'ın vaadi olan kapanış dokümanı. V1 mimarisi =
-> migration öncesi durum (SYSTEM_ARCHITECTURE.md hâlâ repo/servis haritası
-> olarak geçerli — bu doküman onu İKAME ETMEZ, dil/derleme/kanıt katmanını anlatır).
+> The closing document that was TYPESCRIPT_MIGRATION_PLAN's promise. V1 architecture =
+> pre-migration state (SYSTEM_ARCHITECTURE.md is still valid as the repo/service
+> map — this document does NOT REPLACE it, it describes the language/build/proof layer).
 
-## 1. Dil durumu
+## 1. Language state
 
-| Katman | Durum | Kaynak |
+| Layer | State | Source |
 |---|---|---|
-| Frontend (panel + staff + booking) | **104/104 dosya .ts/.tsx** (2026-07-11) | `salown-app/src/` |
-| Functions (52 export) | **22/22 runtime dosyası .ts** (2026-07-13) | `salown-app/functions/src/` |
-| Bilinçli .js kalanlar | `functions/src/_demoEmails.js` + `_previewEmails.js` (dev-only preview script'leri) | — |
-| Shared tipler | `packages/shared/src/` (type-only, 10 dosya) | frontend+functions ortak |
+| Frontend (panel + staff + booking) | **104/104 files .ts/.tsx** (2026-07-11) | `salown-app/src/` |
+| Functions (52 exports) | **22/22 runtime files .ts** (2026-07-13) | `salown-app/functions/src/` |
+| Deliberate .js remainders | `functions/src/_demoEmails.js` + `_previewEmails.js` (dev-only preview scripts) | — |
+| Shared types | `packages/shared/src/` (type-only, 10 files) | shared by frontend+functions |
 
-**strict: TRUE her iki katmanda** (functions 2026-07-13 sabah, frontend aynı gün).
-`any` politikası: strict-temizlik sırasında bilinçli `any` serbest bırakıldı
-(veri Firestore doc-bag'i olduğunda dürüst tip budur); daraltma isteyen yerler
-`TODO(ts-strict)` / `TODO(ts-migration)` işaretli — iyileştirme fırsatçı, toplu değil.
+**strict: TRUE in both layers** (functions morning of 2026-07-13, frontend the same day).
+`any` policy: during the strict-cleanup deliberate `any` was allowed
+(when the data is a Firestore doc-bag this is the honest type); places wanting narrowing are
+marked `TODO(ts-strict)` / `TODO(ts-migration)` — improvement is opportunistic, not bulk.
 
-## 2. Build & çalışma zamanı
+## 2. Build & runtime
 
-- **Frontend:** Vite (esbuild transpile — tip anotasyonları codegen'den önce
-  silinir; bu yüzden type-only değişikliklerde bundle BAYT-AYNI kalır = kanıt
-  yöntemimizin temeli). İki bundle: ana (`npm run build`) + staff
-  (`npm run build:staff`, `vite.staff.config.js`). CI (GitHub Actions) main'e
-  push'ta ikisini de kaynaktan build edip hosting'e basar.
-- **Functions:** `tsconfig.build.json` = SALT-EMIT (`noCheck`+`noResolve`;
-  tip denetimi build'i asla kırmaz) → `src/ → lib/`, runtime `main: lib/index.js`.
-  Tip denetimi ayrı kapıda: `npm run typecheck` (`tsconfig.json`, strict).
-  `firebase.json` functions predeploy hook'u build'i garantiler. Testler
-  `lib/`'i (shipped artifact) require eder; `pretest` build koşar.
-- **Deploy:** functions HEP codebase-prefix'li targeted (`--only
-  functions:salown:X,...`); blanket YASAK (us-central1'de 27 legacy fn +
-  `npm run deploy` script'i kilitli). Sıra: functions → hosting → rules EN SON.
+- **Frontend:** Vite (esbuild transpile — type annotations are stripped before
+  codegen; therefore on type-only changes the bundle stays BYTE-IDENTICAL = the basis of
+  our proof method). Two bundles: main (`npm run build`) + staff
+  (`npm run build:staff`, `vite.staff.config.js`). CI (GitHub Actions) on
+  push to main builds both from source and pushes to hosting.
+- **Functions:** `tsconfig.build.json` = EMIT-ONLY (`noCheck`+`noResolve`;
+  type checking never breaks the build) → `src/ → lib/`, runtime `main: lib/index.js`.
+  Type checking at a separate gate: `npm run typecheck` (`tsconfig.json`, strict).
+  The `firebase.json` functions predeploy hook guarantees the build. Tests
+  require `lib/` (the shipped artifact); `pretest` runs the build.
+- **Deploy:** functions ALWAYS codebase-prefix targeted (`--only
+  functions:salown:X,...`); blanket FORBIDDEN (27 legacy fns in us-central1 +
+  `npm run deploy` script is locked). Order: functions → hosting → rules LAST.
 
-## 3. Kanıt kültürü (migration'ın kalıcı mirası)
+## 3. Proof culture (the permanent legacy of the migration)
 
-1. **Bayt-kanıt (frontend):** değişiklik sonrası iki build (ana+staff) HEAD
-   worktree build'iyle `diff -r` — type-only iş bayt-aynı çıkmak zorunda.
-   Yöntem detayı: MIGRATION_PATTERNS.md "bayt-kanıt v2".
-2. **lib-diff (functions):** dosya çevirisi/tip işi sonrası `lib/` çıktısında
-   yalnız hedef dosya değişebilir; tek kabul edilen gürültü tsc printer'ının
-   ok-parametre parantezi. Export yüzeyi `Object.keys(require(...))` ile birebir
-   doğrulanır (`__esModule` non-enumerable — sayımı bozmaz, Firebase'in
-   fonksiyon keşfini de etkilemez).
-3. **Karakterizasyon/parite testleri:** `functions/src/**/*.test.js` (node --test,
-   47 test) — eski inline davranış spec kabul edilir; kaynak-metin çapaları
-   `src/index.ts` + `HEAD:functions/src/index.ts`.
-4. **Hayalet-booking smoke:** canlıda iz bırakmayan uçtan uca tetik kanıtı
-   (2020 tarihli + testMode + plus-alias; scratchpad `rc3-ghost-smoke.cjs` deseni).
-5. **Canlı gözlem:** deploy sonrası Cloud Logging'den scheduled koşu taraması
-   (firebase CLI OAuth ile `entries:list` — CLI'ın kendi `functions:log`'u
-   günler geride kalabiliyor, güvenme).
+1. **Byte-proof (frontend):** after a change, two builds (main+staff) `diff -r`'d
+   against the HEAD worktree build — type-only work must come out byte-identical.
+   Method detail: MIGRATION_PATTERNS.md "byte-proof v2".
+2. **lib-diff (functions):** after a file translation/type work, only the target
+   file may change in the `lib/` output; the only accepted noise is the tsc printer's
+   arrow-parameter parenthesis. The export surface is verified one-to-one via `Object.keys(require(...))`
+   (`__esModule` is non-enumerable — doesn't affect the count, nor Firebase's
+   function discovery).
+3. **Characterization/parity tests:** `functions/src/**/*.test.js` (node --test,
+   47 tests) — the old inline behavior is accepted as spec; the source-text anchors
+   are `src/index.ts` + `HEAD:functions/src/index.ts`.
+4. **Ghost-booking smoke:** end-to-end trigger proof that leaves no trace in production
+   (dated 2020 + testMode + plus-alias; scratchpad `rc3-ghost-smoke.cjs` pattern).
+5. **Live observation:** after deploy, scan the scheduled run from Cloud Logging
+   (`entries:list` via firebase CLI OAuth — the CLI's own `functions:log` can lag
+   days behind, don't trust it).
 
-## 4. TS yazım sözleşmeleri (functions)
+## 4. TS writing conventions (functions)
 
-- Modüller **named export** kullanır (`export function` / `export { _x as x }`)
-  — `module.exports`/`export =` @ts-check'li tüketicilerle çatışıyor (TS2459/2497).
-- CJS değer import'u: `const { X } = require('...')`; tip gerekiyorsa yanına
-  `import type { X as XT } from '...'`. **ESM `import`'a geçilmez** — emit değişir.
-- Firestore doc verisi `any`/`Rec` ile taşınır; alan sözleşmeleri
-  FIRESTORE_SCHEMA.md + packages/shared'dedir, TS tipi değil dokümantasyon
-  bağlayıcıdır (index tabanlı sorgular/dinamik alanlar yüzünden).
-- Yeni fonksiyon = `export const adi = onCall/onRequest/...` (`src/index.ts`);
-  I2 split (modüllere dağıtma) hâlâ açık iş, ayrı karar.
+- Modules use **named export** (`export function` / `export { _x as x }`)
+  — `module.exports`/`export =` conflicts with @ts-check'd consumers (TS2459/2497).
+- CJS value import: `const { X } = require('...')`; if a type is needed, alongside it
+  `import type { X as XT } from '...'`. **Don't switch to ESM `import`** — the emit changes.
+- Firestore doc data is carried with `any`/`Rec`; field contracts are
+  in FIRESTORE_SCHEMA.md + packages/shared, the documentation is binding, not the TS type
+  (because of index-based queries/dynamic fields).
+- A new function = `export const name = onCall/onRequest/...` (`src/index.ts`);
+  the I2 split (distributing into modules) is still open work, a separate decision.
 
-## 5. Sürüm çizgisi
+## 5. Version line
 
-- `v0.9.0-rc1/rc2` — Faz 0-2 (toolchain, shared, modül extraction)
+- `v0.9.0-rc1/rc2` — Phase 0-2 (toolchain, shared, module extraction)
 - `v0.9.0-rc3` — runtime flip: src→lib pipeline (2026-07-12; RC3_RUNBOOK)
-- **`v1.0.0`** — codebase uçtan uca TS + strict her yerde (2026-07-13; V1_RUNBOOK)
-- Sonrası: TYPE_COVERAGE panosu CI'da yaşamaya devam eder; `any` daraltma +
-  I2 index split fırsatçı işler.
+- **`v1.0.0`** — codebase end-to-end TS + strict everywhere (2026-07-13; V1_RUNBOOK)
+- After: the TYPE_COVERAGE dashboard keeps living in CI; `any` narrowing +
+  I2 index split are opportunistic work.

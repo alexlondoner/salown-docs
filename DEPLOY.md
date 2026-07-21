@@ -1,96 +1,96 @@
 # DEPLOY.md
 
-## Temel Kural
+## Core Rule
 
-**Her deploy öncesi tenant + URL'yi söyle, onay bekle.**
-Deploy script'leri: `salown-app/` ve `whitecross-site/` altında mevcut.
+**Before every deploy, state tenant + URL, wait for confirmation.**
+Deploy scripts: available under `salown-app/` and `whitecross-site/`.
 
-## ⛔ TEK KAYNAK KURALI — asla eskiyi başka yerden build/deploy etme
+## ⛔ SINGLE SOURCE RULE — never build/deploy the old one from somewhere else
 
-**Her site için TEK doğru kaynak klasör vardır. Deploy SADECE oradan yapılır.**
-Bir özelliği bir yerde güncelleyip sonra başka bir klasörden (eski bundle/eski kaynak)
-build alıp deploy edersek, canlı ESKİ versiyona geri döner ve emeğimiz silinir.
+**There is ONE correct source folder for each site. Deploy ONLY from there.**
+If we update a feature in one place and then build from another folder (old bundle/old source)
+and deploy, the live site reverts to the OLD version and our work is wiped out.
 
-| Canlı URL / site | TEK doğru kaynak | Build | ASLA buradan deploy etme |
+| Live URL / site | THE correct source | Build | NEVER deploy from here |
 |---|---|---|---|
-| salown.com `/`, `/app`, `/book`, `/s` (`salown`) | `salown-app/hosting/` | `npm run build` | — (`salown-site/` SİLİNDİ 2026-06-29) |
-| staff.salown.com (`salown-staff`) | `salown-app/` | `npm run build:staff` | ❌ başka bundle |
-| whitecrossbarbers.com (`whitecrossbarbers-*`) | `whitecross-site/` | site içi | — |
+| salown.com `/`, `/app`, `/book`, `/s` (`salown`) | `salown-app/hosting/` | `npm run build` | — (`salown-site/` DELETED 2026-06-29) |
+| staff.salown.com (`salown-staff`) | `salown-app/` | `npm run build:staff` | ❌ another bundle |
+| whitecrossbarbers.com (`whitecrossbarbers-*`) | `whitecross-site/` | in-site | — |
 
-**Deploy öncesi her zaman:** `git status` + `git log origin/main..HEAD` temiz mi? Değilse
-önce commit/push — çünkü `main`'e push = CI otomatik deploy, ve uncommitted dosyalar
-canlıya GİTMEZ → partial/eski state riski.
+**Before every deploy always:** are `git status` + `git log origin/main..HEAD` clean? If not,
+commit/push first — because push to `main` = CI auto deploy, and uncommitted files
+do NOT go live → risk of partial/old state.
 
-### Firestore Rules — TEK KAYNAK = `salown-app/firestore.rules` (2026-06-21)
-Birden çok repo (salown-panel, whitecross-site, eekurt…) `havuz-44f70`'a rules deploy edebiliyordu →
-**en son deploy eden kazanır** → eski kopya güvenli kuralı geri ezebilir (cross-tenant deliği geri açılır).
-**Bundan sonra rules YALNIZCA `salown-app/firestore.rules`'tan deploy edilir.**
+### Firestore Rules — SINGLE SOURCE = `salown-app/firestore.rules` (2026-06-21)
+Multiple repos (salown-panel, whitecross-site, eekurt…) could deploy rules to `havuz-44f70` →
+**last one to deploy wins** → an old copy can overwrite the secure rule (the cross-tenant hole reopens).
+**From now on rules are deployed ONLY from `salown-app/firestore.rules`.**
 ```bash
 cd ~/Desktop/alex/salown-app
 firebase deploy --only firestore:rules --project havuz-44f70
 ```
-- Diğer repolardaki `firestore.rules` kopyaları ÖLÜ — onlardan `firestore:rules` deploy etme.
-- CI (`--only hosting`) rules'a dokunmaz; rules deploy hep manuel + onaylı.
-- Canlı kuralı çekme + test (Java/emulator gerekmez): `python3 docs/test-firestore-rules.py salown-app/firestore.rules`.
-- Rollback: `docs/firestore.rules.ROLLBACK.txt` (eski ruleset adı). Snapshot: `docs/firestore.rules.LIVE` (değişiklik öncesi).
+- The `firestore.rules` copies in other repos are DEAD — don't deploy `firestore:rules` from them.
+- CI (`--only hosting`) doesn't touch rules; rules deploy is always manual + approved.
+- Pull live rule + test (no Java/emulator needed): `python3 docs/test-firestore-rules.py salown-app/firestore.rules`.
+- Rollback: `docs/firestore.rules.ROLLBACK.txt` (old ruleset name). Snapshot: `docs/firestore.rules.LIVE` (before the change).
 
-### Hub.salown.com dersi (2026-06-21)
-`hub.salown.com` ayrı bir hosting site DEĞİL — `salown` site'ına bağlı bir custom domain.
-Kök yolu (`/`) `hosting/index.html` (landing) serve ediyor → salown.com ile **birebir aynı**
-açılıyor. Asıl hub sayfası `/hub` rewrite'ında (app bundle). Firebase tek site içinde
-host'a göre farklı kök veremez. "Eski build ezdi" değil — **domain yanlış site'a bağlı**.
-Düzeltmek için: hub'a ayrı hosting site (`salown-hub`) aç + domaini ona taşı, VEYA
-landing index.html'de `location.host==='hub.salown.com'` ise `/hub`'a yönlendir.
+### Hub.salown.com lesson (2026-06-21)
+`hub.salown.com` is NOT a separate hosting site — it's a custom domain attached to the `salown` site.
+The root path (`/`) serves `hosting/index.html` (landing) → opens **exactly the same** as salown.com.
+The actual hub page is at the `/hub` rewrite (app bundle). Firebase cannot serve a different root
+per host within a single site. It's not "old build overwrote it" — **the domain is attached to the wrong site**.
+To fix: open a separate hosting site (`salown-hub`) for hub + move the domain to it, OR
+in the landing index.html redirect to `/hub` if `location.host==='hub.salown.com'`.
 
 ## salown-app Deploy
 
 ```bash
 cd ~/Desktop/alex/salown-app
-npm run build          # sadece src/ değişmişse gerekli
+npm run build          # only needed if src/ changed
 npx firebase-tools deploy --only hosting --project havuz-44f70
 ```
 
-**Ayrı deploy hedefleri** (owner onayı gerekli):
+**Separate deploy targets** (owner approval required):
 ```bash
 firebase deploy --only functions
 firebase deploy --only firestore:rules
 ```
 
-**Security değişikliklerinde sıra:** functions → hosting → rules SON.
+**Order for security changes:** functions → hosting → rules LAST.
 
-⚠️ **`salown-site/` SİLİNDİ (2026-06-29)** — tek hosting kaynağı artık `salown-app/hosting/`. Landing, public profile (`/s/**`), booking (`/book/**`) hepsi buradan deploy olur. Yedek: `../salown-site-backup-20260629-1841.zip`.
+⚠️ **`salown-site/` DELETED (2026-06-29)** — the only hosting source is now `salown-app/hosting/`. Landing, public profile (`/s/**`), booking (`/book/**`) all deploy from here. Backup: `../salown-site-backup-20260629-1841.zip`.
 
-## Landing / hosting kaynağı
+## Landing / hosting source
 
-`salown-app/hosting/index.html` artık GERÇEK dosya (eski salown-site symlink'i kaldırıldı).
-- `salown-app/hosting/*.html` düzenle → landing sayfaları (`/`, `/barbers`, `/vs-*`, …)
-- `salown-app/src/` düzenle → `npm run build` → `/app`, `/login`, `/s/**`, `/book/**` güncellenir
+`salown-app/hosting/index.html` is now a REAL file (the old salown-site symlink was removed).
+- Edit `salown-app/hosting/*.html` → landing pages (`/`, `/barbers`, `/vs-*`, …)
+- Edit `salown-app/src/` → `npm run build` → `/app`, `/login`, `/s/**`, `/book/**` update
 
 ## whitecross-site Deploy
 
-**⚠️ 2026-07-12'den beri whitecrossbarbers.com = Firebase Hosting** (`whitecrossbarbers-saas`
-sitesi; GH Pages KAPALI, repo private, GitHub push siteyi GÜNCELLEMEZ). DNS GoDaddy →
-apex A `199.36.158.100`, www CNAME `whitecrossbarbers-saas.web.app`, Enforce eşdeğeri
-http→301 Firebase'de otomatik. Public site deploy:
+**⚠️ Since 2026-07-12 whitecrossbarbers.com = Firebase Hosting** (`whitecrossbarbers-saas`
+site; GH Pages OFF, repo private, GitHub push does NOT UPDATE the site). DNS GoDaddy →
+apex A `199.36.158.100`, www CNAME `whitecrossbarbers-saas.web.app`, Enforce equivalent
+http→301 automatic in Firebase. Public site deploy:
 ```bash
 cd ~/Desktop/alex/whitecross-site
 firebase deploy --config firebase.saas.json --only hosting --project havuz-44f70
 ```
-Panel/staff/owner siteleri için `deploy.sh` (interaktif seçim) durur.
+For panel/staff/owner sites use `deploy.sh` (interactive selection).
 
-Whitecross functions deploy — **ASLA blanket `--only functions` YAZMA** (salown
-codebase'inin 52 fonksiyonunu silmeyi önerir; bkz functions-deploy-gotcha):
+Whitecross functions deploy — **NEVER WRITE blanket `--only functions`** (it proposes
+deleting salown codebase's 52 functions; see functions-deploy-gotcha):
 ```bash
-firebase deploy --only functions:FN_ADI --project havuz-44f70
+firebase deploy --only functions:FN_NAME --project havuz-44f70
 ```
 
-## Kritik Kural: Veri Silme
+## Critical Rule: Data Deletion
 
-**ASLA Firestore'dan bulk-delete yapma.**
+**NEVER bulk-delete from Firestore.**
 1. Full export: `gcloud firestore export gs://...`
 2. Dry-run → CSV → owner review
-3. Ancak onay sonrası write
+3. Write only after approval
 
-## Build Kontrolü
+## Build Check
 
-`npm run build` — sıfır error olmadan geçmeli. Deploy öncesi zorunlu.
+`npm run build` — must pass with zero errors. Mandatory before deploy.

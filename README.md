@@ -12,7 +12,7 @@ If the application disappeared tomorrow, this documentation should be enough for
 * what has gone wrong before,
 * and where the platform is going next.
 
-> **Where the code lives:** `salown-app` (main repo, `Salown.git`) · `super-admin` (`salownadmin.git`) · `whitecross-site` (`whitecross-site.git`). These docs cover all of them → a deliberately separate, cross-repo "brain" repo ([DECISIONS.md](DECISIONS.md) ADR-012).
+> **Where the code lives:** `salown-app` (main repo, `salOWN.git`) · `super-admin` (`salownadmin.git`) · `whitecross-site` (`whitecross-site.git`). These docs cover all of them → a deliberately separate, cross-repo "brain" repo ([DECISIONS.md](DECISIONS.md) ADR-012).
 
 ---
 
@@ -26,7 +26,7 @@ Unlike marketplaces such as Booksy, Fresha and Treatwell, salOWN does not own th
 
 Instead, it helps salons run their entire business while keeping ownership of their customers and data.
 
-> 🗺️ **Görsel sistem haritası:** [SYSTEM_MAP.html](SYSTEM_MAP.html) — yüzeyler → backend/veri → aggregator borusu → çıkış → tenant/deploy/ticari katman, tek sayfada. **salOWN değiştikçe güncellenir** (snapshot; kaynak: ARCHITECTURE_V2 / ROADMAP / FIRESTORE_SCHEMA + kod).
+> 🗺️ **Visual system map:** [SYSTEM_MAP.html](SYSTEM_MAP.html) — surfaces → backend/data → aggregator pipe → output → tenant/deploy/commercial layer, on one page. **Updated as salOWN changes** (snapshot; source: ARCHITECTURE_V2 / ROADMAP / FIRESTORE_SCHEMA + code).
 
 ---
 
@@ -156,17 +156,17 @@ git push
 - If you add a new file, add a line to the **document map** in this README.
 - The AI context index is now **versioned as [`CLAUDE.md`](CLAUDE.md) in this repo** (canonical). `alex/CLAUDE.md` is a **symlink** to it — edit `docs/CLAUDE.md`, never the symlink target's copy.
 
-### Bootstrap (yeni makine kurulumu)
+### Bootstrap (new machine setup)
 
-`alex/` klasörü git repo'su DEĞİL → oradaki `CLAUDE.md` symlink'i her makinede bir kez elle kurulur:
+The `alex/` folder is NOT a git repo → its `CLAUDE.md` symlink is set up by hand once per machine:
 
 ```bash
 cd ~/Desktop/alex
-ln -sf docs/CLAUDE.md CLAUDE.md      # AI context index (kanonik = docs/CLAUDE.md)
-ls -l CLAUDE.md                       # doğrula: CLAUDE.md -> docs/CLAUDE.md
+ln -sf docs/CLAUDE.md CLAUDE.md      # AI context index (canonical = docs/CLAUDE.md)
+ls -l CLAUDE.md                       # verify: CLAUDE.md -> docs/CLAUDE.md
 ```
 
-Kanonik içerik `docs/CLAUDE.md`'de yaşar (versiyonlu + push'lu); symlink sayesinde düzenleme tek yerden, drift olmaz. `salown-app/CLAUDE.md` ayrıdır ve kendi repo'sunda zaten versiyonludur.
+The canonical content lives in `docs/CLAUDE.md` (versioned + pushed); thanks to the symlink, editing happens in one place, no drift. `salown-app/CLAUDE.md` is separate and is already versioned in its own repo.
 
 ---
 

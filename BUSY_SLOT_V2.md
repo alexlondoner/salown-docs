@@ -1,60 +1,60 @@
-# BUSY_SLOT_V2.md — Çok-Aralıklı Müsaitlik Motoru + Kanal Mimarisi
+# BUSY_SLOT_V2.md — Multi-Interval Availability Engine + Channel Architecture
 
-> **Durum (2026-06-26):** CANLI — **DİNAMİK / servis-bazlı**. Tenant-geneli
-> `features.processingTime` flag'i KALDIRILDI (commit f958aee). Motor + grid render +
-> staff bundle artık servisin kendi `segments` config'inden sürülüyor: processing penceresi
-> olan servis gap açar + squeeze-in; olmayan servis tek-solid-aralık (v1 identik). Aşağıdaki
-> "feature flag" / "Faz 4'e kadar açılmaz" ifadeleri TARİHSEL — flag artık yok.
-> KAPSAM DIŞI (hâlâ): public `BookingPage` + email-parser booking'leri segment snapshot'ı
-> yazmıyor → gridde solid kalır (Faz 5b). Salown→Treatwell iCal feed split (Faz 5a) yapılmadı.
-> **Sahip:** Alfa (Whitecross owner + dev)
-> **Amaç:** Hizmetlere *processing time* (boya bekleme vb.) desteği ekleyerek, bir
-> berberin/kuaförün bir müşterinin işlem (bekleme) süresinde **başka bir müşteri**
-> alabilmesini sağlamak — ve bunu Salown'un çok-kanallı (aggregator) yapısına oturtmak.
+> **Status (2026-06-26):** LIVE — **DYNAMIC / service-based**. The tenant-wide
+> `features.processingTime` flag has been REMOVED (commit f958aee). The engine + grid render +
+> staff bundle are now driven by the service's own `segments` config: a service with a processing
+> window opens a gap + squeeze-in; a service without one is a single-solid-interval (identical to v1). The
+> "feature flag" / "not enabled until Phase 4" statements below are HISTORICAL — the flag no longer exists.
+> OUT OF SCOPE (still): public `BookingPage` + email-parser bookings do not write a segment snapshot
+> → they stay solid in the grid (Phase 5b). The salOWN→Treatwell iCal feed split (Phase 5a) was not done.
+> **Owner:** Alfa (Whitecross owner + dev)
+> **Goal:** Add *processing time* (dye waiting etc.) support to services so that a
+> barber/hairdresser can take **another customer** during a customer's processing (waiting)
+> time — and fit this into salOWN's multi-channel (aggregator) structure.
 >
-> ⚠️ Bu doküman kod tabanının **en hassas yerini** (`conflictUtils.js` / busy-slot)
-> değiştiriyor. Bkz: `INCIDENTS.md`. Hiçbir değişiklik, mevcut davranışın birebir
-> korunduğu **kanıtlanmadan** production'a çıkmaz.
+> ⚠️ This document changes the **most sensitive place** in the codebase (`conflictUtils.js` / busy-slot).
+> See: `INCIDENTS.md`. No change ships to production without it being **proven** that the
+> existing behavior is preserved exactly.
 
 ---
 
-## 1. Problem & Hedef
+## 1. Problem & Goal
 
-### Bugün
-- Her booking, berber takviminde tek bir kesintisiz `[start, end]` aralığı kaplar.
-- İki booking aynı berber + çakışan zaman aralığındaysa → çakışma, ikincisi engellenir.
-- **Processing time / gap / parallel booking kavramı YOK.** (Doğrulandı: kod tabanında
-  `processingTime`, `gap`, `buffer`, `parallel`, `capacity` (booking mantığında) yok.)
+### Today
+- Every booking occupies a single uninterrupted `[start, end]` interval in the barber's calendar.
+- If two bookings are on the same barber + overlapping time interval → conflict, the second is blocked.
+- **There is NO concept of processing time / gap / parallel booking.** (Verified: the codebase has no
+  `processingTime`, `gap`, `buffer`, `parallel`, `capacity` (in booking logic).)
 
-### İstenen (owner kararı)
-- Bir hizmet 3 parçaya bölünebilmeli:
-  `[ aktif-önce ][ processing (boş) ][ aktif-sonra ]`
-- **Processing penceresi fiziksel olarak boş** kabul edilir → o aralığa walk-in, Salown
-  sitesi, Treatwell veya herhangi bir kanaldan **ikinci bir booking** düşebilir.
-- Tek fiziksel sandalye gerçeği kanaldan bağımsızdır: hangi kanal boşluğu yaratırsa
-  yaratsın, hangi kanal doldurursa doldursun, Salown takvimi birleşik tek gerçeği gösterir.
+### Desired (owner decision)
+- A service should be divisible into 3 parts:
+  `[ active-before ][ processing (empty) ][ active-after ]`
+- **The processing window is considered physically empty** → a **second booking** from a walk-in, the salOWN
+  site, Treatwell, or any channel can drop into that interval.
+- The single-physical-chair reality is channel-independent: whichever channel creates the gap,
+  whichever channel fills it, the salOWN calendar shows the unified single truth.
 
-### Sektör bağlamı
-Bu, sektörde standart **"processing time"** özelliği (Square, Vagaro, Fresha, Treatwell).
-Barber'larda (Booksy/Fresha çoğunlukla barber) processing genelde yok; asıl ihtiyaç
-hairdresser/salon hizmetlerinde (boya, balyaj, perma) — Treatwell tarafında.
+### Industry context
+This is the standard **"processing time"** feature in the industry (Square, Vagaro, Fresha, Treatwell).
+For barbers (Booksy/Fresha are mostly barber) processing generally doesn't exist; the real need
+is in hairdresser/salon services (dye, balayage, perm) — on the Treatwell side.
 
-### Aggregator açısı (Salown'un kozu)
-Salown **bütün kanalları aynı anda gören tek sistem.** Booksy'den gelen bir boya
-randevusunun ortasındaki boşluğu, bir walk-in veya site müşterisiyle dolduran tek yer
-Salown olabilir — çünkü tek-kanal araçları diğer kanalın yarattığı boşluğu göremez.
-Bu özellik "kanallar arası gap-filling" olarak konumlanır.
+### Aggregator angle (salOWN's trump card)
+salOWN is **the single system that sees all channels at once.** The only place that can fill the gap in
+the middle of a dye appointment coming from Booksy — with a walk-in or site customer — can be
+salOWN, because single-channel tools can't see the gap created by the other channel.
+This feature is positioned as "cross-channel gap-filling."
 
 ---
 
-## 2. Mevcut motor (referans — değiştireceğimiz kod)
+## 2. Current engine (reference — the code we will change)
 
 **`src/utils/conflictUtils.js`**
 
 ```js
 // getExistingRangeMinutes(booking) → { start, end } | null
-//   duration kaynağı: BLOCKED ise endTime; yoksa booking.duration;
-//   yoksa startTime/endTime timestamp farkı; yoksa service.duration; yoksa 30dk.
+//   duration source: if BLOCKED, endTime; else booking.duration;
+//   else startTime/endTime timestamp diff; else service.duration; else 30min.
 
 export function hasTimeConflict(existingBookings, options) {
   const { dateValue, barberValue, startMinutes, durationMinutes, ignoreBookingId } = options;
@@ -62,7 +62,7 @@ export function hasTimeConflict(existingBookings, options) {
   return (existingBookings || []).some((booking) => {
     const st = normalizeBookingStatus(booking.status);
     if (st === 'CANCELLED' || st === 'NO_SHOW' || st === 'DELETED'
-        || st === 'CHECKED_OUT' || st === 'COMPLETED') return false;   // bloklamaz
+        || st === 'CHECKED_OUT' || st === 'COMPLETED') return false;   // doesn't block
     if (ignoreBookingId && booking.bookingId === ignoreBookingId) return false;
     if (barberKey(booking.barber) !== barberKey(barberValue)) return false;
     if (booking.date !== dateValue) return false;
@@ -73,268 +73,267 @@ export function hasTimeConflict(existingBookings, options) {
 }
 ```
 
-**Bloklayan statüler:** `CONFIRMED, PENDING, UNPAID, BLOCKED`
-**Bloklamayan:** `CANCELLED, NO_SHOW, DELETED, CHECKED_OUT, COMPLETED`
+**Blocking statuses:** `CONFIRMED, PENDING, UNPAID, BLOCKED`
+**Non-blocking:** `CANCELLED, NO_SHOW, DELETED, CHECKED_OUT, COMPLETED`
 
-**Çağıran yerler (call sites — hepsi parite testinden geçmeli):**
-- `BookingForm.jsx:114, :150` — form içi + save öncesi
-- `BookingDetailPanel.jsx:986` — reschedule (`ignoreBookingId` ile)
-- `Dashboard.jsx` (WalkInForm) — walk-in oluşturma
-- `BookingPage.jsx:~400` — public slot üretimi
-- `functions/index.js` `salownGetBusySlots` — public müsaitlik (ayrı implementasyon, **aynı segment mantığı taşımalı**)
-- `whitecross-site/script.js` — ayrı kod tabanı, senkronda tutulmalı (bkz: BUSINESS_RULES no-preference)
+**Call sites (all must pass the parity test):**
+- `BookingForm.jsx:114, :150` — in-form + before save
+- `BookingDetailPanel.jsx:986` — reschedule (with `ignoreBookingId`)
+- `Dashboard.jsx` (WalkInForm) — walk-in creation
+- `BookingPage.jsx:~400` — public slot generation
+- `functions/index.js` `salownGetBusySlots` — public availability (separate implementation, **must carry the same segment logic**)
+- `whitecross-site/script.js` — separate codebase, must be kept in sync (see: BUSINESS_RULES no-preference)
 
 ---
 
-## 3. Yeni motor: çok-aralıklı (segmented) busy
+## 3. New engine: multi-interval (segmented) busy
 
-### 3.1 Çekirdek değişiklik
+### 3.1 Core change
 
-`getExistingRangeMinutes(booking)` → **`getBusyIntervals(booking)`**: tek aralık yerine
-aralık **dizisi** döner. Aradaki boşluk(lar) serbest.
+`getExistingRangeMinutes(booking)` → **`getBusyIntervals(booking)`**: returns an **array** of intervals
+instead of a single interval. The gap(s) in between are free.
 
 ```
 getBusyIntervals(booking):
-  processing YOK  → [ {start, end} ]                                    // bugünle BİREBİR aynı
-  processing VAR  → [ {start, start+aktifÖnce}, {end-aktifSonra, end} ] // orta boş
-  BLOCKED         → [ {start, end} ]                                    // her zaman düz blok
+  no processing   → [ {start, end} ]                                    // EXACTLY same as today
+  has processing  → [ {start, start+activeBefore}, {end-activeAfter, end} ] // middle empty
+  BLOCKED         → [ {start, end} ]                                    // always a solid block
 ```
 
-> İleride 3+ segment gerekirse (örn. çok aşamalı işlem) dizi yapısı bunu doğal taşır.
-> İlk sürümde sadece 2-aktif-1-boş yeterli.
+> If 3+ segments are needed in the future (e.g. multi-stage processing) the array structure carries this naturally.
+> In the first version, only 2-active-1-empty is sufficient.
 
-### 3.2 Çakışma kuralı (multi × multi)
+### 3.2 Conflict rule (multi × multi)
 
-Yeni booking'in kendi busy aralıkları (kendisi de processing'li olabilir) ile mevcut
-booking'in busy aralıkları **herhangi bir çift** kesişiyorsa → çakışma.
+If the new booking's own busy intervals (it too may have processing) intersect with the existing
+booking's busy intervals for **any pair** → conflict.
 
 ```
 conflict(new, existing) =
-  new.intervals  bir A,
-  existing.intervals  bir B için
+  for some A in new.intervals,
+  for some B in existing.intervals,
   ∃ (A, B): A.start < B.end && A.end > B.start
 ```
 
-Boşluk listede olmadığından, boşluğa **tam oturan** yeni booking hiçbir aktif aralıkla
-kesişmez → **izinli.** Boşluğu taşan (aktif segmente giren) yeni booking → **bloklu.**
+Since the gap is not in the list, a new booking that **fits exactly** in the gap does not intersect
+any active interval → **allowed.** A new booking that overflows the gap (enters an active segment) → **blocked.**
 
-### 3.3 Segment çözümleyici (resolver)
+### 3.3 Segment resolver
 
 ```
 getServiceSegments(booking):
-  1. booking explicit segment taşıyorsa (native Salown booking veya two-way Treatwell)
-       → onu kullan
-  2. yoksa servisin channel-profile'ındaki processing ayarını bul, start+duration'dan
-       segmentleri YENİDEN KUR   ← Booksy düz-70dk boya senaryosu buraya düşer
-  3. hiçbiri yoksa → tek düz blok [start, end]   (bugünkü davranış)
+  1. if the booking carries explicit segments (native salOWN booking or two-way Treatwell)
+       → use them
+  2. else find the processing setting in the service's channel-profile, REBUILD the
+       segments from start+duration   ← the Booksy solid-70min dye scenario lands here
+  3. if none → single solid block [start, end]   (today's behavior)
 ```
 
-Adım 2 kritik: Booksy boyayı düz blok olarak gönderse bile, Salown o hizmetin processing
-profilini bilerek boşluğu **fiziksel olarak** açar.
+Step 2 is critical: even if Booksy sends the dye as a solid block, salOWN knows that service's processing
+profile and opens the gap **physically**.
 
-### 3.4 Değişmezler (invariant)
-- `ignoreBookingId` (reschedule self-ignore) aynen korunur.
-- Bloklamayan statü listesi (`CANCELLED/NO_SHOW/CHECKED_OUT/...`) aynen korunur.
-- `barberKey` + `date` eşleşmesi aynen korunur.
-- Duration fallback zinciri aynen korunur (segment'siz booking = tek aralık = eski sonuç).
+### 3.4 Invariants
+- `ignoreBookingId` (reschedule self-ignore) is preserved as-is.
+- The non-blocking status list (`CANCELLED/NO_SHOW/CHECKED_OUT/...`) is preserved as-is.
+- `barberKey` + `date` matching is preserved as-is.
+- The duration fallback chain is preserved as-is (segment-less booking = single interval = old result).
 
 ---
 
-## 4. ⭐ Güvenlik temeli: "sıfır davranış değişikliği" özelliği
+## 4. ⭐ Safety foundation: the "zero behavior change" property
 
-**Şu an hiçbir serviste processing tanımlı değil.** Dolayısıyla çok-aralıklı motor
-yazılsa bile, **her mevcut booking tam olarak tek aralık üretir** → bugünkü çıktının
-matematiksel olarak aynısı.
+**Right now no service has processing defined.** Therefore, even if the multi-interval engine is
+written, **every existing booking produces exactly one interval** → mathematically the same as
+today's output.
 
-Bu, riskli refactor'ü davranışı hiç değiştirmeden geçirmemizi sağlar:
+This lets us land the risky refactor without changing behavior at all:
 
 ```
-Adım A: Motoru çok-aralıklıya çevir, processing'i HİÇBİR yerde açma
-        → çıktı identik olmalı (test ile kanıtla)
-Adım B: Mevcut tüm booking verisinde eski==yeni doğrula
-Adım C: Tek pilot serviste (Whitecross) processing'i feature-flag arkasında aç
+Step A: Convert the engine to multi-interval, enable processing NOWHERE
+        → output must be identical (prove with tests)
+Step B: Verify old==new across all existing booking data
+Step C: On a single pilot service (Whitecross) enable processing behind a feature flag
 ```
 
-**Kural:** Processing özelliği, motor "identik davranış" testlerinden geçmeden
-**hiçbir tenantta açılmaz.** Flag default = kapalı.
+**Rule:** The processing feature **is not enabled on any tenant** until the engine passes the
+"identical behavior" tests. Flag default = off.
 
 ---
 
-## 5. Kanal mimarisi (channel architecture)
+## 5. Channel architecture
 
-### 5.1 Kanal katmanları
+### 5.1 Channel layers
 
-> **NET:** Treatwell entegrasyonu bir **write/two-way API DEĞİL.** İki tek-yönlü iCal
-> mekanizması var; **operasyonel olan OUT'tur:**
-> - **OUT (Salown → Treatwell) — ✅ ASIL ÇALIŞAN:** `salownIcalFeed` (`functions/index.js:1373`)
->   public bir iCal busy feed yayınlar (`?tenantId=...`, `text/calendar`). Treatwell buna
->   abone olur; Salown'da dolu olan her slot Treatwell takviminde "blocked time" olarak
->   yer kaplar. Nereden dolarsa dolsun (Booksy/Fresha/site/walk-in) feed'e girer, Treatwell'i
->   bloklar. **Booking yazma/değiştirme yok — sadece busy bloğu.**
-> - **IN (Treatwell → Salown) — kodda var, ama gated:** `parseTreatwellIcalForTenant()`
->   (`functions/index.js:2586`) Treatwell iCal URL'sini import eder; `features.treatwellIcalSync`
->   flag'i **default `false`** (satır 374) → Whitecross'ta operasyonel değil. "Treatwell email"
->   parser de ayrı bir IN seçeneği.
+> **CLEAR:** The Treatwell integration is NOT a **write/two-way API.** There are two one-way iCal
+> mechanisms; **the operational one is OUT:**
+> - **OUT (salOWN → Treatwell) — ✅ THE ACTUAL WORKING ONE:** `salownIcalFeed` (`functions/index.js:1373`)
+>   publishes a public iCal busy feed (`?tenantId=...`, `text/calendar`). Treatwell subscribes to it;
+>   every slot that is busy in salOWN occupies "blocked time" in the Treatwell calendar. Wherever it
+>   gets filled from (Booksy/Fresha/site/walk-in) it enters the feed and blocks Treatwell.
+>   **No booking write/modify — only a busy block.**
+> - **IN (Treatwell → salOWN) — exists in code, but gated:** `parseTreatwellIcalForTenant()`
+>   (`functions/index.js:2586`) imports the Treatwell iCal URL; the `features.treatwellIcalSync`
+>   flag is **default `false`** (line 374) → not operational on Whitecross. The "Treatwell email"
+>   parser is a separate IN option.
 
-| Kanal | IN (Salown'a) | OUT (Salown'dan) | Processing |
+| Channel | IN (to salOWN) | OUT (from salOWN) | Processing |
 |---|---|---|---|
-| **Treatwell** | iCal import (`treatwellIcalSync`, default off) / email parser | ✅ **`salownIcalFeed`** busy feed (asıl mekanizma) | ✅ var |
-| **Booksy / Fresha** | email parser | **manuel** (Salown feed'ine abone değiller; ileride harici araç — Peepeet) | ✗ (barber odaklı) |
-| **Walk-in / Salown sitesi** | native | `salownIcalFeed`'e dahil | ✅ (Salown profili) |
-| **WhatsApp / Telegram / Instagram** | native / manuel (opsiyonel) | `salownIcalFeed`'e dahil | Salown profili |
+| **Treatwell** | iCal import (`treatwellIcalSync`, default off) / email parser | ✅ **`salownIcalFeed`** busy feed (the main mechanism) | ✅ yes |
+| **Booksy / Fresha** | email parser | **manual** (they don't subscribe to the salOWN feed; external tool later — Peepeet) | ✗ (barber-focused) |
+| **Walk-in / salOWN site** | native | included in `salownIcalFeed` | ✅ (salOWN profile) |
+| **WhatsApp / Telegram / Instagram** | native / manual (optional) | included in `salownIcalFeed` | salOWN profile |
 
-> **`salownIcalFeed` mevcut davranışı (değiştireceğimiz):** −14/+90 gün penceresi;
-> busy statüler `CONFIRMED, CHECKED_OUT, PENDING, BLOCKED` (satır 1398); her booking →
-> **tek VEVENT**, tüm `[startTime, endTime]` span'i (satır 1426). Processing desteği =
-> bu tek VEVENT'i, processing'li booking için **iki aktif-segment VEVENT'ine** bölmek.
+> **`salownIcalFeed` current behavior (which we will change):** −14/+90 day window;
+> busy statuses `CONFIRMED, CHECKED_OUT, PENDING, BLOCKED` (line 1398); each booking →
+> **one VEVENT**, the whole `[startTime, endTime]` span (line 1426). Processing support =
+> splitting that single VEVENT, for a processing booking, into **two active-segment VEVENTs**.
 
 ### 5.2 Per-channel service profile
 
-Processing **global değil, kanala bağlı** bir ayardır. Aynı hizmet Treatwell'de
-processing'li, Booksy'de düz blok olabilir.
+Processing is a **channel-dependent, not global** setting. The same service can be processing-enabled
+on Treatwell and a solid block on Booksy.
 
 ```
-Service "Saç Boyası"
-├── base:            { duration, price }            // Salown varsayılanı
+Service "Hair Dye"
+├── base:            { duration, price }            // salOWN default
 └── channelProfiles:
     ├── treatwell:   { activeBefore:20, processing:30, activeAfter:20, out:"ical-busy", in:"email-parser" }
     ├── booksy:      { duration:70, out:"manual", in:"email-parser" }
     └── walkin:      { duration:70 }
 ```
 
-**Altın kural:** Kullanıcı hangi platformu kullanıyorsa, Salown'un o kanal profili o
-platformdaki ayarla **hizalı** olmalı. Salown = her bağlı platformun aynası / üst kümesi.
+**Golden rule:** Whichever platform the user is using, salOWN's profile for that channel must be
+**aligned** with the setting on that platform. salOWN = the mirror / superset of every connected platform.
 
-### 5.3 Fiziksel gerçek vs. kanal görünürlüğü
-- **Fiziksel busy haritası birleşiktir** (berber başına tek segmentli zaman çizgisi).
-  Tüm kanalların booking'leri buraya katkıda bulunur.
-- **Kanal profili** iki şey için kullanılır:
-  1. Gelen booking'in segmentlerini *yeniden kurmak* (Booksy düz-blok → boşluk aç).
-  2. Dışarı *ne ihraç ettiğimiz* (Treatwell iCal feed'ine hangi saatlerin busy gideceği).
+### 5.3 Physical reality vs. channel visibility
+- **The physical busy map is unified** (a single segmented timeline per barber).
+  Bookings from all channels contribute to it.
+- **The channel profile** is used for two things:
+  1. To *reconstruct* the incoming booking's segments (Booksy solid-block → open a gap).
+  2. What we *export* outward (which hours go out as busy to the Treatwell iCal feed).
 
-### 5.4 iCal export = aktif segmentlerin birleşimi (kritik bağ)
-> ✅ **DOĞRULANDI:** Export mekanizması `salownIcalFeed` (`functions/index.js:1373`).
-> Değişiklik tam burada yapılır.
+### 5.4 iCal export = the union of active segments (critical link)
+> ✅ **VERIFIED:** The export mechanism is `salownIcalFeed` (`functions/index.js:1373`).
+> The change is made exactly here.
 
-Processing özelliğinin Treatwell ayağı **tamamen** `salownIcalFeed`'in ürettiği VEVENT'lere bağlı:
+The Treatwell leg of the processing feature depends **entirely** on the VEVENTs that `salownIcalFeed` produces:
 
-- iCal feed'i bir booking için **tüm span'i** busy yayınlarsa → Treatwell o boşluğa
-  booking alamaz (bugünkü davranış).
-- iCal feed'i **sadece aktif segmentleri** (`getBusyIntervals` çıktısı) busy yayınlarsa →
-  ortadaki processing penceresi Treatwell'de **boş** görünür ve oraya booking düşebilir.
+- If the iCal feed publishes **the whole span** as busy for a booking → Treatwell can't take a booking
+  into that gap (today's behavior).
+- If the iCal feed publishes **only the active segments** (`getBusyIntervals` output) as busy →
+  the processing window in the middle appears **empty** in Treatwell and a booking can drop into it.
 
-Yani `getBusyIntervals`, hem app içi çakışma motorunu **hem de** iCal export'unu besleyen
-**tek kaynaktır.** Processing'li bir boya → iCal'e **iki** VEVENT (aktif-önce + aktif-sonra),
-arada boşluk.
+So `getBusyIntervals` is the **single source** feeding both the in-app conflict engine **and** the iCal export.
+A processing dye → **two** VEVENTs to iCal (active-before + active-after), with a gap between.
 
-**Latency uyarısı:** iCal feed'leri Treatwell tarafından periyodik **poll** edilir (anlık
-değil — dakikalar/saatler). Gap müsaitliği bu yüzden gerçek-zamanlı değildir; bu, §9'daki
-çift-booking/no-show riskini büyütür. iCal'i mümkün olduğunca taze tut.
+**Latency warning:** iCal feeds are periodically **polled** by Treatwell (not instant — minutes/hours).
+Gap availability is therefore not real-time; this amplifies the double-booking/no-show risk in §9.
+Keep the iCal as fresh as possible.
 
-**Echo/dedup uyarısı:** OUT (iCal busy) ile IN (email parser) ayrı mekanizmalar — Salown
-kendi ihraç ettiği busy bloğunu geri **import etmemeli.** Treatwell-origin booking'ler
-yalnız email parser'dan, `externalId` dedup ile gelir (bkz: PARSER_NOTES).
-
----
-
-## 6. Veri modeli değişiklikleri
-
-> Hepsi **veri/şema** ekidir — davranışı tek başına değiştirmez. Davranış flag'e bağlı.
-
-- **Service doc** (`tenants/{id}/config` services veya servis koleksiyonu):
-  `channelProfiles` map + `processing` alanları (`activeBefore`, `processing`, `activeAfter`).
-- **Booking doc** (opsiyonel): native/iki-yönlü booking'lerde explicit `segments` veya
-  `processingTime` snapshot'ı (servis sonradan değişse bile geçmiş booking sabit kalsın).
-- ~~**Feature flag:** `features.processingTime` (tenant doc) — default `false`.~~ **KALDIRILDI
-  (2026-06-26).** Aktivasyon artık tenant flag değil servisin `segments` config'i: processing
-  penceresi olan servis dinamik gap açar. `features.processingTime` alanı okunmuyor (tenant
-  doc'larda artık tüketilmiyor; temizlenebilir ama zararsız).
+**Echo/dedup warning:** OUT (iCal busy) and IN (email parser) are separate mechanisms — salOWN must not
+**import** back the busy block it exported itself. Treatwell-origin bookings come only from the
+email parser, with `externalId` dedup (see: PARSER_NOTES).
 
 ---
 
-## 7. Grid render (ayrı ve düşük riskli — motordan SONRA)
+## 6. Data model changes
 
-Motor doğruluğu kanıtlandıktan sonra ele alınır. Çakışma mantığından **bağımsızdır**.
+> All are **data/schema** additions — they don't change behavior on their own. Behavior depends on the flag.
 
-- **Day view (`TimeGrid.jsx`):** şu an aynı kolonda kartlar üst üste yığılıyor (kolon
-  ayırma yok). Processing bölgesi **taralı/şeffaf** çizilmeli; boşluğa düşen ikinci kart
-  o bölgeye yerleşmeli. Hafta görünümündeki kolon-slotlama mantığı buraya uyarlanabilir.
-- **Week view (`Dashboard.jsx`):** zaten overlap kolon-slotlama var (`cols[]` algoritması);
-  processing görseli eklenir.
-- Booking kartının processing aralığı görsel olarak "boş ama rezerve" gösterilir.
-- **Squeeze-in rozeti:** Bir başka booking'in processing boşluğuna alınan booking, grid'de
-  ayırt edici bir işaretle gösterilir (staff "bu, X'in bekleme süresine sıkıştırıldı" anlasın).
-
-> **Kapsam dışı (ayrı feature):** "Müşteri 5dk önce hazır olmalı; gelmezse slotu dolar,
-> next-available'a sıraya alınır" akışı bir **check-in / no-show** özelliğidir; busy-slot v2
-> motoruyla **birleştirilmez** (scope dar tutulur). İleride ayrı ele alınır.
+- **Service doc** (`tenants/{id}/config` services or the service collection):
+  `channelProfiles` map + `processing` fields (`activeBefore`, `processing`, `activeAfter`).
+- **Booking doc** (optional): explicit `segments` or `processingTime` snapshot on native/two-way bookings
+  (so the past booking stays fixed even if the service changes later).
+- ~~**Feature flag:** `features.processingTime` (tenant doc) — default `false`.~~ **REMOVED
+  (2026-06-26).** Activation is no longer a tenant flag but the service's `segments` config: a service
+  with a processing window opens a dynamic gap. The `features.processingTime` field is not read (no longer
+  consumed in tenant docs; can be cleaned up but harmless).
 
 ---
 
-## 8. Test matrisi (kanıt katmanı — production'a dokunmaz)
+## 7. Grid render (separate and low-risk — AFTER the engine)
 
-| Test | İspat |
+Addressed after the engine's correctness is proven. It is **independent** of the conflict logic.
+
+- **Day view (`TimeGrid.jsx`):** currently cards stack on top of each other in the same column (no column
+  splitting). The processing region should be drawn **hatched/transparent**; the second card dropping into the
+  gap should be placed in that region. The column-slotting logic of the week view can be adapted here.
+- **Week view (`Dashboard.jsx`):** already has overlap column-slotting (`cols[]` algorithm);
+  the processing visual is added.
+- The booking card's processing interval is shown visually as "empty but reserved."
+- **Squeeze-in badge:** a booking taken into another booking's processing gap is shown in the grid with
+  a distinctive marker (so staff understand "this was squeezed into X's waiting time").
+
+> **Out of scope (separate feature):** the "customer must be ready 5 min early; if they don't come the slot
+> fills, they are re-queued to next-available" flow is a **check-in / no-show** feature; it is **not merged**
+> with the busy-slot v2 engine (scope kept narrow). Addressed separately later.
+
+---
+
+## 8. Test matrix (proof layer — does not touch production)
+
+| Test | Proof |
 |---|---|
-| **Characterization (golden)** | Gerçek booking export'u: her booking için `getBusyIntervals` uzunluk=1 ve `==` eski `getExistingRangeMinutes`. → mevcut veride sıfır regresyon |
-| **Conflict parity** | (mevcut bookings × aday yeni booking) matrisi, processing KAPALI: `yeni hasTimeConflict == eski`. Zaman gridi üzerinde geniş tarama |
-| **Gap-fill (yeni)** | Boşluğa tam oturan booking → izin. Boşluğu taşan → blok. Elle hesaplı |
-| **Aktif çakışma (yeni)** | Yeni booking'in aktif segmenti, mevcut aktif segmente değerse → blok |
-| **Nested / interleaved** | İki processing'li booking iç içe → pairwise doğru |
-| **Reconstruct (Booksy)** | Düz-blok import + servis profili → boşluk doğru açılıyor |
-| **Reschedule self-ignore** | `ignoreBookingId` ile kendi segmentlerine çakışmıyor |
-| **BLOCKED** | Her zaman tek düz aralık, boşluk yok |
-| **Edge: gap < min servis** | Doldurulamayan boşluk sorun çıkarmıyor (sadece boş kalır) |
-| **Public müsaitlik pariteyi** | `salownGetBusySlots` çıktısı app motoruyla aynı segmenti veriyor |
+| **Characterization (golden)** | Real booking export: for each booking `getBusyIntervals` length=1 and `==` old `getExistingRangeMinutes`. → zero regression on existing data |
+| **Conflict parity** | (existing bookings × candidate new booking) matrix, processing OFF: `new hasTimeConflict == old`. Wide scan over the time grid |
+| **Gap-fill (new)** | Booking fitting exactly in the gap → allowed. Overflowing the gap → blocked. Hand-computed |
+| **Active conflict (new)** | If the new booking's active segment touches the existing active segment → blocked |
+| **Nested / interleaved** | Two processing bookings nested → pairwise correct |
+| **Reconstruct (Booksy)** | Solid-block import + service profile → gap opens correctly |
+| **Reschedule self-ignore** | With `ignoreBookingId`, doesn't conflict with its own segments |
+| **BLOCKED** | Always a single solid interval, no gap |
+| **Edge: gap < min service** | An unfillable gap causes no problem (just stays empty) |
+| **Public availability parity** | `salownGetBusySlots` output gives the same segment as the app engine |
 
-**Opsiyonel — shadow mode:** Yeni motoru bir süre production'da read-only çalıştırıp
-eski sonuçtan sapmayı logla; kullanıcıya yansıtmadan, flip öncesi son güvence.
-
----
-
-## 9. Açık sorular (koda geçmeden netleşmeli)
-
-1. ~~**Treatwell OUT mekanizması**~~ → **ÇÖZÜLDÜ:** OUT = `salownIcalFeed`
-   (`functions/index.js:1373`), Treatwell'in abone olduğu busy feed. Write API yok ama
-   gerek de yok — feed'in VEVENT içeriğini `getBusyIntervals` ile segmentlere bölmek
-   yeterli. Gap tanımında efektif master Salown. Bkz §5.1, §5.4.
-2. ~~**iCal latency / çift-booking**~~ → **KARAR:** First-come-first-served, slot koruması
-   YOK. Aynı boşluğa iki kanal düşerse: ikincisi sığmıyorsa engine reddeder; sığıyorsa
-   ikisi de geçerli, operasyonel hallet. iCal'i mümkün olduğunca taze tut (gerçek-zamanlı
-   garanti değil).
-3. ~~**No-show riski**~~ → **KARAR (owner):** Gap-fill TÜM kanallara serbest; tek kısıt
-   boşluğa sığması (bunu engine zaten garanti eder — sığmayan booking aktif-sonra segmentine
-   çakışır, reddedilir). Geç gelen orijinal müşterinin slotu **korunmaz**; yeri dolduysa
-   "next available"a re-book. **Operasyonel kural:** müşteri appt'tan 5 dk önce hazır olmalı.
-   "5dk erken + re-queue" akışı **v2 motor kapsamı DIŞI** — ayrı check-in/no-show feature.
-   Motor tarafında ekstra çakışma mantığı GEREKMİYOR.
-4. **Config hizalama:** Processing ayarı hem Salown'da hem Treatwell panelinde ayrı tanımlı.
-   Manuel hizalı tutmak yeterli mi, yoksa Salown bir "uyumsuzluk uyarısı" göstermeli mi?
-5. **Segment snapshot:** Geçmiş booking'ler servis profili değişince donmalı mı? (Öneri: evet,
-   booking oluşturulurken segment snapshot'ı yaz.)
+**Optional — shadow mode:** run the new engine read-only in production for a while, logging its
+deviation from the old result; without reflecting it to the user, a final assurance before the flip.
 
 ---
 
-## 10. Fazlar
+## 9. Open questions (must be settled before writing code)
 
-| Faz | İçerik | Risk | Prod davranış değişir mi |
+1. ~~**Treatwell OUT mechanism**~~ → **RESOLVED:** OUT = `salownIcalFeed`
+   (`functions/index.js:1373`), the busy feed Treatwell subscribes to. No write API but
+   none is needed either — splitting the feed's VEVENT content into segments with `getBusyIntervals`
+   is enough. salOWN is the effective master in the gap definition. See §5.1, §5.4.
+2. ~~**iCal latency / double-booking**~~ → **DECISION:** First-come-first-served, NO slot
+   protection. If two channels drop into the same gap: if the second doesn't fit the engine rejects it;
+   if it fits, both are valid, handle it operationally. Keep the iCal as fresh as possible (not a real-time
+   guarantee).
+3. ~~**No-show risk**~~ → **DECISION (owner):** Gap-fill is free to ALL channels; the only constraint is
+   fitting in the gap (the engine already guarantees this — a booking that doesn't fit conflicts with the
+   active-after segment and is rejected). The late original customer's slot is **not protected**; if their
+   spot got filled, re-book to "next available". **Operational rule:** the customer must be ready 5 min
+   before the appt. The "5min-early + re-queue" flow is **OUT of scope of the v2 engine** — a separate
+   check-in/no-show feature. No extra conflict logic is NEEDED on the engine side.
+4. **Config alignment:** The processing setting is defined separately in both salOWN and the Treatwell panel.
+   Is keeping it manually aligned enough, or should salOWN show a "mismatch warning"?
+5. **Segment snapshot:** Should past bookings be frozen when the service profile changes? (Proposal: yes,
+   write a segment snapshot when the booking is created.)
+
+---
+
+## 10. Phases
+
+| Phase | Content | Risk | Prod behavior change |
 |---|---|---|---|
-| **0** | (Ayrı iş) No-show rozeti + geçmiş/gelecek cancelled görünürlüğü | Düşük | Sadece render | ✅ |
-| **1** | Veri modeli: `channelProfiles` + processing alanları + feature flag (kapalı) | Düşük | Hayır | ✅ |
-| **2** | Motor: `getBusyIntervals` + multi×multi conflict + `getServiceSegments`. Characterization + parity testleri YEŞİL | **Yüksek** | Hayır (flag kapalı, identik) | ✅ |
-| **3** | Grid render: processing görseli + nested ikinci kart | Orta | Görsel | ✅ |
-| **4** | ~~Pilot: tek serviste flag aç~~ → **DİNAMİK**: flag kaldırıldı, servis-bazlı otomatik (panel + staff bundle). Ön-uçuş: yalnız herohairs'te 1 processing servisi | Orta | Evet (servis bazlı) | ✅ 2026-06-26 (f958aee + 5dbdf31) |
-| **5a** | `salownIcalFeed` (`functions/index.js:1373`) processing'li booking için 2 VEVENT yayınlar → Treatwell gap'i boş görür | Yüksek | Evet (Treatwell müsaitliği) | ⬜ |
-| **5b** | Public booking page + `salownGetBusySlots` gap slotlarını sunar (online/parser snapshot dahil) | Yüksek | Evet | ⬜ |
-| **6** | Kanal genişletme: Booksy/Fresha OUT otomasyonu (Peepeet), mesajlaşma kanalları | — | Evet | ⬜ |
+| **0** | (Separate work) No-show badge + past/future cancelled visibility | Low | Render only | ✅ |
+| **1** | Data model: `channelProfiles` + processing fields + feature flag (off) | Low | No | ✅ |
+| **2** | Engine: `getBusyIntervals` + multi×multi conflict + `getServiceSegments`. Characterization + parity tests GREEN | **High** | No (flag off, identical) | ✅ |
+| **3** | Grid render: processing visual + nested second card | Medium | Visual | ✅ |
+| **4** | ~~Pilot: turn on flag on a single service~~ → **DYNAMIC**: flag removed, service-based automatic (panel + staff bundle). Pre-flight: only 1 processing service on herohairs | Medium | Yes (service-based) | ✅ 2026-06-26 (f958aee + 5dbdf31) |
+| **5a** | `salownIcalFeed` (`functions/index.js:1373`) publishes 2 VEVENTs for a processing booking → Treatwell sees the gap as empty | High | Yes (Treatwell availability) | ⬜ |
+| **5b** | Public booking page + `salownGetBusySlots` serve gap slots (including online/parser snapshot) | High | Yes | ⬜ |
+| **6** | Channel expansion: Booksy/Fresha OUT automation (Peepeet), messaging channels | — | Yes | ⬜ |
 
-**Sıra kuralı (tarihsel):** Faz 2 testleri yeşil olmadan Faz 3+ başlamadı. ~~Flag, Faz 4'e
-kadar hiçbir tenantta açılmaz.~~ → Faz 4'te flag tamamen kaldırıldı; aktivasyon artık servisin
-processing config'i. Sonraki: Faz 5b (online/parser snapshot + public gap slotları), Faz 5a (iCal split).
+**Ordering rule (historical):** Phase 3+ did not start until Phase 2 tests were green. ~~The flag is not
+enabled on any tenant until Phase 4.~~ → In Phase 4 the flag was removed entirely; activation is now the
+service's processing config. Next: Phase 5b (online/parser snapshot + public gap slots), Phase 5a (iCal split).
 
 ---
 
-## İlgili dokümanlar
-- `BUSINESS_RULES.md` — slot generation, no-preference assignment, reschedule invariant'ları
-- `INCIDENTS.md` — conflict/slot mantığını geçmişte kırma kayıtları
-- `MANIFESTO.md` — "grabbing" / aggregator felsefesi
-- `FIRESTORE_SCHEMA.md` — booking model quirk'leri (duration, endTime şekilleri)
+## Related documents
+- `BUSINESS_RULES.md` — slot generation, no-preference assignment, reschedule invariants
+- `INCIDENTS.md` — records of past breakage of conflict/slot logic
+- `MANIFESTO.md` — "grabbing" / aggregator philosophy
+- `FIRESTORE_SCHEMA.md` — booking model quirks (duration, endTime shapes)

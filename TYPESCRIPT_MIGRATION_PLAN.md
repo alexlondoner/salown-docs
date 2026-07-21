@@ -1,272 +1,272 @@
-# TypeScript Migration Plan — Salown
+# TypeScript Migration Plan — salOWN
 
-> _Bu artık sadece bir "migration checklist" değil — canlı, gerçek-para dönen bir
-> SaaS'ın önümüzdeki 2-3 yıldaki teknik evriminin **anayasası.** Dosya uzantısı
-> değiştirmiyoruz; üretim temelini uzun vadeye hazırlıyoruz. Invariants + Rules +
-> DoD bölümleri bu yüzden var: plan değişse de bu sınırlar sabit kalır._
+> _This is no longer just a "migration checklist" — it is the **constitution** of the
+> technical evolution over the next 2-3 years of a live, real-money SaaS. We are not
+> changing a file extension; we are preparing the production foundation for the long
+> term. The Invariants + Rules + DoD sections exist for this reason: even if the plan
+> changes, these boundaries stay fixed._
 
-> **Karar: 2026-07-08 (owner).** Sistem TS üzerinden kurulacak. Bu doküman
-> *nasıl* — canlı sisteme sıfır risk vererek, fazlı, geri-alınabilir şekilde.
-> Kaynak tartışma: owner + Xlaude. İlgili: [ROADMAP.md](ROADMAP.md) I2 (index.js
-> split) · [INVARIANTS.md](INVARIANTS.md) (externalId/para/tarih değişmezleri).
+> **Decision: 2026-07-08 (owner).** The system will be built on TS. This document is
+> the *how* — with zero risk to the live system, phased, reversible.
+> Source discussion: owner + Xlaude. Related: [ROADMAP.md](ROADMAP.md) I2 (index.js
+> split) · [INVARIANTS.md](INVARIANTS.md) (externalId/money/date invariants).
 
-> ## 🚫 FAZ 0'DA HİÇBİR PRODUCTION KODU TAŞINMAZ
-> Faz 0'ın **tek** çıktısı: `toolchain` + `type infrastructure`. **Feature = 0**,
-> refactor = 0, taşınan prod modülü = 0. Bu kural scope-creep'i keser: ilk teknik
-> adımın tek amacı altyapıyı kurmak; davranış değiştiren hiçbir iş aynı commit'e
-> karışmaz → ileride sorun çıkarsa nedeni izole etmek kolay olur.
+> ## 🚫 NO PRODUCTION CODE IS MOVED IN PHASE 0
+> The **only** output of Phase 0: `toolchain` + `type infrastructure`. **Features = 0**,
+> refactor = 0, migrated prod modules = 0. This rule cuts scope-creep: the sole purpose
+> of the first technical step is to set up the infrastructure; no behavior-changing work
+> is mixed into the same commit → if a problem arises later, isolating the cause is easy.
 
-## Milestone haritası (owner+GPT 07-08)
-Tempo — her biri ayrı, doğrulanıp geçilir (bugüne kadarki disiplin: *küçük değişiklik
-→ production doğrulama → dokümantasyon → sonraki adım*):
-| | Milestone | İçerik |
+## Milestone map (owner+GPT 07-08)
+Tempo — each one is separate, verified, then passed (the discipline so far: *small change
+→ production verification → documentation → next step*):
+| | Milestone | Content |
 |---|-----------|--------|
-| **A** | 📄 Docs | Bu plan + ROADMAP commit+push → resmi karar (ADR) |
-| **B** | 🛠 Toolchain ✅ **(2026-07-08)** | `tsconfig` (allowJs/checkJs:false/noEmit/strict:false), pipeline değişmez — bkz §7 DoD |
-| **C** | 📦 Shared types ✅ **(2026-07-08)** | `packages/shared` modeller + domain dili — seçenek (b), bkz §7 Faz 1 DoD |
-| **D** | 🔧 İlk gerçek migration | ilk küçük modül (identity/utils), `.js`+JSDoc |
-| **E** | 💳 Stripe / Checkout | **EN SON** — money-modülleri, parite + rollback |
+| **A** | 📄 Docs | This plan + ROADMAP commit+push → official decision (ADR) |
+| **B** | 🛠 Toolchain ✅ **(2026-07-08)** | `tsconfig` (allowJs/checkJs:false/noEmit/strict:false), pipeline unchanged — see §7 DoD |
+| **C** | 📦 Shared types ✅ **(2026-07-08)** | `packages/shared` models + domain language — option (b), see §7 Phase 1 DoD |
+| **D** | 🔧 First real migration | first small module (identity/utils), `.js`+JSDoc |
+| **E** | 💳 Stripe / Checkout | **LAST** — money modules, parity + rollback |
 
-## 📜 Migration Invariants (bozulursa migration durur — GPT 07-08)
-Bu 8 madde, "planı değil kodu okumaya başlayanlar" için referans. İhlal = dur.
-1. **Hiçbir tenant downtime yaşamaz.**
-2. **Hiçbir Firestore path değişmez** (koleksiyon/doc yolları sabit).
-3. **Hiçbir API response shape değişmez** (callable/HTTP function çıktı sözleşmesi).
-4. **Database migration YOK** (TS geçişi veri şeması/dokümanı değiştirmez).
-5. **Stripe webhook sözleşmesi değişmez** (event'ten okuduğumuz alanlar + handler davranışı sabit).
-6. **Feature development DURMAZ** (migration yeni özelliği bloklamaz; yeni özellik TS gelir).
-7. **Her faz rollback edilebilir** (git revert + release tag + smoke).
-8. **Production davranışı REFERANS implementasyondur** — eski JS = spec. Şüphede kalınca
-   "TS ne yapmalı?" değil, "bugünkü JS ne yapıyor?" sorulur. Parity bu maddeden doğar.
-9. **Dokümantasyon implementasyondan ÖNCE güncellenir** — karar önce burada/ROADMAP'te
-   yazılır, sonra kod. (Bu planın ta kendisi bunun kanıtı; kararsızlıkları azaltır.)
+## 📜 Migration Invariants (if broken, migration stops — GPT 07-08)
+These 8 items are a reference for "those who start reading the code, not the plan." Violation = stop.
+1. **No tenant experiences downtime.**
+2. **No Firestore path changes** (collection/doc paths are fixed).
+3. **No API response shape changes** (callable/HTTP function output contract).
+4. **NO database migration** (the TS transition does not change data schema/documents).
+5. **The Stripe webhook contract does not change** (the fields we read from the event + handler behavior are fixed).
+6. **Feature development does NOT stop** (migration does not block new features; new features come in TS).
+7. **Every phase is rollback-able** (git revert + release tag + smoke).
+8. **Production behavior IS the reference implementation** — old JS = spec. When in doubt, we do not ask
+   "what should TS do?" but "what does today's JS do?". Parity is born from this item.
+9. **Documentation is updated BEFORE implementation** — the decision is written here/in ROADMAP
+   first, then the code. (This very plan is proof of that; it reduces indecision.)
 
-## 📏 Migration Rules (ekip disiplini — bugün 1 kişi+Claude, yarın 2+ mühendis)
-Migration'ın yarıda kalmamasını sağlayan kurallar:
-- **Yeni JS yazılmaz.** Yeni dosya = `.ts`/`.tsx` (veya ara-adımda `.js`+JSDoc).
-- **Yeni feature TS gelir.**
-- **Eski JS yalnızca bugfix için değişir** (fırsattan refactor YOK).
-- **Refactor yalnız migration PR'ında** yapılır (feature PR'ına karışmaz).
-- **One concern per PR** — bir PR ya migration ya feature ya bugfix; karışım yok.
-- **Behavior parity before optimization** — önce birebir aynı davranış, iyileştirme sonra.
-- **Kod ve kod içi yorumlar İNGİLİZCE** (owner kararı 2026-07-08) — yarın ekibe Türkçe
-  bilmeyen mühendis katıldığında engel olmasın. Docs Türkçe kalabilir; kod artefaktı
-  (tip dosyaları, yorumlar, commit mesajları, script çıktıları) İngilizce.
+## 📏 Migration Rules (team discipline — today 1 person+Claude, tomorrow 2+ engineers)
+Rules that keep the migration from being left half-done:
+- **No new JS is written.** New file = `.ts`/`.tsx` (or, as an intermediate step, `.js`+JSDoc).
+- **New features come in TS.**
+- **Old JS changes only for a bugfix** (NO opportunistic refactor).
+- **Refactor only in a migration PR** (not mixed into a feature PR).
+- **One concern per PR** — a PR is either migration or feature or bugfix; no mixing.
+- **Behavior parity before optimization** — first the exact same behavior, improvement later.
+- **Code and in-code comments in ENGLISH** (owner decision 2026-07-08) — so that when a non-Turkish-speaking
+  engineer joins the team tomorrow, it is not a barrier. Docs can stay in Turkish; the code artifact
+  (type files, comments, commit messages, script output) is English.
 
-## 📊 KPI — ilerleme panosu (yönsel, deadline DEĞİL · **otomatik sayılır**)
-> Bu sayılar *yön* gösterir, tarih değil (bkz §0.6 parity-driven). "0 JS" bir hedef
-> yönü; kapı değil. **Manuel güncellenmez** → `npm run migration:stats` üretir (spec §7),
-> böylece dokümandaki sayılar her zaman gerçek.
+## 📊 KPI — progress board (directional, NOT a deadline · **counted automatically**)
+> These numbers show *direction*, not a date (see §0.6 parity-driven). "0 JS" is a target
+> direction; not a gate. **Not updated manually** → `npm run migration:stats` produces them (spec §7),
+> so the numbers in the document are always real.
 
-| Metric | Başlangıç (2026-07-08) | Hedef yönü |
+| Metric | Start (2026-07-08) | Target direction |
 |--------|------------------------|-----------|
-| Frontend JS/JSX dosya | **104** | → 0 |
-| Frontend TS/TSX dosya | **0** | → 104 |
-| Functions JS dosya | **5** (index.js 5759 satır dahil) | → 0 (split + .ts) |
+| Frontend JS/JSX files | **104** | → 0 |
+| Frontend TS/TSX files | **0** | → 104 |
+| Functions JS files | **5** (including index.js 5759 lines) | → 0 (split + .ts) |
 | Functions TS | **0%** | → 100% |
 | Shared models | **0 / 8** | → 8 / 8 |
-| `any` kullanımı | 0 | → mümkün olduğunca 0 |
-| `@ts-ignore` | 0 | → 0 (sıfır kalır) |
-| `strict` hataları | N/A (kapalı) | → 0 (Faz 4 sonunda) |
+| `any` usage | 0 | → as close to 0 as possible |
+| `@ts-ignore` | 0 | → 0 (stays zero) |
+| `strict` errors | N/A (off) | → 0 (by end of Phase 4) |
 
-## Neden şimdi
-İlk 3-4 ay "çabuk çalışan ürün" doğru hedefti. Bugün: multi-tenant, Stripe
+## Why now
+For the first 3-4 months "a quickly-working product" was the right goal. Today: multi-tenant, Stripe
 Connect, loyalty, marketing automation, campaign attribution, finance, AI, email
-webhooks, discount engine, (yakında) Capacitor — birbirine bağlı onlarca modül,
-gerçek para, gerçek müşteri. Bu ölçekte bugün elle yakaladığımız hata sınıfı
-(`'deposit'≠'DEPOSIT'` casing, telefon format `083...`≠`+447...`, slug serviceId,
-Firestore odd-path, dupe'lar) **compile-time yakalanabilir.** TS yeni özellik
-değil — ölçekte tenant'ları koruyan zırh.
+webhooks, discount engine, (soon) Capacitor — dozens of interconnected modules,
+real money, real customers. At this scale the class of bugs we catch by hand today
+(`'deposit'≠'DEPOSIT'` casing, phone format `083...`≠`+447...`, slug serviceId,
+Firestore odd-path, dupes) **can be caught at compile-time.** TS is not a new feature
+— it is the armor that protects tenants at scale.
 
 ---
 
-## 0. Pazarlıksız güvenlik ilkeleri (önce bunlar)
+## 0. Non-negotiable safety principles (these first)
 
-> **ALTIN KURAL:** Çalışan sistem, biz *bilinçli + doğrulanmış* şekilde anahtarı
-> çevirene kadar birebir aynı kodu çalıştırır — ve anahtar her an geri çevrilir.
+> **GOLDEN RULE:** The working system runs the exact same code until we *consciously +
+> verifiably* flip the switch — and the switch can be flipped back at any moment.
 
-1. **Faz 0 tamamen inert.** Yeni `.ts` dosyaları kimse `require`/`import` etmediği
-   sürece çalışma anına DEĞMEZ. Canlı sistem bit-bit aynı byte'ları çalıştırır.
-2. **Davranış taşıyan her dönüşüm parite testiyle gelir** (aynı girdi → aynı
-   çıktı, eski JS ile karşılaştırmalı) — özellikle para/tarih/dedup.
-3. **Deploy disiplini:** yalnız temiz-pencerede (index.js `git status` temiz +
-   diğer session'lar 30 dk durur) · **`firebase deploy --only functions:salown`**
-   (ASLA blanket `--only functions` = 27 us-central1 orphan siler) · deploy'dan
-   önce tenant+URL söyle, onay bekle · sonra booking-confirmation + Telegram smoke.
-4. **Rollback = `git revert` + redeploy** (2 dk, bilinen-iyi hale dönüş). Her faz
-   bağımsız revert edilebilir olmalı.
-5. **Frontend ile functions AYRI build.** Biri diğerini deploy'da kıramaz; her
-   faz tek tarafı hedefler.
-6. **Deadline YOK — parity ile ilerler.** Bu planın hiçbir yerinde "3 haftada biter"
-   yazmaz. İlerleme: `JS → TS → davranış birebir aynı mı? → evet → sonraki modül`.
-   Production migration takvimle değil, parite ile yürür. Hız değil güven kriter.
+1. **Phase 0 is entirely inert.** New `.ts` files do NOT touch runtime as long as no one
+   `require`s/`import`s them. The live system runs bit-for-bit the same bytes.
+2. **Every behavior-carrying transformation comes with a parity test** (same input → same
+   output, compared against the old JS) — especially money/date/dedup.
+3. **Deploy discipline:** only in a clean window (index.js `git status` clean +
+   other sessions pause for 30 min) · **`firebase deploy --only functions:salown`**
+   (NEVER blanket `--only functions` = deletes 27 us-central1 orphans) · before deploy,
+   announce tenant+URL, wait for approval · then booking-confirmation + Telegram smoke.
+4. **Rollback = `git revert` + redeploy** (2 min, return to known-good state). Every phase
+   must be independently revertible.
+5. **Frontend and functions build SEPARATELY.** One cannot break the other in deploy; each
+   phase targets one side.
+6. **NO deadline — advances via parity.** Nowhere in this plan does it say "done in 3 weeks."
+   Progress: `JS → TS → is the behavior exactly the same? → yes → next module`.
+   Production migration proceeds by parity, not by calendar. The criterion is confidence, not speed.
 
 ---
 
-## 1. Toolchain — iki taraf, iki gerçek
+## 1. Toolchain — two sides, two realities
 
-### Frontend (`salown-app/src/`) — düşük sürtünme
-Vite TS'i **native** destekler (esbuild transpile eder). `.jsx→.tsx` yeniden
-adlandırma kademeli; Vite hiç config'siz çalışır. Tip-kontrolü opsiyonel katman
-(`tsc --noEmit` CI'da), build'i bloklamaz. → **React tarafı risksiz + kademeli.**
+### Frontend (`salown-app/src/`) — low friction
+Vite supports TS **natively** (esbuild transpiles it). The `.jsx→.tsx` rename is
+gradual; Vite works with no config at all. Type-checking is an optional layer
+(`tsc --noEmit` in CI), it does not block the build. → **The React side is risk-free + gradual.**
 
-### Functions (`salown-app/functions/`) — dikkatli taraf
-Şu an: `main: index.js`, CommonJS, tsconfig yok, build yok. Gerçek `.ts` için
-`tsc` build gerekir: `src/*.ts → lib/*.js`, `main` → `lib/index.js`, `predeploy`
-build hook. **Bu, pipeline'ı değiştiren TEK gerçek karar** → tek temiz-pencerede,
-eski `index.js` anında-rollback olarak korunarak yapılır.
+### Functions (`salown-app/functions/`) — the careful side
+Currently: `main: index.js`, CommonJS, no tsconfig, no build. Real `.ts` requires a
+`tsc` build: `src/*.ts → lib/*.js`, `main` → `lib/index.js`, `predeploy`
+build hook. **This is the ONLY real decision that changes the pipeline** → done in a single clean window,
+keeping the old `index.js` as an instant rollback.
 
-**✅ TOOLCHAIN KARARI (owner+GPT 07-08): ara-adımı ATLAMA — production stability >
-developer convenience.** Sıra:
-1. **Faz 0:** `allowJs/checkJs:false/noEmit` — pipeline HİÇ değişmez, sadece tip bilgisi.
-2. **Faz 1:** `packages/shared` modeller — runtime değişmez.
-3. **Faz 2:** ilk küçük modül (identity, utils) + **gerçek deploy** — pipeline HÂLÂ aynı.
-4. **Faz 3:** toolchain denenmiş + tipler oturmuş + ekip alışmış → **functions tam `.ts`
-   build**'e (main→lib) o zaman geç. Erken değil.
+**✅ TOOLCHAIN DECISION (owner+GPT 07-08): DON'T skip the intermediate step — production stability >
+developer convenience.** Order:
+1. **Phase 0:** `allowJs/checkJs:false/noEmit` — pipeline does NOT change at all, only type info.
+2. **Phase 1:** `packages/shared` models — runtime does not change.
+3. **Phase 2:** first small module (identity, utils) + **real deploy** — pipeline is STILL the same.
+4. **Phase 3:** toolchain proven + types settled + team accustomed → then move to **full `.ts`
+   build for functions** (main→lib). Not before.
 
-> **⚠️ CommonJS limitation (functions) — DİKKAT**
-> - `tsc --noEmit` yalnızca **tip kontrolü** yapar; JS üretmez.
-> - CommonJS `index.js`, **derlenmemiş `.ts` dosyalarını `require()` edemez.**
-> - Bu nedenle Faz 0-2 boyunca çalışan Functions kodu **`.js` + JSDoc** olarak kalır.
-> - `.ts` implementasyonuna geçiş, **yalnızca build pipeline (`src → lib`) etkinleştiğinde**
->   (Faz 3) yapılır.
-> - → Mevcut `functions/clients/identity.ts` taslağı: ya Faz 2 için `identity.js`+JSDoc'a
->   çevrilir, ya da Faz 3'e kadar inert bekletilir. (Frontend'de bu sorun YOK — Vite
->   `.ts`/`.tsx`'i native derler.)
+> **⚠️ CommonJS limitation (functions) — CAUTION**
+> - `tsc --noEmit` only does **type checking**; it does not produce JS.
+> - CommonJS `index.js` **cannot `require()` uncompiled `.ts` files.**
+> - For this reason, throughout Phases 0-2 the running Functions code stays as **`.js` + JSDoc**.
+> - The transition to a `.ts` implementation is done **only when the build pipeline (`src → lib`) is enabled**
+>   (Phase 3).
+> - → The existing `functions/clients/identity.ts` draft: is either converted to `identity.js`+JSDoc
+>   for Phase 2, or kept inert until Phase 3. (There is NO such problem on the frontend — Vite
+>   compiles `.ts`/`.tsx` natively.)
 
-### Faz mekaniği — tek bakışta "ne değişiyor?" (owner+GPT 07-08)
-| Faz | Runtime | Type checking | Build (src→lib) |
+### Phase mechanics — at a glance "what is changing?" (owner+GPT 07-08)
+| Phase | Runtime | Type checking | Build (src→lib) |
 |-----|---------|---------------|-----------------|
-| **0** | JS | JSDoc + `tsc --noEmit` | ❌ pipeline aynı |
-| **1** | JS | + shared types | ❌ pipeline aynı |
-| **2** | JS (`.js`+JSDoc) | JSDoc + shared types | ❌ pipeline aynı |
+| **0** | JS | JSDoc + `tsc --noEmit` | ❌ pipeline same |
+| **1** | JS | + shared types | ❌ pipeline same |
+| **2** | JS (`.js`+JSDoc) | JSDoc + shared types | ❌ pipeline same |
 | **3** | **TS (`src/`)** | **Full TS** | ✅ **`src → lib`, `main: lib/index.js`** |
 | **4** | TS | **`strict: true`** | ✅ |
 
-> **Pipeline'ın gerçekten değiştiği tek an = Faz 3.** Faz 0-2 boyunca functions deploy
-> bugünküyle bit-bit aynı; `main: index.js` korunur. Faz 3'te `main: lib/index.js` olur
-> ve eski `index.js` rollback için saklanır. Not: bu tablonun Faz'ları *runtime/build*
-> merceğidir; §3'teki modül-sırası tablosu *hangi modül ne zaman* merceği — ikisi
-> dikey/yatay eksen gibi birbirini tamamlar.
+> **The only moment the pipeline actually changes = Phase 3.** Throughout Phases 0-2 the functions deploy
+> is bit-for-bit the same as today; `main: index.js` is preserved. In Phase 3 it becomes `main: lib/index.js`
+> and the old `index.js` is kept for rollback. Note: the Phases in this table are a *runtime/build*
+> lens; the module-order table in §3 is a *which module when* lens — the two complement each other
+> like vertical/horizontal axes.
 
-### Kademeli tsconfig — büyük-bang YOK (owner ekleme 07-08)
-İlk gün her şeyi çevirme. Başlangıç config:
+### Gradual tsconfig — NO big-bang (owner addition 07-08)
+Don't convert everything on day one. Starting config:
 ```jsonc
 {
   "compilerOptions": {
-    "allowJs": true,     // mevcut .js çalışmaya devam eder
-    "checkJs": false,    // eski JS'i henüz tip-kontrol etme (gürültü yok)
-    "strict": false,     // ⚠️ ilk gün AÇMA — yoksa binlerce hata (bkz aşağı)
-    "noEmit": true       // Faz 0'da sadece kontrol, emit yok
+    "allowJs": true,     // existing .js keeps running
+    "checkJs": false,    // don't type-check old JS yet (no noise)
+    "strict": false,     // ⚠️ DON'T turn on day one — otherwise thousands of errors (see below)
+    "noEmit": true       // in Phase 0 only checking, no emit
   }
 }
 ```
-Böylece: mevcut JS aynen çalışır · yeni dosyalar TS · big-bang yok.
+This way: existing JS runs as is · new files are TS · no big-bang.
 
-### `strict` ilk gün AÇILMAZ (owner ekleme 07-08)
-Migration boyunca `strict:false` (veya seçici: `strictNullChecks` önce). **Migration
-bitince** `strict:true`. Erken açmak = binlerce eski-kod hatasıyla boğulmak →
-gerçek işi gizler. Strict'i bir bitiş çizgisi olarak tut, başlangıç değil.
+### `strict` is NOT turned on day one (owner addition 07-08)
+Throughout the migration `strict:false` (or selectively: `strictNullChecks` first). **When migration
+is done** `strict:true`. Turning it on early = being drowned in thousands of old-code errors →
+it hides the real work. Keep strict as a finish line, not a starting line.
 
 ---
 
-## 2. `shared/` — tek tip kaynağı (ve deploy tuzağı)
+## 2. `shared/` — the single type source (and the deploy trap)
 
-Hedef: `Booking`, `Client`, `Tenant`, `Campaign`, `Coupon`, `Payment`, `Loyalty`
-modelleri **tek yerde** → hem React hem Functions kullanır, duplicate interface yok.
+Goal: `Booking`, `Client`, `Tenant`, `Campaign`, `Coupon`, `Payment`, `Loyalty`
+models **in one place** → used by both React and Functions, no duplicate interface.
 
-**Tuzak:** Firebase Functions deploy'da yalnız `functions/` klasörünü yükler →
-repo-kökü `shared/`'ı require EDEMEZ. Frontend (Vite) alias'la sorunsuz alır.
+**Trap:** Firebase Functions deploy uploads only the `functions/` folder →
+it CANNOT require the repo-root `shared/`. The frontend (Vite) picks it up seamlessly via alias.
 
-**Çözüm — monorepo workspace (owner tercihi 07-08, tercih edilen):**
+**Solution — monorepo workspace (owner preference 07-08, preferred):**
 ```
 packages/shared/src/{booking,client,tenant,campaign,coupon,loyalty,invoice,payment}.ts
 salown-app/            (frontend, Vite)
 salown-app/functions/  (Cloud Functions)
 ```
-`packages/shared` gerçek bir npm **workspace paketi** (`@salown/shared`) → hem
-frontend hem functions `import type { Booking } from '@salown/shared'` der. Kopya
-script yok, duplicate interface yok.
+`packages/shared` is a real npm **workspace package** (`@salown/shared`) → both
+frontend and functions say `import type { Booking } from '@salown/shared'`. No copy
+script, no duplicate interface.
 
-> **🔑 Neden functions deploy'unu KIRMAZ (kritik içgörü):** `packages/shared`
-> **type-only** (sadece `interface`/`type`, runtime kod YOK) olduğu sürece, `tsc`
-> functions'ı derlerken `import type`'lar **tamamen silinir** → derlenmiş `lib/`
-> içinde `@salown/shared`'a **hiç referans kalmaz** → deploy artifact self-contained,
-> workspace-symlink çözme derdi yok. Type-only shared, monorepo'yu functions için
-> de temiz yapan şeydir.
+> **🔑 Why this does NOT BREAK the functions deploy (critical insight):** as long as `packages/shared`
+> is **type-only** (only `interface`/`type`, NO runtime code), when `tsc`
+> compiles functions the `import type`s are **completely erased** → in the compiled `lib/`
+> there is **no reference left** to `@salown/shared` → the deploy artifact is self-contained,
+> no workspace-symlink resolution headache. Type-only shared is what makes the monorepo
+> clean for functions too.
 >
-> ⚠️ **Sınır:** shared'a bir gün runtime kod girerse (zod validator'lar vb.) bu
-> silinme bozulur → o an functions deploy'u için bundling (esbuild/tsc `outDir`
-> içine dahil) gerekir. Kural: **`packages/shared` type-only kalır**; runtime
-> doğrulama (zod) ayrı bir pakete/katmana gider.
+> ⚠️ **Boundary:** if runtime code ever enters shared (zod validators etc.) this
+> erasure breaks → at that moment, bundling (esbuild/tsc into `outDir`) becomes necessary
+> for the functions deploy. Rule: **`packages/shared` stays type-only**; runtime
+> validation (zod) goes into a separate package/layer.
 
-- Tek gerçek (SSOT) = `packages/shared/src/`; iki taraf da onu import eder.
-- Repo yapısı workspace'e uygun değilse geçici kopya/generation kullanılabilir; ama
-  uzun vade = ortak paket (daha temiz).
+- The single source of truth (SSOT) = `packages/shared/src/`; both sides import it.
+- If the repo structure isn't workspace-friendly, a temporary copy/generation can be used; but
+  the long term = a shared package (cleaner).
 
-### `packages/shared` — sıkı kurallar (owner+GPT 07-08): GERÇEKTEN "zero runtime"
-"import type silinir" garantisi **her yerde `import type` kullanılmasına** bağlı. Biri
-`import { Booking }` (type'sız) yazarsa TS bunu runtime import bırakabilir → functions'ta
-paket-çözümleme hatası. Bunu **iki katmanlı** engelliyoruz:
+### `packages/shared` — strict rules (owner+GPT 07-08): TRULY "zero runtime"
+The "import type is erased" guarantee depends on **using `import type` everywhere**. If someone
+writes `import { Booking }` (without type), TS may leave it as a runtime import → a
+package-resolution error in functions. We prevent this in **two layers**:
 
-**(1) Paket içeriği kuralı** — `packages/shared` yalnız:
-| ✔ İZİN | ✘ YASAK |
+**(1) Package content rule** — `packages/shared` only:
+| ✔ ALLOWED | ✘ FORBIDDEN |
 |--------|---------|
-| `interface`, `type` | `function`, `class`, `const` (runtime değer) |
-| `enum` → **union type tercih** (`type X = 'a'\|'b'`, enum runtime kod üretir) | runtime validation / **zod** |
-| utility types | `firebase`, `stripe` importları |
+| `interface`, `type` | `function`, `class`, `const` (runtime value) |
+| `enum` → **prefer union type** (`type X = 'a'\|'b'`, enum produces runtime code) | runtime validation / **zod** |
+| utility types | `firebase`, `stripe` imports |
 
-**(2) ESLint zorlaması** — `@typescript-eslint/consistent-type-imports` kuralı editör +
-CI seviyesinde `import type`'a **zorlar** → yanlış runtime import oluşamaz. (Bu kural
-DoD'nin "ESLint temiz" maddesine dahil.)
+**(2) ESLint enforcement** — the `@typescript-eslint/consistent-type-imports` rule **forces**
+`import type` at the editor + CI level → a wrong runtime import cannot form. (This rule
+is included in the DoD's "ESLint clean" item.)
 
-### Zod = AYRI paket (type ≠ validation)
-Tipler compile'da kaybolur; zod runtime çalışır. Karıştırma:
+### Zod = SEPARATE package (type ≠ validation)
+Types are lost at compile; zod runs at runtime. Don't mix them:
 ```
-packages/shared-types/       # Booking.ts, Client.ts ...  → compile-time, silinir
-packages/shared-validation/  # booking.schema.ts ...      → runtime zod (Firestore sınırı)
+packages/shared-types/       # Booking.ts, Client.ts ...  → compile-time, erased
+packages/shared-validation/  # booking.schema.ts ...      → runtime zod (Firestore boundary)
 ```
-`shared-types` type-only kalır (functions deploy'u temiz); `shared-validation` runtime
-olduğu için onu kullanan taraf onu bundle'lar. Ayrım ileride çok rahat ettirir.
+`shared-types` stays type-only (functions deploy clean); because `shared-validation` is runtime,
+the side that uses it bundles it. The separation makes life much easier later.
 
-### Shared = sadece interface değil, DOMAIN DİLİ
-Ortak union/enum'lar tek yerde → frontend + functions + admin + marketing **aynı dili**
-konuşur: `BookingStatus`, `BookingSource`, `PaymentType`, `CampaignType`, `CampaignStatus`,
+### Shared = not just interfaces, but the DOMAIN LANGUAGE
+Common unions/enums in one place → frontend + functions + admin + marketing **speak the same
+language**: `BookingStatus`, `BookingSource`, `PaymentType`, `CampaignType`, `CampaignStatus`,
 `CouponType`, `LoyaltyReason` (`LoyaltyAdjustmentReason`), `EmailEventType`,
-`StripePaymentMode`, `TenantRole` (owner/admin/staff — bkz güvenlik/permissions).
-Bunlar bugün string literal olarak dağınık (casing bug'ının kaynağı)
-→ tek union type = compile-time koruma. Bu "domain vocabulary" zamanla onlarca yerde
-kullanılacak → tek kaynak şart.
+`StripePaymentMode`, `TenantRole` (owner/admin/staff — see security/permissions).
+These are scattered as string literals today (the source of the casing bug)
+→ a single union type = compile-time protection. This "domain vocabulary" will be used in
+dozens of places over time → a single source is essential.
 
 ---
 
-## 3. Faz planı (sıra + her fazın "bitti" tanımı)
+## 3. Phase plan (order + each phase's "done" definition)
 
-| Faz | Kapsam | Risk | Bitti tanımı (DoD) |
+| Phase | Scope | Risk | Done definition (DoD) |
 |-----|--------|------|--------------------|
-| **0** | Toolchain iskeleti: `shared/types/` + functions `tsconfig` (noEmit) + Vite alias. Hiçbir prod dosyası require etmez. | **Sıfır** | `tsc --noEmit` yeşil; deploy DEĞİŞMEDEN çalışır; canlı bit-bit aynı |
-| **1** ✅ **(2026-07-08)** | **Önce tipler, sonra implementasyon** (owner 07-08): ilk hafta hedefi = `Booking`, `Client`, `Tenant`, `Campaign`, `Coupon`, `Loyalty`, `Invoice`, `Payment` (`PaymentType='DEPOSIT'\|'FULL'`) + `BookingStatus`, `BookingSource` interface'leri. **Kod aynı kalır** — sadece tip tanımı. Bu bile yüzlerce hatayı önlemeye başlar. | **Sıfır** | ✅ Modeller derlenir; henüz kimse import etmiyor (bkz §7 Faz 1 DoD — invoice gerçeği dahil) |
-| **2** | Functions split → TS, **sıra: kararlı/pure ÖNCE** (`clients/identity`, `utils/`, `parsers/`, `notifications/`, `marketing/`), **money-modülleri EN SON** (`checkout/`, `stripe/`, `bookings/` — aktif düzenleniyor + para-kritik). Her modül: taşı → tiple → parite testi → temiz-pencere deploy. | **Kontrollü** | Her modül: parite testi geçer + `functions:salown` deploy + 50 fn ACTIVE + booking-confirmation & Telegram smoke; index.js küçülür |
-| **3** | React `src/` modülleri `.tsx`; `utils/` + yeni componentler önce; `strict` kademeli. | **Düşük** (Vite native) | `tsc --noEmit` yeşil; `npm run build` sıfır-error; app canlı doğrulanır |
-| **4** | En büyük/riskli dosyalar en son (index.js kalıntısı, Finance, Dashboard). | **Yüksek → izole** | Tam parite + smoke; rollback hazır |
+| **0** | Toolchain skeleton: `shared/types/` + functions `tsconfig` (noEmit) + Vite alias. No prod file requires it. | **Zero** | `tsc --noEmit` green; deploy runs UNCHANGED; live bit-for-bit same |
+| **1** ✅ **(2026-07-08)** | **Types first, implementation later** (owner 07-08): first-week goal = `Booking`, `Client`, `Tenant`, `Campaign`, `Coupon`, `Loyalty`, `Invoice`, `Payment` (`PaymentType='DEPOSIT'\|'FULL'`) + `BookingStatus`, `BookingSource` interfaces. **The code stays the same** — only type definitions. Even this starts preventing hundreds of bugs. | **Zero** | ✅ Models compile; no one imports them yet (see §7 Phase 1 DoD — including the invoice reality) |
+| **2** | Functions split → TS, **order: stable/pure FIRST** (`clients/identity`, `utils/`, `parsers/`, `notifications/`, `marketing/`), **money modules LAST** (`checkout/`, `stripe/`, `bookings/` — actively being edited + money-critical). Each module: move → type → parity test → clean-window deploy. | **Controlled** | Each module: parity test passes + `functions:salown` deploy + 50 fn ACTIVE + booking-confirmation & Telegram smoke; index.js shrinks |
+| **3** | React `src/` modules → `.tsx`; `utils/` + new components first; `strict` gradual. | **Low** (Vite native) | `tsc --noEmit` green; `npm run build` zero-error; app verified live |
+| **4** | The biggest/riskiest files last (index.js remainder, Finance, Dashboard). | **High → isolated** | Full parity + smoke; rollback ready |
 
-**Klasörleme (functions):** `bookings/ · checkout/ · stripe/ · marketing/ ·
+**Folder layout (functions):** `bookings/ · checkout/ · stripe/ · marketing/ ·
 finance/ · loyalty/ · clients/ · parsers/ · notifications/ · reports/ · ai/ ·
-utils/ · shared/`. (Sadece okunabilirlik değil — TS tip kontrolünden de daha iyi
-yararlanma.)
+utils/ · shared/`. (Not just readability — also better use of TS type checking.)
 
-**İlk somut modül (Faz 2 başlangıcı):** `clients/identity.ts` — kanonik kimlik
-çözücü (`normalizePhone/Email`, `matchIdentity`). Neden ilk: (a) pure + tam
-test-edilebilir, (b) para/stripe/bookings'e dokunmaz, (c) bugün yaşadığımız
-cross-source tanıma + dedup + converted-client problemini aynı anda çözer. Taslak
-zaten yazıldı (`functions/clients/identity.ts`, şu an inert, kimse require etmiyor).
+**First concrete module (start of Phase 2):** `clients/identity.ts` — the canonical identity
+resolver (`normalizePhone/Email`, `matchIdentity`). Why first: (a) pure + fully
+testable, (b) does not touch money/stripe/bookings, (c) simultaneously solves the
+cross-source recognition + dedup + converted-client problem we live with today. The draft
+is already written (`functions/clients/identity.ts`, currently inert, no one requires it).
 
 ---
 
-## 3b. Kanonik migration sırası (owner 07-08)
-Faz 2-4'ün *içindeki* dosya sırası — düşük-riskten para'ya doğru. Frontend TS'i
-Vite-native olduğu için (deploy riski yok) erken gelebilir; canlı para hareketi
-oluşturan hiçbir modül **ilk dalgada** dokunulmaz:
+## 3b. Canonical migration order (owner 07-08)
+The file order *within* Phases 2-4 — from low-risk toward money. Because frontend TS
+is Vite-native (no deploy risk) it can come early; no module that generates live money
+movement is touched **in the first wave**:
 
 ```
 Utilities → Types → Hooks → UI Components → Marketing → Clients →
@@ -274,359 +274,359 @@ Calendar → Reports → Admin → Functions → Notifications → Emails →
 Stripe → Checkout → Payments
 ```
 
-Yani: utils/tipler/hook'lar/pure-UI en önce (en ucuz, en güvenli) → feature
-alanları → **Stripe / Checkout / Payments EN SON**, tek tek, parite + smoke ile.
+That is: utils/types/hooks/pure-UI first (cheapest, safest) → feature
+areas → **Stripe / Checkout / Payments LAST**, one by one, with parity + smoke.
 
-## 4. Sıra gerekçesi (neden money en son)
-`Discount Codes → Checkout → Finance → Marketing Attribution → Reports` hepsi aynı
-alanları paylaşır — TS burada en çok yardım eder AMA en çok da hasar verir.
-Bu zincir **aktif düzenleniyor** (Stripe Phase 5, discount engine) ve **para
-taşıyor.** O yüzden: önce çevresini tiple (modeller + pure modüller sağlamlaşsın),
-zincire en son ve tek tek dokun, her adımda parite + smoke.
+## 4. Rationale for the order (why money is last)
+`Discount Codes → Checkout → Finance → Marketing Attribution → Reports` all share the same
+areas — TS helps most here BUT also does the most damage here.
+This chain is **actively being edited** (Stripe Phase 5, discount engine) and **carries
+money.** So: first type its surroundings (harden the models + pure modules),
+touch the chain last and one by one, with parity + smoke at every step.
 
 ---
 
-## 5. Her migration PR'ının "Definition of Done" (owner 07-08)
-Her PR şu 7 şartı geçmeden birleşmez:
-- ✅ TypeScript compile ediyor (`tsc --noEmit` yeşil)
-- ✅ ESLint temiz
-- ✅ Vite build başarılı (`npm run build`)
-- ✅ Firebase Functions build başarılı (functions tarafına dokunduysa)
-- ✅ **Mevcut davranış değişmedi** (davranış-taşıyan dönüşümde parite testi)
-- ✅ Production deploy gerektirmiyorsa **deploy YOK**
-- ✅ ROADMAP / bu plan güncellendi (DoD ✅ işaretlendi)
+## 5. Every migration PR's "Definition of Done" (owner 07-08)
+No PR merges without passing these 7 conditions:
+- ✅ TypeScript compiles (`tsc --noEmit` green)
+- ✅ ESLint clean
+- ✅ Vite build succeeds (`npm run build`)
+- ✅ Firebase Functions build succeeds (if the functions side was touched)
+- ✅ **Existing behavior unchanged** (a parity test on a behavior-carrying transformation)
+- ✅ If no production deploy is required, **NO deploy**
+- ✅ ROADMAP / this plan updated (DoD ✅ marked)
 
-## 5b. Faz X — Production Verification (owner+GPT 07-08)
-"TypeScript compile oluyor" YETMEZ — canlı sistem, gerçek akışlar doğrulanmalı. Para
-veya sık-yol taşıyan bir modül taşındıktan sonra (özellikle Faz 6 functions), şu
-uçtan-uca akışlar elle/otomatik çalıştırılır:
+## 5b. Phase X — Production Verification (owner+GPT 07-08)
+"TypeScript compiles" is NOT ENOUGH — the live system, the real flows must be verified. After a
+module carrying money or hot paths is migrated (especially Phase 6 functions), the following
+end-to-end flows are run manually/automatically:
 - ✅ Vite build · ✅ Functions build · ✅ Firebase deploy smoke
-- ✅ Stripe test ödeme · ✅ Walk-in checkout · ✅ Online booking
+- ✅ Stripe test payment · ✅ Walk-in checkout · ✅ Online booking
 - ✅ Loyalty earn · ✅ Loyalty redeem
-- ✅ Campaign send · ✅ Coupon redeem · ✅ Reports açılıyor
+- ✅ Campaign send · ✅ Coupon redeem · ✅ Reports open
 
-(bkz `/verify` skill mantığı — değişikliği gerçek app'te sür, sadece test/typecheck değil.)
+(see the `/verify` skill logic — drive the change in the real app, not just test/typecheck.)
 
-## 5c. Rollback stratejisi (her faz için yazılı — owner+GPT 07-08)
-Özellikle Stripe/Checkout/Payments'e gelince "geri dönüş" anında karar vermek zorunda
-kalınmasın diye **önceden yazılı:**
-- **Kod:** `git revert <commit>` → temiz working tree'ye dönüş.
-- **Deploy:** önceki **git tag / release** (her money-faz deploy'undan önce tag at).
-- **Functions artifact:** önceki deploy'a `firebase deploy --only functions:salown` ile
-  revert edilmiş koddan geri yükle (blanket ASLA).
-- **Doğrulama:** rollback sonrası §5b smoke checklist'i tekrar koş.
-- **Kural:** money-modülü (stripe/checkout/bookings) deploy'undan ÖNCE release tag +
-  rollback adımları PR'da yazılı olmadan birleşme yok.
+## 5c. Rollback strategy (written for each phase — owner+GPT 07-08)
+Especially when we reach Stripe/Checkout/Payments, so that the "return" decision does not
+have to be made on the spot, it is **written in advance:**
+- **Code:** `git revert <commit>` → return to a clean working tree.
+- **Deploy:** the previous **git tag / release** (tag before every money-phase deploy).
+- **Functions artifact:** revert to the previous deploy from the reverted code via
+  `firebase deploy --only functions:salown` (NEVER blanket).
+- **Verification:** re-run the §5b smoke checklist after rollback.
+- **Rule:** before a money-module (stripe/checkout/bookings) deploy, no merge without the release tag +
+  rollback steps written in the PR.
 
-## 6. Açık kararlar (owner)
-1. ~~Toolchain~~ → **KARARLAŞTI (07-08): ara-adım (allowJs/checkJs) ile başla; tam
-   `.ts` build Faz 3'te, toolchain denenip tipler oturunca.** (bkz §1)
-2. ~~`shared/` konumu~~ → **KARARLAŞTI (07-08, revize aynı gün): seçenek (b) —
-   `salown-app/packages/shared/src/` (workspace değil, type-only klasör; bkz §7).**
-   Type-only kuralı + `shared-validation` ayrı zod paketi ilkesi (§2) aynen geçerli;
-   §2'deki "monorepo workspace" anlatımı hedef mimariydi, (b) onun kök-gerektirmeyen hali.
-3. **Tempo:** Faz 0+1 (sıfır-risk zemin) bu hafta; sonrası parity ile (deadline yok).
-   İlk somut adımın onayı senin.
+## 6. Open decisions (owner)
+1. ~~Toolchain~~ → **DECIDED (07-08): start with the intermediate step (allowJs/checkJs); full
+   `.ts` build in Phase 3, once the toolchain is proven and types have settled.** (see §1)
+2. ~~`shared/` location~~ → **DECIDED (07-08, revised same day): option (b) —
+   `salown-app/packages/shared/src/` (not a workspace, a type-only folder; see §7).**
+   The type-only rule + separate zod `shared-validation` package principle (§2) applies as is;
+   the "monorepo workspace" narrative in §2 was the target architecture, (b) is its root-free version.
+3. **Tempo:** Phase 0+1 (zero-risk ground) this week; afterward by parity (no deadline).
+   Approval of the first concrete step is yours.
 
 ---
 
-## 7. Faz 0 — kickoff notu (recon 2026-07-08, yeni oturuma devir)
+## 7. Phase 0 — kickoff note (recon 2026-07-08, handed to a new session)
 
-**Recon bulguları (repo yapısı):**
-- `alex/` bir **git repo DEĞİL** + kök `package.json` **YOK**.
-- `salown-app` = **kendi başına git root**; `functions/` onun içinde (ayrı deploy birimi).
-- Frontend: typescript kurulu **değil** (ama `@types/react`/`@types/react-dom` var); scripts'te `dev/build/lint/test(vitest)`.
-- functions: typescript **yok**, CommonJS, `main: index.js`.
+**Recon findings (repo structure):**
+- `alex/` is NOT a **git repo** + there is NO root `package.json`.
+- `salown-app` = its **own git root**; `functions/` is inside it (a separate deploy unit).
+- Frontend: typescript is **not** installed (but `@types/react`/`@types/react-dom` exist); scripts have `dev/build/lint/test(vitest)`.
+- functions: **no** typescript, CommonJS, `main: index.js`.
 
-**✅ YAPISAL KARAR KARARLAŞTI (owner 2026-07-08): seçenek (b)** — `shared` `salown-app` içinde.
-Elenen alternatifler: (a) `alex/`'i monorepo kökü yapmak (en temiz ama en çok yapısal dokunuş;
-`alex/` git repo değil), (c) ayrı `salown-shared` repo (kurulum + senkron yükü).
+**✅ STRUCTURAL DECISION MADE (owner 2026-07-08): option (b)** — `shared` inside `salown-app`.
+Eliminated alternatives: (a) making `alex/` the monorepo root (cleanest but the most structural touch;
+`alex/` is not a git repo), (c) a separate `salown-shared` repo (setup + sync overhead).
 
-**(b)'nin somut şekli:**
-- Konum: **`salown-app/packages/shared/src/{booking,client,tenant,campaign,coupon,loyalty,invoice,payment}.ts`**
-  — npm workspace DEĞİL, sadece type-only `.ts` dosyaları klasörü (kök package.json gerekmez).
-- **Frontend çözümleme:** Vite/`tsc` göreli path (ileride istenirse tsconfig `paths` alias'ı `@salown/shared`).
-- **Functions çözümleme:** Faz 0-2'de functions `.js`+JSDoc kaldığından tipler
-  `/** @type {import('../packages/shared/src/booking').Booking} */` JSDoc type-import'u ile
-  kullanılır — bu SADECE compile-time (`tsc --noEmit`); deploy artifact'ında yorumdan ibaret
-  → runtime'a sıfır etki, `firebase deploy` functions-klasörü-dışı dosya yükleme sorunu YAŞAMAZ.
-- ⚠️ Faz 3'te (functions `src→lib` build) bu path'ler yeniden ele alınır (rootDir/kopya kararı
-  o zaman) — §2'deki type-only kuralı geçerli kaldıkça çözüm basit kalır.
+**The concrete shape of (b):**
+- Location: **`salown-app/packages/shared/src/{booking,client,tenant,campaign,coupon,loyalty,invoice,payment}.ts`**
+  — NOT an npm workspace, just a folder of type-only `.ts` files (no root package.json needed).
+- **Frontend resolution:** Vite/`tsc` relative path (later, if wanted, a tsconfig `paths` alias `@salown/shared`).
+- **Functions resolution:** since in Phases 0-2 functions stay `.js`+JSDoc, the types are
+  used via a JSDoc type-import `/** @type {import('../packages/shared/src/booking').Booking} */`
+  — this is ONLY compile-time (`tsc --noEmit`); in the deploy artifact it's nothing but a comment
+  → zero runtime effect, and `firebase deploy` does NOT hit the problem of uploading files outside the functions folder.
+- ⚠️ In Phase 3 (functions `src→lib` build) these paths are revisited (rootDir/copy decision
+  then) — as long as the type-only rule in §2 holds, the solution stays simple.
 
-### ✅ Faz 1 DoD — TAMAMLANDI (2026-07-08)
-**"Önce tipler, sonra implementasyon"** dilimi indi: `salown-app/packages/shared/src/`
-altında 8/8 model + domain dili, tamamı **type-only** (interface/type/union; runtime kod,
-enum, firebase/stripe importu YOK), tamamı **İngilizce yorumlu** (Migration Rules'a eklenen
-dil kuralı). Kod aynı kaldı — hiçbir dosya bu tipleri henüz import etmiyor (Faz 1 DoD'nin
-tanımı gereği). Tipler "eski JS = spec" ile yazıldı: 5 paralel kod-envanteri (booking/client/
-tenant/campaign+coupon/payment) tüm yazım sitelerini file:line kanıtıyla çıkardı; quirk'ler
-(walk-in'de `date` yok, `barberId` ad-vs-id, parser `price` "£25.00" string, üç ayrı
-paymentType sözlüğü, `paymentType:'CONFIRMED'` sentinel'i...) tiplerde belgelendi.
+### ✅ Phase 1 DoD — COMPLETED (2026-07-08)
+The **"types first, implementation later"** slice landed: under `salown-app/packages/shared/src/`
+8/8 models + domain language, all **type-only** (interface/type/union; NO runtime code,
+enum, firebase/stripe import), all with **English comments** (the language rule added to
+the Migration Rules). The code stayed the same — no file imports these types yet (per the
+definition of the Phase 1 DoD). The types were written with "old JS = spec": 5 parallel code
+inventories (booking/client/tenant/campaign+coupon/payment) extracted all write sites with
+file:line evidence; the quirks
+(no `date` in walk-in, `barberId` name-vs-id, parser `price` "£25.00" string, three separate
+paymentType dictionaries, the `paymentType:'CONFIRMED'` sentinel...) were documented in the types.
 
-Dosyalar: `booking client tenant campaign coupon loyalty invoice payment` + `firestore`
-(TimestampLike/DateLike/MoneyValue stand-in'leri) + `index` barrel. Domain dili:
+Files: `booking client tenant campaign coupon loyalty invoice payment` + `firestore`
+(TimestampLike/DateLike/MoneyValue stand-ins) + `index` barrel. Domain language:
 `BookingStatus` (7), `BookingSource` (7+`'block'`), `BookingPaymentType` (6, UPPERCASE),
 `PaymentMethod`, `PaymentState`, `StripePaymentMode` (5, lowercase), `AggregatorPaymentType`,
-`CouponType` (`'percent'|'amount'`), `CampaignType`, `EmailEventType` (Brevo, açık-uçlu),
+`CouponType` (`'percent'|'amount'`), `CampaignType`, `EmailEventType` (Brevo, open-ended),
 `TenantRole` (`owner|admin|staff`), `PlanKey`, `TenantFeatureKey`, `EmailOptOutReason`.
 
-**Envanterin plan varsayımlarını DÜZELTTİĞİ yerler (spec > plan):**
-- **Invoice kodda YOK** — koleksiyon/numara/PDF yok; tek artefakt ReceiptPanel (persist
-  edilmeyen booking projeksiyonu). `invoice.ts` REZERVE taslak olarak yazıldı, açıkça işaretli.
-- **CampaignStatus persist edilmiyor** (scheduling kapalı; her campaignRun = gönderilmiş) —
-  enum uydurulmadı. `campaigns` koleksiyonu şablon kütüphanesi, gönderim logu `campaignRuns`.
-- **LoyaltyReason enum'u yok** — adjustment `reason` serbest metin, earn/redeem `points`
-  işaretinden; auditLogs `manual_points_adjustment` şekli tiplendi.
-- **PaymentType üç ayrı sözlük** (booking UPPERCASE / Stripe policy lowercase / aggregator
-  config) — bilinçli olarak üç ayrı union; tarihî `'deposit'≠'DEPOSIT'` bug'ının sınırı.
+**Where the inventory CORRECTED the plan's assumptions (spec > plan):**
+- **Invoice does NOT exist in the code** — no collection/number/PDF; the only artifact is ReceiptPanel (a
+  non-persisted booking projection). `invoice.ts` was written as a RESERVED draft, clearly marked.
+- **CampaignStatus is not persisted** (scheduling off; every campaignRun = sent) —
+  no enum was invented. The `campaigns` collection is a template library, the send log is `campaignRuns`.
+- **No LoyaltyReason enum** — adjustment `reason` is free text, earn/redeem from the sign of
+  `points`; the auditLogs `manual_points_adjustment` shape was typed.
+- **PaymentType is three separate dictionaries** (booking UPPERCASE / Stripe policy lowercase / aggregator
+  config) — deliberately three separate unions; the boundary of the historical `'deposit'≠'DEPOSIT'` bug.
 
-Doğrulama: `tsc --noEmit` yeşil (frontend `include: ["src","packages"]` + functions) ·
-`npm run build` değişmeden yeşil (hosting çıktısı DEĞİŞMEDİ) · `migration:stats` **8/8**
-shared, diğer sayılar baseline'da sabit (104 js/jsx, 5 fn js, index.js 5759, any 0,
-@ts-ignore 0) · deploy YOK · davranış bit-bit aynı. Sıradaki: **Faz 2** — ilk gerçek modül
-`clients/identity` (`.js`+JSDoc, parite testi + temiz-pencere deploy ile).
+Verification: `tsc --noEmit` green (frontend `include: ["src","packages"]` + functions) ·
+`npm run build` green unchanged (hosting output UNCHANGED) · `migration:stats` **8/8**
+shared, other numbers fixed at baseline (104 js/jsx, 5 fn js, index.js 5759, any 0,
+@ts-ignore 0) · NO deploy · behavior bit-for-bit same. Next: **Phase 2** — the first real module
+`clients/identity` (`.js`+JSDoc, with parity test + clean-window deploy).
 
-### ✅ Faz 2 (ilk dalga: identity + utils) — CANLI (2026-07-09 sabah, owner "go" ile)
-**Taşı ✅ tiple ✅ parite ✅ deploy ✅ smoke ✅.** İki ayrı deploy (`--only functions:salown`):
-1. **identity wiring** (`cedc677`): index.js `./clients/identity`'yi require ediyor; inline
-   `_resolveClientDocId`/`_redemptionKey` silindi, 4 çağrı noktası modüle döndü.
-2. **utils wiring** (`aab2e73`): `./utils/{emailText,parserTime,campaignMerge}` require;
-   16 inline helper silindi. **index.js 5759 → 5582 satır (−177).**
+### ✅ Phase 2 (first wave: identity + utils) — LIVE (2026-07-09 morning, with owner "go")
+**Move ✅ type ✅ parity ✅ deploy ✅ smoke ✅.** Two separate deploys (`--only functions:salown`):
+1. **identity wiring** (`cedc677`): index.js requires `./clients/identity`; inline
+   `_resolveClientDocId`/`_redemptionKey` deleted, 4 call sites routed to the module.
+2. **utils wiring** (`aab2e73`): `./utils/{emailText,parserTime,campaignMerge}` required;
+   16 inline helpers deleted. **index.js 5759 → 5582 lines (−177).**
 
-Doğrulama: parite suite bağlama sonrası 6 pass / 6 self-skip (tasarlandığı gibi) · tsc +
-require-smoke yeşil · 57 fn ACTIVE · iCal feed deploy öncesi/sonrası birebir (whitecross
-137, herohairs 2 VEVENT) · salownInboundEmail gate'i yanlış key'e 401 · loglarda çökme yok.
+Verification: after wiring, parity suite 6 pass / 6 self-skip (as designed) · tsc +
+require-smoke green · 57 fn ACTIVE · iCal feed before/after deploy identical (whitecross
+137, herohairs 2 VEVENT) · salownInboundEmail gate returns 401 on a wrong key · no crash in logs.
 
-**Deploy'un ortaya çıkardığı bagaj (migration-dışı, çözüldü):** `salownInboundEmail`
-index.js'e eklenmiş ama HİÇ deploy edilmemişti; istediği `INBOUND_WEBHOOK_SECRET`
-Secret Manager'da yoktu → full-codebase deploy pre-flight'ta durdu. Owner onayıyla
-rastgele güçlü secret oluşturuldu (`functions:secrets:set`, boş secret = gate AÇIK
-olurdu) ve fonksiyon İLK KEZ canlıya çıktı (staging-only davranış, secret'la kilitli).
+**Baggage surfaced by the deploy (non-migration, resolved):** `salownInboundEmail`
+had been added to index.js but was NEVER deployed; the `INBOUND_WEBHOOK_SECRET` it
+wanted was not in Secret Manager → the full-codebase deploy stopped at pre-flight. With owner approval
+a random strong secret was generated (`functions:secrets:set`, an empty secret = the gate would be OPEN)
+and the function went live for the FIRST TIME (staging-only behavior, locked with the secret).
 
-**Faz 3 dilim-1 de CANLI:** 15 `src/utils` dosyası → TypeScript (`9bd50df` rename +
-`b2da067` anotasyon; bundle bayt-aynı kanıtlı → hosting no-op). KPI: frontend 89 js/jsx +
-15 ts · functions 11 js (index.js 5582) · shared 8/8. Kalan Faz 2 sırası: parsers →
-notifications → marketing → (EN SON) checkout/stripe/bookings.
+**Phase 3 slice-1 is also LIVE:** 15 `src/utils` files → TypeScript (`9bd50df` rename +
+`b2da067` annotation; byte-identical bundle proven → hosting no-op). KPI: frontend 89 js/jsx +
+15 ts · functions 11 js (index.js 5582) · shared 8/8. Remaining Phase 2 order: parsers →
+notifications → marketing → (LAST) checkout/stripe/bookings.
 
-### ✅ Faz 2 TAMAMLANDI — functions split bitti, TÜM dalgalar CANLI (2026-07-08 öğleden sonra)
-Aynı gün 5 dalga daha, her biri ayrı test + owner-onaylı deploy (`--only functions:salown`):
-| Dalga | Commit | Modüller | index.js |
+### ✅ Phase 2 COMPLETED — functions split done, ALL waves LIVE (2026-07-08 afternoon)
+5 more waves the same day, each with a separate test + owner-approved deploy (`--only functions:salown`):
+| Wave | Commit | Modules | index.js |
 |---|---|---|---|
 | parsers | `c8196ac` | parsers/{shared,booksy,fresha,treatwell,ical} | 5582→4395 |
 | notifications | `37f1bcd` | notifications/ (Telegram+in-app+FCM) | →4250 |
 | emails | `1eb1e45` | emails/ (transporter/Brevo/confirmation/reschedule) | →4001 |
 | marketing | `764e074` | marketing/ (campaign render+sender routing) | →3950 |
 | misc | `a74de84` | utils/ical + tenants/ + bookings/shared + inbound/ | →3719 |
-| **money (SON)** | `fde49bd` + tag `pre-money-modules-20260708` | checkout/ + finance/exit | **→3597** |
+| **money (LAST)** | `fde49bd` + tag `pre-money-modules-20260708` | checkout/ + finance/exit | **→3597** |
 
-**Yöntem (tüm dalgalar):** script'li BAYT-VERBATIM taşıma → test katmanı 1: git HEAD'e karşı
-bayt-eşitlik (wiring sonrası self-skip) → katman 2: fake IMAP/Firestore ile davranış pinleri
-→ tsc + require → deploy → smoke. Suite toplamı **47 test: 36 pass / 0 fail / 11 self-skip**.
-Öne çıkan pinler: inbound ADR-015 izolasyonu (body'deki token ASLA yönlendirmez; bilinmeyen
-token karantina) · checkout paymentMode matrisi (off/pay_at_venue reddi, optional seçimi,
-deposit→full fallback, deposit≤indirimli-full cap, over-discount THROW = bedava checkout
-Stripe'a ulaşamaz) · EXIT_TERMS rakamları pinli (sessiz drift imkânsız).
+**Method (all waves):** scripted BYTE-VERBATIM move → test layer 1: byte-equality against
+git HEAD (self-skip after wiring) → layer 2: behavior pins with fake IMAP/Firestore
+→ tsc + require → deploy → smoke. Suite total **47 tests: 36 pass / 0 fail / 11 self-skip**.
+Notable pins: inbound ADR-015 isolation (a token in the body NEVER routes; unknown
+token quarantined) · checkout paymentMode matrix (off/pay_at_venue rejection, optional selection,
+deposit→full fallback, deposit≤discounted-full cap, over-discount THROW = a free checkout
+cannot reach Stripe) · EXIT_TERMS figures pinned (silent drift impossible).
 
-**Smoke:** her deploy sonrası iCal feed birebir + parser cron sağlıklı (13:02 koşusu yeni
-parser modülleriyle doğrulandı) · inbound gate 401 · **money smoke:** whitecross'a geçici
-görünmez PENDING doc ile canlı `salownCreateCheckoutSession` çağrısı → yeni checkout
-modülünün kendi hatası ("Online payment is not enabled") prod'da döndü = taşınan para kodu
-canlıda yürüyor; artefakt silindi. Pozitif-yol tam ödeme smoke'u: Stripe TEST modda; whitecross
-paymentMode=pay_at_venue olduğundan gerçek session ancak mod geçici açılırsa/demo Connect'e
-bağlanırsa atılabilir — owner ile ayrıca (matris zaten tüm dalları pinliyor).
+**Smoke:** after each deploy, iCal feed identical + parser cron healthy (the 13:02 run verified
+with the new parser modules) · inbound gate 401 · **money smoke:** a live `salownCreateCheckoutSession`
+call against whitecross with a temporary invisible PENDING doc → the new checkout module's own error
+("Online payment is not enabled") returned in prod = the moved money code runs live; the
+artifact was deleted. Positive-path full-payment smoke: Stripe is in TEST mode; because whitecross
+paymentMode=pay_at_venue, a real session can only be created if the mode is temporarily opened / a demo Connect
+is attached — separately with the owner (the matrix already pins all branches).
 
-**tsc'nin taşımada yakaladıkları** (migration'ın varlık sebebi): INBOUND_TOKEN_RE,
-extractSubjectFromRaw, isUkDst — üç eksik bağımlılık compile-time'da yakalandı.
+**What tsc caught during the move** (the reason migration exists): INBOUND_TOKEN_RE,
+extractSubjectFromRaw, isUkDst — three missing dependencies caught at compile-time.
 
-**index.js kalan içerik (~3597):** 52 export (trigger/callable orchestrator'ları) + Stripe
-Connect fonksiyonları + AI (askAI). Bunların modüllere inmesi Faz 3'ün functions build'iyle
-(src→lib) birlikte ele alınacak. **Kalan büyük iş:** Faz 3 frontend (89 js/jsx), Faz 3
-functions build, Faz 4 strict.
+**index.js remaining content (~3597):** 52 exports (trigger/callable orchestrators) + Stripe
+Connect functions + AI (askAI). Bringing these down into modules will be handled together with
+Phase 3's functions build (src→lib). **The remaining big work:** Phase 3 frontend (89 js/jsx), Phase 3
+functions build, Phase 4 strict.
 
-### 🗄️ Arşiv — gece hazırlık notu (2026-07-08→09)
-**Taşı + tiple + parite testi ✅ · temiz-pencere deploy ⏳ (owner kararı: sabah birlikte).**
+### 🗄️ Archive — night prep note (2026-07-08→09)
+**Move + type + parity test ✅ · clean-window deploy ⏳ (owner decision: together in the morning).**
 - **`functions/clients/identity.js`** (INERT, `91eb3d5`): `_resolveClientDocId` (:3818) +
-  `_redemptionKey` (:4811) verbatim; `@ts-check`+JSDoc→shared tipler. Quirk'ler bilinçli
-  korundu (loose telefon normalizasyonu ülke-prefix'i KATLAMAZ; email match trim'siz;
-  yalnız-telefon probe null döner). Parite: node:test, eski impl index.js kaynağından test
-  anında dilimlenip eval edilir → old===new, fixture + seeded sweep, 6/6. Server
-  `_redemptionKey` === frontend `discountCodes.js redemptionKey` aynası da kanıtlandı.
+  `_redemptionKey` (:4811) verbatim; `@ts-check`+JSDoc→shared types. Quirks deliberately
+  preserved (loose phone normalization does NOT fold the country prefix; email match untrimmed;
+  a phone-only probe returns null). Parity: node:test, the old impl is sliced from the index.js source
+  and eval'd at test time → old===new, fixture + seeded sweep, 6/6. Server
+  `_redemptionKey` === frontend `discountCodes.js redemptionKey` mirror also proven.
 - **`functions/utils/{emailText,parserTime,campaignMerge}.js`** (INERT, `6de0bf9`):
-  parser/campaign plumbing 16 helper verbatim (QP/RFC2047/multipart decode, UK-DST tarih
-  matematiği, parseTwTime, merge fields). Parite 6/6 — bozuk tarih girdisinde THROW
-  paritesi dahil (eski kod da fırlatıyor). Testler wiring sonrası kendini skip eder
-  (karakterizasyon pinleri kalıcı bekçi).
-- **ESLint type-only guard ✅** (§2 DoD maddesi, `6de0bf9`): `typescript-eslint` +
-  `packages/shared` scope'lu `consistent-type-imports` + firebase/stripe/zod import BAN'ı.
-- **Bağlama (wiring) hazır, UYGULANMADI:** index.js diff'i scratchpad'de
-  (`phase2/identity-wiring.patch` 92 satır + `identity-plus-utils-wiring.patch` 326 satır,
-  kümülatif). Sandbox provası: patch'li index.js `node --check` + `require()` OK; test
-  takımı wiring-sonrası 6 pass / 6 self-skip. Deploy planı (owner onaylı, sabah):
-  1) identity wire → hedefli `functions:salown` deploy → smoke (etki: sendMarketingEmail,
-  salownSetEmailConsent), 2) utils wire → deploy → sonraki parser koşusunu izle (etki:
-  salownParseEmails + iCal + campaign yolları). Rollback: git revert + redeploy.
+  parser/campaign plumbing, 16 helpers verbatim (QP/RFC2047/multipart decode, UK-DST date
+  math, parseTwTime, merge fields). Parity 6/6 — including THROW parity on a malformed date
+  input (the old code throws too). The tests self-skip after wiring
+  (characterization pins are permanent guards).
+- **ESLint type-only guard ✅** (§2 DoD item, `6de0bf9`): `typescript-eslint` +
+  `packages/shared`-scoped `consistent-type-imports` + a firebase/stripe/zod import BAN.
+- **Wiring ready, NOT APPLIED:** the index.js diff is in the scratchpad
+  (`phase2/identity-wiring.patch` 92 lines + `identity-plus-utils-wiring.patch` 326 lines,
+  cumulative). Sandbox rehearsal: the patched index.js `node --check` + `require()` OK; the test
+  suite 6 pass / 6 self-skip after wiring. Deploy plan (owner-approved, morning):
+  1) identity wire → targeted `functions:salown` deploy → smoke (impact: sendMarketingEmail,
+  salownSetEmailConsent), 2) utils wire → deploy → watch the next parser run (impact:
+  salownParseEmails + iCal + campaign paths). Rollback: git revert + redeploy.
 
-**Faz 0'ın YAPISAL-KARAR GEREKTİRMEYEN güvenli kısmı (bunu yap):**
-1. `salown-app/tsconfig.json` (frontend): `allowJs, checkJs:false, noEmit, strict:false, jsx:"react-jsx"` — Vite build'i ETKİLEMEZ (Vite esbuild kullanır); bu config sadece `tsc --noEmit` tip-kontrolü + editör için.
+**The safe part of Phase 0 that DOES NOT REQUIRE A STRUCTURAL DECISION (do this):**
+1. `salown-app/tsconfig.json` (frontend): `allowJs, checkJs:false, noEmit, strict:false, jsx:"react-jsx"` — DOES NOT AFFECT the Vite build (Vite uses esbuild); this config is only for `tsc --noEmit` type-checking + the editor.
 2. `salown-app/functions/tsconfig.json`: `allowJs, checkJs:false, noEmit, strict:false`.
-3. `typescript` devDep (frontend + functions) + `"typecheck": "tsc --noEmit"` script.
-4. **`npm run migration:stats`** — küçük read-only dev script (`scripts/migration-stats.mjs`):
-   JS/JSX + TS/TSX dosya sayısı, functions TS %, shared models N/8, `any` + `@ts-ignore`
-   grep sayısı, tarih → konsola basar. KPI tablosunu (§KPI) **elle değil bu** besler.
-   Prod'a dokunmaz, deploy'a girmez (sadece geliştirici aracı).
-5. **Doğrula:** `tsc --noEmit` yeşil (henüz .ts yok → kontrol edilecek şey yok, trivially geçer) · `npm run build` (Vite) değişmeden yeşil · deploy YOK · hiçbir davranış değişmedi.
-> Bu adım pipeline'ı DEĞİŞTİRMEZ, prod kodu TAŞIMAZ, deploy GEREKTİRMEZ. `packages/shared`
-> standup'ı yukarıdaki (a/b/c) kararına kadar bekler (Milestone C).
+3. `typescript` devDep (frontend + functions) + a `"typecheck": "tsc --noEmit"` script.
+4. **`npm run migration:stats`** — a small read-only dev script (`scripts/migration-stats.mjs`):
+   JS/JSX + TS/TSX file counts, functions TS %, shared models N/8, `any` + `@ts-ignore`
+   grep counts, date → prints to console. It feeds the KPI table (§KPI) **instead of by hand**.
+   Does not touch prod, does not enter deploy (developer tool only).
+5. **Verify:** `tsc --noEmit` green (no .ts yet → nothing to check, passes trivially) · `npm run build` (Vite) green unchanged · NO deploy · no behavior changed.
+> This step DOES NOT CHANGE the pipeline, DOES NOT MOVE prod code, DOES NOT REQUIRE a deploy. The `packages/shared`
+> stand-up waits until the (a/b/c) decision above (Milestone C).
 
-### ✅ Faz 0 DoD — TAMAMLANDI (2026-07-08)
-Yapılan (salown-app, tek commit):
-- ✅ `tsconfig.json` (frontend): allowJs / checkJs:false / noEmit / strict:false / jsx:react-jsx — Vite build'e dokunmaz
-- ✅ `functions/tsconfig.json`: allowJs / checkJs:false / noEmit / strict:false / module+moduleResolution:`nodenext` (TS6 `moduleResolution:node`'u deprecate etti; package.json'da `type` yok → .js dosyaları CJS çözülür, runtime ile birebir)
-- ✅ `typescript` devDep (frontend + functions) + iki tarafta `npm run typecheck`
-- ✅ `scripts/migration-stats.mjs` + `npm run migration:stats` (read-only KPI sayacı)
+### ✅ Phase 0 DoD — COMPLETED (2026-07-08)
+Done (salown-app, single commit):
+- ✅ `tsconfig.json` (frontend): allowJs / checkJs:false / noEmit / strict:false / jsx:react-jsx — does not touch the Vite build
+- ✅ `functions/tsconfig.json`: allowJs / checkJs:false / noEmit / strict:false / module+moduleResolution:`nodenext` (TS6 deprecated `moduleResolution:node`; no `type` in package.json → .js files resolve as CJS, identical to runtime)
+- ✅ `typescript` devDep (frontend + functions) + `npm run typecheck` on both sides
+- ✅ `scripts/migration-stats.mjs` + `npm run migration:stats` (read-only KPI counter)
 
-Doğrulama sonuçları:
-- ✅ `tsc --noEmit` yeşil (frontend + functions; henüz .ts yok → trivially geçer)
-- ✅ `npm run build` (Vite) değişmeden yeşil — hosting bundle çıktısı DEĞİŞMEDİ
-- ✅ `migration:stats` baseline'ı birebir doğruladı: frontend **104** js/jsx / **0** ts, functions **5** js (index.js **5759** satır) / **0%** TS, shared **0/8**, `any` **0**, `@ts-ignore` **0**
-- ✅ Deploy YOK · `main: index.js` aynen · hiçbir prod dosyası taşınmadı · davranış bit-bit aynı
+Verification results:
+- ✅ `tsc --noEmit` green (frontend + functions; no .ts yet → passes trivially)
+- ✅ `npm run build` (Vite) green unchanged — hosting bundle output UNCHANGED
+- ✅ `migration:stats` verified the baseline exactly: frontend **104** js/jsx / **0** ts, functions **5** js (index.js **5759** lines) / **0%** TS, shared **0/8**, `any` **0**, `@ts-ignore` **0**
+- ✅ NO deploy · `main: index.js` as is · no prod file moved · behavior bit-for-bit same
 
-Not: `packages/shared` bilinçli olarak KURULMADI (yapısal a/b/c kararı → Milestone C). Sıradaki adım: **Faz 1** (shared model tipleri) — ~~önce a/b/c kararı~~ → karar verildi: **(b)**, aşağıda.
-
----
+Note: `packages/shared` was deliberately NOT SET UP (the structural a/b/c decision → Milestone C). Next step: **Phase 1** (shared model types) — ~~the a/b/c decision first~~ → decided: **(b)**, below.
 
 ---
 
-## 9. Release Candidate disiplini (teknik-lider tavsiyesi, 2026-07-08 — KABUL)
-Bundan sonra ilerleme commit'le değil RELEASE ile anlatılır. Duraklar:
+---
 
-| Tag | Kapı | Durum |
+## 9. Release Candidate discipline (tech-lead advice, 2026-07-08 — ACCEPTED)
+From now on progress is told not by commit but by RELEASE. The stops:
+
+| Tag | Gate | Status |
 |---|---|---|
-| `v0.9.0-rc1` | Faz 2 tamam (functions split, 6 dalga canlı) | ✅ 2026-07-08 |
-| `v0.9.0-rc2` | Frontend TS ≥ %50 | ✅ 2026-07-09 (52 ts / 52 js) |
-| `v0.9.0-rc3` | Functions TS build (`src→lib`, `main` değişimi) | ⏳ |
+| `v0.9.0-rc1` | Phase 2 done (functions split, 6 waves live) | ✅ 2026-07-08 |
+| `v0.9.0-rc2` | Frontend TS ≥ 50% | ✅ 2026-07-09 (52 ts / 52 js) |
+| `v0.9.0-rc3` | Functions TS build (`src→lib`, `main` change) | ⏳ |
 | `v1.0.0` | `strict: true` + `any`=0 + ARCHITECTURE_V2.md | ⏳ |
 
-**⚠️ rc3 GÜNÜ KURALI (teknik-lider, 2026-07-09 — BAĞLAYICI):** rc3 (functions
-`src→lib`, `main` değişimi) bütün migration'da runtime modelini değiştiren TEK adımdır.
-O gün BAŞKA HİÇBİR büyük iş yapılmaz — günün tek hedefi: *pipeline değişti · deploy
-başarılı · smoke geçti · rollback doğrulandı* — ve gün biter. "Bir iki şey daha
-yapalım" günü DEĞİLDİR. Frontend dilimi, feature, refactor → başka güne.
+**⚠️ rc3 DAY RULE (tech-lead, 2026-07-09 — BINDING):** rc3 (functions
+`src→lib`, `main` change) is the ONE step in the whole migration that changes the runtime model.
+On that day NO OTHER big work is done — the day's sole goal: *pipeline changed · deploy
+successful · smoke passed · rollback verified* — and the day ends. It is NOT a "let's do a
+couple more things" day. Frontend slice, feature, refactor → another day.
 
-**⚠️ rc3+1 ÜRÜN-DOĞRULAMA GÜNÜ (teknik-lider önerisi, owner 2026-07-11 — BAĞLAYICI):**
-rc3'ün ertesi günü HİÇBİR migration/refactor yapılmaz. Gün, ürünü KULLANARAK geçer:
-gerçek booking al · checkout yap · loyalty kullan · discount code işlet · Stripe
-refund dene · marketing kampanyası gönder · Finance raporuna bak. Doğrulanan şey
-kod değil ÜRÜN. **Başarı metriği tek soru:** *"Bu sistemi kullanan salon, migration
-yapıldığını hiç fark etti mi?"* Cevap HAYIR ise migration ürün düzeyinde de bitmiştir;
-EVET ise fark edilen her şey rc3 regresyonu olarak ele alınır (v1.0.0 o gün kapanmadan
-taglenmez).
+**⚠️ rc3+1 PRODUCT-VERIFICATION DAY (tech-lead suggestion, owner 2026-07-11 — BINDING):**
+On the day after rc3 NO migration/refactor is done. The day is spent USING the product:
+take a real booking · do a checkout · use loyalty · run a discount code · try a Stripe
+refund · send a marketing campaign · look at the Finance report. What is verified is
+not code but the PRODUCT. **The success metric is a single question:** *"Did the salon
+using this system notice at all that a migration happened?"* If the answer is NO, the migration
+is done at the product level too; if YES, everything noticed is treated as an rc3 regression
+(v1.0.0 is not tagged until that day closes).
 
-**Her RC'nin DEĞİŞMEZ checklist'i** (annotated tag mesajına yazılır):
-- ✅ Type coverage (TYPE_COVERAGE.md güncel, panodan sayılar)
-- ✅ Test sayısı (functions npm test + vitest, 0 fail)
-- ✅ Production smoke (§5b — o fazın etkilediği yollar canlıda doğrulanmış)
-- ✅ Rollback doğrulanmış (önceki tag'den dönüş yolu yazılı + denenebilir)
-- ✅ Dokümantasyon güncel (bu plan + TESTS.md + edit log)
+**Every RC's INVARIANT checklist** (written into the annotated tag message):
+- ✅ Type coverage (TYPE_COVERAGE.md current, numbers from the board)
+- ✅ Test count (functions npm test + vitest, 0 fail)
+- ✅ Production smoke (§5b — the paths that phase affects verified live)
+- ✅ Rollback verified (return path from the previous tag written + testable)
+- ✅ Documentation current (this plan + TESTS.md + edit log)
 
-## 10-11. Çerçeve: **Evidence-driven migration** (isim: 2026-07-09)
+## 10-11. Framework: **Evidence-driven migration** (name: 2026-07-09)
 
-Migration'ın omurgası üç güvenlik katmanı — hiçbiri tek başına yeterli, birlikte
-güçlü: **(1) Type-only rule** (§11, niyet kanıtı: commit davranış değiştiremez) →
-**(2) Bundle equality** (yöntem, davranış kanıtı: değişmediğini bayt-diff'le
-ispatla) → **(3) Firebreak** (§10, teşhis kanıtı: yine de bir şey kaçarsa hata
-aralığı tek commit). Destek katmanları: production smoke (üretim kanıtı, §5b) +
-rollback tag (kurtarma kanıtı, §5c/§9). İlke: *"sanırım bozmadık" değil,
-"bozmadığımıza dair elimizde şu kanıtlar var."*
+The backbone of the migration is three safety layers — none sufficient alone, together
+strong: **(1) Type-only rule** (§11, intent evidence: a commit cannot change behavior) →
+**(2) Bundle equality** (method, behavior evidence: prove it didn't change with a byte-diff)
+→ **(3) Firebreak** (§10, diagnosis evidence: if something slips through anyway, the fault
+range is a single commit). Supporting layers: production smoke (production evidence, §5b) +
+rollback tag (recovery evidence, §5c/§9). The principle: *not "I think we didn't break it" but
+"we have this evidence that we didn't break it."*
 
-## 10. Firebreak kuralı (teknik-lider tavsiyesi, 2026-07-09 — KABUL, BAĞLAYICI)
+## 10. Firebreak rule (tech-lead advice, 2026-07-09 — ACCEPTED, BINDING)
 
-Faz 3'ün son %20'si "kontrollü iniş"tir, maraton değil. **Amaç bu noktadan sonra
-coverage artırmak değil, teşhis hızı: bir regresyon çıkarsa hata aralığı = 1 commit.**
+The last 20% of Phase 3 is a "controlled landing," not a marathon. **The goal from this point
+on is not to increase coverage but diagnosis speed: if a regression appears, the fault range = 1 commit.**
 
-**Kural:** Birbirine bağlı yüksek-risk domain dosyaları (**Clients, Marketing,
-CheckoutPanel, BookingPage, Finance, Settings, firestoreActions.js** — hepsi
-Booking→Client→Payment→Firestore→Marketing→Finance zincirine dokunur) aynı çalışma
-penceresinde ardışık migrate EDİLMEZ. Her kritik migration'dan sonra **firebreak**:
+**Rule:** Interconnected high-risk domain files (**Clients, Marketing,
+CheckoutPanel, BookingPage, Finance, Settings, firestoreActions.js** — all
+touch the Booking→Client→Payment→Firestore→Marketing→Finance chain) are NOT migrated
+consecutively in the same work window. After each critical migration, a **firebreak**:
 
-1. Coverage güncellenir (pano/TYPE_COVERAGE.md).
-2. Production smoke yapılır (§5b — o dosyanın etkilediği canlı yollar).
-3. En az bir gözlem penceresi bırakılır (tercihen 1 gece).
-4. Bir sonraki kritik dosyaya ANCAK önceki commit üretimde temiz kaldıysa geçilir.
+1. Coverage is updated (board/TYPE_COVERAGE.md).
+2. Production smoke is done (§5b — the live paths that file affects).
+3. At least one observation window is left (preferably 1 night).
+4. Move to the next critical file ONLY if the previous commit stayed clean in production.
 
-**Gerekçe — bayt-aynı kanıtının sınırı:** bundle-eşitlik kanıtı "surgical dilim"
-varsayımına dayanır. Küçük/orta dosyalarda çok güçlüdür; canavarlarda ise lint
-zorlamaları (ternary→if/else, catch binding), implicit-return değişimleri, prop
-default'ları, type-narrowing refactor'ları kaçınılmaz olur ve bundle equality tek
-başına yetmez → izolasyonu zaman ekseninde firebreak sağlar. Son 8 dosya iki günde
-çevrilirse regresyonda 8 aday olur; firebreak'le her zaman 1.
+**Rationale — the limit of byte-identical proof:** the bundle-equality proof rests on the
+"surgical slice" assumption. It is very strong on small/medium files; on the monsters, lint
+enforcements (ternary→if/else, catch binding), implicit-return changes, prop
+defaults, type-narrowing refactors become inevitable and bundle equality alone is
+not enough → isolation on the time axis is provided by the firebreak. If the last 8 files
+are converted in two days, a regression has 8 candidates; with the firebreak, always 1.
 
-Küçük/orta dosyalar (bayt-aynı kanıtlı) için firebreak GEREKMEZ — mevcut
-dilim-başına tsc+lint+bundle-diff+vitest zinciri yeterli.
+For small/medium files (byte-identical proven) a firebreak is NOT NEEDED — the existing
+per-slice tsc+lint+bundle-diff+vitest chain is sufficient.
 
-### §10 REVİZYON — risk-kümeli pencere gruplaması (owner, 2026-07-11 — BAĞLAYICI)
+### §10 REVISION — risk-clustered window grouping (owner, 2026-07-11 — BINDING)
 
-"Her dosyaya ayrı gün" temposu, kalan 7 firebreak dosyası için **risk kümesine göre
-pencerelere** gevşetildi. Her dilim yine tam kanıt zinciriyle (tsc + lint +
-bundle-diff + vitest + smoke) gider; değişen şey gözlem penceresinin granülaritesi:
+The "a separate day for each file" tempo was relaxed for the remaining 7 firebreak files into
+**windows by risk cluster.** Each slice still goes with the full evidence chain (tsc + lint +
+bundle-diff + vitest + smoke); what changes is the granularity of the observation window:
 
 ```
-Gün 1: firestoreActions → Clients → Marketing        (─ gece: ortak gözlem)
-Gün 2: CheckoutPanel → BookingPage                   (─ gece: ortak gözlem)
-Gün 3: Finance                                        (─ gece: TEK BAŞINA)
-Gün 4: Settings                                       (─ gece: TEK BAŞINA)
+Day 1: firestoreActions → Clients → Marketing        (─ night: shared observation)
+Day 2: CheckoutPanel → BookingPage                   (─ night: shared observation)
+Day 3: Finance                                        (─ night: ALONE)
+Day 4: Settings                                       (─ night: ALONE)
 ```
 
-**Gerekçe:** Finance = para tarafının merkezi; Settings = sistem davranışını
-değiştirebilen merkez. **İki farklı risk kümesi — asla aynı gözlem penceresinde
-üretimde bırakılmaz.** İlk beş dosya ise komşu domain'ler; gruplama, regresyon
-aday sayısını gün-1'de en fazla 3, gün-2'de 2 ile sınırlar (kabul edilen ödün),
-Finance ve Settings'te her zaman 1.
+**Rationale:** Finance = the center of the money side; Settings = the center that can change
+system behavior. **Two different risk clusters — never left in production in the same
+observation window.** The first five files are neighboring domains; the grouping limits the
+regression-candidate count to at most 3 on day 1, 2 on day 2 (an accepted trade-off),
+and always 1 for Finance and Settings.
 
-Bir pencerenin gecesi temiz çıkmadan sonraki pencereye GEÇİLMEZ (madde 4 aynen).
+Do NOT move to the next window until a window's night comes out clean (item 4 as is).
 
-**KPI değişimi (owner, 2026-07-11):** Son %8'de başarı metriği artık "bugün kaç
-dosya çevirdik?" DEĞİL — **"bugün riski kontrollü tuttuk mu?"** Teknik risk satır
-sayısından değil etki alanından geliyor (firestoreActions = merkezi bağımlılık,
-Finance = para akışı merkezi, Settings = davranış konfigürasyon merkezi). Ölçü:
-**dört pencerenin dördünün de temiz kapanması** — dördü temizse rc3'e sağlam
-zeminde varılmış demektir.
+**KPI change (owner, 2026-07-11):** In the last 8%, the success metric is no longer "how many
+files did we convert today?" — but **"did we keep the risk controlled today?"** Technical risk
+comes not from line count but from blast radius (firestoreActions = central dependency,
+Finance = the money-flow center, Settings = the behavior-configuration center). The measure:
+**all four of the four windows closing clean** — if all four are clean, rc3 has been reached
+on solid ground.
 
-## 11. "Migration = Type-only" kuralı (teknik-lider tavsiyesi, 2026-07-09 — KABUL, BAĞLAYICI)
+## 11. "Migration = Type-only" rule (tech-lead advice, 2026-07-09 — ACCEPTED, BINDING)
 
-**TS migration commit'i bir davranış commit'i DEĞİLDİR.** Bir güven sözleşmesi:
-takımdaki herkes "migration commit'i görüyorsam davranış değişmemiştir" diyebilmeli —
-6 ay sonra "LoginScreen neden değişmiş?" sorusunun cevabı tek cümle olmalı: *"type
-migration."* Regresyon avında migration commit'leri otomatik elenir → araştırma alanı
-küçülür (Finance'te yanlış hesap çıktığında son 15 commit'ten refactor(ts)'ler anında
-düşer).
+**A TS migration commit is NOT a behavior commit.** It is a trust contract:
+everyone on the team must be able to say "if I see a migration commit, behavior did not change" —
+6 months later, the answer to "why did LoginScreen change?" must be a single sentence: *"type
+migration."* In a regression hunt, migration commits are automatically eliminated → the search space
+shrinks (when a wrong number appears in Finance, the refactor(ts)'s among the last 15 commits drop instantly).
 
-**Kurallar:**
-1. Migration dilimi içinde davranış iyileştirmesi/UX değişikliği/iş kuralı değişikliği
-   YAPILMAZ. İçerik: rename + interface/type/generic/`import type`/ref-event tipleri.
-2. Migration sırasında GERÇEK BUG bulunursa (ör. eksik import → ReferenceError):
-   **ayrı commit** olarak, `fix(...)` prefix'iyle ve commit mesajında açıkça
-   belirtilerek düzeltilir. Dilim commit'ine karıştırılmaz.
-3. Ölü kod / kullanılmayan binding gibi davranış-nötr temizlikler de dilime girmez:
-   dilimde satır-bazlı eslint-disable ile işaretlenir, temizlik AYRI takip commit'inde
-   yapılır. (Örnek: ProfileBar `activeSocials`/`isAdmin`, slice 2z.)
-4. Lint'in ZORLADIĞI mikro-dönüşümler (ternary-statement→if/else, unused catch
-   binding→`catch {}`) dilimde kalabilir AMA commit mesajında tek tek listelenir ve
-   bundle bayt-eşitliği ile davranışsızlığı kanıtlanır.
-5. Commit mesaj konvansiyonu: dilimler `refactor(ts): migrate X to TypeScript`
-   (slice etiketiyle) · bug'lar `fix(scope): ...` · davranış `feat(scope): ...`.
+**Rules:**
+1. Within a migration slice, NO behavior improvement/UX change/business-rule change
+   is done. Content: rename + interface/type/generic/`import type`/ref-event types.
+2. If a REAL BUG is found during migration (e.g. missing import → ReferenceError):
+   it is fixed as a **separate commit**, with a `fix(...)` prefix and explicitly stated
+   in the commit message. It is not mixed into the slice commit.
+3. Behavior-neutral cleanups like dead code / unused binding also do not enter the slice:
+   they are marked in the slice with line-level eslint-disable, and the cleanup is done in a
+   SEPARATE follow-up commit. (Example: ProfileBar `activeSocials`/`isAdmin`, slice 2z.)
+4. The micro-transformations FORCED by lint (ternary-statement→if/else, unused catch
+   binding→`catch {}`) may stay in the slice BUT are listed one by one in the commit message and
+   their behaviorlessness is proven by bundle byte-equality.
+5. Commit message convention: slices `refactor(ts): migrate X to TypeScript`
+   (with a slice label) · bugs `fix(scope): ...` · behavior `feat(scope): ...`.
 
-**Retro not:** e66a5bf (ProfileView signOut import fix'i dilim içindeydi) bu kuraldan
-ÖNCE idi; commit mesajında belirtilmişti ama bundan sonra ayrı fix commit'i şart.
+**Retro note:** e66a5bf (the ProfileView signOut import fix was inside the slice) was BEFORE this
+rule; it was stated in the commit message, but from now on a separate fix commit is required.
 
-## 8. Migration-sonrası teslimat: `docs/ARCHITECTURE_V2.md` (teknik-lider tavsiyesi, 2026-07-08)
-Migration bittiğinde (Faz 4 sonrası) bu doküman YAZILACAK — "sistem bugün nasıl çalışıyor"
-sorusunun cevabı. İçerik: repository yapısı · packages/shared neden var (type-only kuralı)
-· functions build zinciri (src→lib) · frontend-functions tip paylaşımı · deployment akışı
-(CI hosting + hedefli functions) · domain boundary'leri (modül haritası) · alınan kararların
-gerekçeleri (DECISIONS.md'ye pointer'larla). Bu plan migration'ın belgesi; V2 mimarinin belgesi.
-Ayrıca test sınıflandırması TESTS.md'ye işlendi (parity/pin/money/integration/cross-mirror/smoke)
-ve tüm bilinçli `any`'ler `TODO(ts-migration)` etiketli (grep'lenebilir).
+## 8. Post-migration deliverable: `docs/ARCHITECTURE_V2.md` (tech-lead advice, 2026-07-08)
+When the migration is done (after Phase 4) this document WILL BE WRITTEN — the answer to
+"how does the system work today". Content: repository structure · why packages/shared exists (type-only rule)
+· functions build chain (src→lib) · frontend-functions type sharing · deployment flow
+(CI hosting + targeted functions) · domain boundaries (module map) · the rationale of the decisions
+taken (with pointers to DECISIONS.md). This plan is the document of the migration; V2 the document of the architecture.
+Also, the test classification was recorded in TESTS.md (parity/pin/money/integration/cross-mirror/smoke)
+and all deliberate `any`s are labeled `TODO(ts-migration)` (grep-able).
 
-*Bu plan yaşayan bir belge — her faz bitince DoD'yi ✅ işaretle, sapma olursa
-"planda yok, ekleyelim" diyerek bilinçli ekle (ROADMAP disiplini).*
+*This plan is a living document — mark the DoD ✅ when each phase is done, and if there is a
+deviation, add it consciously by saying "it's not in the plan, let's add it" (ROADMAP discipline).*

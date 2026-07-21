@@ -1,130 +1,130 @@
-# CLIENT_CARD_V2 — Client kartı premium redesign + puan-harcama görünürlüğü
+# CLIENT_CARD_V2 — Client card premium redesign + points-spend visibility
 
-> Kaynak: owner istek 2026-07-11 (gece, İngiltere–Norveç maçı arası 😄).
-> **Gate: TS migration feature-freeze — kod 2026-07-14'ten önce YAZILMAZ**
-> (12=rc3, 13=ürün-doğrulama). İnceleme o gece yapıldı; kod çapaları aşağıda.
+> Source: owner request 2026-07-11 (night, during the England–Norway match 😄).
+> **Gate: TS migration feature-freeze — no code WRITTEN before 2026-07-14**
+> (12=rc3, 13=product-validation). The review was done that night; code anchors below.
 
-## 1. Tespit — veri VAR, görünürlük YOK
+## 1. Finding — data EXISTS, visibility DOESN'T
 
-Owner'ın sezgisi doğru: harcanan puan/indirim verisi zaten toplanıyor ama
-client kartında hiçbir yerde gösterilmiyor.
+The owner's intuition is right: the spent-points/discount data is already being collected but
+it's shown nowhere on the client card.
 
-| Veri | Nerede yazılıyor | Clients'ta durumu |
+| Data | Where it's written | Status in Clients |
 |---|---|---|
-| `loyaltyRedeemedValue` (checkout'ta kullanılan puanın £ değeri) | `CheckoutPanel.tsx:930` (booking doc'una) | **HİÇ OKUNMUYOR** (Marketing.tsx:373 attribution için okuyor, Clients.tsx 0 referans) |
-| `totalDiscount` (müşteri başına toplam indirim) | `Clients.tsx:187-188` client aggregation'da HESAPLANIYOR | Stats satırında YOK; sadece history sekmesinde per-booking chip (`:820`) |
-| Puan hareketleri | `auditLogs` — ama SADECE `manual_points_adjustment` (`Clients.tsx:292`) | Loyalty sekmesi timeline'ı manuel ayarları gösteriyor; **checkout'ta kazanılan/harcanan puanlar timeline'da YOK** |
-| Mevcut bakiye | `clients/{id}.loyaltyPoints` | ✅ gösteriliyor (büyük sayı + progress bar) |
+| `loyaltyRedeemedValue` (£ value of points used at checkout) | `CheckoutPanel.tsx:930` (to the booking doc) | **NEVER READ** (Marketing.tsx:373 reads it for attribution, Clients.tsx 0 references) |
+| `totalDiscount` (total discount per customer) | COMPUTED in client aggregation `Clients.tsx:187-188` | NOT in the stats row; only the per-booking chip in the history tab (`:820`) |
+| Points movements | `auditLogs` — but ONLY `manual_points_adjustment` (`Clients.tsx:292`) | The Loyalty tab timeline shows manual adjustments; **points earned/spent at checkout are NOT in the timeline** |
+| Current balance | `clients/{id}.loyaltyPoints` | ✅ shown (big number + progress bar) |
 
-Yani: müşteri 3 kez puan kullanmışsa bunu görmenin tek yolu history'de
-booking'leri tek tek açmak. "Bizden ne kadar değer aldı" sorusunun cevabı yok.
+So: if a customer has used points 3 times, the only way to see it is to open the bookings one by
+one in history. There's no answer to "how much value did they take from us".
 
-## 2. Faz 1 — Loyalty görünürlüğü (ucuz: SIFIR yeni Firestore read)
+## 2. Phase 1 — Loyalty visibility (cheap: ZERO new Firestore reads)
 
-Booking'ler client'a zaten join'li (aggregation `Clients.tsx:174-215`) —
-hepsi client-side türetilebilir:
+Bookings are already joined to the client (aggregation `Clients.tsx:174-215`) —
+all of it can be derived client-side:
 
-1. **Lifetime şeridi (Loyalty sekmesi, bakiye kartının altına):**
+1. **Lifetime strip (Loyalty tab, below the balance card):**
    `Points used (£X)` = Σ `loyaltyRedeemedValue` · `Discounts (£Y)` =
-   mevcut `totalDiscount` · `Total value received (£X+Y)`.
-2. **Birleşik timeline:** manuel ayarlar (mevcut pointsLog) + checkout
-   redemption'ları (`bookings.filter(b => b.loyaltyRedeemedValue > 0)` →
-   tarih + "−N pts · £V off · <service>") + isteğe bağlı ziyaret-başı kazanım
-   satırı (earn rate tenant config: `loyalty.earnRate`, cashback `points/20`
-   legacy fallback — bkz. salown-app/CLAUDE.md Money & loyalty).
-3. **Stats satırı (üst):** `Points` kutusuna ikinci satır: "£X used lifetime"
-   (veya 4'lü kutuya 5. kutu "£ saved" — tasarım kararı).
+   existing `totalDiscount` · `Total value received (£X+Y)`.
+2. **Unified timeline:** manual adjustments (existing pointsLog) + checkout
+   redemptions (`bookings.filter(b => b.loyaltyRedeemedValue > 0)` →
+   date + "−N pts · £V off · <service>") + optional per-visit earn
+   line (earn rate tenant config: `loyalty.earnRate`, cashback `points/20`
+   legacy fallback — see salown-app/CLAUDE.md Money & loyalty).
+3. **Stats row (top):** a second line in the `Points` box: "£X used lifetime"
+   (or a 5th box "£ saved" in the 4-box group — design decision).
 
-## 2b. Kapsam netleşmesi (owner, 2026-07-11 ikinci konuşma)
+## 2b. Scope clarification (owner, 2026-07-11 second conversation)
 
-**LİSTE DEĞİŞMİYOR** — tablo/arama/segment/sıralama aynen kalır. Redesign kapsamı
-= client **paneli** üçlüsü: (1) müşteri **ekleme**, (2) **düzenleme**,
-(3) müşteri hakkında **bilgi tutma/gösterme** (detail drawer).
+**THE LIST DOESN'T CHANGE** — the table/search/segment/sort stay as-is. The redesign scope
+= the client **panel** trio: (1) **adding** a customer, (2) **editing**,
+(3) **holding/showing information** about the customer (detail drawer).
 
-Mevcut durum envanteri (Claude Design'a girdi):
+Current-state inventory (input to Claude Design):
 
-| Parça | Bugünkü hâli | Not |
+| Piece | Today's state | Note |
 |---|---|---|
-| **Add** — `AddClientModal.tsx` (ayrı component, 540px Drawer) | Zaten modern: ikonlu inputlar, +prefix telefon, DD/Ay/YYYY doğum günü, nickname/reminder notu, GDPR+loyalty ipuçları, celebrate() | Üçlünün en yenisi; redesign'da dil buradan türeyebilir |
-| **Edit** — `Clients.tsx:1047` (inline, 420px ortalanmış modal) | EN ESKİ parça: düz input listesi (name/phone/email/birthday/notes), Add ile görsel dil tutmuyor (native date input, +prefix yok, ipuçları yok) | Davranış zinciri korunur: `_aliases` arrayUnion + `_origName` + booking rename (`:421-447`) |
-| **Detail drawer** — `Clients.tsx:599-1045` (440px Drawer) | Avatar(barber-renk halka)+VIP/tier/pts rozetleri, tel/mail+unsubscribe toggle, 4 aksiyon (Book/WhatsApp/Email/Campaign), 4'lü stats, 3 sekme (overview/history/loyalty), notes blur-save | Owner şikayeti "çok küçük" buraya; 440px dar, bilgi yoğun |
-| **Bilgi tutulan alanlar** (client doc) | Sadece: name, phone, email, birthday, notes (+sistem: loyaltyPoints, isMember/membershipTier, emailOptOut, \_aliases, reengagementSentAt...) | Açık soru (owner karar verir): yeni alanlar eklenecek mi — adres, cinsiyet/pronoun, referral source, **trusted** (§3c), emergency contact vb. Fresha/Booksy paritesi düşünülebilir |
+| **Add** — `AddClientModal.tsx` (separate component, 540px Drawer) | Already modern: iconed inputs, +prefix phone, DD/Mo/YYYY birthday, nickname/reminder note, GDPR+loyalty hints, celebrate() | The newest of the trio; the redesign language can derive from here |
+| **Edit** — `Clients.tsx:1047` (inline, 420px centered modal) | The OLDEST piece: flat input list (name/phone/email/birthday/notes), visual language doesn't match Add (native date input, no +prefix, no hints) | Behavior chain preserved: `_aliases` arrayUnion + `_origName` + booking rename (`:421-447`) |
+| **Detail drawer** — `Clients.tsx:599-1045` (440px Drawer) | Avatar (barber-color ring)+VIP/tier/pts badges, phone/mail+unsubscribe toggle, 4 actions (Book/WhatsApp/Email/Campaign), 4-box stats, 3 tabs (overview/history/loyalty), notes blur-save | The owner's "too small" complaint is about this; 440px is narrow, info-dense |
+| **Fields held** (client doc) | Only: name, phone, email, birthday, notes (+system: loyaltyPoints, isMember/membershipTier, emailOptOut, \_aliases, reengagementSentAt...) | Open question (owner decides): will new fields be added — address, gender/pronoun, referral source, **trusted** (§3c), emergency contact etc. Fresha/Booksy parity can be considered |
 
-Add zaten Drawer olduğundan asıl iş: **edit'i Add'in diliyle hizalamak**
-(veya §3'teki inline-edit'e geçmek) + detail drawer'ı büyütüp zenginleştirmek
-+ tutulan alan setini genişletmek (owner kararı).
+Since Add is already a Drawer, the real work is: **aligning edit with Add's language**
+(or moving to the inline-edit in §3) + enlarging and enriching the detail drawer
++ expanding the set of fields held (owner decision).
 
-## 3. Faz 2 — Premium kart redesign (owner: "çok küçük görünüyor")
+## 3. Phase 2 — Premium card redesign (owner: "looks too small")
 
-> ⚠️ **TASARIM SAHİBİ = OWNER (2026-07-11):** kartın görsel redesign'ını owner
-> **Claude Design ile kendisi yaptıracak** — hiçbir session kendi kafasına göre
-> mockup/tasarım ÜRETMESİN. Aşağıdaki yön notları Claude Design'a girdi
-> malzemesidir; nihai görsel karar owner'dan gelecek. (Faz 1 = veri
-> görünürlüğü bundan BAĞIMSIZ, kod serbest kalınca yapılabilir.)
+> ⚠️ **DESIGN OWNER = OWNER (2026-07-11):** the owner will have the card's visual redesign
+> **done by themselves with Claude Design** — no session should PRODUCE its own
+> mockup/design on its own initiative. The direction notes below are input
+> material for Claude Design; the final visual decision comes from the owner. (Phase 1 = data
+> visibility is INDEPENDENT of this, can be done once code is unblocked.)
 
-Mevcut: orta boy panel; 4'lü stats; 3 sekme (overview/history/loyalty);
-edit = basit ortalanmış modal (`Clients.tsx:1047`, düz input listesi).
+Current: medium-size panel; 4-box stats; 3 tabs (overview/history/loyalty);
+edit = simple centered modal (`Clients.tsx:1047`, flat input list).
 
-Yön (Campaigns redesign diliyle aynı ruh — per-client drawer kalıbı zaten var):
-- **Full-height drawer** (sağdan, geniş) — küçük panel yerine.
-- **Hero header:** initials-avatar (source-renk halkası), isim + member rozeti
-  (◆ tier) + telefon/email hızlı-aksiyonlar (tel:/mailto: zaten history
-  hover-card'da var, kalıp hazır).
-- **Stats bandı büyür:** Visits · Total Spent · Avg/Visit · Points · **£ Saved**.
-- **Inline edit:** ayrı modal yerine hero'da kalem ikonu → alanlar yerinde
-  edit'e döner (mevcut modal mantığı — alias arrayUnion `:433`, booking
-  rename `:440` vb — AYNEN korunur, sadece sunum değişir).
-- **Quick actions satırı:** New booking · Send email · Adjust points ·
-  (super-admin: merge/delete — mevcut yetki gate'leri DEĞİŞMEZ).
+Direction (same spirit as the Campaigns redesign language — the per-client drawer pattern already exists):
+- **Full-height drawer** (from the right, wide) — instead of the small panel.
+- **Hero header:** initials-avatar (source-color ring), name + member badge
+  (◆ tier) + phone/email quick-actions (tel:/mailto: already exist in the history
+  hover-card, pattern ready).
+- **Stats band grows:** Visits · Total Spent · Avg/Visit · Points · **£ Saved**.
+- **Inline edit:** instead of a separate modal, a pencil icon in the hero → fields turn to
+  in-place edit (existing modal logic — alias arrayUnion `:433`, booking
+  rename `:440` etc — kept AS-IS, only the presentation changes).
+- **Quick actions row:** New booking · Send email · Adjust points ·
+  (super-admin: merge/delete — existing permission gates DON'T CHANGE).
 
-## 3b. Campaign geçmişi görünürlüğü (owner ek istek, aynı gece)
+## 3b. Campaign history visibility (owner additional request, same night)
 
-**Tespit: veri + UI zaten VAR ama gömülü.** History sekmesi açılınca
-`tenants/{id}/clients/{manualId}/campaignsSent` subcollection'ı yükleniyor ve
-listeleniyor (`Clients.tsx:250-262` load, `:834+` render) — owner fark
-etmemiş = keşfedilebilirlik sorunu. Yapılacak:
-- **Overview'a "Last campaign" satırı:** Quick-info bloğuna (Last visit /
-  Favourite service yanına) son kampanya adı + tarihi (campaignsSent'in ilk
-  kaydı; History'ye zaten sıralı geliyor).
-- **Hero/drawer'da rozet:** "📣 3 campaigns received · last: Birthday Treat,
-  2 Jul" tarzı tek satır — tıklayınca History sekmesine götürür.
-- Sınır: sadece `manualId`'li client'larda çalışır (subcollection client
-  doc'a bağlı) — manualId yoksa satır gizlenir, mevcut davranış.
-- İleride (C7 ile birleşir): opened/clicked durumu da satıra eklenebilir
-  (emailEvents zaten tenant'ta var; email eşleşmesi yeterli).
+**Finding: the data + UI already EXIST but are buried.** When the History tab opens,
+the `tenants/{id}/clients/{manualId}/campaignsSent` subcollection loads and is
+listed (`Clients.tsx:250-262` load, `:834+` render) — the owner didn't
+notice = discoverability problem. To do:
+- **A "Last campaign" line in Overview:** in the Quick-info block (next to Last visit /
+  Favourite service), the last campaign name + date (the first record of campaignsSent;
+  it already comes sorted to History).
+- **A badge in the Hero/drawer:** a single line like "📣 3 campaigns received · last: Birthday Treat,
+  2 Jul" — clicking takes you to the History tab.
+- Limit: only works for clients with a `manualId` (subcollection tied to the client
+  doc) — if no manualId, the line is hidden, existing behavior.
+- Later (merges with C7): opened/clicked status can be added to the line too
+  (emailEvents already exists in the tenant; email matching is enough).
 
-## 3c. Trusted client (owner ek istek — Booksy paritesi, İLK KEZ listeye giriyor)
+## 3c. Trusted client (owner additional request — Booksy parity, entering the list FOR THE FIRST TIME)
 
-Kökeni: Anthony vakası (memory `project_parser_priority`) — Booksy'de
-"trusted client" deposit'ten muaf; bizim parser Booksy'ye sabit £10 deposit
-varsayınca trusted müşteride yanlış "ödendi" yazdı. O gün konuşuldu ama
-hiçbir listeye girmemişti; bu spec'le resmileşiyor.
-- **Faz 1 (kart alanı):** client doc'a `trusted: boolean` (+ `trustedAt`,
-  `trustedBy`) — kartta rozet (🤝 Trusted) + toggle (owner/admin yetkisi;
-  super-admin gate GEREKMEZ, silme değil). Salt görsel/operasyonel işaret:
-  personel "bu müşteriden deposit isteme / sözüne güven" bilgisini görür.
-- **Faz 2 (davranış, Stripe Connect ile):** per-tenant ödeme policy'sine
-  (STRIPE_CONNECT_PLAN) client-düzeyi istisna: `trusted=true` → deposit
-  atlanır (policy 'deposit' olsa bile). Booking sayfası + BookingPage
-  policy çözümlemesine tek koşul. **Deposit canlı değilken davranış etkisi
-  SIFIR** — o yüzden Faz 1 güvenle önce gidebilir.
-- **Parser bağı (ayrı iş, C9 kapsamı DIŞI ama bağlantılı):** Booksy parser'ı
-  deposit'i asla hardcode etmesin; trusted/no-deposit'te £0/bilinmiyor
-  işaretlesin (project_parser_priority'deki plan). Trusted flag'i bu
-  yanlış-pozitifleri işaretlemeyi de kolaylaştırır.
+Origin: the Anthony case (memory `project_parser_priority`) — on Booksy a
+"trusted client" is exempt from the deposit; when our parser assumed a fixed £10 deposit for
+Booksy, it wrongly wrote "paid" for a trusted customer. It was discussed that day but had gotten
+onto no list; this spec formalizes it.
+- **Phase 1 (card field):** `trusted: boolean` (+ `trustedAt`,
+  `trustedBy`) on the client doc — badge on the card (🤝 Trusted) + toggle (owner/admin permission;
+  super-admin gate NOT REQUIRED, it's not a deletion). Purely a visual/operational marker:
+  staff sees the "don't ask this customer for a deposit / trust their word" info.
+- **Phase 2 (behavior, with Stripe Connect):** a client-level exception to the per-tenant payment
+  policy (STRIPE_CONNECT_PLAN): `trusted=true` → deposit
+  skipped (even if policy is 'deposit'). A single condition on the Booking page + BookingPage
+  policy resolution. **When deposit isn't live, the behavioral effect is
+  ZERO** — so Phase 1 can safely go first.
+- **Parser tie (separate work, OUTSIDE C9 scope but related):** the Booksy parser should
+  never hardcode the deposit; for trusted/no-deposit it should mark £0/unknown
+  (the plan in project_parser_priority). The trusted flag also makes it easier to flag
+  these false-positives.
 
-## 4. Korunacaklar (dokunma)
+## 4. To preserve (don't touch)
 
-- Delete/merge = super-admin gate'leri (`useAuth().isSuperAdmin`) AYNEN.
-- Edit'teki `_aliases` arrayUnion + `_origName` + booking-rename zinciri
-  (`Clients.tsx:421-447`) davranışsal olarak birebir kalır.
-- Kimlik eşleştirme sırası (clientManualId → phone/email → aliases → name)
-  — NORMALIZATION.md standartları.
-- MemberZone promote/demote akışı (puan sıfırlama onayı dahil).
+- Delete/merge = super-admin gates (`useAuth().isSuperAdmin`) AS-IS.
+- The `_aliases` arrayUnion + `_origName` + booking-rename chain in Edit
+  (`Clients.tsx:421-447`) stays behaviorally identical.
+- Identity matching order (clientManualId → phone/email → aliases → name)
+  — NORMALIZATION.md standards.
+- MemberZone promote/demote flow (including the points-reset confirmation).
 
-## 5. Efor / sıra önerisi
+## 5. Effort / order suggestion
 
-- **Faz 1** küçük (tek dosya, client-side derive) → migration sonrası ilk
-  uygun dilim; hemen değer üretir ("bu müşteri bizden £X değer aldı").
-- **Faz 2** orta (tasarım işi; SERVICE_EDITOR_DESIGN_BRIEF kalıbıyla önce
-  brief/mockup, owner onayı, sonra kod). Faz 1'i bekletmesin — ayrı dilimler.
+- **Phase 1** small (single file, client-side derive) → the first suitable slice after
+  the migration; delivers value immediately ("this customer took £X value from us").
+- **Phase 2** medium (design work; with the SERVICE_EDITOR_DESIGN_BRIEF pattern, first
+  brief/mockup, owner approval, then code). Shouldn't block Phase 1 — separate slices.

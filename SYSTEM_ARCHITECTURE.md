@@ -5,10 +5,10 @@
 ```
 ~/Desktop/alex/
 ├── salown-panel/       ← Barber/admin React panel (CRA, legacy — phased out)
-├── salown-site/        ← SİLİNDİ 2026-06-29 (her şey salown-app/hosting/'den deploy)
+├── salown-site/        ← DELETED 2026-06-29 (everything deploys from salown-app/hosting/)
 ├── salown-app/         ← MAIN ACTIVE REPO — Vite + .jsx, all new work goes here
 ├── super-admin/        ← SaaS super-admin panel (Vite)
-├── eekurtbarbers/      ← EeKurt legacy site (tenant İNAKTİF 2026-07-18 — klasör duruyor)
+├── eekurtbarbers/      ← EeKurt legacy site (tenant INACTIVE 2026-07-18 — folder remains)
 └── whitecross-site/    ← Being phased out incrementally
 ```
 
@@ -23,17 +23,17 @@
 
 - **salown-app**: Vite + React (.jsx), Firebase Auth + Firestore + Functions
 - **salown-panel**: CRA (.js) — legacy, being phased out (see ROADMAP.md)
-- **salown-site**: SİLİNDİ (2026-06-29) — deploy artık YALNIZCA `salown-app/hosting/`
+- **salown-site**: DELETED (2026-06-29) — deploy is now ONLY from `salown-app/hosting/`
 - **whitecross-site**: Legacy, some functions still active (see MULTI_TENANT_NOTES.md)
 
 ## Migration Decision: salown-panel → salown-app
 
-Tüm sayfalar adım adım salown-panel (CRA, .js) → salown-app (Vite, .jsx)'e taşınıyor.
-Hardcoded `whitecross` referansları → dynamic `tenantId` (Firebase custom claims).
+All pages are being moved step by step from salown-panel (CRA, .js) → salown-app (Vite, .jsx).
+Hardcoded `whitecross` references → dynamic `tenantId` (Firebase custom claims).
 
-Taşıma sırası: ~~Dashboard~~ ✅ → Bookings → Calendar → Finance → Reports → Clients → diğerleri
+Migration order: ~~Dashboard~~ ✅ → Bookings → Calendar → Finance → Reports → Clients → others
 
-**salown-panel'e yeni feature ekleme — taşınacak sayfa için önce .jsx yaz.**
+**Don't add new features to salown-panel — for a page that will be migrated, write the .jsx first.**
 
 ## salown-app — Key Files
 

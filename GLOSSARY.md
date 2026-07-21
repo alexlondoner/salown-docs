@@ -1,121 +1,121 @@
-# GLOSSARY — Salown terimler sözlüğü
+# GLOSSARY — salOWN terms glossary
 
-> **Bu dosya nedir:** Projede geçen jargon, kısaltma ve kod terimlerinin tek-satır karşılıkları. Yeni katılan biri (PM/mühendis/tasarımcı) bir terimde takıldığında buraya bakar.
+> **What this file is:** One-line definitions of the jargon, abbreviations and code terms used in the project. When a newcomer (PM/engineer/designer) gets stuck on a term, they look here.
 >
-> **Nasıl kullanılır:** `Ctrl/Cmd+F` ile terimi ara. Derin detay gerekiyorsa sağdaki **detay** linkine git. Yeni bir terim/kısaltma yaygınlaşınca buraya bir satır ekle.
+> **How to use:** Search for the term with `Ctrl/Cmd+F`. If you need deeper detail, follow the **detail** link on the right. When a new term/abbreviation becomes common, add a line here.
 
-**Not:** Marka her zaman **salOWN** yazılır (asla "salown"/"Salown") — dokümanlarda bazen düz metinde "Salown" geçse de doğru form salOWN'dur.
+**Note:** The brand is always written **salOWN** (never "salown"/"salOWN") — even though "salOWN" sometimes appears in plain text in the docs, the correct form is salOWN.
 
 ---
 
-## 🏢 Ürün & İş (Domain)
+## 🏢 Product & Business (Domain)
 
-| Terim | Anlamı | Detay |
+| Term | Meaning | Detail |
 |-------|--------|-------|
-| **Tenant** | Platformdaki bir salon (müşteri). Tüm verisi `tenants/{tenantId}/...` altında | [MULTI_TENANT_NOTES](MULTI_TENANT_NOTES.md) |
-| **Multi-tenant** | Tek kod tabanının birçok salonu izole şekilde barındırması | [SYSTEM_ARCHITECTURE](SYSTEM_ARCHITECTURE.md) |
-| **`tenantId`** | Salonu tanımlayan kimlik; Firebase **custom claim**'de (JWT), app-state'te değil | [TENANTS](TENANTS.md) |
-| **Class A / Class B** | Tenant olgunluk/migration sınıfı. Tüm aktif tenantlar Class A (whitecross 2026-06-19 tamamlandı) | [TENANTS](TENANTS.md) |
-| **Grabbing** | Salown felsefesi: mevcut kanalların (Booksy/Fresha/Treatwell) yerini almaz, **birleştirir** | [MANIFESTO](MANIFESTO.md) |
-| **Aggregator** | Dış rezervasyon platformu (Booksy, Fresha, Treatwell) — email parser ile içeri çekilir | [PARSER_NOTES](PARSER_NOTES.md) |
-| **Walk-in** | Randevusuz gelen müşteri; `createWalkIn` ile girilir (`date` alanı YOK, sadece `startTime`) | [KNOWN_QUIRKS](KNOWN_QUIRKS.md) |
-| **Squeeze-in** | Boş bırakılmış gap'e küçük servis sıkıştırma (processing-time'dan doğdu) | [BUSY_SLOT_V2](BUSY_SLOT_V2.md) |
-| **Processing time** | Servisin fiziksel olarak boş (kuaför meşgul değil) ara süresi; gap-fill motoru bunu kullanır | [BUSY_SLOT_V2](BUSY_SLOT_V2.md) |
-| **Busy-slot v2** | Çok-aralıklı müsaitlik motoru (processing time destekli) | [BUSY_SLOT_V2](BUSY_SLOT_V2.md) |
-| **No-show** | Gelmeyen müşteri | [BUSINESS_RULES](BUSINESS_RULES.md) |
-| **Deposit / prepaid / pay-at-venue** | Ödeme modları: ön ödeme / peşin ödenmiş / mekanda öde. Aggregator per-booking değişebilir | [KNOWN_QUIRKS](KNOWN_QUIRKS.md) |
-| **Loyalty / cashback / points** | Sadakat sistemi; `loyalty.cashbackPct` tenant-configurable (`points/20` legacy fallback) | [FEATURE_FLAGS](FEATURE_FLAGS.md) |
-| **Ask salOWN** | Uygulama içi AI asistanı; `askAI` callable, **Claude Haiku 4.5** | [DECISIONS](DECISIONS.md) ADR-014 |
+| **Tenant** | A salon (customer) on the platform. All its data lives under `tenants/{tenantId}/...` | [MULTI_TENANT_NOTES](MULTI_TENANT_NOTES.md) |
+| **Multi-tenant** | A single codebase hosting many salons in isolation | [SYSTEM_ARCHITECTURE](SYSTEM_ARCHITECTURE.md) |
+| **`tenantId`** | The identity that identifies the salon; in the Firebase **custom claim** (JWT), not in app-state | [TENANTS](TENANTS.md) |
+| **Class A / Class B** | Tenant maturity/migration class. All active tenants are Class A (whitecross completed 2026-06-19) | [TENANTS](TENANTS.md) |
+| **Grabbing** | salOWN philosophy: it doesn't replace the existing channels (Booksy/Fresha/Treatwell), it **unifies** them | [MANIFESTO](MANIFESTO.md) |
+| **Aggregator** | External booking platform (Booksy, Fresha, Treatwell) — pulled in via the email parser | [PARSER_NOTES](PARSER_NOTES.md) |
+| **Walk-in** | A customer without an appointment; entered via `createWalkIn` (NO `date` field, only `startTime`) | [KNOWN_QUIRKS](KNOWN_QUIRKS.md) |
+| **Squeeze-in** | Squeezing a small service into a left-open gap (born from processing-time) | [BUSY_SLOT_V2](BUSY_SLOT_V2.md) |
+| **Processing time** | The intermediate period where a service is physically idle (the stylist isn't busy); the gap-fill engine uses this | [BUSY_SLOT_V2](BUSY_SLOT_V2.md) |
+| **Busy-slot v2** | Multi-interval availability engine (with processing-time support) | [BUSY_SLOT_V2](BUSY_SLOT_V2.md) |
+| **No-show** | A customer who doesn't show up | [BUSINESS_RULES](BUSINESS_RULES.md) |
+| **Deposit / prepaid / pay-at-venue** | Payment modes: upfront payment / paid in advance / pay at the venue. Can vary per-booking for an aggregator | [KNOWN_QUIRKS](KNOWN_QUIRKS.md) |
+| **Loyalty / cashback / points** | Loyalty system; `loyalty.cashbackPct` tenant-configurable (`points/20` legacy fallback) | [FEATURE_FLAGS](FEATURE_FLAGS.md) |
+| **Ask salOWN** | In-app AI assistant; `askAI` callable, **Claude Haiku 4.5** | [DECISIONS](DECISIONS.md) ADR-014 |
 
-## 👥 Tenant'lar & Kişiler
+## 👥 Tenants & People
 
-| Terim | Anlamı |
+| Term | Meaning |
 |-------|--------|
-| **Whitecross** | İlk/pilot tenant (I CUT Whitecross Barbers); premium tenant (custom domain whitecrossbarbers.com) |
-| **HeroHairs** | Hairdresser tenant; processing-time/squeeze-in pilot'u |
+| **Whitecross** | First/pilot tenant (I CUT Whitecross Barbers); premium tenant (custom domain whitecrossbarbers.com) |
+| **HeroHairs** | Hairdresser tenant; processing-time/squeeze-in pilot |
 | **EeKurt** | Tenant 2 |
-| **I CUT** | Whitecross'un işletme adı (başlangıç noktası) |
-| **Barber vs Stylist/Hairdresser** | Barber = erkek kuaförü (Whitecross); hairdresser = processing-time'lı kuaför (HeroHairs) |
+| **I CUT** | Whitecross's business name (the starting point) |
+| **Barber vs Stylist/Hairdresser** | Barber = men's barber (Whitecross); hairdresser = stylist with processing-time (HeroHairs) |
 
-Kişiler/roller/emailler → [PEOPLE](PEOPLE.md).
+People/roles/emails → [PEOPLE](PEOPLE.md).
 
-## 🔧 Teknik — Firebase & Backend
+## 🔧 Technical — Firebase & Backend
 
-| Terim | Anlamı | Detay |
+| Term | Meaning | Detail |
 |-------|--------|-------|
-| **`havuz-44f70`** | Firebase proje id'si (region `europe-west2`) | [SYSTEM_ARCHITECTURE](SYSTEM_ARCHITECTURE.md) |
-| **Custom claim** | JWT içindeki yetki verisi (`tenantId`, `isSuperAdmin`, `tenantRole`) | [SECURITY](SECURITY.md) |
-| **`isSuperAdmin`** | Platform sahibi claim'i (şu an tek: aerulas@). Silme/staff-atama yetkisi buna bağlı | [DECISIONS](DECISIONS.md) ADR-006 |
-| **`tenantRole`** | Tenant içi rol: owner > admin > staff | [SECURITY](SECURITY.md) |
-| **Callable / onCall** | Auth'lu client'ın çağırdığı Cloud Function (Admin SDK ile rules'ı baypas edebilir) | — |
-| **onRequest** | HTTP endpoint tipi function (ör. `addToWaitlist`, `salownEmailOptOut`) | — |
-| **Trigger** | Firestore olayında otomatik çalışan function (ör. `salownNotifyBookingCreated`) | — |
-| **IMAP parser** | Salon Gmail'ini IMAP+regex ile okuyan cron (`salownParseEmails`); aggregator email'lerini içeri çeker | [PARSER_NOTES](PARSER_NOTES.md) |
-| **`externalId`** | Aggregator booking'inin benzersiz kimliği; dedup için (re-run güvenli) | [PARSER_NOTES](PARSER_NOTES.md) |
-| **Tombstone** | Silinmiş/işlenmiş kaydı işaretleyen iz; duplicate'e karşı son güvenlik ağı | [INCIDENTS](INCIDENTS.md) (Jakov) |
-| **Canary** | "Beklenenden az import → alarm" sessiz-kırılma dedektörü (parser için, ROADMAP I1) | [ARCHITECTURE_REVIEW_2026-07-02](ARCHITECTURE_REVIEW_2026-07-02.md) |
-| **Brevo** | Transactional/loyalty email sağlayıcısı (`noreply@salown.com`) | [EMAIL_ARCHITECTURE](EMAIL_ARCHITECTURE.md) |
-| **nodemailer** | Tenant Gmail üzerinden confirmation/cancel/reschedule email'i | [EMAIL_ARCHITECTURE](EMAIL_ARCHITECTURE.md) |
-| **FCM** | Firebase Cloud Messaging — staff app push bildirimi (`fcmTokens/`) | — |
-| **Telegram (notifyTenant)** | Tenant'a booking bildirimi; `settings/integrations`'tan token okur | — |
-| **Capacitor** | Web app'i native mobil app'e saran katman (Tap to Pay için gerekli) | [DECISIONS](DECISIONS.md) ADR-005 |
-| **Stripe Connect / Checkout Session** | Seçilen ödeme yönü (per-tenant policy; Payment Link DEĞİL) | [STRIPE_CONNECT_PLAN](STRIPE_CONNECT_PLAN.md) |
-| **Tap to Pay** | Telefonu kart makinesi yapan Stripe özelliği (POS pilot yönü) | [DECISIONS](DECISIONS.md) ADR-005 |
+| **`havuz-44f70`** | Firebase project id (region `europe-west2`) | [SYSTEM_ARCHITECTURE](SYSTEM_ARCHITECTURE.md) |
+| **Custom claim** | Authorization data inside the JWT (`tenantId`, `isSuperAdmin`, `tenantRole`) | [SECURITY](SECURITY.md) |
+| **`isSuperAdmin`** | Platform-owner claim (currently only one: aerulas@). Delete/staff-assign permission depends on this | [DECISIONS](DECISIONS.md) ADR-006 |
+| **`tenantRole`** | Role within the tenant: owner > admin > staff | [SECURITY](SECURITY.md) |
+| **Callable / onCall** | A Cloud Function called by an authed client (can bypass rules with the Admin SDK) | — |
+| **onRequest** | HTTP-endpoint type function (e.g. `addToWaitlist`, `salownEmailOptOut`) | — |
+| **Trigger** | A function that runs automatically on a Firestore event (e.g. `salownNotifyBookingCreated`) | — |
+| **IMAP parser** | Cron that reads the salon Gmail via IMAP+regex (`salownParseEmails`); pulls in aggregator emails | [PARSER_NOTES](PARSER_NOTES.md) |
+| **`externalId`** | The unique identity of an aggregator booking; for dedup (re-run safe) | [PARSER_NOTES](PARSER_NOTES.md) |
+| **Tombstone** | A trace marking a deleted/processed record; the last safety net against duplicates | [INCIDENTS](INCIDENTS.md) (Jakov) |
+| **Canary** | "Fewer imports than expected → alarm" silent-break detector (for the parser, ROADMAP I1) | [ARCHITECTURE_REVIEW_2026-07-02](ARCHITECTURE_REVIEW_2026-07-02.md) |
+| **Brevo** | Transactional/loyalty email provider (`noreply@salown.com`) | [EMAIL_ARCHITECTURE](EMAIL_ARCHITECTURE.md) |
+| **nodemailer** | confirmation/cancel/reschedule email via the tenant Gmail | [EMAIL_ARCHITECTURE](EMAIL_ARCHITECTURE.md) |
+| **FCM** | Firebase Cloud Messaging — staff app push notification (`fcmTokens/`) | — |
+| **Telegram (notifyTenant)** | Booking notification to the tenant; reads the token from `settings/integrations` | — |
+| **Capacitor** | Layer that wraps the web app into a native mobile app (required for Tap to Pay) | [DECISIONS](DECISIONS.md) ADR-005 |
+| **Stripe Connect / Checkout Session** | The chosen payment direction (per-tenant policy; NOT Payment Link) | [STRIPE_CONNECT_PLAN](STRIPE_CONNECT_PLAN.md) |
+| **Tap to Pay** | Stripe feature that turns the phone into a card reader (POS pilot direction) | [DECISIONS](DECISIONS.md) ADR-005 |
 
-## 🚀 Deploy & Altyapı
+## 🚀 Deploy & Infrastructure
 
-| Terim | Anlamı | Detay |
+| Term | Meaning | Detail |
 |-------|--------|-------|
-| **Bundle / public-bundle / staff-bundle** | Build çıktısı (gitignored); `hosting/`'ten servis edilir. Build atlanırsa SPA 404'e düşer | [INCIDENTS](INCIDENTS.md) 2026-06-29 |
-| **Predeploy hook** | `firebase.json`'da her deploy öncesi otomatik `npm run build` (bundle düşmesin) | [DECISIONS](DECISIONS.md) ADR-010 |
-| **CI** | GitHub Actions — `salown-app` main'e push = otomatik hosting deploy | [DEPLOY](DEPLOY.md) |
-| **Vite / CRA** | salown-app = Vite (.jsx, aktif); salown-panel = CRA (.js, legacy) | [DECISIONS](DECISIONS.md) ADR-001 |
-| **Smoke test** | Deploy sonrası kritik rota 200 kontrolü (fail → deploy fail) | [INCIDENTS](INCIDENTS.md) 2026-06-29 |
+| **Bundle / public-bundle / staff-bundle** | Build output (gitignored); served from `hosting/`. If the build is skipped, the SPA drops to 404 | [INCIDENTS](INCIDENTS.md) 2026-06-29 |
+| **Predeploy hook** | Automatic `npm run build` before every deploy in `firebase.json` (so the bundle doesn't drop) | [DECISIONS](DECISIONS.md) ADR-010 |
+| **CI** | GitHub Actions — push to `salown-app` main = automatic hosting deploy | [DEPLOY](DEPLOY.md) |
+| **Vite / CRA** | salown-app = Vite (.jsx, active); salown-panel = CRA (.js, legacy) | [DECISIONS](DECISIONS.md) ADR-001 |
+| **Smoke test** | Post-deploy 200 check of critical routes (fail → deploy fail) | [INCIDENTS](INCIDENTS.md) 2026-06-29 |
 
-**Domain'ler:** `salown.com` (consumer booking) · `hub.salown.com` (partner portal / panel) · `admin.salown.com` (super-admin) · `staff.salown.com` (Salown Staff App).
+**Domains:** `salown.com` (consumer booking) · `hub.salown.com` (partner portal / panel) · `admin.salown.com` (super-admin) · `staff.salown.com` (salOWN Staff App).
 
-## 🗂️ Repo'lar
+## 🗂️ Repos
 
-| Repo | Ne | Durum |
+| Repo | What | Status |
 |------|-----|-------|
-| **salown-app** (`Salown.git`) | Ana kod — Vite + .jsx | ✅ aktif |
-| **super-admin** (`salownadmin.git`) | Süper-admin panel | ✅ aktif |
-| **whitecross-site** (`whitecross-site.git`) | Whitecross premium + legacy Stripe (us-central1) | 🟡 aşamalı emeklilik |
-| **salown-docs** (`salown-docs.git`) | Bu repo — proje beyni (private) | ✅ aktif |
-| **salown-panel** | Eski CRA panel | ⛔ legacy |
-| **barber-panel / barber-mobile** | Whitecross eski paneller (FCM disabled) | ⛔ legacy |
+| **salown-app** (`salOWN.git`) | Main code — Vite + .jsx | ✅ active |
+| **super-admin** (`salownadmin.git`) | Super-admin panel | ✅ active |
+| **whitecross-site** (`whitecross-site.git`) | Whitecross premium + legacy Stripe (us-central1) | 🟡 phased retirement |
+| **salown-docs** (`salown-docs.git`) | This repo — project brain (private) | ✅ active |
+| **salown-panel** | Old CRA panel | ⛔ legacy |
+| **barber-panel / barber-mobile** | Whitecross old panels (FCM disabled) | ⛔ legacy |
 
-## 📐 Süreç & Dokümantasyon terimleri
+## 📐 Process & Documentation terms
 
-| Terim | Anlamı | Detay |
+| Term | Meaning | Detail |
 |-------|--------|-------|
-| **SSOT** | Single Source of Truth — bir bilginin tek yaşadığı yer (durum → ROADMAP; testler → TESTS) | [ROADMAP](ROADMAP.md) |
-| **ADR** | Architecture Decision Record — karar + gerekçe + elenen alternatifler | [DECISIONS](DECISIONS.md) |
-| **Invariant** | Bozulursa sistem kırılan değişmez kural ("hep böyle yap") | [INVARIANTS](INVARIANTS.md) |
-| **Quirk** | Tuhaf ama kasıtlı davranış ("bug sanıp düzeltme") | [KNOWN_QUIRKS](KNOWN_QUIRKS.md) |
-| **Latent bug** | Henüz patlamamış ama düzeltilmesi gereken hata (quirk DEĞİL) | [NORMALIZATION](NORMALIZATION.md) |
-| **Regressed** | Daha önce çözülmüş bir bug'ın geri gelmesi (INCIDENTS Status 🔴) | [INCIDENTS](INCIDENTS.md) |
-| **Tier 1/2/3** | Pre-scale hardening öncelik katmanları (Tier 1 = onboarding'den önce kapanmalı) | [SECURITY](SECURITY.md) |
-| **Blast radius** | Bir değişikliğin/hatanın etkilediği alanın genişliği | [SECURITY](SECURITY.md) |
-| **GDPR / opt-out / unsubscribe** | Veri koruma; email öncesi `emailOptOut !== true`, her mailde unsubscribe | [EMAIL_ARCHITECTURE](EMAIL_ARCHITECTURE.md) |
+| **SSOT** | Single Source of Truth — the one place a piece of info lives (status → ROADMAP; tests → TESTS) | [ROADMAP](ROADMAP.md) |
+| **ADR** | Architecture Decision Record — decision + rationale + rejected alternatives | [DECISIONS](DECISIONS.md) |
+| **Invariant** | An immutable rule that breaks the system if violated ("always do it this way") | [INVARIANTS](INVARIANTS.md) |
+| **Quirk** | Odd but intentional behavior ("don't mistake for a bug and fix") | [KNOWN_QUIRKS](KNOWN_QUIRKS.md) |
+| **Latent bug** | A bug that hasn't blown up yet but needs fixing (NOT a quirk) | [NORMALIZATION](NORMALIZATION.md) |
+| **Regressed** | A previously-solved bug coming back (INCIDENTS Status 🔴) | [INCIDENTS](INCIDENTS.md) |
+| **Tier 1/2/3** | Pre-scale hardening priority layers (Tier 1 = must close before onboarding) | [SECURITY](SECURITY.md) |
+| **Blast radius** | The breadth of the area affected by a change/error | [SECURITY](SECURITY.md) |
+| **GDPR / opt-out / unsubscribe** | Data protection; before email `emailOptOut !== true`, unsubscribe in every mail | [EMAIL_ARCHITECTURE](EMAIL_ARCHITECTURE.md) |
 
-## 💻 Kod helper'ları (sık geçen)
+## 💻 Code helpers (frequently seen)
 
-| Sembol | Ne yapar | Detay |
+| Symbol | What it does | Detail |
 |--------|----------|-------|
-| **`pp()` / `parsePrice()`** | Para string'ini güvenli sayıya çevirir (`£`/virgül temizler, NaN→0, negatifi korur) | [INVARIANTS](INVARIANTS.md) INV-PARA-1 |
-| **`toDateKey()`** | UK-güvenli tarih anahtarı (asla `toISOString().split('T')[0]` — BST kayar) | [INVARIANTS](INVARIANTS.md) INV-DATE-1 |
-| **`barberKey()` / `matchesBarber()`** | Exact case-insensitive barber eşleşmesi (fuzzy YOK) | [NORMALIZATION](NORMALIZATION.md) |
-| **`normalizeBookingStatus()`** | Status'u uppercase'e normalize eder (import lowercase olabilir) | [INVARIANTS](INVARIANTS.md) INV-BK-7 |
-| **`_aliases`** | Client'ın eski telefon/email'leri (arrayUnion ile korunur, geçmiş kopmasın) | [INVARIANTS](INVARIANTS.md) INV-MATCH-5 |
-| **`clientManualId`** | Client lookup'ta ilk anahtar | [INVARIANTS](INVARIANTS.md) INV-MATCH-4 |
-| **`actualDuration`** | Checkout'a basma anı − başlangıç (servis süresi DEĞİL; geometride cap'lenir) | [KNOWN_QUIRKS](KNOWN_QUIRKS.md) |
-| **`bookingId` prefiksleri** | `WCB-` (walk-in) · `SALE-` · `BLOCKED-` — Firestore doc id DEĞİL | [KNOWN_QUIRKS](KNOWN_QUIRKS.md) |
-| **`provisionTenant`** | Yeni tenant kuran fonksiyon (self-onboarding `/signup`) | [DECISIONS](DECISIONS.md) ADR-009 |
+| **`pp()` / `parsePrice()`** | Safely converts a money string to a number (strips `£`/comma, NaN→0, preserves negative) | [INVARIANTS](INVARIANTS.md) INV-PARA-1 |
+| **`toDateKey()`** | UK-safe date key (never `toISOString().split('T')[0]` — BST shifts) | [INVARIANTS](INVARIANTS.md) INV-DATE-1 |
+| **`barberKey()` / `matchesBarber()`** | Exact case-insensitive barber match (NO fuzzy) | [NORMALIZATION](NORMALIZATION.md) |
+| **`normalizeBookingStatus()`** | Normalizes status to uppercase (imports may be lowercase) | [INVARIANTS](INVARIANTS.md) INV-BK-7 |
+| **`_aliases`** | The client's old phones/emails (preserved with arrayUnion, so history isn't broken) | [INVARIANTS](INVARIANTS.md) INV-MATCH-5 |
+| **`clientManualId`** | The first key in client lookup | [INVARIANTS](INVARIANTS.md) INV-MATCH-4 |
+| **`actualDuration`** | The moment checkout is hit − start (NOT the service duration; capped in the geometry) | [KNOWN_QUIRKS](KNOWN_QUIRKS.md) |
+| **`bookingId` prefixes** | `WCB-` (walk-in) · `SALE-` · `BLOCKED-` — NOT the Firestore doc id | [KNOWN_QUIRKS](KNOWN_QUIRKS.md) |
+| **`provisionTenant`** | The function that sets up a new tenant (self-onboarding `/signup`) | [DECISIONS](DECISIONS.md) ADR-009 |
 
 ---
 
-## Bakım
-- Yeni bir terim/kısaltma yaygınlaşınca (özellikle yeni biri "bu ne demek?" diye sorunca) buraya bir satır ekle, mümkünse detay dokümanına link ver.
-- Bir terim değişir/ölürse satırı güncelle veya kaldır (ör. legacy repo emekliye ayrılınca).
+## Maintenance
+- When a new term/abbreviation becomes common (especially when a newcomer asks "what does this mean?"), add a line here, and if possible link to the detail doc.
+- If a term changes/dies, update or remove the line (e.g. when a legacy repo is retired).
 - Commit: `cd alex/docs && git commit GLOSSARY.md && git push`.

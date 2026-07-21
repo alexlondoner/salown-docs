@@ -1,45 +1,45 @@
 # TENANTS.md
 
-## Aktif Tenantlar
+## Active Tenants
 
-> **Şu an CANLI kullanılan 2 tenant:** `whitecross` + `herohairs` (2026-07-18). `eekurt` artık platformu kullanmıyor (inaktif) — kaydı aşağıda korunuyor, Firestore verisi silinmedi.
+> **Currently 2 tenants LIVE in use:** `whitecross` + `herohairs` (2026-07-18). `eekurt` no longer uses the platform (inactive) — its record is kept below, Firestore data was not deleted.
 
-| Tenant ID    | İşletme                   | Email                        | Firebase UID                          | Durum |
+| Tenant ID    | Business                  | Email                        | Firebase UID                          | Status |
 |-------------|---------------------------|------------------------------|---------------------------------------|-------|
-| `whitecross` | I CUT Whitecross Barbers  | aerulas@gmail.com            | CsktIKNC0wRaP2eK8DECVMWPD0m1          | Premium pilot — her feature ilk burada |
-| `herohairs`  | HeroHairs (Hairdresser)   | alex2ayyildiz3@gmail.com     | BRk26AmRLXUMjLNIoBRLJB11o3o1          | Pilot client — full access, trial bitmez |
-| `eekurt`     | EeKurt Barbers            | eekurtbookings@gmail.com     | L6wsBgQmBYXIVBt3RYHS2LATsxH2          | ❌ İnaktif (2026-07-18 platformu bıraktı) — veri Firestore'da duruyor, rules/data silinmedi |
+| `whitecross` | I CUT Whitecross Barbers  | aerulas@gmail.com            | CsktIKNC0wRaP2eK8DECVMWPD0m1          | Premium pilot — every feature ships here first |
+| `herohairs`  | HeroHairs (Hairdresser)   | alex2ayyildiz3@gmail.com     | BRk26AmRLXUMjLNIoBRLJB11o3o1          | Pilot client — full access, trial never ends |
+| `eekurt`     | EeKurt Barbers            | eekurtbookings@gmail.com     | L6wsBgQmBYXIVBt3RYHS2LATsxH2          | ❌ Inactive (left the platform 2026-07-18) — data still in Firestore, rules/data not deleted |
 
 **Super Admin:** durvezek@gmail.com (Dursun Kahraman)
 
-## Tenant Tipleri
+## Tenant Types
 
-### Class A — Salown-managed (standart, örn: herohairs)
-- Tüm email, Telegram, in-app notif, push: yalnızca `salown-app/functions`
-- Her capability bir feature flag ile açılır
-- Ayrı function codebase yok
+### Class A — salOWN-managed (standard, e.g. herohairs)
+- All email, Telegram, in-app notif, push: only `salown-app/functions`
+- Each capability is enabled by a feature flag
+- No separate function codebase
 
-### Class B — Self-managed (kendi codebase'i var)
-- Email, Telegram, push, in-app: kendi functions codebase'inde
-- `salown-app/functions` trigger'ları bu tenant için guard'lanmış olmalı
-- Bkz: [MULTI_TENANT_NOTES.md](MULTI_TENANT_NOTES.md)
+### Class B — Self-managed (has its own codebase)
+- Email, Telegram, push, in-app: in its own functions codebase
+- `salown-app/functions` triggers must be guarded for this tenant
+- See: [MULTI_TENANT_NOTES.md](MULTI_TENANT_NOTES.md)
 
-**Self-managed tenant listesi:** Şu an aktif Class B tenant yok.
+**Self-managed tenant list:** No active Class B tenant at the moment.
 
-> **Not:** `whitecrossbarbers.com` (custom domain, cancel/reschedule sayfaları) Class B ile karıştırılmamalı.
-> Bu, Salown'un premium tier özelliğidir — "kendi domain'inde salon sitesi". Functions mimarisi Class A,
-> web sitesi ayrıdır. Whitecross, pilot premium tenant olarak bu özelliğin canlı örneğidir.
+> **Note:** `whitecrossbarbers.com` (custom domain, cancel/reschedule pages) must not be confused with Class B.
+> This is salOWN's premium tier feature — "salon site on your own domain". The functions architecture is Class A,
+> the website is separate. Whitecross, as the pilot premium tenant, is the live example of this feature.
 
-## Whitecross — İşletme Bilgisi
+## Whitecross — Business Info
 
-- Adres: 136 Whitecross Street, London EC1Y 8QJ
+- Address: 136 Whitecross Street, London EC1Y 8QJ
 - Tel: 020 3621 5929
-- Servisler: £22 (Clipper Cut) → £65 (iCuT Royal)
-- Google Reviews: 408 yorum, 4.8★
+- Services: £22 (Clipper Cut) → £65 (iCuT Royal)
+- Google Reviews: 408 reviews, 4.8★
 - Google Ads: GA4 `G-TN2JGH5JLY`, Ads `AW-18017585907` (Stripe purchase only)
 - SEO: `announcements.html` Schema.org ItemList, EC1Y, Old Street, Barbican, Moorgate
 
-## Tenant Firestore Doc Alanları
+## Tenant Firestore Doc Fields
 
 ```
 tenants/{tenantId}/
@@ -63,10 +63,10 @@ tenants/{tenantId}/
   }
 ```
 
-⚠️ Feature flag'leri her zaman tenant doc'tan oku — hardcode etme.
+⚠️ Always read feature flags from the tenant doc — do not hardcode.
 
-## Onboarding Notu
+## Onboarding Note
 
-Self-signup onboarding henüz yok — tenantlar manuel ekleniyor.
-Custom claims Firebase Auth'da set ediliyor: `{ tenantId: 'whitecross' }` gibi.
-Her tenant panel cross-tenant login'i engelliyor.
+Self-signup onboarding does not exist yet — tenants are added manually.
+Custom claims are set in Firebase Auth: e.g. `{ tenantId: 'whitecross' }`.
+Each tenant panel blocks cross-tenant login.
