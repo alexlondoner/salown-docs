@@ -36,6 +36,7 @@ Tüm tenant verisi `tenants/{tenantId}/...` altında.
 | [INVARIANTS.md](docs/INVARIANTS.md) | **Bozulursa sistem kırılır** — para/tarih/booking/eşleşme/güvenlik/deploy değişmezleri, kaynak atıflı; ilgili alana dokunmadan ÖNCE oku |
 | [KNOWN_QUIRKS.md](docs/KNOWN_QUIRKS.md) | Tuhaf ama **kasıtlı** davranışlar — "bug sanıp düzeltme"; INVARIANTS/latent-bug farkı içeride |
 | [DECISIONS.md](docs/DECISIONS.md) | **Neden böyle yaptık** (ADR): email/ödeme/POS/silme/repo kararları + gerekçe + elenen alternatifler |
+| [PRINCIPLES.md](docs/PRINCIPLES.md) | **Cross-cutting mühendislik ilkeleri** (P1-P14): deploy discipline, SSOT, secrets=app-boundary, change discipline, safety; her ilke **Enforcement** satırıyla (✅ guard/test var / 🟡 prose-only). DECISIONS=tekil karar, PRINCIPLES=her yere uygulanan kural |
 | [PARSER_NOTES.md](docs/PARSER_NOTES.md) | Booksy/Fresha/Treatwell parser mimarisi, dedup sistemi, tekrarlayan bug kalıpları |
 | [STRIPE_CONNECT_PLAN.md](docs/STRIPE_CONNECT_PLAN.md) | TASARIM: Salown ödeme = Stripe Connect Standard + Checkout Session; sabit £ deposit; per-tenant policy; kapalı/future |
 | [TIERS_AND_UPGRADE.md](docs/TIERS_AND_UPGRADE.md) | TASARIM: tier'lar (Free/Starter/Pro/Pro+) + tenant'ın **hesap-içi** plan yükseltmesi ("Anthropic gibi"); Faz 1 request→approve (tahsilatsız), Faz 2 Stripe **Billing** abonelik (Connect≠Billing), Pro+ = premium website+SEO; ROADMAP **Monetization** teması |

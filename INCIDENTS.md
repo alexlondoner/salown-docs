@@ -36,6 +36,7 @@ Her olay `## YYYY-MM-DD — kısa başlık` ile açılır, hemen altına **metad
 ## 2026-07-21 — Canlı Stripe slotunda TEST key → gerçek müşteriler test checkout'a düştü, ödeyemedi
 
 **Severity:** 🔴 Critical (canlı ödeme kesintisi / gelir kaybı — gerçek müşteriler ödeyemedi) · **Owner:** owner (sezgiyle "bu adamlar test linki kullanamaz" deyip ısrar etti) + Claude · **Status:** ✅ Resolved & DEPLOYED 2026-07-21 (STRIPE_SECRET_KEY v5=sk_live, 4 ödeme fn redeploy, canlı booking cs_live+CONFIRMED ile doğrulandı) · **Affected area:** whitecross-site payments / Stripe secret config (`createCheckoutSession`)
+**Tags:** `#security` `#stripe` `#secrets` `#config` `#deploy` `#shared-infra`  *(tag taksonomisi 2026-07-21 owner önerisiyle başladı — ölçekte incident arama için; geriye dönük etiketleme ROADMAP'e ekli değil, ilerledikçe her yeni kayıt Tags satırı taşır)*
 
 **Discovery:** Owner — salOWN panelinde bugün 2 booking CANCELLED görünüyordu ama "why not payment" tanısı **PAID** diyordu; owner "Taylor+Jack gerçek/sadık müşteri, `?testMode=1` linkini bulup giremezler" diye ısrar edince link teorisi elendi → sunucudaki Stripe key'ine bakıldı.
 **Impact:** 07-21 sabahı gerçek müşteriler (Taylor 2 deneme, Jack 1) normal siteden (testMode YOK) booking yapınca **test Stripe checkout'una** düştü → gerçek kartla ödeyemediler → PENDING kaldı → `salownCleanupExpiredPending` 15 dk'da `expired_pending` → CANCELLED. Gerçek para alınmadı ama **2 gerçek müşteri + randevu kaybı** (owner manuel rebook + özür mesajıyla kurtardı). Confirmed email gitmedi (hiç CONFIRMED olmadı).
