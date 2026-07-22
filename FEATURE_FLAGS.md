@@ -22,6 +22,12 @@ Every tenant doc has a `features` object. All flags are read from here — do no
 | `stripe` | Stripe deposit enabled — see: BUSINESS_RULES.md (not completed, activation) |
 | `telegram` | Telegram notifications enabled |
 
+## Deprecated / partial flags
+
+| Flag | Status |
+|------|--------|
+| `processingTime` | **Busy-slot v2 — mixed transition state (D); do NOT list as a normal active flag.** **Not user-controllable** — no UI / super-admin / onboarding / `salownadmin` path sets it; only a manual out-of-band Firestore edit could. **Engine ignores it** — conflict is per-service `segments` (`src/utils/conflictUtils.ts`; `processingEnabled` opt `@deprecated Ignored`). **iCal feed still reads it** — `salownIcalFeed` splits Treatwell VEVENTs only when `=== true` (`functions/src/index.ts:1511`→`:1518`); **dormant** since nothing sets it true (Phase 5a, ⬜ not shipped). One **dead** read in the Services editor (`src/pages/Services.tsx:154` → `pcEnabled`, never consumed, `:110` TODO). **Default `false`** at tenant creation (`index.ts:220`/`:2831`); still a `TenantFeatureKey` (`packages/shared/src/tenant.ts:47`). ⚠️ NOT a full kill-switch. **Open decision:** explicitly *retire* it (delete reads/defaults/type) OR *convert* it into a real, supported Phase 5a rollout mechanism. See `BUSY_SLOT_V2_RISKS.md` → Rollback/Recovery and `BUSY_SLOT_V2.md` §6. |
+
 ## Loyalty Email Toggle (Whitecross-specific)
 
 `sendLoyaltyCardEmail` (whitecross-site):

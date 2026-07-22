@@ -3,21 +3,58 @@
 > Everything that needs to be tested on HeroHairs **before the processing-time / segment / channel
 > features are deployed** + the problems that could occur. Pilot tenant: **HeroHairs**
 > (has Treatwell + panel access). Design: `BUSY_SLOT_V2.md`, `SERVICE_CONFIG_V2.md`.
-> Risks: `BUSY_SLOT_V2_RISKS.md`. **Currently: flag OFF, NO deploy.**
+> Risks: `BUSY_SLOT_V2_RISKS.md`.
+>
+> **Status (updated 2026-07-22 — flag lifecycle re-verified against code):** The busy-slot **conflict engine**
+> shipped **dynamic / service-`segments` based** — it no longer reads `features.processingTime` (engine
+> flag-gate removed in `f958aee`, 2026-06-26). `features.processingTime` is classified **D) mixed transition
+> state**:
+> - **HISTORICAL:** any step/claim that treats `features.processingTime=false` as a **kill-switch that reverts
+>   the engine** (it doesn't — the engine honours each booking's own `segments`).
+> - **STALE — the flag does NOT gate the Services editor:** the `Services.tsx:154` read is **dead** (stored in
+>   `pcEnabled`, never consumed — `:110` TODO). So **A1/A2 and Prerequisite-1 below no longer hold as written**
+>   — the segment editor's visibility does not depend on the flag (see the rewritten A1/A2).
+> - **STILL CURRENT (dormant):** the flag's one live read is the **Treatwell iCal split** (`salownIcalFeed`,
+>   `functions/src/index.ts:1511` → `:1518`) — sections D/E, which also need a functions deploy. Dormant:
+>   no supported path sets it `true` (see the Manual-activation note below).
+> See ROADMAP for status; `BUSY_SLOT_V2_RISKS.md` → Rollback/Recovery for the recovery procedure.
 
-## 🔴 GLOBAL KILL-SWITCH
-Problem → HeroHairs tenant doc `features.processingTime = false`. Everything reverts to v1
-(byte-identical old behavior thanks to engine delegation + flag-gate).
+## 🔴 ROLLBACK / RECOVERY (current — verified against code 2026-07-22)
+**No single tenant-wide runtime kill-switch reverts the feature.** The in-app engine is service-`segments`
+driven and ignores `features.processingTime`. To revert one service: clear its `segments` in the Services
+editor (→ `service.segments = null`, single solid interval = v1). The flag's only live read is the Treatwell
+iCal split (`salownIcalFeed`, `functions/src/index.ts:1511` → `:1518`); `features.processingTime=false` keeps
+the feed on single-VEVENT, but it does not disable already-saved per-service processing in the engine, and it
+is dormant (nothing sets it true). Full detail: `BUSY_SLOT_V2_RISKS.md` → Rollback/Recovery.
+
+> **⚠️ Manual activation is UNSUPPORTED.** No UI / super-admin / onboarding / `salownadmin` path sets
+> `features.processingTime=true`; tenant creation writes `false`. Enabling it means an out-of-band manual
+> Firestore edit — outside normal rollout, not a product feature. Treat sections D/E as gated by this
+> manual-only hook (Phase 5a, ⬜ not shipped).
+
+> **Historical kill-switch:** Problem → HeroHairs tenant doc `features.processingTime = false` → everything
+> reverts to v1 (byte-identical old behaviour thanks to engine delegation + flag-gate). This applied while
+> the engine was flag-gated (before `f958aee`); it no longer reverts the engine.
 
 ## Prerequisite
-1. `tenants/herohairs` doc → `features.processingTime: true` (ONLY HeroHairs).
+> ⚠️ Updated 2026-07-22: setting `features.processingTime: true` is a **manual, unsupported** Firestore edit
+> (no product path does it) and now affects **only** the Treatwell iCal split (D/E) — NOT the engine
+> (segment-driven) or the segment editor (flag-independent, dead read). For A/B/C panel tests you do **not**
+> need the flag.
+1. *(D/E only)* `tenants/herohairs` doc → `features.processingTime: true` — manual Firestore edit, out-of-band.
 2. For sections D/E (Treatwell) `firebase deploy --only functions` — **deploy approval to be obtained separately.**
 
 ---
 
 ## A — Service config / segment editor (NO DEPLOY NEEDED, panel)
-- [ ] A1. Flag-on HeroHairs → Services → open a service → the **"Timing — processing & buffer"** section appears.
-- [ ] A2. Flag-off tenant (Whitecross) → the section is **not visible**.
+> ⚠️ A1/A2 rewritten 2026-07-22: the segment editor is **NOT** gated by `features.processingTime`. The only
+> flag-derived state (`pcEnabled`, `Services.tsx:154`) is **never read** (`:110` TODO), so editor visibility
+> is flag-independent. The original flag-on/flag-off steps are HISTORICAL (struck through below).
+- [ ] A1. The **"Timing — processing & buffer"** segment editor's visibility does **not** depend on
+  `features.processingTime` — verify the section behaves identically whether the tenant flag is set or unset.
+- [ ] A2. *(Superseded)* The old "flag-off → section hidden" expectation is invalid — the flag does not gate the editor.
+- ~~A1 (historical). Flag-on HeroHairs → Services → open a service → the "Timing — processing & buffer" section appears.~~
+- ~~A2 (historical). Flag-off tenant (Whitecross) → the section is **not visible**.~~
 - [ ] A3. Add segment: Service 20 + Processing 30 + Service 20 → "Segments total 70 / 70 · ✓ active".
 - [ ] A4. Total ≠ duration → red "⚠ must equal duration". Save → the engine **does not apply** it (solid).
 - [ ] A5. No Processing segment (only Services) → "⚠ needs a Processing segment".
@@ -66,8 +103,13 @@ Problem → HeroHairs tenant doc `features.processingTime = false`. Everything r
 - [ ] F10. **No-show/cancel:** cancelling a segmented booking → the 2nd booking taken into the gap is unaffected (FIFO, no protection — intentional).
 
 ## Rollback
-- Kill-switch `features.processingTime=false` → instant v1.
-- If functions must be rolled back: flag-off already gives single-VEVENT; revert+redeploy if needed.
+- **Current:** no tenant-wide runtime kill-switch. Revert one service by clearing its `segments` (→ solid,
+  v1). Treatwell iCal (OUT) leg only: `features.processingTime=false` still forces single-VEVENT
+  (`functions/src/index.ts:1511`). Full engine revert = revert `f958aee` (+ `5dbdf31`) and redeploy — owner
+  approval required. See `BUSY_SLOT_V2_RISKS.md` → Rollback/Recovery.
+- **Historical:** kill-switch `features.processingTime=false` → instant v1 (applied while the engine was
+  flag-gated, pre-`f958aee`). If functions must be rolled back: flag-off already gives single-VEVENT for the
+  feed; revert+redeploy if needed.
 
 ## Automated tests (developer)
 - `npm test` → `conflictUtils.test.js` 24/24 (parity + v1-equivalence + segment model + back-compat).

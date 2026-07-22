@@ -1,10 +1,14 @@
 # BUSY_SLOT_V2.md — Multi-Interval Availability Engine + Channel Architecture
 
-> **Status (2026-06-26):** LIVE — **DYNAMIC / service-based**. The tenant-wide
-> `features.processingTime` flag has been REMOVED (commit f958aee). The engine + grid render +
-> staff bundle are now driven by the service's own `segments` config: a service with a processing
-> window opens a gap + squeeze-in; a service without one is a single-solid-interval (identical to v1). The
-> "feature flag" / "not enabled until Phase 4" statements below are HISTORICAL — the flag no longer exists.
+> **Status (2026-06-26; flag lifecycle re-verified against code 2026-07-22):** LIVE — **DYNAMIC /
+> service-based**. The tenant-wide `features.processingTime` flag was **removed from the engine path**
+> (commit f958aee): the engine + grid render + staff bundle are now driven by the service's own `segments`
+> config — a service with a processing window opens a gap + squeeze-in; a service without one is a
+> single-solid-interval (identical to v1). The "feature flag" / "not enabled until Phase 4" statements below
+> are HISTORICAL for the engine. **The flag itself still exists** as a dormant, manual-only hook (precise
+> lifecycle in §6): still read by `salownIcalFeed` (Phase 5a, ⬜ not shipped), a dead read in `Services.tsx`,
+> still a `TenantFeatureKey`, still written `false` on tenant creation. Classified **D) mixed transition
+> state** — no supported product path sets it `true`.
 > OUT OF SCOPE (still): public `BookingPage` + email-parser bookings do not write a segment snapshot
 > → they stay solid in the grid (Phase 5b). The salOWN→Treatwell iCal feed split (Phase 5a) was not done.
 > **Owner:** Alfa (Whitecross owner + dev)
@@ -244,10 +248,23 @@ email parser, with `externalId` dedup (see: PARSER_NOTES).
   `channelProfiles` map + `processing` fields (`activeBefore`, `processing`, `activeAfter`).
 - **Booking doc** (optional): explicit `segments` or `processingTime` snapshot on native/two-way bookings
   (so the past booking stays fixed even if the service changes later).
-- ~~**Feature flag:** `features.processingTime` (tenant doc) — default `false`.~~ **REMOVED
-  (2026-06-26).** Activation is no longer a tenant flag but the service's `segments` config: a service
-  with a processing window opens a dynamic gap. The `features.processingTime` field is not read (no longer
-  consumed in tenant docs; can be cleaned up but harmless).
+- **Feature flag:** `features.processingTime` (tenant doc) — default `false`, **removed from the engine path
+  2026-06-26 (f958aee)**. Engine activation is no longer this flag but the service's `segments` config: a
+  service with a processing window opens a dynamic gap. Precise current lifecycle (re-verified 2026-07-22 by
+  code grep; classified **D) mixed transition state** — NOT fully removed):
+  - **Engine path** (`src/utils/conflictUtils.ts`): flag-free — the `processingEnabled` option is
+    `@deprecated Ignored` (`:55-57`); each booking's own `segments` alone drive it.
+  - **iCal Treatwell split** (`salownIcalFeed`, `functions/src/index.ts:1511` read → `:1518` gate): **still
+    reads the flag** — VEVENT splitting happens only when `features.processingTime === true`, else a single
+    solid span. Dormant, because nothing sets it true (Phase 5a, ⬜ not shipped).
+  - **Services editor** (`src/pages/Services.tsx:154`): a **dead legacy read** — the value is stored in
+    `pcEnabled` state that is never consumed (`:110` TODO: "pcEnabled is never read … drop in cleanup").
+  - **Writes / type:** written `false` only at tenant creation (`functions/src/index.ts:220`/`:2831`); still a
+    `TenantFeatureKey` member (`packages/shared/src/tenant.ts:47`).
+  - **No supported product path** (UI / super-admin / onboarding / `salownadmin`) sets it `true`; only an
+    out-of-band manual Firestore edit could. So the effective runtime is always the single-span/`false` path.
+  - **Open decision:** explicitly retire the flag, or convert it into a real supported Phase 5a rollout
+    mechanism. See `FEATURE_FLAGS.md` → Deprecated/partial flags and `BUSY_SLOT_V2_RISKS.md` → Rollback/Recovery.
 
 ---
 

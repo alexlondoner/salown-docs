@@ -4,10 +4,32 @@
 > work; so that if something goes wrong we know where to look without losing time.
 > Design: `BUSY_SLOT_V2.md`. This file is a **living** log — update it as each phase progresses.
 
-## 🔴 GLOBAL KILL-SWITCH
-If a problem arises, the first move: tenant doc → **`features.processingTime = false`**.
-The engine reverts to v1 behavior (single-interval). Because `getBusyIntervals`, when there is no
-processing, **delegates** to `getExistingRangeMinutes` → behavior identical to the old.
+## 🔴 ROLLBACK / RECOVERY (current — verified against code 2026-07-22)
+`features.processingTime` is classified **D) mixed transition state** (full lifecycle: `FEATURE_FLAGS.md`
+→ Deprecated/partial flags, `BUSY_SLOT_V2.md` §6). Three separate things — do not conflate them:
+
+**1. Current engine rollback/recovery.** The in-app conflict engine does **not** read the flag — it is
+driven per-booking by each booking's own `segments` snapshot (`src/utils/conflictUtils.ts`; the
+`processingEnabled` option is `@deprecated Ignored`, `:55-57`). There is **no tenant-wide runtime
+kill-switch** for the engine. To revert one service (panel, no deploy): clear its processing `segments` in
+the Services editor → save → `service.segments = null` → single solid interval = v1. Evidence:
+`conflictUtils.ts` (no processing segments → solid), `BUSY_SLOT_V2.md` §3.3, `BUSY_SLOT_V2_TESTPLAN.md` A9.
+Full engine revert = revert `f958aee` (+ staff bundle `5dbdf31`) and redeploy — owner approval required.
+
+**2. Dormant Phase 5a iCal rollout hook.** The flag's one live read is `salownIcalFeed`
+(`functions/src/index.ts:1511` read → `:1518` gate): VEVENT splitting happens only when
+`features.processingTime === true`, else a single solid span. It is **dormant** — no supported product path
+(UI / super-admin / onboarding / `salownadmin`) sets it `true`; tenant creation writes `false`. So today the
+feed always emits the single-span path. Setting it `true` is a **manual, out-of-band Firestore edit only
+(unsupported)**. This is effectively the Phase 5a (⬜ not-shipped) rollout switch. **Note:** the Services
+editor read (`src/pages/Services.tsx:154`) is a **dead legacy read** — stored in `pcEnabled` state that is
+never consumed (`:110` TODO: "pcEnabled is never read … drop in cleanup"); it does not gate anything.
+
+**3. Historical (pre-2026-06-26): the tenant-flag kill-switch.**
+> When the feature was still tenant-flag-gated, the documented first move was: tenant doc →
+> **`features.processingTime = false`**, which reverted the engine to v1 (single-interval) because
+> `getBusyIntervals`, with no processing, **delegated** to `getExistingRangeMinutes` → identical to the old
+> behaviour. The engine flag-gate was removed in `f958aee` (2026-06-26); the flag no longer controls the engine.
 
 ---
 
@@ -59,7 +81,7 @@ Tests: `src/utils/conflictUtils.test.js` — `npm test` → **16/16**. Build ✅
 
 | # | Risk | Symptom | Where to look | Quick fix |
 |---|---|---|---|---|
-| 2.1 | `hasTimeConflict` going multi-interval breaks double-booking protection | Two bookings enter the same barber+time OR an empty slot appears "full" | `conflictUtils.js` hasTimeConflict; callers (BookingForm:114/150, BookingDetailPanel:986, Dashboard WalkIn, BookingPage:~400) | turn off flag; run the parity test |
+| 2.1 | `hasTimeConflict` going multi-interval breaks double-booking protection | Two bookings enter the same barber+time OR an empty slot appears "full" | `conflictUtils.js` hasTimeConflict; callers (BookingForm:114/150, BookingDetailPanel:986, Dashboard WalkIn, BookingPage:~400) | clear the offending service's `segments` (→ solid); run the parity test — the engine no longer reads the flag (see Rollback/Recovery above). *Historical quick-fix was "turn off flag".* |
 | 2.2 | Reschedule self-conflict (`ignoreBookingId`) regression | Booking cannot be rescheduled to its own time | hasTimeConflict ignoreBookingId branch | preserve ignoreBookingId logic — must stay same as v1 |
 | 2.3 | `barberValue` lowercase invariant breaks | Conflict/no-conflict on the wrong barber | are callers giving barberKey lowercase | BUSINESS_RULES "barberValue lowercased" rule |
 | 2.4 | Duration fallback chain changes | Walk-in / online booking occupies wrong duration | getExistingRangeMinutes (DON'T TOUCH) | the base computation must always come from getExistingRangeMinutes |
