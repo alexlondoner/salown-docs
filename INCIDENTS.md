@@ -35,6 +35,29 @@ Every incident opens with `## YYYY-MM-DD — short title`, immediately followed 
 
 **Tag dictionary (CANONICAL — only these; sprawl forbidden):** `#security` `#stripe` `#secrets` `#config` `#deploy` `#normalization` `#permission` `#race` `#timezone` `#parser` `#email` `#data-loss` `#shared-infra`. A new tag is added only if a genuinely new class emerges (e.g. twins like `#payment`+`#payments`+`#stripe-payment` are FORBIDDEN → all `#stripe`). Every entry carries a `**Tags:**` line.
 
+## 2026-07-23 — Booksy booking (Alex 13:00) never landed — barber-less SLOT tombstone blocked the second chair
+
+**Severity:** 🟠 High (a real confirmed booking silently missing from the panel; workaround = manual add) · **Owner:** owner (spotted the missing Booksy booking) + Claude · **Status:** ✅ Resolved & DEPLOYED 2026-07-23 (A: stale tombstone deleted → re-imported once; B: `41e2bc1` barber-aware key, targeted deploy salownParseEmails+salownParseInboxDispatch+salownManualImport) · **Affected area:** email parsers (booksy/fresha/treatwell/ical slot dedup)
+
+**Tags:** `#parser` `#data-loss`
+
+**Discovery:** owner — a Booksy booking for Lachlan Paterson (Alex, Thu 23 Jul 13:00) did not appear in the whitecross panel; a second booking (Jack Cunningham, Arda) existed for the SAME time. Owner suspected the parser/add-on.
+**Impact:** A confirmed Booksy booking never imported — invisible to the salon (risk of the slot being given away / no-show confusion). One booking, but silent (no error).
+**Root Cause:** `booksy.ts` wrote a SLOT tombstone keyed `SLOT-Booksy-{date}-{time}` — **no barber**. When Jack (Arda 13:00) imported at 08:06 it wrote that marker; `isTombstonedBySlot` then matched it for Lachlan (Alex, same 13:00) regardless of barber → `skipped++; continue`. Two chairs can legitimately hold the same time, but the slot identity omitted the barber. (Not caused by the same-morning Slice-3B deploy: the failure is in the untouched import path + a tombstone written before the deploy; the import path was byte-unchanged by 3B. Confirmed via Google audit log deploy time 09:14Z + parserStats telemetry.)
+**Bug Class:** Legacy compatibility / dedup-key under-specification (identity key missing a dimension — barber).
+**Resolution:** (A, immediate) deleted the one stale marker `tenants/whitecross/parserTombstones/SLOT-Booksy-23-July-2026-13:00`; next cron (10:29Z) imported Lachlan **exactly once** (parserStats `imported` 0→1, `skipped` 6→5, verified). (B, permanent, `41e2bc1`) slot identity is now `(source, date, time, barber)` via new `slotTombstoneKey()`/`canonicalBarber()` in `shared.ts`; `isTombstonedBySlot` requires barber and does NOT read the legacy barber-less key (no fallback → cannot resurrect); booksy write+check barber-aware; fresha/treatwell/ical checks pass barber. externalId dedup (`isTombstoned`/`hasExternalIdMulti`) unchanged. No bulk migration — old markers are simply never read again.
+**Prevention:** (1) Regression test pins the exact scenario (below). (2) A dedup/idempotency key must include EVERY dimension that can legitimately vary while everything else is equal (here: barber). (3) **Observability follow-up for 3C:** parserStats `health` showed **HEALTHY** during this data loss because the run had `skipped>0` (dedup skips) → the 5-state scorer treats `skipped>0` as healthy. HEALTHY proves the parser RAN, not that every valid booking imported. **Before enabling 3C alerts, `skipped>0` must not be auto-treated as success** — otherwise the same class of silent skip-based data loss is missed. (Recorded in `[[project_parser_canary]]`.)
+**Regression Tests:** `functions/src/parsers/slotTombstone.test.js::isTombstonedBySlot: same slot, DIFFERENT barber → false` + `::legacy barber-less key is IGNORED`.
+**Related:** commits `41e2bc1` (fix) · claim `parser-slot-tombstone-barber` · files `functions/src/parsers/{shared,booksy,fresha,treatwell,ical}.ts` + `slotTombstone.test.js` · follow-up: parser-canary Slice 3C (skipped≠success)
+
+**What happened / Diagnosis / Fix:** parserStats/booksy (whitecross) read `HEALTHY`, `lastRun {examined:10, imported:0, skipped:6}` — parser alive, not crashing, just skipping. Jack (Arda 13:00) present, Lachlan (Alex 13:00) absent. Found the `SLOT-Booksy-23-July-2026-13:00` marker (Jack's externalId). booksy.ts:174 `isTombstonedBySlot(...date,time)` is barber-agnostic → Lachlan matched Jack's slot marker. Static regex test proved the email format (incl. "Standard Packages: Scissor Cut" + a free add-on) parsed fine — the add-on was a red herring. Fixed by making the slot key barber-aware.
+
+**Lessons Learned:**
+- **`skipped>0` ≠ success.** A parser can be HEALTHY (running) while silently dropping valid bookings via dedup. Observability that counts "ran" as "worked" hides data loss — the 3C alert design must separate the two.
+- **Idempotency keys need every varying dimension.** Same time + different barber is valid; a slot key without barber collapses two real bookings into one.
+- **Don't trust the wall clock for causation.** The machine clock was ~1h skewed; the Google audit log (deploy 09:14Z) was the source of truth that (with the untouched-code argument) exonerated the 3B deploy.
+- **3B telemetry paid off same-day:** `examined:10/imported:0/skipped:6` localised this to a skip (not a crash/format break) within minutes.
+
 ## 2026-07-22 — Website booking add-on double-counted at checkout → overcharge + inflated loyalty points
 
 **Severity:** 🔴 Critical (data-money — customer overcharged + loyalty over-credited, shipped live) · **Owner:** owner (spotted the wrong checkout total on a real booking) + Claude · **Status:** ✅ Resolved & DEPLOYED 2026-07-23 (`7d6eb25`; frontend hosting:salown + Ram record repaired) · **Affected area:** checkout total + loyalty earn (CheckoutPanel.tsx, firestoreActions.checkoutBooking)
