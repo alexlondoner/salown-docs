@@ -232,6 +232,7 @@
 ## 🎨 Premium Themes (revenue line)
 
 - 🔵 **F1 per-tenant public site themes** — two drop-in themes (`style.original.css`+`style.premium.css`) local, **NO deploy**. Remaining: live site sync (whitecross-site `siteTheme` onSnapshot+href swap) · panel "Available Themes" (`OnlineProfile.jsx`, Premium-gated) · theme registry · *(code-confirmed: no theme picker in OnlineProfile; whitecross-site hardcoded DEFAULT_THEME.)* Detail: memory `project_premium_themes`.
+- 🔵 **F2 premium custom-domain site = ONE shared template, tenant-agnostic (owner 2026-07-23)** — the custom-domain booking site (`whitecross-site`) must NOT become per-tenant cloned copies; every premium tenant is served by a single tenant-parameterized codebase (reads `TENANT`, no salon hardcoding), so booking logic lives in one place and cannot drift. **Precedent set:** the staff-shift SSOT + 15-min overrun allowance fix (`whitecross-site/script.js` `e0003845`) was written tenant-agnostically for exactly this reason. Note: the salown-hosted booking (`/book/:tenantId`, `BookingPage.tsx`) ALREADY covers all tenants with the same rule (Phase 1) — so a premium tenant on the salown-hosted flow is already correct; F2 only concerns the custom-domain path. Keep the two engines' rules in sync (both reference `STAFF_SHIFT_OVERRUN_ALLOWANCE_MINS`) until they can share source.
 - 💡 **Subdomain themed sites** — `{tenant}.salown.com` themed public site (same infra family as salOWNHub DNS).
 
 ---
@@ -239,6 +240,12 @@
 ## 🏪 Marketplace & Discovery
 
 - 💡 **J1 Trust Score — outcome-based salon ranking** · 🕓 Vision locked (ADR-016, opens when the marketplace phase begins). Ranking in the salown.com consumer marketplace via an internal Trust Score (verified CHECKOUT, repeat-client, no-show behavior, rating consistency, longevity…). Principle: "reward outcomes, not activity" — a structural antidote to Fresha's fake-booking gaming. The score is for internal use. Spec: [DECISIONS.md ADR-016](DECISIONS.md).
+
+---
+
+## 🌍 Internationalization (TR market)
+
+- 💡 **L1 TR localization** — gap analysis ✅ 2026-07-23: zero i18n infra; ~1,500–2,000 hardcoded EN strings, 486 `£`, 110 `'en-GB'`, ~45 `Europe/London`, no tenant `language`/`currency`/`timezone` field (the foundational blocker). Sequence: tenant locale triplet → central money/date formatters (incl. `£`-in-stored-data fix) → i18n + string extraction (customer-facing first) → email `lang` → tz/DST → small items. Minimum TR pilot = locale fields + formatters + booking SPA/email translation (panel may stay EN). Parser explicitly out of TR scope (owner 2026-07-23: no parsers in TR; iCal feed instead). Full analysis: [TR_LOCALIZATION_PLAN.md](TR_LOCALIZATION_PLAN.md).
 
 ---
 
