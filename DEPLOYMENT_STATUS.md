@@ -10,7 +10,7 @@
 > separate `whitecross-site` repo deploy manually**, so code can sit on `origin/main` for days while
 > production runs older behavior. Confusing "merged" with "live" has caused real incidents.
 >
-> **Snapshot date:** 2026-07-24 (revised 16:05 UK during BSP-H1; see the hosting-baseline correction below). Verify against `git log origin/main` + the live system before acting;
+> **Snapshot date:** 2026-07-24 (revised 16:40 UK after Parser-3C landed on `origin/main`; earlier 16:05 revision during BSP-H1, see the hosting-baseline correction below). Verify against `git log origin/main` + the live system before acting;
 > a row here is a claim about a moment, not a standing guarantee.
 
 ---
@@ -78,8 +78,8 @@ owner-gated (state tenant + URL, wait for confirmation).
 | C1 reschedule-guard thread (`salownRescheduleByToken`) | `cb88af0` | salown-app / functions | 🟡 **On origin/main, NOT deployed** | Commit `cb88af0` also threaded the resolved `shiftOverrunAllowanceMins` into the reschedule guard (`functions/src/index.ts:1430`, inside **`salownRescheduleByToken`**), killing the hardcoded `15`. The 2026-07-24 deploy was scoped to `salownCreateBooking` **only**, so this function still runs its **previous** code with the hardcoded `15`. Ship it with the H1/W1 functions rollout. |
 | BSP-H1 hosted booking cutover | `9480185` | salown-app / hosting | 🟡 **On origin/main, NOT deployed** | `BookingPage.tsx` creates via `salownCreateBooking`; legacy direct-create kept behind the build-time switch `src/utils/hostedBookingCutover.ts` (`HOSTED_BOOKING_CREATE_MODE`, default `'callable'`, no automatic fallback). Committed `[skip ci]`, so **no hosting deploy fired**. ⚠️ Because the switch defaults to `callable`, **any** hosting deploy from `main` — including one triggered by unrelated work — ships the cutover. Gate it: `salownRescheduleByToken` targeted functions deploy FIRST, then hosting, announced. Rollback = flip the constant to `'legacy'` + redeploy hosting. |
 | BSP-W1 / R1 | — | salown-app + whitecross-site | ⬜ **Not started** | W1 premium cutover, R1 rules — **explicitly excluded** from the 2026-07-24 C1 deploy and from H1. R1 rules LAST. R1 phase (a) is authored-and-ready work that must land with/before the H1 hosting deploy (see the parent plan). |
-| Parser Canary Slice 3C | — | salown-app / functions | ⬜ **Not started** | Follow-on to 3B; not started. |
-| Super Admin health surface | — | salown-app | ⬜ **Not started** | Not started. |
+| Parser Canary Slice 3C | `308a7c0` | salown-app / functions | 🟡 **On origin/main, NOT deployed** | Reason-coded import outcomes + three-axis health (PARSER_BROKEN / IMPORT_OUTCOME / DATA_LOSS_SIGNAL). **No `index.ts` change** — the ledgers ride the existing `buildParserRun`/`nextHealthFields` wiring, so shipping it is an ordinary targeted parser deploy. Until that deploy lands, production `parserStats` documents carry **no reason-code ledger**, every reader stays on the legacy-compatible path, and the scorer behaves exactly as it does today. **No alert is sent by this slice** (shadow/reporting mode). Deploy = `firebase deploy --only functions:salown:salownParseEmails,functions:salown:salownParseInboxDispatch,functions:salown:salownManualImport --project havuz-44f70` (codebase prefix mandatory — never blanket). |
+| Super Admin health surface | `308a7c0` | salown-app / hosting | 🟡 **On origin/main, NOT deployed** | Per-source import-health panel behind `isSuperAdmin` in Settings → Integrations (`src/components/ParserImportHealthPanel.tsx` + pure presenter `src/utils/parserImportHealth.ts`). Computes `effectiveHealth` at READ time, so a parser that has stopped shows Unknown instead of the frozen green stored `health`. Renders counts/codes only — stored `lastRun.errors` are never shown (they can embed an externalId, and Booksy's fallback externalId is built from the client's name). Ships on the next hosting deploy; **until the functions side deploys it will show legacy documents** (no reason codes), which it labels as such. |
 
 ---
 
@@ -92,6 +92,7 @@ hosting auto-deploy) ships the staff-shift hosting changes with it — sequence 
 - **salown-app staff-shift (functions only)** `e879220` — hosting half is live (see baseline); the server reschedule guard is not.
 - **BSP-I2 frontend** `321ff19` — hosting + staff bundle; ships with the next hosting deploy.
 - **BSP-H1 hosted cutover** `9480185` — hosting; the switch defaults to the callable, so it goes live with any hosting deploy.
+- **Parser Canary 3C** `308a7c0` — functions (parsers) + hosting (Super Admin panel). Low risk: observability only, no parser/dedup behaviour change, no alert. The two halves are **independent but ordered** — ship functions first, else the panel renders every source as a legacy document with no reason codes.
 - **premium staff-shift** `e0003845` — `whitecross-site` separate manual deploy pending.
 - **C1 reschedule-guard thread** `cb88af0` — `salownRescheduleByToken` still on the hardcoded `15`; a targeted single-function deploy left it behind. A targeted deploy ships **only the named function**, even when the same commit changed others.
 
