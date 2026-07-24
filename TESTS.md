@@ -85,7 +85,14 @@ No Emulator/Java REQUIRED; uses the Firebase Rules Test API (token: firebase-too
 python3 docs/test-firestore-rules.py salown-app/firestore.rules
 ```
 
-**Last run: 2026-06-27 → ✅ 49/49 passed** (including G2 + G3 + G1 + G4; `tenantRole` added to mock tokens).
+**Last run: 2026-07-24 → ✅ 131/131 passed** (R1 phase-A added 36 cases on top of the 95/95 baseline).
+
+> **Count history — the `49/49` figure is dead.** `49/49` was the 2026-06-27 G1+G4 run and it
+> lingered in this file, in the `firestore.rules` header and in `firestore.rules.LIVE` long after
+> the suite had grown. The real pre-R1-A baseline was **95/95** (after the S1/staffComp deploy
+> `1474907b`). Corrected here and in `salown-app/firestore.rules` by R1 phase-A (`2a6a641`).
+> `firestore.rules.LIVE` still shows the stale marker **on purpose** — it is a verbatim snapshot of
+> the deployed ruleset and must not be hand-edited; it refreshes on the next rules deploy.
 
 Behaviors covered (run AFTER every rules change + BEFORE deploy):
 - Cross-tenant isolation (WX→HERO read/write/deep/delete → DENY) — Phase 1
@@ -94,6 +101,17 @@ Behaviors covered (run AFTER every rules change + BEFORE deploy):
 - Super-admin (cross-tenant ALLOW, top-level fallback ALLOW; tenant user top-level → DENY)
 - **[G2]** unauth booking read DENY · WX own read ALLOW · cross-tenant read DENY · super ALLOW
 - **[G3]** unauth create + paidAmount/tip/discount DENY · plain create ALLOW · auth+paidAmount ALLOW
+- **[R1-A]** (2026-07-24, 36 cases) anonymous create + each of `clientManualId` / `matchedBy` /
+  `identityLinkedBy` / `identityLinkedAt` / `clientPhoneCanonical` / `emailCanonical` / `note` → DENY,
+  individually and combined · verbatim hosted legacy payload (`BookingPage.tsx:739`, CONFIRMED +
+  PENDING) and verbatim Whitecross premium single + group payloads (`script.js:1462`, `:1695`) →
+  ALLOW · anonymous update adding or modifying any of the seven → DENY (asserts the existing
+  `hasOnly` allowlist) · authenticated staff/admin create with `note` + link fields → ALLOW · staff
+  `BLOCKED` and `Busy` block-time → ALLOW · cross-tenant staff create with staff-only fields → DENY ·
+  **three phase-B guards**: plain anonymous PENDING / CONFIRMED / paymentState creates must stay
+  ALLOW, so an accidental R1 phase-B turns the suite red.
+  ⚠️ The Admin SDK / `salownCreateBooking` callable is deliberately **not** represented — it bypasses
+  rules, so emulating it as a client would assert a permission it never requests.
 
 > ⚠️ **When G4 is applied** (staff catch-all enumeration) new cases to be added to this suite:
 > - [ ] staff (not admin) writing own `staff/{uid}.permissions` → **DENY**

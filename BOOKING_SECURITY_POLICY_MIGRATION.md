@@ -374,7 +374,13 @@ its own files by explicit path** (multi-session repo), log to `salown-app/SYNC.m
 
 ---
 
-### R1 — booking-create-rules
+### R1 — booking-create-rules — phase (a) ✅ IMPLEMENTED 2026-07-24 (`2a6a641`), **NOT deployed** · phase (b) ⬜ blocked
+> Phase (a) is authored and green: `salown-app/firestore.rules` (public create branch) +
+> `docs/test-firestore-rules.py` (`03b5fb3`, 36 new cases, **95/95 → 131/131**). Phase (b) —
+> deny anonymous create outright — **remains blocked on H1 + W1 + E1** and is NOT implemented;
+> the suite carries explicit phase-B guards that turn red if it ever is. No rules deploy has
+> happened; see "Phase (a) implementation record" below for the deploy command and rollback.
+
 - **Scope:** two Firestore-rules changes, **in two gated phases**:
   **(a) reject server-owned fields on public create** — add
   `!request.resource.data.keys().hasAny(['clientManualId','matchedBy','identityLinkedBy','identityLinkedAt'])`
@@ -462,6 +468,123 @@ the stale 49/49 markers):
 **Deploy boundary unchanged:** rules deploy **LAST**, separately, owner-approved; fetch the LIVE ruleset from
 the API first (never trust the file), keep `firestore.rules.ROLLBACK.txt` current. Phase (b) — deny anonymous
 create outright — still requires **H1 + W1 + E1** green.
+
+---
+
+#### R1 phase (a) — implementation record (2026-07-24, `2a6a641` + docs `03b5fb3`)
+
+**Status:** authored, tested, pushed. **NOT deployed.** No Firebase deploy, no production read or write
+was performed in the implementing session.
+
+**Exact Phase-A denylist (7 keys, unchanged from the handoff above):**
+
+```
+clientManualId · matchedBy · identityLinkedBy · identityLinkedAt ·
+clientPhoneCanonical · emailCanonical · note
+```
+
+**Exact clause as landed** — appended to the **public/anonymous** branch of
+`match /tenants/{tenantId}/bookings/{docId}` only, as a **second** `hasAny` so the G3 financial
+clause stays independently readable and independently revertible:
+
+```
+allow create: if isSuperAdmin() || isTenantAny(tenantId) || (
+  request.resource.data.status in ['PENDING', 'CONFIRMED'] &&
+  !request.resource.data.keys().hasAny(['paidAmount', 'discount', 'tip']) &&
+  !request.resource.data.keys().hasAny([
+    'clientManualId', 'matchedBy', 'identityLinkedBy', 'identityLinkedAt',
+    'clientPhoneCanonical', 'emailCanonical', 'note'
+  ])
+);
+```
+
+**Compatibility evidence — full booking-writer inventory.** Every booking-create writer across all
+local repos was enumerated (`addDoc` / `setDoc` / `.add()` against `**/bookings`) before editing:
+
+| Writer | Path | Auth | Rules branch | Writes a forbidden key? |
+|---|---|---|---|---|
+| Hosted legacy public create | `salown-app/src/pages/BookingPage.tsx:739` | anonymous | public | **No** — 23 keys, none forbidden |
+| Hosted H1 callable payload | `salown-app/src/utils/hostedBooking.ts` | anonymous → callable | n/a (Admin SDK) | **No** — 11-key allowlist, pinned by `hostedBooking.test.ts` |
+| Whitecross premium single create | `whitecross-site/script.js:1462` (`writeBookingStatus`) | anonymous | public | **No** |
+| Whitecross premium group create | `whitecross-site/script.js:1695` | anonymous | public | **No** |
+| salOWN admin/staff walk-in · product sale · block-time | `salown-app/src/firestoreActions.ts:360,408,453` | authenticated | `isTenantAny` | Yes (`note`, `clientManualId`, money) — **exempt, unaffected** |
+| Legacy admin panels | `salown-panel/src/firestoreActions.js:259,306,350`; `whitecross-site/barber-panel/src/firestoreActions.js:259,306,350` | authenticated | `isTenantAny` | Yes — **exempt, unaffected** |
+| Legacy barber mobile (walk-in + block) | `whitecross-site/barber-mobile/app.js:510,552,1621,1659` | authenticated | `isTenantAny` | Yes (`note`) — **exempt, unaffected** |
+| `salownCreateBooking` + parsers + backfills | `functions/` (both repos) | Admin SDK | **bypasses rules** | Yes — by design, it is the owner of these fields |
+
+**The one blocker named in the handoff (item 3, W1/premium) is CLEARED.** `whitecross-site/script.js`
+contains no occurrence of `clientManualId`, `matchedBy`, `identityLinkedBy`, `identityLinkedAt`,
+`clientPhoneCanonical`, `emailCanonical`, `clientId` or `phoneCanonical` anywhere. Its only `note`
+occurrences (`:403`, `:421`, `:1103`, `:1111`, `:1130`) are **opening-hours schedule copy** read from
+settings — `note` is never part of a booking payload. Both premium payloads are pinned verbatim as
+ALLOW cases in the harness, so a future premium change that starts sending one turns the suite red.
+
+**Deferred defensive candidates (inventoried, deliberately NOT added):**
+
+| Candidate | Why deferred |
+|---|---|
+| `clientId` | Not a booking field. The callable's identity resolver returns `clientId` internally but persists it to the booking as `clientManualId` (`createBooking.ts:452`). Denying it would guard nothing that is read as linkage. |
+| `phoneCanonical` | A **client-doc** field (`clients/{id}.phoneCanonical`), not a booking field. The booking-level canonical is `clientPhoneCanonical`, which **is** in the denylist. |
+| identity conflict / audit fields | Not booking fields. `BOOKING_IDENTITY_CONFLICT` is written to `auditLogs` after commit (`createBooking.ts`), a collection with its own rule. |
+| `paymentState` / `paymentType` / `source` | **Must stay writable** — the premium site sends all three on public create. Deliberately free since G3; do not branch on `source` (handoff §9.3 sharp edge 1). |
+
+All three deferred keys are already refused by the callable (`FORBIDDEN_INPUT_KEYS`,
+`createBooking.ts:97-98`), so the create-side gap they would cover does not exist today. Revisit
+only if a booking-level reader for them appears.
+
+**Tests:** `docs/test-firestore-rules.py`, **95/95 → 131/131** (36 added). Covers: both hosted legacy
+payloads (CONFIRMED + PENDING) and both premium payloads verbatim; each of the 7 keys denied
+individually; all 7 at once; forbidden-key + money-field; anonymous update ADDING each of the 7 and
+MODIFYING an existing `clientManualId` (asserting the existing `hasOnly` allowlist, no new clause);
+G3 `paidAmount`/`discount`/`tip` regression pins; authenticated staff/admin create with `note` +
+link fields; staff `BLOCKED` and `Busy` block-time records; cross-tenant staff create carrying
+staff-only fields; and three **phase-B guards** proving plain anonymous create still succeeds.
+
+**Admin SDK is not emulated.** The Rules Test API only models rule-evaluated requests; the callable
+bypasses rules entirely. A case impersonating it as an anonymous or authenticated client would assert
+a permission it never requests and pass for the wrong reason. This is documented inline in the
+harness; the callable's own guarantees live in the functions tests.
+
+**One test expectation was corrected, not the rules.** A *plain* cross-tenant authenticated create
+(no money/link/`note` keys) is **ALLOWED** — it satisfies the **public** branch exactly as any
+stranger's create would, and never reaches the tenant branch. That is pre-existing and by design
+while public create is open; it is precisely what phase (b) closes. The meaningful cross-tenant
+assertion — a cross-tenant caller carrying a staff-only field — is DENY and is pinned.
+
+**Exact rules deployment command (later, owner-gated, rules LAST):**
+
+```bash
+cd ~/Desktop/alex/salown-app
+firebase deploy --only firestore:rules --project havuz-44f70
+```
+
+Pre-deploy checklist (`INV-SEC-4`, `feedback_firestore_rules_safety`):
+1. Announce tenant + URL, wait for owner confirmation.
+2. **Fetch the LIVE ruleset from the API first** — never trust `firestore.rules.LIVE`, which is a
+   snapshot file and currently still carries a stale `49/49` marker.
+3. Re-run `python3 docs/test-firestore-rules.py salown-app/firestore.rules` → expect **131/131**.
+4. Refresh `docs/firestore.rules.ROLLBACK.txt` with the **current** live ruleset id before deploying.
+   ⚠️ That file is **stale**: it still names the E1b ruleset at `81/81`, predating the S1/staffComp
+   deploy (`1474907b`) that took live to `95/95`. It must be corrected at deploy time with the id
+   read from the API.
+5. Deploy order stays functions → hosting → **rules LAST**.
+
+**Rollback procedure (phase (a)):**
+
+```bash
+cd ~/Desktop/alex/salown-app
+git show 2a6a641~1:firestore.rules > firestore.rules      # restore the 95/95 ruleset
+python3 ../docs/test-firestore-rules.py salown-app/firestore.rules   # expect 95/95 minus R1-A cases
+firebase deploy --only firestore:rules --project havuz-44f70          # owner-gated
+```
+
+Or, if already deployed, roll forward to the previously live ruleset id recorded in
+`firestore.rules.ROLLBACK.txt` at that time. The change is a single additive clause on one branch,
+so reverting it cannot affect any other collection or permission.
+
+**Phase (b) remains BLOCKED** on **H1 + W1 + E1** (locked decision 18). H1 is implemented but not
+deployed; W1 has not started; E1 has not started. The three phase-B guard cases exist specifically
+so that an accidental phase-B implementation fails the suite instead of silently shipping.
 
 ---
 
