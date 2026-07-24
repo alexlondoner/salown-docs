@@ -141,6 +141,145 @@ cases=[
  case("S1: catch-all regresyon — admin rastgele koleksiyon read hâlâ ALLOW","ALLOW",req("get","/tenants/whitecross/someRandomColl/x1",WX),{"a":1}),
  case("S1: catch-all regresyon — admin derin path read hâlâ ALLOW","ALLOW",req("get","/tenants/whitecross/someColl/x1/sub/y1",WX),{"a":1}),
  case("S1: catch-all write hâlâ kapalı — admin rastgele koleksiyon write DENY","DENY",req("update","/tenants/whitecross/someRandomColl/x1",WX,{"a":2}),{"a":1}),
+ # ══════════════════════════════════════════════════════════════════════════════
+ # [R1-A] (2026-07-24) BOOKING_SECURITY_POLICY_MIGRATION §R1 phase (a).
+ #   Anonymous booking create may not forge SERVER-OWNED identity/linkage fields.
+ #   Anonymous create itself STAYS ALLOWED (locked decision 18) — phase (b) is a
+ #   SEPARATE, later change gated on H1 + W1 + E1. The "phase-B not implemented"
+ #   guards at the bottom of this block pin that.
+ #
+ #   ⚠️ Callable / Admin SDK (salownCreateBooking) is the writer of these fields and
+ #   BYPASSES Firestore rules entirely. It therefore CANNOT be represented here —
+ #   the Rules Test API only models rule-evaluated requests. Do NOT add a case that
+ #   emulates the callable as an anonymous or authenticated client: it would assert
+ #   a permission the callable never asks for and would go green for the wrong
+ #   reason. The callable's own guarantees are covered by its functions tests
+ #   (functions/src/bookings/createBooking.ts FORBIDDEN_INPUT_KEYS + its test file).
+ # ══════════════════════════════════════════════════════════════════════════════
+ # Baseline compatibility — the EXACT payloads the two live public writers send today.
+ # Hosted legacy direct-create — src/pages/BookingPage.tsx:739 (verbatim key set).
+ *[case("R1-A compat: hosted legacy public create (BookingPage.tsx:739 payload) → ALLOW","ALLOW",
+        req("create","/tenants/whitecross/bookings/wb1",None,{
+          "bookingId":"WEB-1753370000-ab12","clientName":"Alexandre","name":"Alexandre",
+          "clientEmail":"alex@example.com","clientPhone":"07700900123","service":"Skin Fade",
+          "serviceId":"svc-1","variationId":None,"date":"2026-07-25","time":"3:30 PM",
+          "duration":30,"price":25,"barber":"Alex","barberId":"barber-1777257519766",
+          "barberName":"Alex","barberSelection":"customer","barberAutoAssigned":False,
+          "startTime":"2026-07-25T14:30:00Z","endTime":"2026-07-25T15:00:00Z",
+          "source":"Salown","status":s,"expiresAt":None,"createdAt":"2026-07-24T17:00:00Z"}))
+   for s in ["CONFIRMED","PENDING"]],
+ # Whitecross premium single create — whitecross-site/script.js:1462 writeBookingStatus().
+ case("R1-A compat: Whitecross premium single create (script.js:1462 payload) → ALLOW","ALLOW",
+      req("create","/tenants/whitecross/bookings/WCB-1753370001",None,{
+        "bookingId":"WCB-1753370001","tenantId":"whitecross","clientName":"Alexandre",
+        "clientEmail":"alex@example.com","clientPhone":"07700900123","barberId":"barber-1",
+        "barberName":"Alex","barberAutoAssigned":False,"barberSelection":"customer",
+        "serviceId":"svc-1","duration":30,"date":"2026-07-25","time":"3:30 PM",
+        "startTime":"2026-07-25T14:30:00Z","endTime":"2026-07-25T15:00:00Z","status":"PENDING",
+        "paymentType":"DEPOSIT","paymentState":"PENDING","source":"Website",
+        "updatedAt":"2026-07-24T17:00:00Z",
+        "soldAddOns":[{"serviceId":"svc-2","name":"Beard","price":10,"qty":1,"duration":15}],
+        "pendingCreatedAt":"2026-07-24T17:00:00Z","expiresAt":"2026-07-24T17:15:00Z"})),
+ # Whitecross premium GROUP create — whitecross-site/script.js:1695 (group payload).
+ case("R1-A compat: Whitecross premium GROUP create (script.js:1695 payload) → ALLOW","ALLOW",
+      req("create","/tenants/whitecross/bookings/WCB-1753370002",None,{
+        "bookingId":"WCB-1753370002","tenantId":"whitecross","name":"Alexandre",
+        "email":"alex@example.com","phone":"07700900123","clientName":"Alexandre",
+        "clientEmail":"alex@example.com","clientPhone":"07700900123","date":"2026-07-25",
+        "time":"3:30 PM","barber":"barber-1","barberId":"barber-1","barberName":"Alex",
+        "barberAutoAssigned":True,"barberSelection":"auto","service":"svc-1","serviceId":"svc-1",
+        "price":50,"servicePrice":25,"depositPerPerson":10,"startTime":"2026-07-25T14:30:00Z",
+        "endTime":"2026-07-25T15:00:00Z","status":"PENDING","paymentType":"DEPOSIT",
+        "paymentState":"PENDING","source":"Website","groupId":"grp-1","groupSize":2,
+        "groupLead":True,"groupIndex":0,"pendingCreatedAt":"2026-07-24T17:00:00Z",
+        "expiresAt":"2026-07-24T17:15:00Z","updatedAt":"2026-07-24T17:00:00Z"})),
+ # Each forbidden key, individually, on an otherwise-legitimate anonymous payload.
+ *[case(f"R1-A: UNAUTH create + {k} → DENY","DENY",
+        req("create","/tenants/whitecross/bookings/fb1",None,
+            {"status":"PENDING","clientName":"Alexandre","clientEmail":"alex@example.com",
+             "clientPhone":"07700900123","source":"Website", k:v}))
+   for k,v in [("clientManualId","client-999"),("matchedBy","email_and_phone"),
+               ("identityLinkedBy","server"),("identityLinkedAt","2026-07-24T17:00:00Z"),
+               ("clientPhoneCanonical","447700900123"),("emailCanonical","alex@example.com"),
+               ("note","Busy")]],
+ # Multiple forbidden keys at once.
+ case("R1-A: UNAUTH create + ALL 7 forbidden keys → DENY","DENY",
+      req("create","/tenants/whitecross/bookings/fb2",None,{
+        "status":"PENDING","clientName":"Alexandre","clientManualId":"client-999",
+        "matchedBy":"email_and_phone","identityLinkedBy":"server",
+        "identityLinkedAt":"2026-07-24T17:00:00Z","clientPhoneCanonical":"447700900123",
+        "emailCanonical":"alex@example.com","note":"Quick block"})),
+ case("R1-A: UNAUTH create + link field + money field → DENY (both clauses hold)","DENY",
+      req("create","/tenants/whitecross/bookings/fb3",None,
+          {"status":"PENDING","clientManualId":"client-999","paidAmount":999})),
+ # Update branch: already an hasOnly allowlist — ASSERTED, not re-clauses (plan §R1(a)).
+ *[case(f"R1-A: UNAUTH update adding {k} → DENY (update allowlist holds)","DENY",
+        req("update","/tenants/whitecross/bookings/b1",None,
+            {"clientEmail":"a@b.com","bookingId":"WCB-1","status":"CANCELLED", k:v}),
+        {"clientEmail":"a@b.com","bookingId":"WCB-1","status":"CONFIRMED"})
+   for k,v in [("clientManualId","client-999"),("matchedBy","phone"),
+               ("identityLinkedBy","server"),("identityLinkedAt","2026-07-24T17:00:00Z"),
+               ("clientPhoneCanonical","447700900123"),("emailCanonical","alex@example.com"),
+               ("note","Busy")]],
+ case("R1-A: UNAUTH update MODIFYING an existing clientManualId → DENY","DENY",
+      req("update","/tenants/whitecross/bookings/b1",None,
+          {"clientEmail":"a@b.com","bookingId":"WCB-1","clientManualId":"attacker-1"}),
+      {"clientEmail":"a@b.com","bookingId":"WCB-1","clientManualId":"client-999"}),
+ # G3 financial protection unchanged by the new clause (regression, all three keys).
+ *[case(f"R1-A regression: UNAUTH create + {k} still → DENY (G3 intact)","DENY",
+        req("create","/tenants/whitecross/bookings/fb4",None,{"status":"PENDING", k:1}))
+   for k in ["paidAmount","discount","tip"]],
+ # Authenticated staff/admin surfaces are on the isTenantAny() branch — UNAFFECTED.
+ case("R1-A: STAFF create walk-in w/ note + clientManualId + paidAmount → ALLOW","ALLOW",
+      req("create","/tenants/whitecross/bookings/sb1",WXSTAFF,{
+        "bookingId":"WCB-1753370003-x1","clientName":"Alexandre","clientManualId":"client-999",
+        "matchedBy":"manual_id","identityLinkedBy":"staff:wxs","identityLinkedAt":"2026-07-24T17:00:00Z",
+        "clientPhoneCanonical":"447700900123","emailCanonical":"alex@example.com",
+        "note":"regular — no.3 back and sides","status":"CONFIRMED","paidAmount":25,
+        "source":"Walk-in","bookingType":"walkin"})),
+ case("R1-A: ADMIN create booking w/ note + link fields → ALLOW","ALLOW",
+      req("create","/tenants/whitecross/bookings/sb2",WX,{
+        "clientName":"Alexandre","clientManualId":"client-999","note":"call before",
+        "status":"CONFIRMED"})),
+ # Staff BLOCKED / Busy block-time records — `note` carries the reserved semantics.
+ case("R1-A: STAFF create BLOCKED block-time (note='Blocked') → ALLOW","ALLOW",
+      req("create","/tenants/whitecross/bookings/blk1",WXSTAFF,{
+        "bookingId":"BLOCKED-1753370004-x1","barberId":"Alex","barberName":"Alex",
+        "status":"BLOCKED","startTime":"2026-07-25T14:30:00Z","endTime":"2026-07-25T15:00:00Z",
+        "note":"Blocked","source":"block","blockKind":"block"})),
+ case("R1-A: STAFF create Busy quick-block (note='Busy') → ALLOW","ALLOW",
+      req("create","/tenants/whitecross/bookings/blk2",WXSTAFF,{
+        "bookingId":"BLOCKED-1753370005-x1","barberId":"Alex","barberName":"Alex",
+        "status":"BLOCKED","startTime":"2026-07-25T14:30:00Z","endTime":"2026-07-25T15:00:00Z",
+        "note":"Busy","source":"block","blockKind":"busy"})),
+ case("R1-A: UNAUTH create BLOCKED status → DENY (status gate, pre-existing)","DENY",
+      req("create","/tenants/whitecross/bookings/blk3",None,{
+        "status":"BLOCKED","barberId":"Alex","source":"block"})),
+ # Cross-tenant staff — the new clause must not weaken tenant isolation.
+ case("R1-A: WXSTAFF → HERO booking create → DENY (cross-tenant)","DENY",
+      req("create","/tenants/herohairs/bookings/xt1",WXSTAFF,{
+        "status":"CONFIRMED","clientName":"x","note":"n","clientManualId":"client-999"})),
+ # Truth-pinning, NOT a weakening: a PLAIN cross-tenant create is allowed because it
+ # satisfies the PUBLIC branch (status in PENDING/CONFIRMED, no money/link/note keys) —
+ # exactly as any anonymous stranger's create would. It never reaches the tenant branch.
+ # This is pre-existing, by design while public create is open, and is what R1 phase (b)
+ # closes. The DENY case above is the meaningful one: the moment a cross-tenant caller
+ # carries a staff-only field, the public branch rejects it and the tenant branch fails.
+ case("R1-A: WX(admin) → HERO plain create → ALLOW via PUBLIC branch (phase-b closes it)","ALLOW",
+      req("create","/tenants/herohairs/bookings/xt2",WX,{"status":"CONFIRMED","clientName":"x"})),
+ case("R1-A: WX(admin) → HERO create w/ note → DENY (public branch rejects, tenant fails)","DENY",
+      req("create","/tenants/herohairs/bookings/xt3",WX,{"status":"CONFIRMED","note":"n"})),
+ case("R1-A: WXSTAFF → HERO booking read → DENY (cross-tenant regression)","DENY",
+      req("get","/tenants/herohairs/bookings/b1",WXSTAFF),{"clientName":"x"}),
+ # PHASE-B GUARD — anonymous direct create must REMAIN available (locked decision 18).
+ # If any of these three flips to DENY, phase (b) has been implemented by accident.
+ case("R1-A phase-B guard: UNAUTH plain PENDING create → still ALLOW","ALLOW",
+      req("create","/tenants/whitecross/bookings/pb1",None,{"status":"PENDING"})),
+ case("R1-A phase-B guard: UNAUTH plain CONFIRMED create → still ALLOW","ALLOW",
+      req("create","/tenants/whitecross/bookings/pb2",None,{"status":"CONFIRMED"})),
+ case("R1-A phase-B guard: UNAUTH create w/ paymentState/paymentType → still ALLOW","ALLOW",
+      req("create","/tenants/whitecross/bookings/pb3",None,{
+        "status":"PENDING","paymentState":"PENDING","paymentType":"DEPOSIT"})),
 ]
 url="https://firebaserules.googleapis.com/v1/projects/havuz-44f70:test"
 body={"source":{"files":[{"name":"firestore.rules","content":RULES}]},
