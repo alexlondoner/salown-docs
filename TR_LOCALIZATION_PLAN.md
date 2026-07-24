@@ -4,13 +4,36 @@
 > **Goal:** make salOWN usable by a Turkish salon (Turkish UI, ₺/TRY, `Europe/Istanbul`, 24-hour time, Turkish emails).
 > **Method:** two parallel code-audit agents (frontend `src/` + `src/staff/`; backend `functions/src/` + `hosting/`), 2026-07-23.
 
+> **⚠️ Scope of this document — localization foundation only.**
+> This plan covers the **i18n / localization foundation** (tenant locale triplet, string/date/money
+> extraction, TR email catalog, timezone). It is **not** the complete Turkey product roadmap — market
+> entry (a `/tr/` marketing tree, KVKK legal, a TR-resident PSP such as iyzico/PayTR, TR go-to-market,
+> pricing, support) is out of scope here and lives with product/company planning. Read this as
+> "what the code needs before a Turkish salon can use the product," not "everything Turkey needs."
+>
+> **The audit counts below are a point-in-time diagnostic snapshot taken 23 July 2026, not invariants.**
+> They quantify the hardcoding backlog as it stood on that date to size the work; they are expected to
+> drift as the codebase changes and must **not** be cited as fixed contracts, thresholds, or acceptance
+> criteria. Re-grep before relying on any specific number.
+>
+> **Turkey market position (owner decision, 2026-07-23) — locked context, not an implementation trigger:**
+> - **TR tenants start without parsers.** No Turkish tenant uses the email-parser pipeline (Booksy/Fresha/
+>   Treatwell); see §3.4.
+> - **salOWN is the single booking source of truth (SSOT)** for the TR market — bookings originate in salOWN.
+> - **Existing UK parser support remains** unchanged; this is a TR-market carve-out, not a removal.
+> - **Existing iCal-out may be offered** to TR tenants for onboarding — a one-way feed into Google/Apple
+>   Calendar for tenants who keep another calendar. (This reuses the existing `salownIcalFeed` outbound
+>   path; no new parser or two-way sync.)
+>
+> **No Turkey implementation begins from this document.** It is analysis + sequence only.
+
 ---
 
 ## TL;DR
 
 The app has **zero localization infrastructure**. There is no i18n library, no central strings file, no `navigator.language` detection (the "follows browser language" impression is false — every date format is hardcoded `'en-GB'`). Making the app usable in Turkish is **not a config toggle; it is a from-scratch i18n build**.
 
-Scale of the hardcoding:
+Scale of the hardcoding *(point-in-time snapshot, 23 July 2026 — diagnostic sizing only, not invariants; re-grep before relying on any figure)*:
 
 | Metric | Count |
 |---|---|
