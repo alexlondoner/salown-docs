@@ -17,7 +17,8 @@ user/email/parser data with raw `===`.
 | **Booking source** | `normalizeBookingSource()` | `src/utils/bookingUtils.js:7` | `'website'/'direct'/'app'` → canonical (`'salOWN'`, `'Client App'` …) | `'website'` vs `'Website'` casing → cancel/cleanup not working |
 | **Booking status** | `normalizeBookingStatus()` | `src/utils/bookingUtils.js:19` | converts to UPPERCASE | `'checked_out'` from import ≠ `'CHECKED_OUT'` |
 | **Barber** | `barberKey()` | `src/utils/barberUtils.js:25` | `trim().toLowerCase()` | walk-in = lowercase name, online = doc id; must match id OR name |
-| **Phone** | `normalizePhone()` | `src/pages/Clients.jsx:220` | strip whitespace/`-()+`, last 10 digits | UK formats (`+44`, `0…`, spaced) different strings → duplicate client |
+| **Phone (canonical — identity matching)** | `canonicalUkPhone()` | `src/utils/ukPhone.ts` + mirror `functions/src/clients/ukPhone.ts` (parity-tested vs `salown-app/test/fixtures/ukPhoneGolden.json`) | strip non-digits; `00…`→`…`; `0`+10 → `44`+10; `44`+10 unchanged; else digits as-is; **`''` if <7 digits (never matches)** | `+447429416291` vs `07429416291` treated as two people → duplicate client, lost loyalty/history (I1, 2026-07-24). UK-only; bare 10-digit `7…` (no leading 0) is NOT folded |
+| **Phone (legacy last-10)** | `normalizePhone()` | `src/pages/Clients.jsx:220` | strip whitespace/`-()+`, last 10 digits | UK formats (`+44`, `0…`, spaced) different strings → duplicate client. ⚠️ Superseded by `canonicalUkPhone` for identity matching; `redemptionKey()` (persisted discount keys) DELIBERATELY stays last-10 forever |
 | **Email** | `.toLowerCase().trim()` | `src/firestoreActions.js` (dedup) | lowercase + trim | `Alex@x.com` ≠ `alex@x.com` → duplicate / merge fails |
 | **Name (accent)** | `stripAccents()` | `src/firestoreActions.js:10` | NFD + U+0300–U+036F strip (`Zorić`→`Zoric`) | accented Booksy name ≠ direct record → history split |
 | **Name (rename)** | `_origName`-prioritized match | `whitecross-site` Clients | binds a renamed client to bookings | "Ozcem" → "OZCEM delibas" history loss on rename |
@@ -75,7 +76,7 @@ Capitalized key; `getAvailableBarbersForDate`'s `barber.dayHours`/
 | **Price** | convert to number: strip `£`, comma, whitespace → `parseFloat`; **compare numerically** | `£28` = `28` = `28.00` = `28,00` |
 | **Accent** | `stripAccents()` (NFD + diacritic strip) | `Zorić` = `Zoric` |
 | **Name** | lowercase + trim + accent strip + multiple whitespace → single | `Damian  Adams-Peatling` = `damian adams-peatling` |
-| **Phone** | strip everything non-digit → **last 10 digits** (primary) | `+44 7700 900123` = `07700900123` |
+| **Phone** | `canonicalUkPhone()` (since I1, 2026-07-24): strip non-digit, `00`-prefix strip, `0`+10 → `44`+10, `<7` digits → no identity | `+44 7700 900123` = `07700900123` = `447700900123` (all → `447700900123`) |
 
 ### ⚠️ Phone "last 4 digits" — CAUTION (engineering warning)
 Last 4 digits = only 10,000 combinations. In a salon with hundreds of customers a **collision is nearly certain**
