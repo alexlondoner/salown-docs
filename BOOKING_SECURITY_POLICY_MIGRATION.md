@@ -318,7 +318,18 @@ its own files by explicit path** (multi-session repo), log to `salown-app/SYNC.m
 
 ---
 
-### H1 — hosted-booking-cutover
+### H1 — hosted-booking-cutover — ✅ IMPLEMENTED 2026-07-24 (`9480185`), **NOT deployed**
+> Implemented: `src/pages/BookingPage.tsx` + new `src/utils/hostedBooking.ts` (payload allowlist, idempotency
+> lifecycle, reason→copy mapping, submitter) + `src/utils/hostedBookingCutover.ts`
+> (`HOSTED_BOOKING_CREATE_MODE`, the single reviewable rollback switch, default `'callable'`) +
+> `src/utils/hostedBooking.test.ts` (34 tests). Legacy direct-create preserved but reachable ONLY through
+> that build-time switch — no rejection, permission error, server error or network timeout falls back to it.
+> Advisory constants swapped for the P1 resolver **in `BookingPage` only**; the admin/staff advisory
+> call-sites (`BookingForm`, `WalkInForm`, `BookingDetailPanel`, `staffAvailability`) and the
+> `ManageBooking.tsx:352,372` cutoff copy are **still on the constants** and remain open H1 follow-ups.
+> Deploy gate: `salownRescheduleByToken` targeted functions deploy must land FIRST (it still runs the
+> hardcoded 15). See `DEPLOYMENT_STATUS.md`.
+
 - **Scope:** `BookingPage.tsx` (hosted SPA) creates via `salownCreateBooking` **instead of** `addDoc`;
   swap the advisory constants (`15`/`30`/interval) for **resolved** values across the advisory call-sites;
   fix stale customer-facing cutoff copy in `ManageBooking.tsx:352,372`. Direct-create path **stays allowed**
@@ -395,6 +406,62 @@ its own files by explicit path** (multi-session repo), log to `salown-app/SYNC.m
   new total.
 - **Rollback gate:** phase (b) deploys **only** after E1 proves hosted+premium+payment E2E; if E1 is not
   green, phase (b) does not ship (phase (a) may still stand). Keep `firestore.rules.ROLLBACK.txt` current.
+
+---
+
+#### R1 phase (a) — EXACT handoff, prepared by H1 (2026-07-24)
+
+H1 is implemented (`9480185`, not deployed). The hosted client no longer sends any server-owned field, so
+phase (a) now forbids only fields **no legitimate public client sends** and can be authored immediately.
+
+**Rejected keys on anonymous booking `create` (the exact set):**
+
+```
+clientManualId · matchedBy · identityLinkedBy · identityLinkedAt ·
+clientPhoneCanonical · emailCanonical · note
+```
+
+**Rule clause** (create branch of `match /tenants/{tenantId}/bookings/{bookingId}`):
+
+```
+&& !request.resource.data.keys().hasAny([
+     'clientManualId','matchedBy','identityLinkedBy','identityLinkedAt',
+     'clientPhoneCanonical','emailCanonical','note'
+   ])
+```
+
+**Why each key is safe to forbid on the public create branch:**
+
+| Key | Written by | Public sender today |
+|---|---|---|
+| `clientManualId`, `matchedBy`, `identityLinkedBy`, `identityLinkedAt` | `salownCreateBooking` only (Admin SDK, rules bypassed) | none — H1 payload excludes them; the callable rejects them as `INVALID_INPUT` |
+| `clientPhoneCanonical`, `emailCanonical` | same (stamped only on a safe identity match) | none |
+| `note` | admin/staff surfaces | none — and `note` carries reserved block-time semantics (`'Busy'`, `'Quick block'` in `BookingDetailPanel`), so a public `note` could masquerade a booking as a staff block |
+
+**Dependencies / order (all satisfied except the deploy gates):**
+
+1. **C1 deployed** — ✅ live since 2026-07-24 (the callable is the writer of these fields).
+2. **H1 payload proven clean** — ✅ pinned by tests: `hostedBooking.test.ts` asserts the 11-key allowlist and
+   the absence of every key above (`note` included).
+3. **W1 (premium) must be checked before deploy** — `whitecross-site` still direct-creates. Confirm its
+   payload sends none of the seven keys, or phase (a) breaks premium bookings. **This is the one open
+   blocker for phase (a).**
+4. **Staff/admin writes are authenticated** — the clause must sit on the **public/anonymous** create branch
+   only; authenticated staff create legitimately carries `note` and (via S1) identity markers.
+
+**Rules-test additions** (`docs/test-firestore-rules.py`, build the new total from the live **95/95**, and fix
+the stale 49/49 markers):
+
+- anonymous create + each of the seven keys ⇒ **DENY** (7 cases)
+- anonymous create, normal hosted payload (`status:PENDING`, contact, no forbidden keys) ⇒ **ALLOW**
+- anonymous create, `whitecross-site` payload incl. `paymentState`/`paymentType` ⇒ **ALLOW**
+- authenticated staff create carrying `note` + a link field ⇒ **ALLOW**
+- public update changing any link field ⇒ **DENY** (the update branch is already an `hasOnly` allowlist —
+  assert it rather than adding a clause)
+
+**Deploy boundary unchanged:** rules deploy **LAST**, separately, owner-approved; fetch the LIVE ruleset from
+the API first (never trust the file), keep `firestore.rules.ROLLBACK.txt` current. Phase (b) — deny anonymous
+create outright — still requires **H1 + W1 + E1** green.
 
 ---
 
