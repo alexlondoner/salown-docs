@@ -1,7 +1,25 @@
-# Rollback notu (güncel: 2026-07-11 — E1b owner-delete)
-# CANLI ruleset: 1a818130-0383-40e9-bf1e-765ba805a254 (E1b: delete = super-admin || same-tenant owner, test 81/81)
-# ÖNCEKİ ruleset: a55f2e8c-3b72-4a30-9c7f-43e4d1cc3b70 (delete = super-admin only, test 65/65)
-# Geri dönüş: git'te firestore.rules'ı 8670051 öncesine çek (git show 8670051~1:firestore.rules > firestore.rules)
-# → python3 docs/test-firestore-rules.py salown-app/firestore.rules (65/65 beklenir)
-# → firebase deploy --only firestore:rules --project havuz-44f70
-# Daha eski geçmiş: git log --oneline -- firestore.rules (salown-app repo)
+# Rollback note (updated 2026-07-25 — R1 phase-A booking-create denylist)
+#
+# Live ruleset id is fetched from the API, never trusted from this file. Recorded here
+# as the authoritative rollback reference at the moment of the R1-A deploy.
+#
+# ROLLBACK TARGET (the pre-R1-A live ruleset to restore):
+#   1474907b-af60-4bb4-a54a-8026c6c61273
+#   (S1/staffComp deploy baseline; rules test 95/95; updated 2026-07-15)
+#
+# CURRENT live ruleset after R1-A deploy:
+#   <to be filled with the new ruleset id post-deploy>
+#   (R1 phase-A: anonymous booking create rejects 7 server-owned identity/linkage keys
+#    clientManualId, matchedBy, identityLinkedBy, identityLinkedAt, clientPhoneCanonical,
+#    emailCanonical, note; anonymous create itself stays ALLOWED; rules test 131/131)
+#
+# Rollback procedure (restore the pre-R1-A ruleset):
+#   cd ~/Desktop/alex/salown-app
+#   git show 2a6a641~1:firestore.rules > firestore.rules      # restores the 95/95 ruleset
+#   python3 ../docs/test-firestore-rules.py salown-app/firestore.rules   # expect 95/95 minus R1-A cases
+#   firebase deploy --only firestore:rules --project havuz-44f70          # owner-gated, rules LAST
+#
+# Historical rulesets:
+#   1a818130-0383-40e9-bf1e-765ba805a254 (E1b: delete = super-admin || same-tenant owner, test 81/81, 2026-07-11)
+#   a55f2e8c-3b72-4a30-9c7f-43e4d1cc3b70 (delete = super-admin only, test 65/65)
+# Deeper history: git log --oneline -- firestore.rules (salown-app repo)
