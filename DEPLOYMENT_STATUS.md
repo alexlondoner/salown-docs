@@ -10,7 +10,7 @@
 > separate `whitecross-site` repo deploy manually**, so code can sit on `origin/main` for days while
 > production runs older behavior. Confusing "merged" with "live" has caused real incidents.
 >
-> **Snapshot date:** 2026-07-24 (revised 16:40 UK after Parser-3C landed on `origin/main`; earlier 16:05 revision during BSP-H1, see the hosting-baseline correction below). Verify against `git log origin/main` + the live system before acting;
+> **Snapshot date:** 2026-07-26 19:45 UK (previous revision 2026-07-24 16:40 UK after Parser-3C landed on `origin/main`; earlier 16:05 revision during BSP-H1, see the hosting-baseline correction below). Verify against `git log origin/main` + the live system before acting;
 > a row here is a claim about a moment, not a standing guarantee.
 
 ---
@@ -72,11 +72,20 @@ owner-gated (state tenant + URL, wait for confirmation).
 >
 > **Still undeployed after this wave:** BSP-W1 premium cutover (⬜ not started), E1 payment E2E (⬜ not started), R1 **phase (b)** deny-anonymous-create (⬜ blocked on W1+E1). Premium staff-shift (`whitecross-site` `e0003845`) still pending its separate manual deploy.
 
-## Superseded snapshot (2026-07-24, rev. 13:22 UK)
+## 2026-07-26 — Booking Detail extras/price fix (hosting only)
+
+> Single-target manual deploy, project `havuz-44f70`, salown-app HEAD `f30ae4a`. No functions, no rules,
+> no `salown-staff`. Push carried `[skip ci]` on HEAD so CI's blanket `--only hosting` never fired —
+> confirmed by the release list (exactly one new `salown` release, `salown-staff` untouched since 07-24).
 
 | Item | Commit(s) | Repo / target | State | Notes |
 |---|---|---|---|---|
 | Booking Detail extras → folded `price` fix | `694c2bb` | salown-app / hosting | ✅ **Deployed + live-verified** | Deployed 2026-07-26 18:39Z, `firebase deploy --only hosting:salown --project havuz-44f70` (NOT `--only hosting`). Live bundle `index-D0JrelmL.js` == local build of HEAD `f30ae4a`; release `1785091173083000`; exactly one new release; `salown-staff` release ID + timestamp unchanged. Gates before deploy: clean tree, `main == origin/main`, zero active claims, 266/266 vitest, typecheck clean, Vite build ok, `diff --check` clean, 5/5 price-arithmetic scenarios. Prod writes during deploy+verification = 0 (Sanga's record re-read only: CHECKED_OUT, £32 total = £10 deposit + £22 at venue, `soldAddOns` []). Functions + rules untouched. See INCIDENTS 2026-07-26. |
+
+## Superseded snapshot (2026-07-24, rev. 13:22 UK)
+
+| Item | Commit(s) | Repo / target | State | Notes |
+|---|---|---|---|---|
 | Booksy barber slot-tombstone fix | `41e2bc1` | salown-app / functions | ✅ **Deployed + live-verified** | Parser slot-tombstone barber fix; deployed and verified live. |
 | Parser Canary Slice 3B | `7d6eb25` | salown-app / functions | ✅ **Deployed + live** | Canary persist slice, live. ⚠️ Commit `7d6eb25`'s message is the **2026-07-23 website add-on release** (`fix(checkout+grid+email): website add-on…`) — the combined functions/hosting deploy at that commit is what carried the persisted-canary slice live, superseding the earlier "3B persist not deployed" note. Confirm with owner if the 3B label should point at slice commit `381477b` instead. |
 | salown-app staff-shift work — **hosting half** | `847e8f6`, `9bb65ed` (+ `8ddd91a`…`9c8ef84`) | salown-app / hosting | ✅ **Deployed + live-verified** | **Row corrected 2026-07-24 16:05.** Effective-shift SSOT + 15-min overrun allowance are LIVE in the `salown` bundle. Basis: live JS carries the resolver reason strings and its `BookingForm` chunk is byte-identical to a post-allowance build (see "Hosting baseline" above). |
