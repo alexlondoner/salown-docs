@@ -8,7 +8,7 @@
 #   (S1/staffComp deploy baseline; rules test 95/95; updated 2026-07-15)
 #
 # CURRENT live ruleset after R1-A deploy:
-#   <to be filled with the new ruleset id post-deploy>
+#   323f1726-f6bf-4d6e-b9b9-24e152f6e494  (deployed 2026-07-25T19:14:08Z)
 #   (R1 phase-A: anonymous booking create rejects 7 server-owned identity/linkage keys
 #    clientManualId, matchedBy, identityLinkedBy, identityLinkedAt, clientPhoneCanonical,
 #    emailCanonical, note; anonymous create itself stays ALLOWED; rules test 131/131)
