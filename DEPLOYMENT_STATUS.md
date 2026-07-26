@@ -15,20 +15,27 @@
 
 ---
 
-## Hosting baseline — what is ACTUALLY live (measured 2026-07-25 20:15 UK)
+## Hosting baseline — what is ACTUALLY live (measured 2026-07-26 19:45 UK)
 
-**Live `salown` hosting release = `1785005794084000`** (version `0aacd49d5a9202cd`, bundle
-`index-CLNge9uB.js`), deployed by the 2026-07-25 wave from HEAD `433ec7f`. It carries BSP-I2, BSP-H1,
-Parser-3C Super Admin panel, and the two lint cleanups. The previous baseline was `ad20475`
-(`index-DdVeuO0D.js`, "I1 canonical UK phone foundation").
+**Live `salown` hosting release = `1785091173083000`** (2026-07-26T18:39:33Z, bundle
+`index-D0JrelmL.js`), deployed manually from HEAD `f30ae4a` with `--only hosting:salown`. It adds the
+extras/price fold fix (`694c2bb`) on top of everything in the previous baseline. Previous baseline =
+`1785005794084000` (bundle `index-CLNge9uB.js`, HEAD `433ec7f`, the 2026-07-25 wave carrying BSP-I2,
+BSP-H1, Parser-3C Super Admin panel + two lint cleanups); before that `ad20475` (`index-DdVeuO0D.js`,
+"I1 canonical UK phone foundation"). Exactly ONE new release was created — verified by listing the
+site's last 3 releases (new / 07-25 baseline / 07-24), so CI did not also fire.
 
 *Method (repeatable, no production data touched):* fetch `https://salown.web.app/public-bundle/index.html`,
 read the emitted asset name, compare to the local `npm run build` output of HEAD. The live bundle's markers
 confirm the shipped packages: `phoneCanonical` (I2), `salownCreateBooking` + `IDEMPOTENCY` + `SLOT_CONFLICT`
 (H1), `isSuperAdmin`-gated Parser panel (3C).
 
-**`salown-staff` release = `1784882253065000`** (version `5fd6406875bc9653`) — **UNCHANGED** by this wave;
-the staff bundle still predates I2. This wave deployed `hosting:salown` **only**.
+**`salown-staff` release = `1784882253065000`** (version `5fd6406875bc9653`) — **UNCHANGED** since
+2026-07-24, by the 07-25 wave and by the 2026-07-26 deploy alike; the staff bundle still predates I2.
+Both deployed `hosting:salown` **only**. Re-verified after the 07-26 deploy: same release ID, same
+timestamp. ⚠️ The staff app therefore also does NOT have the extras/price fold fix — its
+`BookingDetailSheet` is a separate component from the web `BookingDetailPanel`, so that fix has to be
+mirrored there before a staff deploy is worth doing.
 
 ⚠️ **`--only hosting` (no target) deploys BOTH sites, but `--only hosting:salown` does NOT.** `firebase.json`
 defines `salown` **and** `salown-staff`. The `salown` target's predeploy runs `npm run build` (→ gitignored
@@ -69,6 +76,7 @@ owner-gated (state tenant + URL, wait for confirmation).
 
 | Item | Commit(s) | Repo / target | State | Notes |
 |---|---|---|---|---|
+| Booking Detail extras → folded `price` fix | `694c2bb` | salown-app / hosting | ✅ **Deployed + live-verified** | Deployed 2026-07-26 18:39Z, `firebase deploy --only hosting:salown --project havuz-44f70` (NOT `--only hosting`). Live bundle `index-D0JrelmL.js` == local build of HEAD `f30ae4a`; release `1785091173083000`; exactly one new release; `salown-staff` release ID + timestamp unchanged. Gates before deploy: clean tree, `main == origin/main`, zero active claims, 266/266 vitest, typecheck clean, Vite build ok, `diff --check` clean, 5/5 price-arithmetic scenarios. Prod writes during deploy+verification = 0 (Sanga's record re-read only: CHECKED_OUT, £32 total = £10 deposit + £22 at venue, `soldAddOns` []). Functions + rules untouched. See INCIDENTS 2026-07-26. |
 | Booksy barber slot-tombstone fix | `41e2bc1` | salown-app / functions | ✅ **Deployed + live-verified** | Parser slot-tombstone barber fix; deployed and verified live. |
 | Parser Canary Slice 3B | `7d6eb25` | salown-app / functions | ✅ **Deployed + live** | Canary persist slice, live. ⚠️ Commit `7d6eb25`'s message is the **2026-07-23 website add-on release** (`fix(checkout+grid+email): website add-on…`) — the combined functions/hosting deploy at that commit is what carried the persisted-canary slice live, superseding the earlier "3B persist not deployed" note. Confirm with owner if the 3B label should point at slice commit `381477b` instead. |
 | salown-app staff-shift work — **hosting half** | `847e8f6`, `9bb65ed` (+ `8ddd91a`…`9c8ef84`) | salown-app / hosting | ✅ **Deployed + live-verified** | **Row corrected 2026-07-24 16:05.** Effective-shift SSOT + 15-min overrun allowance are LIVE in the `salown` bundle. Basis: live JS carries the resolver reason strings and its `BookingForm` chunk is byte-identical to a post-allowance build (see "Hosting baseline" above). |
