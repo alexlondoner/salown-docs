@@ -90,6 +90,21 @@ observability-only rule still holds. Booksy/Fresha/iCal never emit the code and 
 unaffected; generalising the idea to them is a separate `parser-semantic-health`
 package, NOT this one.
 
+**STAGE 1 — TARGETED DEPLOY (2026-07-27, owner-approved).** Preflight: `main == origin/main`, clean tree, no active claims, `4c9809c`+`1507610`+both release/SYNC commits ancestors of HEAD, focused Treatwell tests 19/19, parser+inbound 168 (0 fail), **three consecutive full-suite runs 350 tests / 337 pass / 13 skipped / 0 fail**, typecheck exit 0, `diff --check` clean. No failure waived. (The `createBooking.test.js` "7a" flake seen once earlier did not reappear; it passes 67/67 in isolation.) Deployed EXACTLY `functions:salown:salownParseEmails,salownParseInboxDispatch,salownManualImport` to `havuz-44f70` / europe-west2 — three "Successful update operation", function count 90 → 90 with an identical name set (no orphan deletion), Hosting releases (`salown` 2026-07-26T18:39:33Z, `salown-staff` 2026-07-24T08:37:33Z) and both rules releases (`cloud.firestore` ruleset `323f1726…`, storage `4c00eef7…`) byte-identical before/after. No manual import invoked.
+
+**STAGE 2 — PRODUCTION REPAIR AUDIT (pre-image, redacted).** Target resolved to exactly ONE document, `tenants/whitecross/bookings/TREATWELL-T2188888050`, confirmed unique on all three lookup keys (`externalId` → 1, `treatwellRef` → 1, any Treatwell doc mentioning the ref → 1); no duplicate booking for the same external reference. All incident preconditions still held at write time (`barberId` `""`, `barberName` `""`, `twPaymentMode` `pay_at_venue`, `paymentMethod` absent, and both malformed prefixes intact).
+
+| Field | BEFORE (redacted) | AFTER (approved) |
+|---|---|---|
+| `clientName` | `Jack Wells Repeat Open appointment in Treatwell Connect ( <url> )` | `Jack Wells` |
+| `serviceId` | `The Full Experience Price paid: £40.00 Guest Email: <email> Guest Tel.: <phone> Quantity 1` | `the-full-experience` |
+| `barberId` | `""` | `alex` |
+| `barberName` | `""` | `Alex` |
+| `twPaymentMode` | `pay_at_venue` | `prepaid` |
+| `paymentMethod` | *(absent)* | `CARD` |
+
+Preserved byte-identical (verified by read-back): `paidAmount` 40, `paymentType` FULL, `twFeeTotal` 0, `twNetPayout` 40, `twFeeAmount`/`twFeeVat`/`twFeePct`/`twFeeVatPct`/`twGrossPrice`/`twIsNewCustomer`, `date`/`time`/`startTime`/`endTime`, `duration` 40, `price`, `clientEmail`, `clientPhone`, `bookingId`/`externalId`/`treatwellRef`, `status` CONFIRMED, `source`, `rawEmailSubject`, `parsedAt`, `createdAt`. `barberId` uses the parser's own convention (lower-cased barber NAME), matching every other Treatwell booking, NOT the Firestore doc id — a doc id would diverge from what the deployed parser writes on any re-import. The audit lives HERE and not in Firestore `auditLogs` on purpose: the booking update is the ONLY production write in this operation.
+
 **Deliberately NOT done in this pass (each is its own bounded package):**
 - **The live record.** `TREATWELL-T2188888050` is untouched. Repair needs the correct barber confirmed from Treatwell Connect — `barberId`, `barberName` and payment mode must not be guessed.
 - **The revoked app password / IMAP.** Restoring it would bring back the clean shape and MASK this bug class; the parser fix is required either way. Note the same credential feeds nodemailer for confirmation/cancel/reschedule email — worth verifying with a real test booking.
