@@ -10,7 +10,7 @@
 > separate `whitecross-site` repo deploy manually**, so code can sit on `origin/main` for days while
 > production runs older behavior. Confusing "merged" with "live" has caused real incidents.
 >
-> **Snapshot date:** 2026-07-26 19:45 UK (previous revision 2026-07-24 16:40 UK after Parser-3C landed on `origin/main`; earlier 16:05 revision during BSP-H1, see the hosting-baseline correction below). Verify against `git log origin/main` + the live system before acting;
+> **Snapshot date:** 2026-07-27 12:55 UK (previous revision 2026-07-26 19:45 UK) (previous revision 2026-07-24 16:40 UK after Parser-3C landed on `origin/main`; earlier 16:05 revision during BSP-H1, see the hosting-baseline correction below). Verify against `git log origin/main` + the live system before acting;
 > a row here is a claim about a moment, not a standing guarantee.
 
 ---
@@ -72,6 +72,19 @@ owner-gated (state tenant + URL, wait for confirmation).
 >
 > **Still undeployed after this wave:** BSP-W1 premium cutover (⬜ not started), E1 payment E2E (⬜ not started), R1 **phase (b)** deny-anonymous-create (⬜ blocked on W1+E1). Premium staff-shift (`whitecross-site` `e0003845`) still pending its separate manual deploy.
 
+## 2026-07-27 — WC-LEGACY-TESTMODE-LOCKDOWN (whitecross-site functions only) 🔴 SECURITY
+
+> Targeted manual deploy, project `havuz-44f70`, **us-central1**, `whitecross-site` HEAD `917c2439`
+> (implementation `8dcdebc7`). **Functions only — no hosting, no rules, no other function.** Run via
+> `./scripts/deploy-functions.sh whitecross createCheckoutSession stripeWebhook` (the guarded wrapper;
+> raw/blanket `firebase deploy` is forbidden — a blanket functions deploy would orphan the other 25
+> us-central1 functions).
+
+| Item | Commit(s) | Repo / target | State | Notes |
+|---|---|---|---|---|
+| Legacy test-mode lockdown (`createCheckoutSession`, `stripeWebhook`) | `8dcdebc7` | whitecross-site / functions us-central1 | ✅ **Deployed + live-verified** | Deployed 2026-07-27 ~11:41Z. Closes a **live free-booking exploit**: the legacy public path let `req.body.testMode` select the Stripe **test** key for a **real** production booking (payable with `4242…`), which the test-signed webhook then confirmed. Now: mode-selection keys → **400 `UNTRUSTED_FIELD`** before Stripe/Firestore; production always resolves the live key (test key only behind `WC_NONPROD_TEST_MODE=1`, **never set on `havuz-44f70`**); `stripeWebhook` rejects every `livemode !== true` event **before `getAdminDb()`** (zero reads/writes) on all branches; per-document mode gates on legacy single + group + MOBILE_CHECKOUT (absent/garbage `stripeMode` ⇒ live-only). Gates: `main == origin/main`, clean tree, zero claims, 52/52 tests, node syntax+load, namespace guard, live-key guard **pre and post** (`mode = LIVE`, Whitecross account). Post-deploy: 27 us-central1 functions before == 27 after (list byte-identical); exploit body → 400; alias sweep (`mode`/`stripeMode`/`livemode`/`stripeKey`/`testmode`/`test_mode`) → 400; `testMode:false` → 400 (presence not truthiness); control clean body → pre-existing `Missing required fields`; webhook unsigned → 400, forged → 400, GET → 405; runtime log `mode-selection field rejected { field: 'testMode' }` proves the new revision executes. **Zero production writes** — no booking created, no charge, no refund, no customer email. 🔴 Logs show the exploit had actually fired: 2026-07-22T15:40:43Z a **`cs_test_`** session confirmed real booking `WCB-1784734815258-zwmv` (owner's own canary email) — owner to verify/cancel that record. Rollback: `git revert 8dcdebc7` + rerun the wrapper; pre-lockdown `functions/index.js` = `7bc75e7e`. ⚠️ `script.js` (`?testMode=1` canary removal) is **hosting and NOT deployed** — needs `firebase deploy --only hosting:whitecrossbarbers-saas --config firebase.saas.json`. |
+| PAY-2 external-checkout adapter | `132d88d5`, `7c5fb680` | whitecross-site / functions us-central1 | ✅ **Deployed, dormant by design** | Shipped in the same two functions. The new trusted path activates only for a request carrying `bookingDocId`, which nothing sends until **BSP-W1**. No behaviour change for current traffic. |
+
 ## 2026-07-26 — Booking Detail extras/price fix (hosting only)
 
 > Single-target manual deploy, project `havuz-44f70`, salown-app HEAD `f30ae4a`. No functions, no rules,
@@ -117,6 +130,9 @@ their behavior as live.
 
 - **BSP-I2 staff-bundle half** `321ff19` — the staff app (`salown-staff`) still runs the pre-I2 bundle; ships on the next `salown-staff` deploy (this wave deployed `hosting:salown` only).
 - **premium staff-shift** `e0003845` — `whitecross-site` separate manual deploy pending.
+- **`?testMode=1` canary removal** (`whitecross-site` `script.js`, in `8dcdebc7`) — 🟡 **hosting NOT
+  deployed.** The server-side rejection is live, so the hole is closed; this is defence-in-depth.
+  Deploy with `firebase deploy --only hosting:whitecrossbarbers-saas --config firebase.saas.json`.
 - **BSP-W1 premium cutover** — ⬜ not started; blocks R1 phase (b).
 - **E1 payment E2E** — ⬜ not started; gates R1 phase (b).
 - **R1 phase (b)** deny-anonymous-create — ⬜ blocked on W1 + E1; rules LAST when it lands.
