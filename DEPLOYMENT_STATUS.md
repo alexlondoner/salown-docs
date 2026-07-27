@@ -10,7 +10,7 @@
 > separate `whitecross-site` repo deploy manually**, so code can sit on `origin/main` for days while
 > production runs older behavior. Confusing "merged" with "live" has caused real incidents.
 >
-> **Snapshot date:** 2026-07-27 12:55 UK after the whitecross test-mode lockdown deploy (previous
+> **Snapshot date:** 2026-07-27 15:05 UK after the Treatwell parser deploy + T2188888050 repair (previous: 12:55 UK after the whitecross test-mode lockdown deploy) (previous
 > revisions: 2026-07-26 19:45 UK; 2026-07-24 16:40 UK after Parser-3C landed on `origin/main`; earlier
 > 16:05 revision during BSP-H1, see the hosting-baseline correction below). Verify against `git log origin/main` + the live system before acting;
 > a row here is a claim about a moment, not a standing guarantee.
@@ -86,6 +86,21 @@ owner-gated (state tenant + URL, wait for confirmation).
 |---|---|---|---|---|
 | Legacy test-mode lockdown (`createCheckoutSession`, `stripeWebhook`) | `8dcdebc7` | whitecross-site / functions us-central1 | ✅ **Deployed + live-verified** | Deployed 2026-07-27 ~11:41Z. Closes a **live free-booking exploit**: the legacy public path let `req.body.testMode` select the Stripe **test** key for a **real** production booking (payable with `4242…`), which the test-signed webhook then confirmed. Now: mode-selection keys → **400 `UNTRUSTED_FIELD`** before Stripe/Firestore; production always resolves the live key (test key only behind `WC_NONPROD_TEST_MODE=1`, **never set on `havuz-44f70`**); `stripeWebhook` rejects every `livemode !== true` event **before `getAdminDb()`** (zero reads/writes) on all branches; per-document mode gates on legacy single + group + MOBILE_CHECKOUT (absent/garbage `stripeMode` ⇒ live-only). Gates: `main == origin/main`, clean tree, zero claims, 52/52 tests, node syntax+load, namespace guard, live-key guard **pre and post** (`mode = LIVE`, Whitecross account). Post-deploy: 27 us-central1 functions before == 27 after (list byte-identical); exploit body → 400; alias sweep (`mode`/`stripeMode`/`livemode`/`stripeKey`/`testmode`/`test_mode`) → 400; `testMode:false` → 400 (presence not truthiness); control clean body → pre-existing `Missing required fields`; webhook unsigned → 400, forged → 400, GET → 405; runtime log `mode-selection field rejected { field: 'testMode' }` proves the new revision executes. **Zero production writes** — no booking created, no charge, no refund, no customer email. 🔴 Logs show the exploit had actually fired: 2026-07-22T15:40:43Z a **`cs_test_`** session confirmed real booking `WCB-1784734815258-zwmv` (owner's own canary email) — owner to verify/cancel that record. Rollback: `git revert 8dcdebc7` + rerun the wrapper; pre-lockdown `functions/index.js` = `7bc75e7e`. ⚠️ `script.js` (`?testMode=1` canary removal) is **hosting and NOT deployed** — needs `firebase deploy --only hosting:whitecrossbarbers-saas --config firebase.saas.json`. |
 | PAY-2 external-checkout adapter | `132d88d5`, `7c5fb680` | whitecross-site / functions us-central1 | ✅ **Deployed, dormant by design** | Shipped in the same two functions. The new trusted path activates only for a request carrying `bookingDocId`, which nothing sends until **BSP-W1**. No behaviour change for current traffic. |
+
+## 2026-07-27 — Treatwell parser body-shape + semantic guardrail (functions only)
+
+> Targeted manual deploy, project `havuz-44f70`, salown-app HEAD `105bd53`. **No hosting, no rules,
+> no other function.** Owner-approved two-stage operation: deploy first, then one exact record repair.
+
+| Item | Commit(s) | Repo / target | State | Notes |
+|---|---|---|---|---|
+| Treatwell flattened-body fix + semantic validation | `4c9809c`, `1507610` | salown-app / functions (`salown` codebase) | ✅ **Deployed** | Deployed 2026-07-27 ~13:54Z, `firebase deploy --only functions:salown:salownParseEmails,functions:salown:salownParseInboxDispatch,functions:salown:salownManualImport --project havuz-44f70` — three "Successful update operation", europe-west2, nodejs22. **Exactly 3 functions changed:** function count 90 → 90 with a byte-identical name set (no orphan deletion — the blanket-deploy hazard did not occur). Hosting releases unchanged (`salown` `2026-07-26T18:39:33.083Z`, `salown-staff` `2026-07-24T08:37:33.065Z`); rules releases unchanged (`cloud.firestore` ruleset `323f1726-f6bf-4d6e-b9b9-24e152f6e494` @ `2026-07-25T19:14:09Z`, storage `4c00eef7…` @ `2026-05-24`). Gates: `main == origin/main`, clean tree, zero active claims, all four required commits ancestors of HEAD, focused Treatwell 19/19, parser+inbound 168 (0 fail), **3× consecutive full suite 350/337 pass/13 skip/0 fail**, typecheck exit 0, `diff --check` clean, no failure waived. `salownManualImport` deployed but **NOT invoked**. |
+| Live repair of `TREATWELL-T2188888050` | — (data) | Firestore `tenants/whitecross/bookings` | ✅ **Repaired + verified** | Single `update()` on exactly one document, after uniqueness proof (1 doc on each of `externalId` / `treatwellRef` / ref-mention) and a precondition re-check. Six approved fields only: `clientName`→`Jack Wells`, `serviceId`→`the-full-experience`, `barberId`→`alex`, `barberName`→`Alex`, `twPaymentMode`→`prepaid`, `paymentMethod`→`CARD`. Read-back proved 26 preserved fields byte-identical, zero keys removed, only the approved key added, Treatwell booking count 6 → 6, grid column resolves to **Alex** (`barber-1777257519766`), money intact (£40 `paidAmount`, `FULL`, prepaid). **This update is the ONLY production write of the operation** — no checkout, cancel, reschedule, re-import or customer communication; the audit pre-image lives in INCIDENTS.md, deliberately not in Firestore `auditLogs`. |
+
+> ⚠️ **Known and accepted:** `salownParseEmails` continues to log `whitecross IMAP error: Command
+> failed` every 5 minutes. The Gmail app password was intentionally revoked by the owner; whitecross
+> is deliberately becoming PIPE_ONLY. Credentials were NOT restored here — the intentional-skip
+> contract belongs to the separate PIPE_ONLY package.
 
 ## 2026-07-26 — Booking Detail extras/price fix (hosting only)
 
