@@ -10,7 +10,9 @@
 > separate `whitecross-site` repo deploy manually**, so code can sit on `origin/main` for days while
 > production runs older behavior. Confusing "merged" with "live" has caused real incidents.
 >
-> **Snapshot date:** 2026-07-27 12:55 UK (previous revision 2026-07-26 19:45 UK) (previous revision 2026-07-24 16:40 UK after Parser-3C landed on `origin/main`; earlier 16:05 revision during BSP-H1, see the hosting-baseline correction below). Verify against `git log origin/main` + the live system before acting;
+> **Snapshot date:** 2026-07-27 12:55 UK after the whitecross test-mode lockdown deploy (previous
+> revisions: 2026-07-26 19:45 UK; 2026-07-24 16:40 UK after Parser-3C landed on `origin/main`; earlier
+> 16:05 revision during BSP-H1, see the hosting-baseline correction below). Verify against `git log origin/main` + the live system before acting;
 > a row here is a claim about a moment, not a standing guarantee.
 
 ---
