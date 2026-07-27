@@ -37,7 +37,7 @@ Every incident opens with `## YYYY-MM-DD — short title`, immediately followed 
 
 ## 2026-07-27 — Treatwell booking landed with the whole email bled into its fields (webhook body shape)
 
-**Severity:** 🟠 High (booking belongs to no barber column → invisible in the calendar grid; service unmatched; recurs for EVERY Treatwell booking while the IMAP pipe is down) · **Owner:** owner (spotted the malformed booking detail) + Claude · **Status:** 🟡 Open — parser fix committed `4c9809c` (NOT deployed), live record `TREATWELL-T2188888050` deliberately NOT repaired (correct barber must first be confirmed from Treatwell Connect) · **Affected area:** email parsers → Treatwell field extraction (`functions/src/parsers/treatwell.ts`)
+**Severity:** 🔴 Critical (data-money — a PREPAID booking was written as pay-at-venue, so the panel shows "Payment due £40.00" over an already-paid 29 July appointment and staff could charge the client twice; plus the booking belongs to no barber column and recurs for EVERY Treatwell booking while the IMAP pipe is down) · **Owner:** owner (spotted the malformed booking detail, then supplied the source email) + Claude · **Status:** 🟡 Open — parser fix `4c9809c` + semantic guardrail `1507610` committed (NOT deployed), live record `TREATWELL-T2188888050` NOT yet repaired · **Affected area:** email parsers → Treatwell field extraction + Parser-3C health semantics (`functions/src/parsers/treatwell.ts`, `treatwellSemantics.ts`, `outcomes.ts`, `canary.ts`)
 
 **Tags:** `#parser` `#normalization` `#shared-infra`
 
@@ -47,10 +47,48 @@ Every incident opens with `## YYYY-MM-DD — short title`, immediately followed 
 **Bug Class:** Input-shape coupling — a parser written against ONE serialization of the input, silently fed a second one by an alternate ingestion path. (Same family as the 2026-07-13 `UNKNOWN_SOURCE` manual-forward bug: two pipes, one of them untested.)
 **Resolution:** `4c9809c` — a Treatwell field value now ends at a COLUMN GAP, a LINE END, **or the start of the next labelled field**; the last boundary is the only one that survives flattening. Written as a lookahead so captures stay byte-identical on the clean IMAP shape. The `Status` fallback is restricted to the known enum (`Prepaid|Unpaid|Confirmed|Paid`) because it drives `twPaymentMode` (money) — no enum hit leaves the existing `confirmed` default rather than guessing. The reschedule service form stays newline-bound ON PURPOSE: the flattened body contains the prose "Open appointment in Treatwell Connect", and relaxing it would capture "in Treatwell Connect" as a service name. NOT deployed.
 **Prevention:** (1) The diagnostic signal that separates the two pipes is `parseInbox`: a booking that arrived by webhook has a doc there, an IMAP one does not — the 5 earlier clean Treatwell bookings have no `parseInbox` doc, this one does. (2) Both body shapes are now permanent fixtures. (3) Rule for any future parser: a field value must be bounded by the NEXT LABEL, never only by line structure — line structure is a property of the pipe, not of the email.
-**Regression Tests:** `functions/src/parsers/treatwellBodyShape.test.js` — carries the same synthetic booking in both shapes and asserts identical normalized fields (`both body shapes normalize to identical booking fields`), plus per-symptom anti-regressions and a **fixture-integrity** test (`FLAT fixture genuinely defeats the pre-fix line-structure regexes`) so the flat fixture can never be softened into a clean one while still appearing to pass.
+**Regression Tests:** `functions/src/parsers/treatwellSemantics.test.js` (semantic correctness — the 7 rules above, incl. "a malformed-but-successful import is never labelled plain IMPORTED/HEALTHY") + `functions/src/parsers/treatwellBodyShape.test.js` — carries the same synthetic booking in both shapes and asserts identical normalized fields (`both body shapes normalize to identical booking fields`), plus per-symptom anti-regressions and a **fixture-integrity** test (`FLAT fixture genuinely defeats the pre-fix line-structure regexes`) so the flat fixture can never be softened into a clean one while still appearing to pass.
 **Related:** commits `4c9809c` (fix) · claim `PARSER-TW-SHAPE` · files `functions/src/parsers/treatwell.ts` + `treatwellBodyShape.test.js` · related `functions/src/inbound/index.ts:61` (the shared inbound layer — NOT changed, see below)
 
 **What happened / Diagnosis / Fix:** The raw email is not retained (pipe-not-store — `parseInbox.rawEmail` is cleared after parse), so the body was reconstructed from the stored field values instead. That reconstruction is what made the root cause provable: exactly the four line-structure-dependent regexes failed (service, guest name, barber, status) while every delimiter-bounded one succeeded (`Date/time`, `Price paid:`, `Guest Email:`, `Guest Tel.:`, `Our Ref.`). The ` ( https://connect.treatwell… )` inside `clientName` was the decisive fingerprint: our own HTML stripper deletes tags outright and can never emit a URL in parentheses, so the text did not come from our stripper — it came from the provider's html→text converter.
+
+**SOURCE-CONFIRMED VALUES (owner supplied the original email 2026-07-27, treated as the confirmation):**
+
+| Field | Source email says | Live record held |
+|---|---|---|
+| Barber | `with    Alex` | `barberId` `""`, `barberName` `""` |
+| Payment | `Status    Prepaid` + "you don't need to take payment for it" | `twPaymentMode: pay_at_venue`, no `paymentMethod` |
+| Service | `Product Name:  The Full Experience` (`(40 minutes )`) | `"The Full Experience Price paid: £40.00 Guest Email: … Quantity 1"` |
+| Guest | `Guest name    <name> Repeat` | name + `Open appointment in Treatwell Connect ( … )` |
+| Commission | "repeat booking … you don't pay commission" | `twIsNewCustomer: false`, fee £0 — **correct** |
+
+The shipped fix was replayed against this exact content in both body shapes: it
+produces Alex + prepaid + clean service/client in each, identically.
+
+**WHY PARSER-3C SAID HEALTHY (the real lesson):** 3C's three axes are
+PARSER_BROKEN / IMPORT_OUTCOME / DATA_LOSS_SIGNAL — all of them about transport and
+accounting. For this message every one of them was correct: the email was
+recognised as Treatwell, a T-ref and a date/time were found, exactly one message
+was examined, the outcome ledger balanced, and a booking document WAS created, so
+`imported` moved → `importOutcome: IMPORTED`, ledger complete → `HEALTHY`. Nothing
+in the system asked whether the document it wrote was *correct*. **3C detects
+missing or unaccounted outcomes; it does not detect malformed successful output.**
+That is the blind spot this incident found — a quality failure wearing a success
+label, which is strictly harder to see than a loss.
+
+**GUARDRAIL ADDED (`1507610`):** a fourth question, kept deliberately small. A pure
+`validateTreatwellSemantics()` runs immediately before the write and emits stable,
+PII-free CODES (`CLIENT_NAME_POLLUTED`, `SERVICE_NAME_POLLUTED`, `BARBER_UNRESOLVED`,
+`UNMATCHED_BARBER`, `SERVICE_UNMATCHED`, `PAYMENT_MODE_FALLBACK`). A flagged booking
+is **still persisted** — dropping a real booking is strictly worse than importing a
+flagged one (2026-06-24 lost 11 days that way) — but the run is tallied as
+`IMPORTED_WITH_WARNINGS`, which scores `DEGRADED/'semantic-warnings'` and adds a
+`semantic-warnings` data-loss reason (`SUSPECTED`), so it can never read as clean
+again. The codes are also stamped on the booking (`semanticWarnings`) so a review
+queue can query them. The `imported` counter is untouched — outcomes.ts's
+observability-only rule still holds. Booksy/Fresha/iCal never emit the code and are
+unaffected; generalising the idea to them is a separate `parser-semantic-health`
+package, NOT this one.
 
 **Deliberately NOT done in this pass (each is its own bounded package):**
 - **The live record.** `TREATWELL-T2188888050` is untouched. Repair needs the correct barber confirmed from Treatwell Connect — `barberId`, `barberName` and payment mode must not be guessed.
