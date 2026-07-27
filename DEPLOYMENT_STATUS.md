@@ -27,20 +27,24 @@ BSP-H1, Parser-3C Super Admin panel + two lint cleanups); before that `ad20475` 
 "I1 canonical UK phone foundation"). Exactly ONE new release was created — verified by listing the
 site's last 3 releases (new / 07-25 baseline / 07-24), so CI did not also fire.
 
+🚨 **SUPERSEDED 2026-07-27 18:23 UK — live `salown` is now release `1785173028995000`** (2026-07-27T17:23:48.995Z,
+version `a6b54b3273c9f7a4`, bundle `index-Dv_tTyTd.js`), deployed from branch **`hotfix/docid-1` HEAD `ae61566`** —
+**NOT from `main`**. This is the DOCID-1 booking hotfix (INCIDENTS 2026-07-27); see the dedicated wave entry below.
+The `f30ae4a` / `index-D0JrelmL.js` baseline described in this section is now the ROLLBACK TARGET.
+
 **Re-confirmed independently 2026-07-27 15:10 UK (DOCID-1):** `curl https://salown.com/book/whitecross` emits
 `assets/index-D0JrelmL.js`, and `npm run build` of an UNTOUCHED `f30ae4a` in a clean worktree emits the same
 `index-D0JrelmL.js`. The live-source boundary is therefore `f30ae4a`, reproduced rather than trusted.
 
 ⚠️ **`origin/main` is AHEAD of live for hosting, and the gap is not releasable as a whole.** Undeployed
 frontend on `main`: OPT-1 (`b6b622e`, service options → `BookingDetailPanel` + `src/utils/{serviceOptions,
-bookingPrice}.ts`) and DOCID-1 (`c01e4b5`, the booking-page identity hotfix). **A hosting deploy ships the
-whole bundle from whatever HEAD it builds — the `--only hosting:salown` target scopes the SITE, not the
-COMMIT SCOPE.** So deploying DOCID-1 off `main` would co-release OPT-1 without its owner's approval.
-Standing decision (owner, 2026-07-27): do NOT co-deploy. The releasable artefact is branch `hotfix/docid-1`
-(cut from `f30ae4a`, booking path only, +16/−6 across `BookingPage.tsx` + `SalonSitePage.tsx` +
-`src/utils/firestoreIdentity.ts`; zero file intersection with OPT-1; 279/279 vitest, tsc clean, builds to
-`index-Dv_tTyTd.js`) — built and verified, **awaiting go/no-go**. Until it ships, production runs a strict
-SUBSET of `main` and **online booking on salown.com/book/whitecross is broken** (INCIDENTS 2026-07-27).
+bookingPrice}.ts`) and the FULL DOCID-1 commit (`c01e4b5` — the booking fix plus the admin-mapper sweep).
+**A hosting deploy ships the whole bundle from whatever HEAD it builds — the `--only hosting:salown` target
+scopes the SITE, not the COMMIT SCOPE.** So deploying off `main` co-releases OPT-1 without its owner's
+approval. Owner decision 2026-07-27: do NOT co-deploy — ship the isolated branch instead (done, see below).
+**Production therefore runs a strict SUBSET of `main`:** the booking path is fixed live, but `c01e4b5`'s
+`BookingDetailPanel`/mapper sweep and all of OPT-1 are still NOT live. Permanent integration of `main` is a
+separate, controlled job; `main` was deliberately NOT merged or rewritten during the emergency deploy.
 
 *Method (repeatable, no production data touched):* fetch `https://salown.web.app/public-bundle/index.html`,
 read the emitted asset name, compare to the local `npm run build` output of HEAD. The live bundle's markers
@@ -88,6 +92,33 @@ owner-gated (state tenant + URL, wait for confirmation).
 > - **Stage 3 (rules, LAST):** `firebase deploy --only firestore:rules --project havuz-44f70` → new live ruleset **`323f1726-f6bf-4d6e-b9b9-24e152f6e494`** (2026-07-25T19:14:08Z), byte-identical to local `firestore.rules`; **rollback target = pre-R1-A `1474907b-af60-4bb4-a54a-8026c6c61273`** (`firestore.rules.ROLLBACK.txt` refreshed). Live-behavior verification via the Rules Test API on the deployed ruleset: **131/131**, 7 keys DENY, hosted+premium single/group ALLOW, staff BLOCKED/Busy ALLOW, cross-tenant isolation intact, 3 phase-B guards ALLOW (**phase-B still blocked**). Only rules changed (hosting + functions no drift).
 >
 > **Still undeployed after this wave:** BSP-W1 premium cutover (⬜ not started), E1 payment E2E (⬜ not started), R1 **phase (b)** deny-anonymous-create (⬜ blocked on W1+E1). Premium staff-shift (`whitecross-site` `e0003845`) still pending its separate manual deploy.
+
+## 2026-07-27 — DOCID-1 booking hotfix (hosting:salown only, deployed from an ISOLATED branch) 🟠 OUTAGE FIX
+
+> Emergency hosting deploy, project `havuz-44f70`, **branch `hotfix/docid-1` HEAD `ae61566`** — deliberately
+> **not** `main`. Restores online booking on salown.com, which had been rejecting every attempt with
+> `SERVICE_UNAVAILABLE` since the BSP-H1 cutover (INCIDENTS 2026-07-27).
+
+| Item | Evidence |
+|---|---|
+| **Release** | `1785173028995000` · version `a6b54b3273c9f7a4` · **2026-07-27T17:23:48.995Z** · bundle `index-Dv_tTyTd.js` |
+| **Previous (rollback target)** | `1785091173083000` · `ba04343dc998a3a2` · bundle `index-D0JrelmL.js` · HEAD `f30ae4a` |
+| **Source** | `hotfix/docid-1` `ae61566`, cut from `f30ae4a`; pushed to `origin/hotfix/docid-1` (CI fires on `main` only) |
+| **Deployed diff vs baseline** | 4 files, +187/−6: `src/pages/BookingPage.tsx` (+12/−3), `src/pages/SalonSitePage.tsx` (+10/−3), NEW `src/utils/firestoreIdentity.ts` (69), NEW `src/utils/firestoreIdentity.test.ts` (102, not bundled) |
+| **OPT-1 exclusion** | `git merge-base --is-ancestor b6b622e HEAD` → **false**. Zero file intersection. |
+| **Gates** | worktree clean · `f30ae4a` is an ancestor · clean rebuild hash == approved `index-Dv_tTyTd.js` · 279/279 vitest · `tsc --noEmit` clean |
+| **Blast radius** | Exactly ONE new release on `salown`. `salown-staff` unchanged (`1784882253065000`). **9 of the project's 10 hosting sites** — incl. every `whitecrossbarbers-*` — carry unchanged release timestamps. |
+| **Live proof** | `/public-bundle/assets/index-Dv_tTyTd.js` sha256 `90709208b6c53f4eb2c8281934f0da60d9f454a57e26a14b94ff841b6d0cfe1a` == the locally built, test-verified artefact; contains the DOCID-1 helper (`legacyId`). `/book/whitecross`, `/s/whitecross`, `salown.web.app` all serve it. |
+| **Callable probe** (past date ⇒ policy rejects before any write) | doc id `a8XexksOAkVxabmmre5O` → `MINIMUM_NOTICE_NOT_MET` (service + staff resolve) · slug `skin-fade` → `SERVICE_UNAVAILABLE` (server still resolves by document path ONLY — no fallback was added, by design) |
+| **Not deployed / not touched** | No functions deploy command run (deploy log shows `hosting[salown]` only) · rules untouched · `salownManualImport` not invoked · **zero production writes** · other sessions' dirty `functions/` tree untouched (deploy ran from a separate git worktree) |
+
+⏸️ **A real customer-path booking was deliberately NOT created.** The callable's identity resolution creates/links
+a **client record** alongside the booking, which is production data mutation — excluded by the same approval that
+authorised the deploy. The owner's own genuine booking closes that last gap.
+
+⚠️ Could not verify `salownCreateBooking`'s `updateTime` via the Cloud Functions REST API (the service account
+lacks `cloudfunctions.functions.get`). Substitute evidence: the deploy log's scope, and the callable returning
+byte-identical reason codes before and after the deploy.
 
 ## 2026-07-27 — WC-LEGACY-TESTMODE-LOCKDOWN (whitecross-site functions only) 🔴 SECURITY
 
