@@ -27,6 +27,21 @@ BSP-H1, Parser-3C Super Admin panel + two lint cleanups); before that `ad20475` 
 "I1 canonical UK phone foundation"). Exactly ONE new release was created — verified by listing the
 site's last 3 releases (new / 07-25 baseline / 07-24), so CI did not also fire.
 
+**Re-confirmed independently 2026-07-27 15:10 UK (DOCID-1):** `curl https://salown.com/book/whitecross` emits
+`assets/index-D0JrelmL.js`, and `npm run build` of an UNTOUCHED `f30ae4a` in a clean worktree emits the same
+`index-D0JrelmL.js`. The live-source boundary is therefore `f30ae4a`, reproduced rather than trusted.
+
+⚠️ **`origin/main` is AHEAD of live for hosting, and the gap is not releasable as a whole.** Undeployed
+frontend on `main`: OPT-1 (`b6b622e`, service options → `BookingDetailPanel` + `src/utils/{serviceOptions,
+bookingPrice}.ts`) and DOCID-1 (`c01e4b5`, the booking-page identity hotfix). **A hosting deploy ships the
+whole bundle from whatever HEAD it builds — the `--only hosting:salown` target scopes the SITE, not the
+COMMIT SCOPE.** So deploying DOCID-1 off `main` would co-release OPT-1 without its owner's approval.
+Standing decision (owner, 2026-07-27): do NOT co-deploy. The releasable artefact is branch `hotfix/docid-1`
+(cut from `f30ae4a`, booking path only, +16/−6 across `BookingPage.tsx` + `SalonSitePage.tsx` +
+`src/utils/firestoreIdentity.ts`; zero file intersection with OPT-1; 279/279 vitest, tsc clean, builds to
+`index-Dv_tTyTd.js`) — built and verified, **awaiting go/no-go**. Until it ships, production runs a strict
+SUBSET of `main` and **online booking on salown.com/book/whitecross is broken** (INCIDENTS 2026-07-27).
+
 *Method (repeatable, no production data touched):* fetch `https://salown.web.app/public-bundle/index.html`,
 read the emitted asset name, compare to the local `npm run build` output of HEAD. The live bundle's markers
 confirm the shipped packages: `phoneCanonical` (I2), `salownCreateBooking` + `IDEMPOTENCY` + `SLOT_CONFLICT`
