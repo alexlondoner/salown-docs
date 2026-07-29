@@ -148,8 +148,32 @@ byte-identical reason codes before and after the deploy.
 > ⚠️ **Pre-existing and NOT addressed here:** `salownParseEmails` continues to log `whitecross IMAP
 > error: Command failed` on every 5-minute run (observed 15:15–15:45Z, unchanged before and after this
 > deploy). Unrelated to this fix — whitecross's Treatwell `parserStats` last succeeded 2026-07-27.
-> ⚠️ **Same bug class still live in `booksy.ts:194`** (`/with\s+(\w+)/i`, body-wide, unanchored). No
-> live occurrence found, and it was left alone deliberately to keep this change narrow. See INCIDENTS.
+> ✅ **`booksy.ts:194` — CLOSED the same day** by `a5489dc` (row below). The residual risk noted in the
+> original revision of this row is no longer outstanding.
+
+## 2026-07-29 — Booksy barber extraction hardened (same bug class, functions only)
+
+> Project `havuz-44f70`, code `a5489dc`. Follow-up to `a687c06` closing the residual risk it recorded.
+> **Preventive, not corrective** — no live corruption existed to repair. **Zero production data writes.**
+
+| Item | Commit(s) | Repo / target | State | Notes |
+|---|---|---|---|---|
+| Booksy barber validated against the tenant roster | `a5489dc` | salown-app / functions (`salown` codebase) | ✅ **Deployed + live-verified** | Same targeted 3-function deploy (`salownParseEmails`, `salownParseInboxDispatch`, `salownManualImport`), europe-west2, three "Successful update operation" — deployed again from an ISOLATED worktree at `a5489dc` (`functions/src/index.ts` still carried another session's uncommitted work), worktree verified clean and its `lib/parsers/booksy.js` confirmed to carry the new extractor before upload. **27 us-central1 legacy functions verified present after the deploy.** Live proof: `tenants/herohairs/parserStats/treatwell` `lastRunAt 2026-07-29T22:30:03Z` — strictly after the deploy completed at 22:15:34Z — `HEALTHY`, `outcome success`, `errorCount 0`, examined 17 / skipped 17. ⚠️ **The Booksy code path itself has not yet been exercised in production**: no Booksy email has arrived since the deploy, so the verification covers the deployed bundle executing cleanly, not a live Booksy import. |
+| Exposure measured before changing anything | — (read-only) | Firestore, all 5 tenants | ✅ **No corruption found** | `booksyParser` is on for whitecross (50 Booksy bookings, **0** services containing `" with "`) and yusufo (0 bookings); herohairs holds the 2 trigger services but has Booksy **off**; demo/the-hair-lab off. Across every tenant, **zero** Booksy bookings carried a non-roster `barberId` — the single flagged record (`BOOKSY-Karl-Bichmann-26-July-2026-12:30`) is Alex's doc-id form with a matching `barberName`, legitimate and on-roster. So the trigger and the parser have never been enabled together; this change shuts a trap rather than repairing damage. |
+
+> ⚠️ **Treatwell's price anchor was deliberately NOT reused.** Booksy has the same two body shapes but
+> the barber sits elsewhere — the price comes AFTER it, so `£<amount>\s+with` matches nothing in a
+> Booksy body. The mirror anchor was measured and rejected: on a flattened line carrying a `" with "`
+> service it captures across the second "with" (`"Haircut with HERO"`). The roster, not position,
+> decides which candidate is a person.
+> ⚠️ **A self-inflicted regression was caught by the existing suite, not waived.** The first revision
+> read the barber roster once at the top of `parseBooksyMessages`, outside the per-message try/catch —
+> `messages.test.js` then failed 2 tests because a throwing Firestore read rejected the whole run
+> instead of being reason-coded `PARSE_ERROR`, losing `examined` entirely (the 2026-06-24 failure mode:
+> a parser exception swallowed 11 days of bookings). The read is now lazy and inside the try.
+> ⚠️ **Still pre-existing and NOT addressed:** the `whitecross IMAP error: Command failed` loop, and
+> Treatwell's own roster read sitting outside its per-message try/catch (same structural weakness as the
+> one fixed here, but pre-dating this work — not introduced by it).
 
 ## 2026-07-27 — Treatwell parser body-shape + semantic guardrail (functions only)
 
