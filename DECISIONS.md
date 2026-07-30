@@ -30,6 +30,7 @@
 | [ADR-014](#adr-014--ask-salown--claude-haiku-45) | Ask salOWN = Claude Haiku 4.5 | ✅ | — |
 | [ADR-015](#adr-015--parser-mail-intake--parse-inbox-hybrid--per-tenant-token-isolation) | Parser mail intake = parse-inbox hybrid + per-tenant token isolation | ✅ | 2026-07-03 |
 | [ADR-016](#adr-016--marketplace-ranking--outcome-based-trust-score-not-activity) | Marketplace ranking = outcome-based Trust Score, not activity | 🕓 | 2026-07-12 |
+| [ADR-017](#adr-017--landing-live-chat-built-not-bought-bot-first) | Landing live chat = built, not bought (bot-first) | 🕓 | 2026-07-28 |
 
 ---
 
@@ -188,6 +189,36 @@ response), otherwise the rich get richer.
 ruled out. A public trust badge — creates a gaming target, kept as an internal score.
 **Outcome:** Principle: **"Reward outcomes, not activity."** As the marketplace phase begins, this ADR is the opening
 spec.
+
+## ADR-017 — Landing live chat: built, not bought (bot-first)
+**Status:** 🕓 Proposed (built and locally verified 2026-07-28; not deployed)
+
+**Context:** salown.com is invite-only — every visitor who bounces without filling the demo form is a
+lost salon. A live chat is the standard answer, but "live" assumes someone is at a desk, and salOWN
+is one founder who is often behind a chair cutting hair. So the chat has to answer on its own first.
+**Decision:** build it in-house rather than embed Crisp/Tawk/Intercom. The bot is Claude Haiku 4.5
+behind a public HTTP function (`salownLandingChat`), fed a curated `landingGuide.ts`; the human takes
+over from the super-admin panel and the bot goes silent for that conversation. Data lives under
+`superAdmin/liveChat/**`, so the existing super-admin-only rule covers it and **no firestore.rules
+change is needed** — and the visitor's browser never touches Firestore at all (it polls the endpoint,
+and only once a human is involved).
+**Why in-house won:** (a) the ANTHROPIC_API_KEY, the Firestore, the Brevo notifier and the
+super-admin shell already exist — the marginal cost is a few files, not £25-50/mo forever; (b) a
+third-party bot would have to be *taught* salOWN anyway, while `productGuide.ts` already exists and
+is maintained; (c) visitor conversations stay on our own infrastructure, which matters for a product
+whose whole pitch is "you own your client data"; (d) the widget matches the brand exactly with no
+iframe.
+**The cost of that choice, stated plainly:** this endpoint is unauthenticated by nature, so the auth
+guard that closed the askAI spend hole is not available here. It is replaced by four independent
+ceilings (message length, per-session, per-IP-hour, global daily) plus an `enabled:false` kill switch
+readable from the panel with no deploy. A bought product would have absorbed that risk for us.
+**Alternatives:** Crisp/Tawk/Intercom — fastest to ship, but a monthly fee forever, a third-party
+script on the marketing page, visitor data off-platform, and the bot still needs our knowledge base.
+A form-only "leave a message" — zero abuse surface, but answers nobody at 9pm, which is the whole
+point. A Firestore realtime listener instead of polling — needs the Firebase SDK on a static page
+plus a public read rule; polling costs less and risks nothing.
+**Outcome:** the same principle as the rest of the product — *the system should keep working when the
+owner is busy on the floor.* The bot is not a deflection layer; it is cover until a human arrives.
 
 ## Maintenance
 - New significant decision → new ADR (next number). Fill in Context/Decision/Alternatives/Outcome, add a row to the Table of Contents.
