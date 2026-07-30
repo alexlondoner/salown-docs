@@ -10,7 +10,7 @@
 > separate `whitecross-site` repo deploy manually**, so code can sit on `origin/main` for days while
 > production runs older behavior. Confusing "merged" with "live" has caused real incidents.
 >
-> **Snapshot date:** 2026-07-27 15:05 UK after the Treatwell parser deploy + T2188888050 repair (previous: 12:55 UK after the whitecross test-mode lockdown deploy) (previous
+> **Snapshot date:** 2026-07-30 (P1-RECEIPT-MATH row added to the pending-deploy watch — no deploy occurred; the rest of this file is unchanged since) · 2026-07-27 15:05 UK after the Treatwell parser deploy + T2188888050 repair (previous: 12:55 UK after the whitecross test-mode lockdown deploy) (previous
 > revisions: 2026-07-26 19:45 UK; 2026-07-24 16:40 UK after Parser-3C landed on `origin/main`; earlier
 > 16:05 revision during BSP-H1, see the hosting-baseline correction below). Verify against `git log origin/main` + the live system before acting;
 > a row here is a claim about a moment, not a standing guarantee.
@@ -233,6 +233,7 @@ their behavior as live.
 > `e879220`, BSP-I2 hosting `321ff19` (staff-bundle half still pending a `salown-staff` deploy), BSP-H1
 > `9480185`, Parser-3C `308a7c0` (both halves), C1 reschedule-guard thread `cb88af0`, R1 phase (a) `2a6a641`.
 
+- **P1-RECEIPT-MATH canonical receipt snapshot** — 🟡 **not live, and mostly not even pushed** (measured 2026-07-30 01:5x UK). `782c5de` (pure `receiptMath.ts` helper + tests) IS on `origin/main` but was **never deployed**: the head of that push, `dbcc56e`, carried `[skip ci]`, so CI skipped the whole wave. Practically inert — at that commit the helper is imported from nowhere. The parts that would change behavior, `44d75fe` (checkout persists the snapshot) + `f1ad9e7` (add-on parity / award contract) + the claim extension `4f9339f`, are **local-only on the alish Air-M1** (`main` ahead 3 / behind 2). *Live proof of absence:* the served bundles `index-B6rqLP05.js` (sha `62038c3e…f547b`) and `staff-TCnxREdE.js` contain `I3_COLUMN_RECONCILES` **0×** — the snapshot is written nowhere in production. ⚠️ **The reader half was never started** (`functions/src/index.ts:726-740` still re-derives the receipt from raw `after.price`), so even a full deploy of the writer changes no customer-visible output — it only starts populating the fields. Deploying the writer alone is therefore safe but pointless; deploying the reader **before** the writer would regress live receipts to the legacy fallback. Order is writer → backfill window → reader. Two 🔴 open bugs on the same chain (INCIDENTS 2026-07-30) are independent of this deploy.
 - **BSP-I2 staff-bundle half** `321ff19` — the staff app (`salown-staff`) still runs the pre-I2 bundle; ships on the next `salown-staff` deploy (this wave deployed `hosting:salown` only).
 - **premium staff-shift** `e0003845` — `whitecross-site` separate manual deploy pending.
 - **`?testMode=1` canary removal** (`whitecross-site` `script.js`, in `8dcdebc7`) — 🟡 **hosting NOT

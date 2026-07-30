@@ -35,6 +35,50 @@ Every incident opens with `## YYYY-MM-DD — short title`, immediately followed 
 
 **Tag dictionary (CANONICAL — only these; sprawl forbidden):** `#security` `#stripe` `#secrets` `#config` `#deploy` `#normalization` `#permission` `#race` `#timezone` `#parser` `#email` `#data-loss` `#shared-infra`. A new tag is added only if a genuinely new class emerges (e.g. twins like `#payment`+`#payments`+`#stripe-payment` are FORBIDDEN → all `#stripe`). Every entry carries a `**Tags:**` line.
 
+## 2026-07-30 — Staff-app checkout silently DELETES the products and add-ons it was never given
+
+**Severity:** 🔴 Critical (money surface + permanent data loss: the sold items vanish from the booking, the receipt email, and every Sales/Finance aggregate) · **Owner:** Claude (read-only audit of the product-sale → receipt → loyalty-email chain, during P1-RECEIPT-MATH) · **Status:** 🟡 Open — **NOT fixed, NOT deployed** (found by audit; the fix is a separate package, deliberately not bundled into the receipt work) · **Affected area:** staff app checkout → `firestoreActions.checkoutBooking` (`src/pages/staff/CheckoutSheet.tsx`, `src/firestoreActions.ts`)
+
+**Tags:** `#data-loss` `#normalization`
+
+**Discovery:** read-only audit — while establishing what the canonical receipt snapshot may trust, the staff checkout caller was compared field-by-field against the writer's contract. No customer reported it; it is invisible from the outside because the receipt looks internally consistent.
+**Impact:** A checkout performed from the **staff app** persists `soldProducts: []` and a `soldAddOns` list containing only the add-ons that were tapped **inside the sheet**. Anything the booking already carried is destroyed on write, not merely omitted: it disappears from the booking doc, the receipt email, and Sales/Finance aggregates. There is no error and no warning — the checkout succeeds.
+**Root Cause:** the caller and the writer disagree about who owns the sold set, and the writer treats "absent" as "empty" instead of "unknown". `CheckoutSheet.tsx:82-90` never sends `soldProducts` at all, and `firestoreActions.ts:248-255` unconditionally writes `[]` for it. The `addons` prop is the tenant's **Extras catalogue**, not the booking's own add-ons, and `checkedAddons` starts `{}` — so an untouched sheet legitimately means "nothing selected", which the writer cannot distinguish from "the caller does not manage this field".
+**Bug Class:** SSOT violation — absent-vs-empty conflation across a caller/writer boundary (a destructive default on a field the caller does not own).
+**Resolution:** none yet. The writer must distinguish `undefined` (leave the stored value alone) from `[]` (the caller really is clearing it), and the staff sheet must seed itself from the booking's existing sold set. **Do not "fix" this by making the snapshot smarter** — the snapshot is written from the same wrong input and would certify the loss as reconciled.
+**Prevention:** a destructive write of a collection field must be explicit. Any writer that persists a list it did not receive should require the caller to opt in to clearing it.
+**Regression Tests:** none — and worse, `src/firestoreActions.receipt.test.ts:319-339` **models this surface incorrectly** (it assumes the staff path forwards add-ons), so the suite is currently green *because* it encodes the bug. That test must be corrected as part of the fix, not after it.
+**Related:** commits — none (audit only; the P1-RECEIPT-MATH writer `44d75fe`/`f1ad9e7` is local-only and unpushed) · roadmap P1-RECEIPT-MATH · files `src/pages/staff/CheckoutSheet.tsx:82-90`, `src/firestoreActions.ts:248-255`, `src/firestoreActions.receipt.test.ts:319-339`
+
+**What happened / Diagnosis / Fix:** The audit set out to answer a narrow question — may the new `receipt*` snapshot trust `soldProducts`/`soldAddOns`? Tracing the staff caller showed it never supplies them, while the writer writes a literal `[]`. Because both the admin panel and the staff app share one writer, the field's meaning depends on which surface called it, which is precisely what the receipt snapshot was introduced to eliminate. The fix is scoped as its own package because it changes persisted data semantics; folding it into the receipt commit would have made an already-unpushed change span two contracts.
+
+**Lessons Learned:**
+- A writer that turns "the caller said nothing" into "the value is empty" is a data-loss bug waiting for a second caller — and the second caller always arrives.
+- A green suite is not evidence when a test encodes the wrong model of a surface. This one pinned the bug rather than the behavior.
+- Layering a validation/snapshot mechanism on top of an unreliable input does not make the input reliable; it launders it.
+
+## 2026-07-30 — Admin walk-in charges the add-on twice, and the receipt snapshot certifies it as correct
+
+**Severity:** 🔴 Critical (customer is overcharged and over-awarded loyalty points; the persisted record is self-consistent, so nothing flags it) · **Owner:** Claude (same P1-RECEIPT-MATH audit) · **Status:** 🟡 Open — **NOT fixed, NOT deployed** · **Affected area:** admin walk-in creation → checkout → loyalty (`src/pages/WalkInForm.tsx`, `src/pages/CheckoutPanel.tsx`, `src/firestoreActions.ts`)
+
+**Tags:** `#data-loss` `#normalization`
+
+**Discovery:** read-only audit — testing whether the new I3 column invariant could be trusted to *detect* a folded price, rather than merely to describe one.
+**Impact:** A walk-in created in the admin panel stores `price = base + addOnsPrice` **and** the `addOns` array. Every downstream consumer that adds the add-ons to the price therefore counts them twice: the customer is charged the add-on twice and earns loyalty points on the inflated total. This is the writer-side half of the 2026-07-22 and 2026-07-26 extras/price incidents, whose fixes addressed readers only.
+**Root Cause:** the fold-stripping guard is keyed on `source` rather than on the shape of the data. `CheckoutPanel.tsx:707` and `firestoreActions.ts:82` strip a folded price only for `website`/`salown` sources, while `WalkInForm.tsx:393-394,412,418` writes `source: 'Walk-in'` — so the guard does not run on the one writer that actually folds.
+**Bug Class:** SSOT violation — a data-shape invariant enforced by provenance (`source`) instead of by the field contract itself.
+**Resolution:** none yet. `price` must mean **base** at every writer, and the guard must key on the record's shape, not its origin. **The canonical receipt snapshot cannot catch this**: base and charged amount are wrong in the *same* direction, so the I3 column invariant balances and the doc is stamped `receiptReconciled: true` — a truthful-looking receipt for a wrong charge.
+**Prevention:** one price contract, enforced at the writer. A `source`-keyed correction is a standing invitation for the next writer to be forgotten — this is the third incident in the same family.
+**Regression Tests:** none for the writer side. The reader-side pins from the 07-22/07-26 fixes pass and did not catch this.
+**Related:** commits — the reader-side halves `694c2bb` (07-26) and the 07-22 fix; writer side unfixed · roadmap P1-RECEIPT-MATH · files `src/pages/WalkInForm.tsx:393-394,412,418`, `src/pages/CheckoutPanel.tsx:707`, `src/firestoreActions.ts:82`
+
+**What happened / Diagnosis / Fix:** The audit asked what the new snapshot would do with a folded walk-in price, expecting `receiptReconciled: false`. It produces `true` — correctly, by its own rules, because the amount collected matches the folded base. That result is the important finding: an invariant can only detect a disagreement between two values, and here both are wrong together. It bounds what P1-RECEIPT-MATH can promise, and is why the walk-in writer fix is tracked as a separate, higher-priority package rather than as part of the receipt work.
+
+**Lessons Learned:**
+- An invariant across two derived values proves consistency, never correctness. If a bug corrupts both inputs identically, the check certifies it.
+- Fixing readers is how a bug class survives: 07-22 and 07-26 both fixed readers, so the writer kept producing the bad shape.
+- Provenance-keyed guards (`if source === …`) age badly — every new writer must remember to join the list, and one did not.
+
 ## 2026-07-29 — HeroHairs dashboard showed two SERVICE NAMES as stylists ("Blow Dry", "Rough Dry") — an unanchored barber regex met a passthrough resolver
 
 **Severity:** 🟠 High (a one-stylist salon was shown three; every barber-grouped screen misattributed £315 of July revenue to two people who do not exist, and the two bookings belonged to no calendar column. Display + stored data both wrong; no money lost, no customer impact) · **Owner:** owner (spotted the phantom stylists on the Stylists-performance card) + Claude · **Status:** ✅ Resolved & DEPLOYED 2026-07-29 — code `a687c06`, targeted deploy of `salownParseEmails` + `salownParseInboxDispatch` + `salownManualImport` (europe-west2); the two live records repaired and verified · **Affected area:** email parsers → Treatwell barber extraction + barber resolution + Home performance card (`functions/src/parsers/treatwell.ts`, `shared.ts`, `src/pages/Home.tsx`)
