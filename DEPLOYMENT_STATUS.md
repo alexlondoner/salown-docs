@@ -52,33 +52,68 @@ custom-instalment UI, and Finance/Reports recognition of package revenue. See
 
 ---
 
-## 🇹🇷 TR-C — treatment session lifecycle + client recovery · **PUSHED, NOT DEPLOYED** 2026-07-31 ~15:5x UK
+## 🇹🇷 TR-C — treatment session lifecycle + client recovery · DEPLOYED + LIVE-VERIFIED 2026-07-31 ~20:5x UK
 
-**Baseline commit `bc82454`** (`origin/main`). This row exists precisely because push ≠ deploy:
-the code is on `origin/main` and **production is deliberately NOT on it**.
+**Baseline commit `d9856e5`** (`origin/main`, clean tree at deploy time). Baseline chain:
+TR-A `424747d` → TR-C Phase 1 `bc82454` → TR-B `c3716f7` → TR-C Phase 2 `d9856e5`, all
+verified ancestors before any mutation. Deployed in the order **functions → hosting**;
+no rules change was required.
 
-| Surface | State |
+### Functions — 3 targeted, europe-west2, `nodejs22` (NEVER blanket: a blanket deploy deletes the 27 us-central1 legacy functions)
+
+| Function | Cloud Run revision (rollback anchor) |
 |---|---|
-| Functions | ❌ **NOT deployed** — the three callable cores exist and are fully tested, but they are not exported from `functions/src/index.ts`, so no Cloud Function was created or changed. Function name set: **unchanged**. |
-| Hosting `salown` | ❌ **NOT deployed** — pushed with `[skip ci]`, so the GitHub Actions hosting deploy did not fire. |
-| Hosting `salown-staff` | ❌ not touched (TR-C adds nothing to the staff app). |
-| `firestore.rules` | ❌ not changed, and **not needed** — the `[G4]` catch-all already grants same-tenant READ and denies client WRITE on unlisted collections, which is exactly the posture the three new collections want. |
-| `firestore.indexes.json` | ❌ not changed, and not needed — every query is a plain collection read. |
+| `salownCreateTreatmentSession` | `salowncreatetreatmentsession-00001-vap` |
+| `salownTransitionTreatmentSession` | `salowntransitiontreatmentsession-00001-jur` |
+| `salownRecordFollowUp` | `salownrecordfollowup-00001-mez` |
 
-**Why it is not deployed:** TR-C Phase 1 stopped at the five shared registration files that
-TR-B holds claims on (`functions/src/index.ts`, `src/pages/AppRouter.tsx`,
-`src/components/Sidebar.tsx`, both i18n dictionary barrels). CLAUDE.md coordination rule 7
-makes a claim conflict a hard stop. Owner decision 2026-07-31: two-phase delivery rather than
-appending to another session's claimed files.
+All three reported "Successful create operation" and all three Cloud Run services report
+`RoutesReady` + `ConfigurationsReady` = `CONDITION_SUCCEEDED`. **Function name set: 98
+before → 101 after; the diff is exactly these three additions and NOTHING was removed** —
+re-checked by name because a first pass with a naive `awk` field split (broken by the CLI's
+ANSI colour codes) falsely reported three `us-central1` legacy functions as deleted. They
+are all present: `sendLoyaltyCardEmail`, `sendManualLoyaltyAdjustmentEmail`, `sendReceipt`.
 
-**Live blast radius of this commit: ZERO.** Nothing was deployed, and even if hosting were
-deployed the new UI renders `null` for every tenant with no `treatmentSessions` documents —
-which is all six live tenants.
+Deployed endpoints independently confirmed live and failing closed: an unauthenticated
+POST to each returns `UNAUTHENTICATED`.
 
-**Phase 2 deploy order when TR-B releases:** `functions:salown:salownCreateTreatmentSession,`
-`salownTransitionTreatmentSession,salownRecordFollowUp` (⚠️ explicit list — a blanket
-`--only functions` deletes the 27 us-central1 legacy functions) → `hosting:salown` → rules
-(none needed) → live-verify on `tr-demo`.
+### Hosting
+
+| Target | Version | Rollback anchor |
+|---|---|---|
+| `hosting:salown` | `a5c3f0e4622644a7` | `f2428d9b468ac4bf` |
+| `hosting:salown-staff` | `c10550cbbe1ffebb` | `d8275712fa1a828a` |
+
+`salown-staff` was deployed because its bundle GENUINELY changed: registering the
+`treatments` namespace in the shared i18n barrel puts those strings in the Staff App
+bundle too (it consumes the same barrel). The Staff App renders none of them.
+
+### Not deployed, deliberately
+
+- **`firestore.rules`** — unchanged. The `[G4]` catch-all already grants same-tenant READ
+  and denies client WRITE on any unlisted collection, which is exactly the
+  server-authoritative posture `treatmentSessions` / `treatmentFollowUps` /
+  `treatmentRequests` want. Adding explicit blocks would be documentation, not a control.
+- **`firestore.indexes.json`** — unchanged; every query is a plain collection read.
+- **TR-B's six package functions** — untouched. The integration diff changes no TR-B
+  deployed code; TR-C injects `PKG.packageSessionCore` in-process.
+
+### Live blast radius for existing UK tenants
+
+Two visible changes, both intended:
+1. A **"Follow-ups" sidebar item** appears for every tenant; opening it shows
+   *"This salon has no treatment sessions yet."* (Same precedent TR-B set with "Packages".)
+2. The Staff App bundle carries the treatments dictionary and renders none of it.
+
+Everything else is inert: whitecross / herohairs / eekurt have zero `treatmentSessions`,
+so `buildRecoveryRows` returns `[]`, the dashboard strip renders `null` and the client
+card is unchanged.
+
+### Live verification — `tr-demo` only
+
+**37/37 passed**, all synthetic documents deleted afterwards and `packageSettings` removed
+again (it was absent before). Full record: [TESTS.md](TESTS.md) §14.
+⚠️ The manual **visual** pass is NOT done.
 
 ---
 

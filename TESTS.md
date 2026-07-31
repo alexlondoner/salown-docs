@@ -468,11 +468,12 @@ Attach screenshots (or tick + sign) here when complete.
 | Frontend twin parity + behaviour | 8 | `npx vitest run src/utils/packagePlan.parity.test.ts` |
 | Money input parsing (TR/UK keyboards) | 12 | `npx vitest run src/lib/packagesApi.test.ts` |
 
-⚠️ **The two `functions/` suites are NOT in the default `npm test` glob.** `functions/package.json`
-was claimed by the concurrent TR-C session and yielded rather than contested (CLAUDE.md rule 7).
-Whoever next owns that file should append `src/packages/*.test.js` to `test` and
-`src/packages/*.emulator.test.js` to `test:emulator`. No CI depends on it — `deploy.yml` does not run
-`npm test`.
+✅ **RESOLVED 2026-07-31 by TR-C Phase 2 (`d9856e5`).** Both `functions/` suites are now in the
+default globs: `src/packages/*.test.js` in `test` and `src/packages/*.emulator.test.js` in
+`test:emulator`. `npm --prefix functions test` went **742 → 816** tests and
+`npm run test:emulator` now runs the package concurrency suite alongside bookings, inventory and
+treatment sessions. Nothing was removed and nothing is silently skipped. (No CI depends on it —
+`deploy.yml` does not run `npm test`.)
 
 ### What the emulator suite proves (a fake could not)
 
@@ -522,3 +523,76 @@ No email sent, no card touched, no other tenant read or written.
 - [ ] Staff App client card → packages block → use a session, record a payment, on a real phone
 - [ ] Chrome auto-translate ON, Turkish tenant: confirm package names, client names and amounts are NOT rewritten
 - [ ] A UK tenant with `packageSettings` absent still shows **no** Packages nav item and an unchanged client card
+
+---
+
+## 14. TR-C — treatment session lifecycle, continuity and client recovery (2026-07-31)
+
+**Automated: 265 tests across the two packages, all green.** Baseline `d9856e5`
+(chain: TR-A `424747d` → TR-C P1 `bc82454` → TR-B `c3716f7` → TR-C P2 `d9856e5`).
+
+| Suite | Count | Command |
+|---|---|---|
+| Lifecycle table + TR-B verb mapping | 48 | `npx vitest run src/utils/treatmentLifecycle.test.ts` |
+| Continuity engine (flags, evidence, tenant-tz day maths) | 34 | `npx vitest run src/utils/treatmentContinuity.test.ts` |
+| Recovery derivation + dashboard/list parity | 16 | `npx vitest run src/utils/treatmentQueries.test.ts` |
+| Twin byte-parity + purity scan | 3 | `npx vitest run src/utils/treatmentParity.test.ts` |
+| Dictionary shape, coverage, language discipline | 13 | `npx vitest run src/i18n/treatments.dictionary.test.ts` |
+| Server cores (auth, validation, idempotency, roles) | 47 | `cd functions && node --test src/treatmentSessions/sessions.test.js` |
+| Twin parity + CJS export surface | 3 | `cd functions && node --test src/treatmentSessions/parity.test.js` |
+| **Emulator — TR-C internals** | 10 | in `npm run test:emulator` |
+| **Emulator — TR-C ↔ TR-B cross-contract** | 15 | in `npm run test:emulator` |
+
+### Canonical gate totals after Phase 2
+
+| Gate | Before TR-C | After |
+|---|---|---|
+| `npm test` (frontend) | 807 | **833** |
+| `npm --prefix functions test` | 742 | **816** (797 pass / 19 emulator self-skips / 0 fail) |
+| `npm --prefix functions run test:emulator` | 78 | **105** |
+
+The functions figure includes TR-B's 72-test engine suite, which was outside the default
+glob until this package registered it — see the §13 note above.
+
+### What the cross-contract suite proves (neither package could alone)
+
+Run against the REAL emulator and the REAL TR-B executor, injected exactly as
+`functions/src/index.ts` injects it (`packageSession: PKG.packageSessionCore`):
+
+- [x] a TR-C scheduled session may reference a TR-B `clientPackage`; the stored link carries **no money field**
+- [x] completing emits one `consume` and TR-B consumes exactly one entitlement
+- [x] **six concurrent completions → exactly ONE entitlement consumed, one TR-B session row**
+- [x] marked absent → corrected → completed burns **one** session, not two (TR-B's decision is final)
+- [x] cancelling releases the hold through TR-B's own contract
+- [x] a no-show writes **no ledger row** — attendance is not a money event
+- [x] a full TR-C lifecycle leaves `snapshot`, `financialCache` and `plan` **byte-identical**
+- [x] a payload carrying `packageListPrice_m` is refused outright, nothing written
+- [x] a packages-disabled tenant gets no package behaviour; the lifecycle still works
+- [x] a package-linked session in a disabled tenant **reports** the refusal instead of hiding it
+- [x] a legacy barber booking is untouched — no `price: 0` zeroing, no `packagePrepaid`
+- [x] a BLOCKED booking never enters the lifecycle, package or not
+- [x] tenant isolation across both the lifecycle **and** the package reference
+- [x] dashboard count === Follow-ups list, from real stored documents
+- [x] overdue computed in the tenant calendar; UK/London behaviour unchanged
+
+### Live verification — production, `tr-demo` only (2026-07-31 ~20:5x UK)
+
+**37/37 passed.** Drove the deployed cores + the real TR-B executor against production
+Firestore. Highlights: 4-entitlement package → one consume on completion → repeat and 4
+concurrent completions consumed nothing further → no-show burnt under policy → owner
+correction moved no entitlement (total stayed at 2, not 3) → `MISSED_LAST_THREE` with
+streak 3 → overdue **45 days** in `Europe/Istanbul` → all four dashboard cards equalled
+their list lengths → outstanding ₺1600.00 byte-identical after the run.
+
+**Cleanup verified:** 32 synthetic documents deleted, `packageSettings` removed again (it
+was absent before), `treatmentSessions` / `treatmentFollowUps` / `clientPackages` all back
+to 0. No email, no payment, no message; no other tenant read or written.
+
+Deployed endpoints independently confirmed: unauthenticated POST to each of the three
+callables returns `UNAUTHENTICATED`.
+
+### ⚠️ Manual visual pass — NOT yet done
+
+- [ ] `/app/follow-ups` in **Turkish** (`tr-demo`): filters, evidence chips, drawer, journey
+- [ ] dashboard card strip + click-through carrying the filter
+- [ ] a UK tenant (`whitecross`) sees only the new nav item and the empty state

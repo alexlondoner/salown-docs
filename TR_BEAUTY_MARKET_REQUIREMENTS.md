@@ -35,14 +35,14 @@ without anybody opening a spreadsheet.
 
 | # | Question | Answered by | Status |
 |---|---|---|---|
-| 1 | Which session is this? | `TreatmentSession.sessionNumber` + `package.ordinal` | 🟡 TR-C |
-| 2 | How many sessions remain? | TR-B `counters.remainingSessions`, read-only in TR-C | 🟡 TR-B/TR-C |
-| 3 | When did they last attend? | `ClientContinuity.lastAttendedAt` | 🟡 TR-C |
-| 4 | Did they miss the latest appointment? | `MISSED_LATEST_APPOINTMENT` | 🟡 TR-C |
-| 5 | Have they missed the last three? | `MISSED_LAST_THREE` (threshold is policy, not a literal) | 🟡 TR-C |
-| 6 | Are they overdue for the next treatment? | `OVERDUE_FOR_NEXT_SESSION`, in tenant timezone | 🟡 TR-C |
-| 7 | Which clients are likely to stop attending? | **See §3 — answered honestly, not predictively** | 🟡 TR-C |
-| 8 | Who should staff follow up with today? | `FOLLOW_UP_RECOMMENDED` + the Recovery workspace | 🟡 TR-C |
+| 1 | Which session is this? | `TreatmentSession.sessionNumber` + `package.ordinal` | ✅ TR-C |
+| 2 | How many sessions remain? | TR-B `counters.remainingSessions`, read-only in TR-C | ✅ TR-B/TR-C |
+| 3 | When did they last attend? | `ClientContinuity.lastAttendedAt` | ✅ TR-C |
+| 4 | Did they miss the latest appointment? | `MISSED_LATEST_APPOINTMENT` | ✅ TR-C |
+| 5 | Have they missed the last three? | `MISSED_LAST_THREE` (threshold is policy, not a literal) | ✅ TR-C |
+| 6 | Are they overdue for the next treatment? | `OVERDUE_FOR_NEXT_SESSION`, in tenant timezone | ✅ TR-C |
+| 7 | Which clients are likely to stop attending? | **See §3 — answered honestly, not predictively** | ✅ TR-C |
+| 8 | Who should staff follow up with today? | `FOLLOW_UP_RECOMMENDED` + the Recovery workspace | ✅ TR-C |
 
 ## 3. Question 7 deserves its own section — what salOWN will and will not claim
 
@@ -76,7 +76,7 @@ predictive or clinical vocabulary in **both** English and Turkish, and
 
 ## 4. Requirements by area
 
-### 4.1 Session lifecycle — 🟡 TR-C Phase 1 (`bc82454`)
+### 4.1 Session lifecycle — ✅ LIVE (`d9856e5`, 2026-07-31)
 
 Nine operational states, server-authoritative transitions, audited history, entitlement
 effects handed to TR-B. Full design: **[SESSION_LIFECYCLE.md](SESSION_LIFECYCLE.md)**.
@@ -84,11 +84,15 @@ effects handed to TR-B. Full design: **[SESSION_LIFECYCLE.md](SESSION_LIFECYCLE.
 Turkish-market specifics baked in:
 - **No-shows burn the session** by tenant policy (`noShowConsumesSession`) — Turkish laser
   salons overwhelmingly do this. Default is off; each salon switches it on deliberately.
-- **A no-show is correctable.** The client who turns up twenty minutes late is normal here,
-  and an uncorrectable absence record becomes the thing a consumer dispute is argued from.
+  TR-C and TR-B read the SAME stored field, so they cannot disagree about what it costs.
+- **A no-show is correctable — as an ATTENDANCE record.** The client who turns up twenty
+  minutes late is normal here, and an uncorrectable absence record becomes the thing a
+  consumer dispute is argued from. The entitlement is NOT restored: TR-B treats that
+  decision as final, so *absent → corrected → completed* burns exactly one session. A salon
+  that wants to be generous makes a deliberate package adjustment with its own ledger row.
 - **Cancelling in good time is never counted as a miss** — the behaviour the salon wants.
 
-### 4.2 Packages, instalments and the open account — 🟡 TR-B
+### 4.2 Packages, instalments and the open account — ✅ LIVE (TR-B `c3716f7`)
 
 Owned entirely by TR-B (`packages/shared/src/treatmentPackage.ts`): append-only ledger,
 payment plans (`FULL`/`INSTALMENTS`/`PER_SESSION`/`OPEN`), partial payments, the
@@ -97,7 +101,7 @@ reconciliation invariant, entitlement counters.
 TR-C reads it through one narrow interface and writes none of it. See
 [SESSION_LIFECYCLE.md §2](SESSION_LIFECYCLE.md#2-the-ownership-split-with-tr-b--the-single-most-important-thing-in-this-document).
 
-### 4.3 Client recovery — 🟡 TR-C Phase 1
+### 4.3 Client recovery — ✅ LIVE
 
 Deterministic queue, filters, follow-up outcomes, one follow-up record per client
 (structurally), `do_not_contact` as a one-way door for staff.
@@ -148,14 +152,28 @@ one-way iCal feed (`salownIcalFeed`). See [TR_LOCALIZATION_PLAN.md](TR_LOCALIZAT
 
 ## 5. What a TR pilot salon can do today vs. after Phase 2
 
-| | Today (Phase 1 pushed, not deployed) | After TR-C Phase 2 |
-|---|---|---|
-| Track a session course | ❌ not reachable | ✅ |
-| See who missed their last three | ❌ | ✅ |
-| Work a follow-up queue | ❌ | ✅ |
-| Take a package payment | ⏳ TR-B | ⏳ TR-B |
-| Take a card payment online | ❌ no TR PSP | ❌ no TR PSP |
-| Send an automated win-back | ⛔ by design | ⛔ by design |
+| | Live today (`d9856e5`) |
+|---|---|
+| Track a session course | ✅ |
+| See who missed their last three | ✅ |
+| Work a follow-up queue | ✅ |
+| Record a package sale, instalments and payments | ✅ TR-B |
+| See a client's outstanding balance in the recovery queue | ✅ read-only from TR-B |
+| Take a card payment online | ❌ no TR-resident PSP — §4.5 |
+| Store before/after photos | ⛔ deferred — KVKK art.6 / UK GDPR art.9, §4.6 |
+| Send an automated win-back | ⛔ by design — no lawful basis, §4.3 |
+
+### 5.1 TR-B demo UX gaps still open (recorded, not claimed complete)
+
+TR-B shipped its engine and panel, and reported these as **still outstanding**. They are
+listed here so the market record does not imply a completeness the product does not have:
+
+- **Package selection in `NewBookingSheet` / walk-in flow** — a session can be redeemed from
+  the Packages screen and the Staff App sheet, but not yet while taking a booking.
+- **Custom-instalment UI** — the engine supports arbitrary schedules; the panel currently
+  offers the generated ones.
+- **Finance / Reports package-revenue policy + integration** — package money does not yet
+  flow into the Finance or Reports surfaces, and the accounting policy for it is undecided.
 
 ## 6. Open questions for the owner
 

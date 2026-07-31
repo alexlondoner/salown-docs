@@ -1,8 +1,10 @@
 # SESSION_LIFECYCLE.md — treatment sessions, continuity and client recovery (TR-C)
 
-> **Status:** 🟡 **Phase 1 PUSHED** — `bc82454` on `origin/main`, 2026-07-31.
-> **`TR-C Phase 1 PUSHED — implementation complete, registration/deploy waiting for TR-B claim release.`**
-> Nothing is deployed and nothing is user-reachable. See [§Phase 2](#phase-2--what-is-left) for exactly what remains.
+> **Status:** ✅ **DEPLOYED + LIVE-VERIFIED** — `d9856e5` on `origin/main`, 2026-07-31.
+> Baseline chain: TR-A `424747d` → TR-C Phase 1 `bc82454` → TR-B `c3716f7` → TR-C Phase 2 `d9856e5`.
+> Functions `salownCreateTreatmentSession-00001-vap` · `salownTransitionTreatmentSession-00001-jur` ·
+> `salownRecordFollowUp-00001-mez`. Hosting `salown` `a5c3f0e4622644a7` (rollback `f2428d9b468ac4bf`),
+> `salown-staff` `c10550cbbe1ffebb` (rollback `d8275712fa1a828a`). Live-verified on `tr-demo`: **37/37**.
 
 **Contract:** `packages/shared/src/treatment.ts` (TYPE-ONLY)
 **Cores:** `src/utils/treatmentLifecycle.ts` ↔ `functions/src/treatmentSessions/lifecycle.ts` (byte-identical twins)
@@ -69,6 +71,45 @@ carrying e.g. `packageListPrice_m` rather than silently ignoring it.
 `RecoveryRow.outstandingBalance_m` is a **read-only passthrough** of TR-B's own cached
 figure, so the recovery screen can offer a "has a balance" filter. TR-C never compares it,
 never formats it itself, and treats `null` as "no data" rather than "zero".
+
+### 2.1 Two contract corrections the cross-contract suite forced
+
+Both were found by wiring the **real** TR-B executor rather than a stub, and in both
+cases the honest answer was to REMOVE a TR-C capability rather than keep one that
+could lie.
+
+**`cancelledConsumesSession` is gone.** TR-B is the financial authority and its
+contract has no verb for "cancelled but consumed" — `cancel` releases, full stop. A
+TR-C-only flag would have let TR-C's audited history record a `consume` that TR-B's
+ledger never made. That is a quieter and worse failure than simply not offering the
+option. A cancellation always releases; if a salon ever needs otherwise it becomes a
+TR-B setting **and** a TR-B verb.
+
+**Correcting a no-show no longer restores the entitlement.** TR-B treats a no-show
+entitlement as FINAL, deliberately: *"re-deciding a delivered session days later would
+silently move money-adjacent entitlement with no record of the first decision; the
+correction is a new session row, not an edit."* It is right to. So the TR-C correction
+fixes the **attendance record** — which is TR-C's domain, and is what the recovery
+queue actually reads — and does not pretend it can un-burn a session.
+
+"Settledness" is DERIVED from the audited history (`entitlementIsSettled`), never
+stored as a flag that could drift: once a session has been to `no_show`, no later
+transition moves anything. So *marked absent → corrected → completed* burns exactly
+**one** session, which is what the requirement asked for. A salon that wants to be
+generous makes a deliberate TR-B package adjustment, with its own ledger row.
+
+### 2.2 The two-transaction seam is reported, not hidden
+
+The lifecycle write and the entitlement write are two transactions in two packages, so
+a partial outcome is genuinely possible: the session can be `completed` while the
+entitlement has not moved. The result carries `entitlementApplied` (`true` / `false` /
+`null` = nothing to move) and `entitlementReason` (TR-B's machine code) rather than
+swallowing it — a salon's delivery record and its accounting silently disagreeing is
+exactly the failure this package exists to prevent.
+
+The retry is **safe**: the delegated idempotency key is derived from
+`(tenant, session, from, to)`, so re-running the same transition replays inside TR-B
+instead of consuming a second entitlement.
 
 ### Degradation is the default
 
@@ -301,28 +342,67 @@ no-future-booking · completed package clears the inappropriate flags · legacy 
 untouched · tenant isolation (fake + real) · role permissions on the sensitive edges ·
 dashboard/list parity across every card · TR/EN key-shape and language discipline.
 
-## 10. Phase 2 — what is left
+## 10. Phase 2 — shipped
 
-Phase 1 stopped short of five files because **TR-B holds their claims** and CLAUDE.md
-coordination rule 7 makes a claim conflict a hard stop, not something to append around.
+Phase 1 stopped short of five shared registration files because TR-B held their claims and
+CLAUDE.md rule 7 makes a claim conflict a hard stop. TR-B released at `c3716f7`; Phase 2
+took a narrow `TR-C-INTEGRATION` claim over exactly those files and landed:
 
-Remaining work, all additive:
+| Registration | What |
+|---|---|
+| `functions/src/index.ts` | 3 onCall shells + **`packageSession: PKG.packageSessionCore`** — the whole financial seam |
+| `src/pages/AppRouter.tsx` | `follow-ups` route (lazy, not admin-gated) |
+| `src/components/Sidebar.tsx` | one nav entry, plus generic per-item `labelKey` support |
+| `src/i18n/dictionaries/{en,tr}/index.ts` | the `treatments` namespace |
+| `packages/shared/src/index.ts` | `export type * from './treatment.js'` |
+| `functions/package.json` | **TR-B's two omitted suites** + TR-C's, into the default gate |
 
-1. `functions/src/index.ts` — export `salownCreateTreatmentSession`,
-   `salownTransitionTreatmentSession`, `salownRecordFollowUp` as thin onCall shells over the
-   cores (map `result.reason` → `HttpsError`, wire `logAuditServer`).
-2. `src/pages/AppRouter.tsx` — one lazy route, `follow-ups` → `FollowUps`.
-3. `src/components/Sidebar.tsx` — one nav entry, `treatments.navLabel`.
-4. `src/i18n/dictionaries/en/index.ts` + `tr/index.ts` — register the `treatments` namespace.
-   A tripwire test in `treatments.dictionary.test.ts` fails once this lands, which is the
-   reminder to delete it.
+**Not needed, and not done:** `firestore.rules` — the `[G4]` catch-all already grants
+same-tenant READ and denies client WRITE on any unlisted collection, which is exactly the
+server-authoritative posture the three new collections want. Adding explicit blocks would be
+documentation, not a control. **Not needed:** `firestore.indexes.json` — every query is a
+plain collection read, filtered and sorted in memory.
 
-Then: deploy the three functions **explicitly** (never blanket — see
-`feedback_functions_deploy_gotcha`), hosting after, and live-verify on `tr-demo`.
+### Two things that DID change for existing UK tenants
 
-**Not needed:** `firestore.rules`. The `[G4]` catch-all already grants same-tenant READ and
-denies client WRITE on any unlisted collection, which is exactly the server-authoritative
-posture `treatmentSessions` / `treatmentFollowUps` / `treatmentRequests` want. Adding
-explicit blocks would be documentation, not a control — and it would have meant contesting a
-TR-B claim for no behavioural gain. **Not needed:** `firestore.indexes.json` — every query is
-a plain collection read, filtered and sorted in memory.
+1. A **"Follow-ups" sidebar item** now appears for every tenant. Opening it shows
+   *"This salon has no treatment sessions yet."* — cards and timeline render nothing.
+   (Same precedent TR-B set with "Packages".)
+2. The **Staff App bundle** grew the treatments dictionary, because the Staff App consumes
+   the same i18n barrel. It renders none of those strings.
+
+Everything else remains inert: zero `treatmentSessions` ⇒ empty rows ⇒ unchanged screens.
+
+## 11. Live verification — production, `tr-demo` only (2026-07-31 ~20:5x UK)
+
+**37/37 passed.** The script drove the exact deployed cores — including the real TR-B
+executor through the same `packageSession` seam `functions/src/index.ts` injects — against
+production Firestore.
+
+- [x] guard refused to run against anything not marked `demo:true` + `demoKind:'tr-pilot'`
+- [x] TR-B package sold (4 entitlements) → TR-C session created and linked
+- [x] completion consumed **exactly one** entitlement (4 → 3)
+- [x] repeat completion replayed with effect `none`; 4 concurrent completions consumed nothing further
+- [x] no-show burnt the session under tenant policy; owner corrected the attendance record
+- [x] the correction moved **no** entitlement — total consumed stayed at 2, not 3
+- [x] `MISSED_LATEST_APPOINTMENT`, `MISSED_LAST_THREE` (streak 3), `NO_FUTURE_APPOINTMENT`
+- [x] overdue **45 days** computed in `Europe/Istanbul`, 80 days since last attendance
+- [x] every flag carried machine evidence with its session ids; no predictive/clinical code
+- [x] follow-up recorded; the client appeared in the queue with a reason
+- [x] dashboard card count === Follow-ups list length, for all four cards
+- [x] outstanding balance readable (₺1600.00) and **byte-identical** after the whole run
+- [x] no ledger row from any attendance event; demo tenant still cannot email/message/charge
+- [x] **cleanup verified** — 32 synthetic docs deleted, `packageSettings` removed again,
+      `treatmentSessions`/`treatmentFollowUps`/`clientPackages` all back to 0
+
+Deployed endpoints independently confirmed live and failing closed: an unauthenticated POST
+to each of the three returns `UNAUTHENTICATED`.
+
+### ⚠️ Manual visual pass — NOT done
+
+- [ ] `/app/follow-ups` in **Turkish** (`tr-demo`): filters, evidence chips, drawer, journey
+- [ ] dashboard card strip renders and click-through carries the filter
+- [ ] a UK tenant (`whitecross`) sees the nav item and the empty state, nothing else changed
+
+The mechanism is verified statically, on the emulator and live; the human pass is not.
+Same standing gap as TR-A's §12.3.
