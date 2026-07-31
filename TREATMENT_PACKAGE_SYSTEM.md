@@ -342,14 +342,79 @@ left exactly as found. No email sent, no card touched.
 
 ## 15. Known gaps
 
+Closed and still-open items are tracked by TR-B2 (see §16).
+
+- ~~**Finance / Reports** do not include package revenue.~~ **CLOSED by TR-B2 Stage 1** (`c5bd1dc`) — see §16.
 - **Booking-flow package selection.** A session is redeemed from the client card (walk-in) or by
   linking an existing booking. Choosing a package *inside* `NewBookingSheet` / `WalkInFlow` is a
-  further integration and is **not** built.
+  further integration — TR-B2 Stage 3.
 - **Custom instalment amounts/dates** are supported by the engine and the callable, but the sell
   screen currently offers equal instalments only. The "set the amounts myself" path is a UI gap, not
-  an engine one.
-- **Finance / Reports** do not yet include package revenue. Package money is deliberately *not* in
-  `bookings`, so no existing total silently changed — but that also means the Finance page does not
-  see it yet. Recognising package revenue needs a product decision (cash-received vs. delivered-value)
-  that belongs in its own package.
+  an engine one — TR-B2 Stage 2.
+- **Catalogue archive/restore** has server support (`status: 'archived'`, `DEFINITION_ARCHIVED`) but
+  no user control — TR-B2 Stage 2.
+
+---
+
+## 16. Package accounting (TR-B2 Stage 1, `c5bd1dc`)
+
+> **Engine:** `src/utils/packageAccounting.ts` (pure) · **Surface:** Reports → Packages tab.
+> **Status:** ✅ DEPLOYED + LIVE-VERIFIED 2026-07-31.
+
+### The five dimensions, and why they are never summed
+
+An 8-session course sold for ₺8.000 with ₺2.000 taken today has three different right answers:
+
+| Question | Answer | Kind |
+|---|---|---|
+| How much money came in? | ₺2.000 — **cash received** | flow |
+| How much have we earned? | ₺0 — **delivered value** | flow |
+| How much treatment do we still owe? | ₺2.000 — **deferred** | stock |
+
+Plus **outstanding** (₺6.000 never funded) and **refunds**, reported separately. Collapsing these into
+one "Revenue" figure is how a course-based business books a record month and then discovers it owes
+eight months of treatment it already spent the money on.
+
+### Flows are differences of cumulative folds
+
+Every in-period figure is `value(endKey) − value(dayBefore(startKey))` over TR-B's **own**
+`foldPackageLedger`. Reversal resolution, sign rules and `M1`–`M8` therefore have exactly one
+implementation in the product — a second reversal resolver that drifted from the first is the class
+of bug an append-only ledger exists to make impossible.
+
+**Deliberate consequence:** a `REVERSAL` recorded in August against a July payment shows as **negative
+cash in August**. July is not restated, because a closed period is something the salon has already
+acted on. It also means the periods sum exactly to the final balance, with no reconciling item.
+
+### Allocation
+
+`allocateSessionValue` calls TR-B's own `splitEvenly`, so the remainder rule is not merely *the same
+as* the instalment rule — it **is** the instalment rule, and the odd kuruş lands on session #1, the
+one most likely already delivered.
+
+The base is the package total **as of the cutoff** — the immutable snapshot price plus audited
+`ADJUSTMENT`s. A write-off therefore restates what the remaining sessions are worth, and the
+restatement is absorbed into the period the adjustment was recorded in.
+
+> *Rejected:* allocate from the snapshot price alone. A fully-delivered package that had been written
+> off would then report more earned than the client will ever be billed, forever.
+
+A session recognises value iff `holdsEntitlement && (completed || no_show)` — reading the **stored**
+consequence of the tenant's no-show policy rather than re-deciding it, so this module and the
+executor can never disagree about what a missed appointment cost.
+
+### Why the surface is Reports and not Finance
+
+`/app/finance` is gated to `tenantId === 'whitecross'` (`AppRouter.tsx`), renders every amount through
+a hardcoded `'£' + …`, and belongs to one UK barbershop's wage/P&L model. A Turkish salon — the only
+kind that sells packages — can never open it. Reports is platform-wide.
+
+Not touching `Finance.tsx` is also the strongest available guarantee that the `2a69735` date-selection
+fix is unaffected: the file is not in the diff, and its built chunk is **byte-identical live vs
+local** once the entry-chunk filename is normalised.
+
+### No double counting
+
+A booking that uses a package session is stamped `price: 0` + `packagePrepaid` at link time (§6), so
+its checkout contributes **zero** to service revenue. Package value is counted once, here.
 - `locationId` is carried on every write and always `null` until locations ship.

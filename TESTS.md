@@ -596,3 +596,66 @@ callables returns `UNAUTHENTICATED`.
 - [ ] `/app/follow-ups` in **Turkish** (`tr-demo`): filters, evidence chips, drawer, journey
 - [ ] dashboard card strip + click-through carrying the filter
 - [ ] a UK tenant (`whitecross`) sees only the new nav item and the empty state
+
+---
+
+## 15. TR-B2 — package booking UX, custom instalments, Finance/Reports (2026-07-31)
+
+### Stage 1 — package accounting + Reports (`c5bd1dc`)
+
+**Automated: 41 new tests.** Frontend gate **897/897**.
+
+| Suite | Count | Command |
+|---|---|---|
+| Accounting engine — allocation, period flows, stocks, filters, export | 41 | `npx vitest run src/utils/packageAccounting.test.ts` |
+
+What it proves that a simpler test could not:
+
+- [x] allocation sums back to the total **exactly**, for every session count 1…120 across seven totals
+- [x] the remainder lands on session #1 — TR-B's own `splitEvenly`, so it IS the instalment rule
+- [x] a reversal recorded in a LATER period is negative cash in **that** period; July is not restated and the periods sum to the final balance
+- [x] an ADJUSTMENT is **not** cash, and restates what the remaining sessions are worth
+- [x] delivered > paid reports **ACCRUED**, never a negative deferral; `paid − delivered = deferred − accrued` on every row
+- [x] a no-show follows the **stored** `holdsEntitlement` consequence, not a re-decided policy
+- [x] scheduled reserves but earns nothing; cancelled earns nothing
+- [x] a session whose ordinal exceeds the sold count is counted but carries **no** value
+- [x] Istanbul vs London: the same instant lands in different periods, and the engine follows the key it was given
+- [x] DST boundaries (2026-03-29, 2026-10-25), month/year/leap-day rollover
+- [x] mixed currency is **flagged**, not silently totalled
+- [x] a fold failure (`M6`) propagates to the totals instead of being swallowed
+- [x] an empty tenant produces zeroes, not `NaN` — the packages-off anchor
+- [x] export rows state their amount type; a negative flow is still exported; CSV carries minor units and **no** currency symbol
+
+### Stage 1 live verification — production, `tr-demo` only
+
+**22/23 passed**, plus **8/8** read-only anchor checks. Drove the exact deployed engine against production Firestore.
+
+- [x] sale dated by the **Istanbul** calendar; session recognised on its own Istanbul day
+- [x] cash ₺2.000 · delivered ₺1.000 (one eighth) · outstanding ₺6.000 · deferred ₺1.000 · accrued 0
+- [x] the deferred/accrued identity and TR-B's `M1` both hold on live data
+- [x] a period before the sale reports zero
+- [x] export typing and minor-unit serialisation on real documents
+- [x] **cleanup verified** — 3 synthetic docs deleted, `packageSettings` removed, settings doc otherwise byte-identical
+
+**The one failure was a stale assertion, and it found something real.** The test asserted TR-B's
+2026-07-31 baseline *"no live tenant carries `packageSettings`"*. That is **no longer true**: the
+`demo` tenant has since opted in (`enabled: true`, 1 definition, 0 sold). That is deliberate use of a
+shipped feature, not a leak — so the assertion was corrected to the claim that actually matters:
+
+- [x] `whitecross`, `herohairs`, `the-hair-lab`, `yusufo` — `packageSettings` **absent** ⇒ resolver `enabled: false` ⇒ **no** Packages report tab
+- [x] `demo` — resolves `enabled: true` with **no** issues ⇒ the tab **is** shown, and renders the empty state without `NaN`
+
+> **Anyone re-running a TR-B/TR-C live script should expect the "no tenant carries packageSettings"
+> check to fail on `demo` from now on.** It is a stale baseline, not a regression.
+
+### Deployment evidence
+
+- Hosting `salown` released **2026-07-31 23:18:12** by GitHub Actions. Functions and rules **not** touched — all seven package/treatment callables unchanged and still failing closed (`UNAUTHENTICATED`).
+- `hosting:salown-staff` deliberately **not** deployed: the staff bundle's only delta is the inert `packages.finance.*` dictionary (the i18n barrel is shared). `PackageFinancePanel` is absent from that bundle and no staff component renders those keys. The tracked staff bundle therefore leads the deployed staff release until Stage 3 deploys it.
+- `Finance-*.js` live vs local: **byte-identical** once the entry-chunk filename is normalised ⇒ `Finance.tsx` and the `2a69735` date fix provably unchanged.
+
+> ⚠️ **CI observability trap, worth knowing before the next deploy.** CI's `npm ci` resolves
+> dependencies differently from a local `node_modules`, so **CI's content hashes differ from a local
+> build's**. "Is my push live?" therefore *cannot* be answered by polling for the filename your own
+> build produced — that file will never exist on the server. Check for a **source marker string**
+> inside the live bundle instead. Ten minutes were lost to this; the deploy had succeeded all along.
