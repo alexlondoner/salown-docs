@@ -454,3 +454,71 @@ brand and the Turkish day names must be correct.
 | 12 | Logos | correct aspect ratio, adequate contrast, no duplicate wordmark beside a logo | ☐ | ☐ |
 
 Attach screenshots (or tick + sign) here when complete.
+
+---
+
+## 13. TR-B — treatment packages, partial payments and the open-account ledger (2026-07-31)
+
+**Automated: 131 tests, all green.** Baseline `c3716f7`.
+
+| Suite | Count | Command |
+|---|---|---|
+| Engine — money, schedules, entitlement, settings, authorization, twin byte-check | 72 | `cd functions && node --test src/packages/packagePlan.test.js` |
+| **Emulator concurrency** — real Firestore transaction engine | 27 | `cd functions && firebase emulators:exec --only firestore --project demo-c1 --config ../firebase.json 'node --test --test-concurrency=1 src/packages/*.emulator.test.js'` |
+| Frontend twin parity + behaviour | 8 | `npx vitest run src/utils/packagePlan.parity.test.ts` |
+| Money input parsing (TR/UK keyboards) | 12 | `npx vitest run src/lib/packagesApi.test.ts` |
+
+⚠️ **The two `functions/` suites are NOT in the default `npm test` glob.** `functions/package.json`
+was claimed by the concurrent TR-C session and yielded rather than contested (CLAUDE.md rule 7).
+Whoever next owns that file should append `src/packages/*.test.js` to `test` and
+`src/packages/*.emulator.test.js` to `test:emulator`. No CI depends on it — `deploy.yml` does not run
+`npm test`.
+
+### What the emulator suite proves (a fake could not)
+
+- [x] six concurrent **identical** payments → exactly ONE ledger row, five replays, all reporting success
+- [x] same key + **different** amount → `IDEMPOTENCY_CONFLICT`, still one row
+- [x] a retried **sale** replays instead of selling the package twice
+- [x] two concurrent payments that would together **overpay** → exactly one refused, `outstanding_m` never negative
+- [x] five concurrent completions of the **same booking** → exactly ONE entitlement consumed, one session doc
+- [x] two bookings racing for the **last** session → exactly one winner, loser gets `NO_SESSIONS_REMAINING`
+- [x] a booking already linked to one package cannot be linked to another
+- [x] editing a definition after a sale leaves the sold package **byte-identical** (snapshot immutability)
+- [x] reserving stamps the booking `price: 0` + `packagePrepaid` (the loyalty double-award seam)
+- [x] no-show burns / does not burn per tenant policy; cancel releases
+- [x] exhausting entitlement completes the package **even with money still owed**
+- [x] cancelled and expired packages refuse redemption; an authorized override is recorded
+- [x] cancelling a package moves **no** money
+- [x] tenant isolation — a `whitecross` claim cannot reach a `tr-demo` package
+- [x] staff may take a payment but not a refund when the salon requires approval; owner can
+- [x] an unknown uid is refused even inside the right tenant
+- [x] a tenant with packages OFF cannot sell or take money (the UK anchor)
+- [x] a required sale deposit is enforced **before anything is written**
+- [x] the sale is dated by the TENANT calendar, not the server region
+
+### Live verification — production, `tr-demo` only (2026-07-31 ~16:2x UK)
+
+**37/37 passed.** Script drove the exact deployed executor against production Firestore.
+
+- [x] no live tenant carries `packageSettings` (feature dark on all six)
+- [x] strict validator rejects a malformed setting; a staffer cannot change payment settings; owner can
+- [x] 3-instalment sale with a ₺2.000 deposit — instalments sum exactly, remainder on the first, TRY stamped from the tenant, Istanbul calendar day
+- [x] `M1` reconciles at every step
+- [x] double-tap → one row; overpayment refused; staff refund refused, staff payment allowed
+- [x] refund then reversal — balance restored, all 5 rows still present (append-only)
+- [x] booking stamped `price: 0` + `packagePrepaid` + `packageListPrice_m`
+- [x] one entitlement consumed, retry refused, counters unchanged
+- [x] a `whitecross` claim cannot reach the `tr-demo` package
+- [x] cancellation moves no money; a cancelled package refuses redemption
+- [x] **cleanup verified** — 12 synthetic docs deleted, `packageSettings` removed, tenant left as found
+
+No email sent, no card touched, no other tenant read or written.
+
+### ⚠️ Manual visual pass — NOT yet done
+
+- [ ] Panel `/app/packages` in **Turkish** (`tr-demo`): catalogue, sell flow, schedule preview, client drawer, payment history
+- [ ] Panel `/app/packages` in **English** on a UK tenant with the feature enabled — confirm £ everywhere, no ₺
+- [ ] Settings → Payment settings as **owner** (editable) and as **admin** (read-only strip shown)
+- [ ] Staff App client card → packages block → use a session, record a payment, on a real phone
+- [ ] Chrome auto-translate ON, Turkish tenant: confirm package names, client names and amounts are NOT rewritten
+- [ ] A UK tenant with `packageSettings` absent still shows **no** Packages nav item and an unchanged client card

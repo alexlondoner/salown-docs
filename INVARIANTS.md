@@ -35,6 +35,12 @@
 | INV-PARA-4 | A tip is never revenue; the card/cash tip distinction is made from `tipPaymentMethod` (not from the service `paymentMethod`) | "Paid by card, tip in cash" → the card-tip total is wrong | 🟡 | INC 2026-06-28 |
 | INV-PARA-5 | Aggregator gross price ≠ business net; commission (+VAT) is modelled as an **automatic expense**, gross stays visible | The books inflate revenue | 🟡 | INC 2026-06-26 (Treatwell) · [accounting](../salown-app) |
 | INV-PARA-6 | `pp()` **preserves** negative values (refunds) — no clamping | Refunds are lost/turn positive | 🟡 | CLAUDE §Money |
+| INV-PARA-7 | **Package money is INTEGER MINOR UNITS ONLY** (`_m` suffix). Never a float, never a major-unit number, never a formatted string parsed back | Rounding drift accumulates over a months-long instalment plan; two screens quote different balances | 🟠 | TR-B `c3716f7` · [TREATMENT_PACKAGE_SYSTEM](TREATMENT_PACKAGE_SYSTEM.md) §4 |
+| INV-PARA-8 | **`packageTotal_m === paid_m + outstanding_m + refunded_m`** (`M1_RECONCILES`) — re-checked on EVERY fold, never trusted from the stored cache | A hand-edited ledger row certifies itself; the salon collects or forgives the wrong amount | 🔴 | TR-B `packagePlan.foldPackageLedger` |
+| INV-PARA-9 | Package financial history is **APPEND-ONLY**. A correction is a `REVERSAL` / `ADJUSTMENT` entry — there is NO edit or delete action for anyone, including super-admin | The record stops being a record; a disputed charge cannot be reconstructed | 🔴 | TR-B `canPerform` (no EDIT/DELETE action exists) |
+| INV-PARA-10 | A sold package's `snapshot` is **IMMUTABLE**. Balances fold against the snapshot, never the live `packageDefinition` | A Monday price rise retroactively changes what a Friday customer owes | 🔴 | TR-B §3 · proven live on tr-demo 2026-07-31 |
+| INV-PARA-11 | A package-redeemed booking is stamped **`price: 0` + `packagePrepaid`** at LINK time, so the existing checkout/receipt/loyalty engines see a prepaid zero-value service | Loyalty points are awarded a second time for a session already paid for at sale | 🟠 | TR-B §6 · `BookingPackageLink` |
+| INV-PARA-12 | Package **overpayment is REJECTED**, not credited — `outstanding_m` may never go negative (`M2`) | Negative debt, or an implicit client wallet the system cannot explain | 🟡 | ADR-020 · [PAYMENT_PLAN_ENGINE](PAYMENT_PLAN_ENGINE.md) §8 |
 
 ## 2. Date & Time (UK)
 

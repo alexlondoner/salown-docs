@@ -305,3 +305,88 @@ protected. Recorded here so the omission is not mistaken for one.
 **Also decided:** technical identifiers keep their lowercase spelling (hosting targets `salown` /
 `salown-staff`, `salown-app`, `salown-theme`, domains). Renaming an identifier for visual brand
 consistency would break live infrastructure and buys nothing — the user never sees it.
+
+---
+
+## ADR-020 — A package refund SETTLES value; overpayment is REFUSED, not credited
+
+**Date:** 2026-07-31 · **Status:** ✅ Implemented (TR-B, `c3716f7`)
+
+**Context.** TR-B's brief fixes the reconciliation invariant
+`packageTotal = paidAmount + outstandingAmount + refundedAmount`. That equation only holds under one
+reading of what a refund *means*, and the reading is a product decision, not an arithmetic detail —
+so it is recorded here rather than left implicit in a fold function.
+
+Two readings were available:
+
+**(a) A refund settles value.** Handing money back also discharges that part of the price. The three
+buckets then genuinely partition the package: funded-and-kept, funded-then-returned, never-funded.
+`paid = gross − refunded`, `outstanding = total − gross`, and the invariant holds by construction.
+
+**(b) A refund is money-only.** The debt survives the refund, so a client who paid ₺8.000 and was
+refunded ₺2.000 owes ₺2.000 again. Under this reading `paid + outstanding + refunded = ₺10.000` on an
+₺8.000 package — the stated invariant is simply false, and one of the three figures has to be
+redefined into something a salon owner would not recognise.
+
+**Decision — (a).** A `REFUND` returns money *and* discharges the matching part of the price.
+
+Reading (b) remains reachable **deliberately**, as a refund plus an explicit `ADJUSTMENT` that
+re-raises the total. It is not the default because a salon that refunds a customer and silently keeps
+billing them is exactly the failure this ledger exists to prevent — and because (b) makes the common
+case (refund on cancellation) require a compensating entry nobody would remember to make, while (a)
+makes the rare case explicit.
+
+**Also decided: overpayment is REJECTED.** Accepting it would create salon-wide client credit with
+nowhere to live. TR-B's ledger is scoped to ONE package, so an excess would either sit as negative
+debt on a package it does not belong to — breaking `M2_NON_NEGATIVE_OUTSTANDING` and making every
+balance on that package a lie — or require a **client wallet**, which is a different product with its
+own expiry, transfer, refund and tax rules.
+
+Refusing an amount a staff member can immediately retype is a smaller harm than inventing a liability
+the system cannot explain. The friction is paid down in the UI instead: "pay the remaining ₺6.000,00"
+and "pay instalment 2 — ₺2.666,67" are one tap each.
+
+**Rejected alternatives.**
+
+- *Silently clamp an overpayment to the outstanding balance.* Records a different amount from the one
+  the salon says it took. A ledger that quietly disagrees with the till is worse than one that refuses.
+- *Allow negative `outstanding_m` and call it credit.* Every downstream reader — the list, the Staff
+  App, a future Finance row — would have to know that a negative debt is not a debt. One of them
+  eventually would not.
+- *Derive the plan's paid state from a per-instalment `paid` boolean.* Debt would be derived from a
+  boolean, which the brief forbids and which cannot represent a part payment at all.
+
+**Consequences.** `M1` is checked on every fold rather than assumed. The UI prints the arithmetic
+under the figures so an owner can check the software rather than trust it. A client wallet, if ever
+wanted, is a separate ledger and a separate ADR.
+
+**See:** [TREATMENT_PACKAGE_SYSTEM.md](TREATMENT_PACKAGE_SYSTEM.md) §4 ·
+[PAYMENT_PLAN_ENGINE.md](PAYMENT_PLAN_ENGINE.md) §8 · INV-PARA-8, INV-PARA-12
+
+---
+
+## ADR-021 — Package sessions are prepaid at LINK time (`price: 0`), so TR-B changes no checkout code
+
+**Date:** 2026-07-31 · **Status:** ✅ Implemented (TR-B, `c3716f7`)
+
+**Context.** A package client pays once, at sale, and then attends 8 appointments. If those bookings
+carry their notional service price, the existing checkout flows that price into `receiptEarnBase_p`
+and the client earns loyalty points **a second time** for treatment already paid for — the
+double-award the brief explicitly names.
+
+**Decision.** Redeeming a session stamps the booking `price: 0` plus the `BookingPackageLink` fields
+at **link** time. The existing checkout, canonical receipt writer, receipt reader and loyalty award
+then see a prepaid zero-value service and compute the right thing **without knowing packages exist**.
+
+**Why not the obvious alternative** — teach `checkoutBooking` about packages and special-case the
+earn base? Because that file is the most load-bearing money path in the product (P1-RECEIPT-MATH), it
+is shared by every UK tenant, and a package-shaped conditional inside it would be a live regression
+risk for six salons that will never sell a package. Zeroing one field at the boundary buys the same
+outcome with a diff of zero lines in the financial core.
+
+**Consequences.** `packageListPrice_m` preserves what a session was worth for reporting, without ever
+re-entering the money math. Package revenue is therefore NOT in `bookings` — no existing total
+silently changed, and recognising it in Finance is a deliberate later decision (cash-received vs.
+delivered-value), not an accident.
+
+**See:** [TREATMENT_PACKAGE_SYSTEM.md](TREATMENT_PACKAGE_SYSTEM.md) §6 · INV-PARA-11

@@ -10,10 +10,45 @@
 > separate `whitecross-site` repo deploy manually**, so code can sit on `origin/main` for days while
 > production runs older behavior. Confusing "merged" with "live" has caused real incidents.
 >
-> **Snapshot date:** 2026-07-31 ~15:5x UK — TR-C Phase 1 pushed but deliberately NOT deployed (see the TR-C row directly below). Previous snapshot 2026-07-31 01:5x UK — **three deploy waves have landed since the previous snapshot and this file now reflects them.** 2026-07-30 ~14:4x (Session A: ANY-BARBER + PUSH-RECOVERY + RECEIPT-WRITER), 2026-07-30 ~17:5x–18:1x (Session B: receipt READER + the remaining UK financial work), 2026-07-31 ~00:5x–01:4x (master closure: whitecross saas hosting + LC1 live chat). The previous revision of this line said *no deploy occurred* on 07-30; that was true when written and false within the hour. · 2026-07-27 15:05 UK after the Treatwell parser deploy + T2188888050 repair (previous: 12:55 UK after the whitecross test-mode lockdown deploy) (previous
+> **Snapshot date:** 2026-07-31 ~16:3x UK — **TR-B is fully deployed and live-verified** (row directly below); TR-C Phase 1 remains pushed but deliberately NOT deployed. Previous snapshot 2026-07-31 ~15:5x UK. Previous snapshot 2026-07-31 01:5x UK — **three deploy waves have landed since the previous snapshot and this file now reflects them.** 2026-07-30 ~14:4x (Session A: ANY-BARBER + PUSH-RECOVERY + RECEIPT-WRITER), 2026-07-30 ~17:5x–18:1x (Session B: receipt READER + the remaining UK financial work), 2026-07-31 ~00:5x–01:4x (master closure: whitecross saas hosting + LC1 live chat). The previous revision of this line said *no deploy occurred* on 07-30; that was true when written and false within the hour. · 2026-07-27 15:05 UK after the Treatwell parser deploy + T2188888050 repair (previous: 12:55 UK after the whitecross test-mode lockdown deploy) (previous
 > revisions: 2026-07-26 19:45 UK; 2026-07-24 16:40 UK after Parser-3C landed on `origin/main`; earlier
 > 16:05 revision during BSP-H1, see the hosting-baseline correction below). Verify against `git log origin/main` + the live system before acting;
 > a row here is a claim about a moment, not a standing guarantee.
+
+---
+
+## 🇹🇷 TR-B — treatment packages, partial payments and the open-account ledger · **DEPLOYED + LIVE-VERIFIED** 2026-07-31 ~16:3x UK
+
+**Baseline commit `c3716f7`** (`origin/main`). Production **is** on it, on every surface.
+
+| Surface | State |
+|---|---|
+| Functions | ✅ **DEPLOYED** — 6 NEW callables created in `europe-west2`, codebase `salown`: `salownSavePackageDefinition`, `salownSellPackage`, `salownRecordPackagePayment`, `salownPackageSession`, `salownSavePackageSettings`, `salownCancelClientPackage`. **Targeted deploy list** (never a blanket `--only functions`, which would delete the 27 us-central1 legacy functions). **No existing function was changed.** |
+| Hosting `salown` | ✅ **DEPLOYED** — `public-bundle/assets/index-BnmVHeV5.js` live, lazy chunk `Packages-CYWHDamY.js` serving HTTP 200. Deployed manually because GitHub Actions status was not readable from the work machine (private repo, no `gh`); the manual deploy is idempotent with CI. |
+| Hosting `salown-staff` | ✅ **DEPLOYED** — `staff-Dn9rrW0b.js` live (tracked bundle rebuilt and committed; CI builds only the main app). |
+| `firestore.rules` | ✅ **DEPLOYED LAST**, after functions and hosting. ONE key added to the existing `settings/{document=**}` `hasAny()` list: `packageSettings` is now owner-or-super-admin only, beside `presentation`. No new match block. |
+| `firestore.indexes.json` | ❌ not changed — every package query is a single-field equality, which Firestore serves from automatic indexes. |
+
+**Live verification.** 37 assertions against **production Firestore**, `tr-demo` only, driving the
+exact deployed executor: owner-only settings, a 3-instalment sale with a ₺2.000 deposit, double-tap
+idempotency (one ledger row from two attempts), overpayment refusal, the staff payment/refund
+permission split, refund + reversal leaving history intact, the `price: 0` prepaid seam on a real
+booking, entitlement consumed once and the retry refused, tenant isolation, and cancellation moving
+no money. **All 12 synthetic documents deleted and the `packageSettings` key removed** — `tr-demo`
+was left exactly as found. No email sent, no card touched.
+
+Callable liveness independently confirmed over HTTPS: all six return
+`{"reason":"UNAUTHENTICATED","errors":["sign-in required"]}` — the executor's own code, proving the
+deployed build is this one and the auth gate is closed.
+
+**Blast radius on existing tenants: none.** `packageSettings` is absent on all six live tenants
+(`demo`, `herohairs`, `the-hair-lab`, `tr-demo`, `whitecross`, `yusufo`), so the resolver returns
+`enabled: false` and every entry point refuses before any write. The rules clause cannot bite on a
+key nobody has.
+
+⚠️ **Not deployed, because not built:** package selection inside `NewBookingSheet`/`WalkInFlow`, the
+custom-instalment UI, and Finance/Reports recognition of package revenue. See
+[TREATMENT_PACKAGE_SYSTEM.md](TREATMENT_PACKAGE_SYSTEM.md) §15.
 
 ---
 
