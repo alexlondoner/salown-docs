@@ -659,3 +659,37 @@ shipped feature, not a leak — so the assertion was corrected to the claim that
 > build's**. "Is my push live?" therefore *cannot* be answered by polling for the filename your own
 > build produced — that file will never exist on the server. Check for a **source marker string**
 > inside the live bundle instead. Ten minutes were lost to this; the deploy had succeeded all along.
+
+### Stage 2 — catalogue archive/restore + custom instalments (`b0a2051`)
+
+**Automated: 19 new tests.** Frontend gate **916/916**. No Function deployed — the
+server contract already backed both features.
+
+| Suite | Count | Command |
+|---|---|---|
+| Custom instalment reconciliation + engine agreement | 19 | `npx vitest run src/components/packages/CustomInstalmentEditor.test.ts` |
+
+- [x] reconciles **exactly**, and only exactly — under- and over-allocation both refused
+- [x] an unreadable amount is an unfinished row, never `0`; a zero instalment is refused (the engine calls it `INSTALMENT_TOO_SMALL`)
+- [x] a malformed due date (`2026-010-01`) is rejected — found by a fixture bug in the test file itself, then pinned
+- [x] duplicate due dates are **allowed** and flagged, because the engine permits them
+- [x] `1.234,50` (TR keyboard) and `1,234.50` (UK) produce the same integer; a GBP plan reconciles identically
+- [x] rows are sorted by due date so `seq` is chronological however they were typed; an empty note is omitted rather than stored
+- [x] **every plan the editor accepts, the engine accepts**; a plan the editor refuses, the engine refuses with `CUSTOM_SUM_MISMATCH`
+- [x] seeding from an equal split carries the odd-kuruş remainder row across intact
+
+### Stage 2 live verification — production, `tr-demo` only
+
+**35/35 passed.** Drove the deployed executor; the point was to prove the *existing* contract
+really backs the new controls.
+
+- [x] ordinary staff cannot archive; a `whitecross` claim cannot archive a `tr-demo` definition
+- [x] archived ⇒ a new sale is **refused inside the sell transaction** (`DEFINITION_ARCHIVED`) ⇒ a stale browser cannot sell one
+- [x] the already-sold package is **byte-identical** after archiving — snapshot, plan and financial cache — and stays redeemable: a session was delivered and a payment recorded on it *while its definition was archived*
+- [x] archive retry is **state**-idempotent; `definitionVersion` does advance (documented, not claimed otherwise)
+- [x] restore returns it to `active` under the **same definition id** — no duplicate — and it is sellable again
+- [x] a custom 3-row plan typed in the editor was stored **verbatim**, in date order, notes intact, summing exactly; an over-allocated plan was refused server-side
+- [x] **cleanup verified** — all four collections back to 0, `packageSettings` removed, settings doc otherwise unchanged
+
+Hosting `salown` deployed by CI (entry `index-CBqtF43Y.js`); EN and TR markers confirmed live.
+`hosting:salown-staff` intentionally not deployed — see the Stage 1 note and Stage 3.

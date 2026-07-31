@@ -177,6 +177,7 @@ listed here so the market record does not imply a completeness the product does 
   value, outstanding, deferred, accrued and refunds are reported **side by side and never
   summed**, on a Reports tab — not Finance, which is gated to one UK tenant and can never be
   opened by a Turkish salon. See [TREATMENT_PACKAGE_SYSTEM.md §16](TREATMENT_PACKAGE_SYSTEM.md).
+  ⏳ Package accounting is live in Reports for package-enabled tenants. The legacy Finance page remains Whitecross-specific; making Finance tenant-generic is a separate TR-D/platform task.
 
 ## 6. Open questions for the owner
 

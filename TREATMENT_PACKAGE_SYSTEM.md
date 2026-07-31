@@ -348,18 +348,18 @@ Closed and still-open items are tracked by TR-B2 (see §16).
 - **Booking-flow package selection.** A session is redeemed from the client card (walk-in) or by
   linking an existing booking. Choosing a package *inside* `NewBookingSheet` / `WalkInFlow` is a
   further integration — TR-B2 Stage 3.
-- **Custom instalment amounts/dates** are supported by the engine and the callable, but the sell
-  screen currently offers equal instalments only. The "set the amounts myself" path is a UI gap, not
-  an engine one — TR-B2 Stage 2.
-- **Catalogue archive/restore** has server support (`status: 'archived'`, `DEFINITION_ARCHIVED`) but
-  no user control — TR-B2 Stage 2.
+- ~~**Custom instalment amounts/dates**~~ — ✅ **CLOSED by TR-B2 Stage 2** (`b0a2051`), see §17.
+- ~~**Catalogue archive/restore**~~ — ✅ **CLOSED by TR-B2 Stage 2** (`b0a2051`), see §17.
 
 ---
 
 ## 16. Package accounting (TR-B2 Stage 1, `c5bd1dc`)
 
 > **Engine:** `src/utils/packageAccounting.ts` (pure) · **Surface:** Reports → Packages tab.
-> **Status:** ✅ DEPLOYED + LIVE-VERIFIED 2026-07-31.
+> **Status:** ✅ accounting policy + Reports integration DEPLOYED + LIVE-VERIFIED 2026-07-31.
+>
+> ⏳ **Scope, stated precisely.** Package accounting is live in Reports for package-enabled tenants. The legacy Finance page remains Whitecross-specific; making Finance tenant-generic is a separate TR-D/platform task. This section closes the *policy* question
+> (what a package amount means) and the *Reports* surface — not tenant-generic Finance.
 
 ### The five dimensions, and why they are never summed
 
@@ -418,3 +418,76 @@ local** once the entry-chunk filename is normalised.
 A booking that uses a package session is stamped `price: 0` + `packagePrepaid` at link time (§6), so
 its checkout contributes **zero** to service revenue. Package value is counted once, here.
 - `locationId` is carried on every write and always `null` until locations ship.
+
+
+---
+
+## 17. Catalogue archive/restore and custom instalments (TR-B2 Stage 2, `b0a2051`)
+
+> ✅ DEPLOYED + LIVE-VERIFIED 2026-08-01. **No Function was deployed** — both features were
+> already backed by the shipped server contract; only the controls were missing.
+
+### Removal is a reversible ARCHIVE. There is no hard delete.
+
+> **Package catalogue removal = reversible archive. Financial and treatment records are never
+> deleted through ordinary UI.**
+
+Archiving closes a definition to **new sales only**. Everything already sold keeps working —
+proven live by delivering a session and recording a payment on a sold package *while its
+definition was archived*, and by confirming the sold package's `snapshot`, `plan` and
+`financialCache` were byte-identical afterwards.
+
+Archived definitions stay **reachable** behind an `Archived` filter rather than hidden, because a
+package archived by mistake must be restorable. Restore returns it under the **same definition id** —
+never a copy.
+
+The confirmation says what does **not** happen ("courses already sold, their sessions and their
+payment history will NOT be deleted"), because that is the thing a salon is actually worried about
+at the moment it archives.
+
+**No new callable, deliberately.** `status` was already in the definition contract;
+`savePackageDefinitionCore` already re-checks `MANAGE_DEFINITIONS` inside its transaction; and
+`sellPackageCore` already refuses `DEFINITION_ARCHIVED` **from inside the sell transaction** — so an
+archive racing a sale is resolved server-side with one deterministic winner, and a stale browser
+cannot sell an archived package. A second endpoint would have meant a second authorization path to
+keep in step with the first.
+
+**Idempotency, stated precisely.** The outcome is **state**-idempotent: archiving an archived
+definition leaves it archived and the id never changes. It is **not write-idempotent** —
+`savePackageDefinitionCore` has no fingerprint replay, so a retry advances `definitionVersion`
+again. That counter is monotonic and carries no money, so the cost is a gap in a version sequence
+rather than a duplicated fact. The idempotency key is minted when the confirmation **opens**.
+
+### Hard-delete policy (explicit decision)
+
+| Record | Policy |
+|---|---|
+| Package definitions | **No hard delete.** A future permanent delete would require a server-side dependency-checked callable (never sold · no `clientPackages` · no `packageLedger` · no `packageSessions` · no `treatmentSessions` · no booking references · no audit dependency) — **not** a Firestore rules permission. |
+| Client packages | Never hard-deleted through owner/staff UI. Use cancellation, refund, reversal or adjustment, each with an audited reason. |
+| Treatment sessions | Completed or financially relevant sessions are never hard-deleted. Use lifecycle cancellation/correction and the audited history. |
+
+**No Firestore delete permission was added by TR-B2.**
+
+### Custom instalments
+
+The engine always accepted arbitrary amounts and dates. The editor adds **no arithmetic**: it
+collects rows, converts them at the boundary through the same `parseMinorUnits` that a Turkish
+(`1.234,50`) and a UK (`1,234.50`) keyboard both feed, and hands them to the engine the server runs.
+The browser's verdict is advisory; the server re-validates and refuses with `CUSTOM_SUM_MISMATCH`.
+
+**The rows must add up exactly.** Under-allocation is refused rather than quietly becoming an open
+balance — a salon that wants one asks for the `OPEN` arrangement by name, which is a different plan
+kind with different overdue semantics (an open account can never be overdue). The unallocated amount
+is on screen at all times, **signed**, so the salon is never guessing which way it is out.
+
+Switching to custom **seeds the rows from the equal split already on screen**, so "custom" starts
+from a plan that reconciles instead of an empty table to balance from scratch. Rows are stored in
+date order, so "instalment 2" means the same thing on screen and in the document.
+
+**Post-sale plan editing is NOT supported, and is not faked.** The plan is written at sale inside the
+sell transaction and the executor exposes no verb to replace a schedule afterwards. Building a
+client-only illusion of it would let a screen show a plan the ledger never agreed to. A salon that
+needs to change terms today records an `ADJUSTMENT` (which is audited and appends) or cancels and
+re-sells. A real implementation would need a new server verb that leaves paid instalments immutable,
+replaces only future unpaid rows, re-checks the sum, and records actor and reason — that is its own
+package.
