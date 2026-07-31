@@ -32,9 +32,9 @@ measured against the Hosting API:
 
 | Site | Live version | Rollback target | Deployed |
 |---|---|---|---|
-| `salown` | **`f91b1d339413588a`** | `8efc472260ec00e7` | 2026-07-31 (LC1 widget) |
+| `salown` | **`3880d3e7def72458`** | `f91b1d339413588a` | 2026-07-31 (LC1 identity form) |
 | `salown-staff` | **`3290e71ede72802e`** | `05a26b9bcfe00925` | 2026-07-30 (Session B staff checkout) |
-| `salown-admin` | **`52d85c362cc267ef`** | `a6f09dd274562d5a` | 2026-07-31 (LC1 agent inbox) |
+| `salown-admin` | **`9f457fc2c8ee4b35`** | `52d85c362cc267ef` | 2026-07-31 (LC1 inbox contact block) |
 | `whitecrossbarbers-saas` | **`c5f243463afdc6df`** | `ff062a75bc1e5ea0` | 2026-07-31 (staff-shift SSOT + testMode removal) |
 
 The `salown-staff` line in the section below — *"release `1784882253065000`, UNCHANGED since 2026-07-24"* —
@@ -250,7 +250,9 @@ their behavior as live.
 - **BSP-I2 staff-bundle half** `321ff19` — the staff app (`salown-staff`) still runs the pre-I2 bundle; ships on the next `salown-staff` deploy (this wave deployed `hosting:salown` only).
 - **premium staff-shift** `e0003845` — ✅ **DEPLOYED 2026-07-31**, `whitecrossbarbers-saas` version `c5f243463afdc6df`. Live proof: `overrun` 0×→1× in the served `script.js`, which is byte-identical to `origin/main`.
 - **`?testMode=1` canary removal** (`whitecross-site` `script.js`, in `8dcdebc7`) — ✅ **DEPLOYED 2026-07-31** in the same `whitecrossbarbers-saas` release. Live `script.js` now has `IS_TEST_MODE` **0×** (was 4×) and no `testMode` on any executable line. The server-side rejection had been live since 07-27, so this closed the defence-in-depth half.
-- **LC1 landing live chat** — ✅ **DEPLOYED AND LIVE-VERIFIED 2026-07-31** across three surfaces, in order, each verified before the next: function `salownLandingChat` rev **`salownlandingchat-00001-qay`** (europe-west2) → `hosting:salown` **`f91b1d339413588a`** (the widget) → `hosting:salown-admin` **`52d85c362cc267ef`** (the agent inbox). Commits: salown-app `173db95`, super-admin `06d2a4c`. Two abuse gaps were closed before it shipped — `lead` was an unauthenticated mail-flood on info@salown.com and could create session documents for invented ids; it is now IP-metered, 404s on an unknown session and notifies once. `poll` is deliberately unmetered (two reads; a counter would add a costlier write). Live checks: GET→405, path-injection session ids→`Bad session`, `lead`/`handoff` on a missing session→404 **with no email**, one bot reply per turn, no prompt/guide/IP/stack leak, and flipping a session to `mode:'human'` silenced the live bot. Verified with a synthetic session that was then deleted. No firestore.rules change — everything is under `superAdmin/liveChat/**`.
+- **LC1 landing live chat** — ✅ **DEPLOYED AND LIVE-VERIFIED 2026-07-31**, then **gated behind visitor identity the same day**. Surfaces, in deploy order: function `salownLandingChat` **`salownlandingchat-00002-loc`** (was `-00001-qay`) → `hosting:salown` **`3880d3e7def72458`** (rollback `f91b1d339413588a`) → `hosting:salown-admin` **`9f457fc2c8ee4b35`** (rollback `52d85c362cc267ef`). Commits: salown-app `173db95` then `310624c`, super-admin `06d2a4c` then `51e70a0`.
+  **Identity gate (LC1-IDENTITY-GATE):** a visitor gives **full name + email (required)** and **phone (optional)** before the assistant answers. Enforced SERVER-SIDE — `send` returns **403 `IDENTITY_REQUIRED`** without stored details, so a fabricated session id cannot consume AI. The `identify` action calls no model and sends no email; it is IP-metered, first-identity-wins, and cannot reset a ceiling. Poll returns `identified` as a boolean and never the contact values. **Legacy sessions are not backfilled** — a pre-gate conversation is asked for details before its next bot answer, with its history intact. Handoff email carries name/email/phone and the conversation id, still once per session.
+  Earlier abuse fixes remain: `lead` is IP-metered, 404s on an unknown session and notifies once; `poll` is deliberately unmetered (two reads; a counter would add a costlier write). No firestore.rules change — everything is under `superAdmin/liveChat/**`.
 - **BSP-W1 premium cutover** — ⬜ not started; blocks R1 phase (b).
 - **E1 payment E2E** — ⬜ not started; gates R1 phase (b).
 - **R1 phase (b)** deny-anonymous-create — ⬜ blocked on W1 + E1; rules LAST when it lands.
