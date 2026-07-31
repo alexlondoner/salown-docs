@@ -280,6 +280,49 @@ cases=[
  case("R1-A phase-B guard: UNAUTH create w/ paymentState/paymentType → still ALLOW","ALLOW",
       req("create","/tenants/whitecross/bookings/pb3",None,{
         "status":"PENDING","paymentState":"PENDING","paymentType":"DEPOSIT"})),
+
+ # ── [TR-A] presentation is owner/super-admin only ───────────────────────────
+ # Regional settings decide the salon's CURRENCY and its calendar day. The
+ # Settings tab is hidden for non-owners, but hiding a control is not a control.
+ # Everything ELSE on the settings docs must keep working for admins and staff —
+ # that is what the first three cases pin.
+ case("TR-A: WXSTAFF writes a NON-presentation settings field → still ALLOW (no regression)","ALLOW",
+      req("update","/tenants/whitecross/settings/settings",WXSTAFF,{"shopName":"X","loyalty":{"enabled":True}}),
+      {"shopName":"Y"}),
+ case("TR-A: WX(admin) writes a NON-presentation settings field → still ALLOW (no regression)","ALLOW",
+      req("update","/tenants/whitecross/settings/settings",WX,{"shopName":"X"}),{"shopName":"Y"}),
+ case("TR-A: WXSTAFF reads settings → still ALLOW (no regression)","ALLOW",
+      req("get","/tenants/whitecross/settings/settings",WXSTAFF),{"shopName":"Y"}),
+ case("TR-A: WXSTAFF writes presentation → DENY","DENY",
+      req("update","/tenants/whitecross/settings/settings",WXSTAFF,
+          {"presentation":{"currency":"TRY"}}),{"shopName":"Y"}),
+ case("TR-A: WX(admin) writes presentation → DENY (owner-only, admins run the shop)","DENY",
+      req("update","/tenants/whitecross/settings/settings",WX,
+          {"presentation":{"currency":"TRY"}}),{"shopName":"Y"}),
+ case("TR-A: WXOWNER writes presentation → ALLOW","ALLOW",
+      req("update","/tenants/whitecross/settings/settings",WXOWNER,
+          {"presentation":{"currency":"TRY","language":"tr"}}),{"shopName":"Y"}),
+ case("TR-A: SUPER-ADMIN writes presentation → ALLOW","ALLOW",
+      req("update","/tenants/whitecross/settings/settings",SUP,
+          {"presentation":{"currency":"TRY"}}),{"shopName":"Y"}),
+ case("TR-A: WXSTAFF CREATES a settings doc carrying presentation → DENY","DENY",
+      req("create","/tenants/whitecross/settings/newdoc",WXSTAFF,{"presentation":{"currency":"TRY"}})),
+ case("TR-A: WXOWNER CREATES a settings doc carrying presentation → ALLOW","ALLOW",
+      req("create","/tenants/whitecross/settings/newdoc",WXOWNER,{"presentation":{"currency":"TRY"}})),
+ case("TR-A: HEROOWNER writes WHITECROSS presentation → DENY (cross-tenant)","DENY",
+      req("update","/tenants/whitecross/settings/settings",HEROOWNER,
+          {"presentation":{"currency":"TRY"}}),{"shopName":"Y"}),
+ # Root-doc PUBLIC MIRROR — same gate, so an admin cannot make the public
+ # booking page disagree with the panel.
+ case("TR-A: WX(admin) writes root-doc presentation mirror → DENY","DENY",
+      req("update","/tenants/whitecross",WX,{"presentation":{"currency":"TRY"}}),{"name":"WC"}),
+ case("TR-A: WXOWNER writes root-doc presentation mirror → ALLOW","ALLOW",
+      req("update","/tenants/whitecross",WXOWNER,{"presentation":{"currency":"TRY"}}),{"name":"WC"}),
+ case("TR-A: WX(admin) writes an unrelated root field → still ALLOW (no regression)","ALLOW",
+      req("update","/tenants/whitecross",WX,{"phone":"123"}),{"name":"WC"}),
+ # Presentation carries no secrets, so the world-readable root stays readable.
+ case("TR-A: UNAUTH reads the tenant root (public mirror) → still ALLOW","ALLOW",
+      req("get","/tenants/whitecross",None),{"name":"WC","presentation":{"language":"tr"}}),
 ]
 url="https://firebaserules.googleapis.com/v1/projects/havuz-44f70:test"
 body={"source":{"files":[{"name":"firestore.rules","content":RULES}]},

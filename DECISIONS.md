@@ -225,3 +225,83 @@ owner is busy on the floor.* The bot is not a deflection layer; it is cover unti
 - When a decision is replaced by a new one: **don't delete** the old one → mark it ⛔ Superseded + link to the new ADR.
 - When a 🕓 Proposed decision is implemented → ✅ Accepted + date.
 - Commit: `cd alex/docs && git commit DECISIONS.md && git push`.
+
+---
+
+## ADR-018 — Tenant presentation is ONE config on the existing settings doc, resolved leniently, written strictly
+
+**Date:** 2026-07-31 · **Status:** ✅ Implemented (TR-A, `424747d`)
+
+**Context.** The Turkey pilot needed language, locale, currency, timezone, time format and country
+per tenant. There was no such field anywhere — the platform was hardcoded UK/GBP end to end — and
+three live UK tenants had to keep behaving exactly as they do.
+
+**Decision.**
+1. **One namespaced key on the EXISTING settings doc** (`settings/settings.presentation`), not a new
+   collection. It sits beside `bookingSettings` and reuses that package's layered-resolver contract:
+   `locationOverride → tenant → platform default`, resolved per field by own-property (so `0`, `''`
+   and `false` are *seen*; truthiness is banned).
+2. **The platform default IS today's UK behaviour.** A tenant with no `presentation` resolves to
+   English/GBP/Europe/London. That makes "existing tenants unchanged" true *by construction* rather
+   than by migration — there is no backfill, and none is needed.
+3. **Read leniently, write strictly** — deliberately the OPPOSITE of booking policy. Booking policy
+   authorizes money and slots, so a malformed value must fail CLOSED. Presentation only decides how
+   things LOOK, so a malformed value falls back per field and records an `issues[]` entry. Failing
+   closed here would turn one typo in one settings field into a blank screen for a whole salon. The
+   WRITE path is strict, so a value that is saved is always a value that takes effect.
+4. **`navigator.language` is never a layer.** Money and calendar days are commercial facts. An owner
+   viewing a Turkish tenant from a UK browser sees Turkish/TRY/Istanbul, and there is no
+   browser-detection branch to disable later. (One bounded exception: after the panel has resolved a
+   real tenant it remembers the LANGUAGE only, in that browser, so the pre-auth login screen reads
+   right. It is never written back and never carries currency or timezone.)
+5. **A public-safe mirror on the world-readable tenant root**, because the hosted booking page is
+   unauthenticated and cannot read the settings subdoc, yet must show the salon's own language and
+   currency. Presentation holds no secrets. Same pattern as the existing `settings/hours` mirror.
+6. **Owner/super-admin only, enforced in `firestore.rules`** on both copies. Hiding the Settings tab
+   is convenience; the rule is the control. Every other settings write keeps its existing
+   permission — a localization package has no business tightening unrelated access.
+
+**Alternatives rejected.**
+- *A separate `localization` collection* — a second source of truth to keep in sync, an extra read on
+  every surface, and it would not have inherited the resolver, the tests or the rules that already
+  guard `settings/*`.
+- *Infer currency/timezone from the browser or from `countryCode`* — a salon that prices in TRY while
+  the owner is on holiday in London must not start quoting £. Country selection *pre-fills* the
+  other fields as a convenience; nothing is derived at read time.
+- *Fail closed on a malformed presentation* (mirroring booking policy) — correct for authorization,
+  wrong for display. See point 3.
+
+**Outcome.** 6 live tenants audited after deploy: only `tr-demo` carries the key.
+
+---
+
+## ADR-019 — Browser page-translation is DISABLED on the app shells; salOWN renders Turkish itself
+
+**Date:** 2026-07-31 · **Status:** ✅ Implemented (TR-A, `424747d`)
+
+**Context.** Chrome's page translation was actively damaging the product for Turkish viewers. It
+read `OWN` in the wordmark as the English word and rendered `salOWN` as **`salSAHİP`**; it turned
+the weekday abbreviation `Sun` into **`Güneş`** (the star) and `Sat` into **`Doygunluk`**
+(saturation); and it was free to rewrite staff names, service names and other tenant content —
+which is not cosmetic damage but *commercial* damage: a translated staff name is a different
+person, a translated service name is a different price list.
+
+**Decision.** `<html translate="no">` + `<meta name="google" content="notranslate">` on both
+deployed **application** shells (`index.html` → panel/login/public booking, `staff.html` → Staff
+app), plus `translate="no"` + `.notranslate` on the brand and on tenant-generated content.
+
+This is only defensible *because* the app now speaks Turkish natively: tenant language `tr` →
+salOWN renders Turkish itself. Nothing is lost by switching the machine translator off; a Turkish
+tenant gets Turkish either way, only correctly.
+
+Day and month names come from `Intl` with the tenant's locale — never from an English abbreviation
+array. The `['Sun','Mon',…]` display array in `BookingPage` was **deleted**, not left unused: an
+idle English weekday array is exactly what gets re-used by accident later.
+
+**Deliberately NOT covered:** the English marketing pages under `hosting/*.html`. They are marketing
+copy a Turkish visitor may legitimately want machine-translated; only their brand elements are
+protected. Recorded here so the omission is not mistaken for one.
+
+**Also decided:** technical identifiers keep their lowercase spelling (hosting targets `salown` /
+`salown-staff`, `salown-app`, `salown-theme`, domains). Renaming an identifier for visual brand
+consistency would break live infrastructure and buys nothing — the user never sees it.

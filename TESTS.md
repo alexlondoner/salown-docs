@@ -85,7 +85,12 @@ No Emulator/Java REQUIRED; uses the Firebase Rules Test API (token: firebase-too
 python3 docs/test-firestore-rules.py salown-app/firestore.rules
 ```
 
-**Last run: 2026-07-24 → ✅ 131/131 passed** (R1 phase-A added 36 cases on top of the 95/95 baseline).
+**Last run: 2026-07-31 → ✅ 145/145 passed** (TR-A added 14 cases on top of the 131/131 R1 phase-A baseline).
+
+TR-A's 14 cases gate the `presentation` write (owner/super-admin only, on BOTH the canonical
+settings doc and the world-readable root mirror). Half of them are deliberately NO-REGRESSION
+cases — staff and admin must still be able to write every OTHER settings field — because a
+localization package has no business tightening unrelated permissions.
 
 > **Count history — the `49/49` figure is dead.** `49/49` was the 2026-06-27 G1+G4 run and it
 > lingered in this file, in the `firestore.rules` header and in `firestore.rules.LIVE` long after
@@ -370,3 +375,82 @@ Note: `any` usage is intentional and labeled — `grep -rn "TODO(ts-migration)" 
 - [SECURITY.md](SECURITY.md) — rules/security (source of the tested behaviors)
 - [ROADMAP.md](ROADMAP.md) — work list (tests moved here, only a pointer there)
 - [DEPLOY.md](DEPLOY.md) — deploy order (rules LAST; test → deploy)
+
+---
+
+## 12. TR-A — Turkey pilot foundation (2026-07-31)
+
+**Shipped:** `424747d` · functions 9 targeted revisions · hosting `salown` + `salown-staff` ·
+rules 145/145 · `tenants/tr-demo` seeded.
+
+### 12.1 Automated — ✅ DONE
+
+| Suite | Result |
+|---|---|
+| Frontend (`npx vitest run`) | ✅ **702 pass / 33 files** (+96 new) |
+| Functions (`npm test` in `functions/`) | ✅ **678: 662 pass / 16 skip / 0 fail** (+16 new) |
+| Firestore rules (`test-firestore-rules.py`) | ✅ **145/145** (+14 TR-A) |
+| `tsc --noEmit` (frontend + functions) | ✅ clean |
+| `npm run build` + `build:staff` | ✅ both green |
+| `eslint src scripts` | 3 errors — all **pre-existing** (verified against a stashed tree) |
+
+Coverage of the brief's required list, by file:
+
+- UK default compatibility · explicit Turkish resolution · precedence · missing-key fallback ·
+  TRY/GBP formatting · Istanbul/London boundaries · tenant-beats-browser →
+  `src/utils/presentation.test.ts` (45), `src/i18n/i18n.test.ts` (25)
+- authorization on regional settings → `docs/test-firestore-rules.py` (14 TR-A cases)
+- existing UK tenants unchanged → `src/staff/lib/dateRange.test.ts` **365-day anchor**: every 2026
+  UK day range is millisecond-identical to the old hand-rolled `isUkDst` maths
+- seed dry run · idempotency · cannot overwrite a non-demo tenant · no parser dependency →
+  `scripts/seedTrDemoTenant.test.js` (31)
+- email locale selection → `functions/src/emails/i18n.test.js` (16), incl. a test that moves
+  `process.env.TZ` and asserts the output does **not** follow
+- brand / browser-translation / day names → `src/components/Brand.test.ts` (32)
+
+### 12.2 Live verification — ✅ DONE
+
+| Check | Evidence |
+|---|---|
+| Function name set unchanged (no orphan deleted) | 65 before → 65 after, `diff` empty |
+| Deployed revisions | 9 captured as rollback anchors (see DEPLOYMENT_STATUS) |
+| `<html translate="no">` + `<meta name="google" content="notranslate">` live | `curl` on both deployed shells |
+| PWA install names | live manifest: `salOWN Professionals` / `salOWN Pro` |
+| Splash wordmark | live HTML shows `>OWN<`, never `>own<` |
+| Turkish in the shipped bundle | `Randevu al`, `Randevuyu onayla`, `Bölgesel ayarlar` present |
+| No corrupted brand/day names in the bundle | `salSahip`, `Güneş`, `Doygunluk` all absent |
+| `tr-demo` seeded + idempotent | 23 docs; re-run hit the demo-marker guard and rewrote the same 23 |
+| `/book/tr-demo` reachable | HTTP 200, shell carries the translate guards |
+| Unauthenticated read of the TR presentation | root-doc mirror returns the full Turkish triplet |
+| **UK regression** | all 6 live tenants audited: **only `tr-demo` carries a `presentation` key**; whitecross/herohairs have none ⇒ platform default ⇒ unchanged behaviour |
+
+> Weekday names are deliberately ABSENT from the shipped bundle — they come from `Intl` at
+> runtime, never from a dictionary. Finding "Pazartesi" in the JS would mean the design had been
+> violated, not that it was working.
+
+### 12.3 Visual verification — ⚠️ NOT DONE (outstanding, release-blocking per the TR-A brief)
+
+The browser extension was not connected during this session, and Chrome's
+"auto-translate English pages to Turkish" preference cannot be set programmatically. The
+MECHANISM is verified statically and live (12.2), but the human visual pass is **not** done.
+
+Run each row at **desktop AND mobile width**, twice: **(A)** Chrome page translation disabled,
+**(B)** Chrome previously set to auto-translate English pages to Turkish. In BOTH conditions the
+brand and the Turkish day names must be correct.
+
+| # | Surface | Look for | A | B |
+|---|---|---|---|---|
+| 1 | `/login` | wordmark reads `salOWN` (never salSahip/Sahip) | ☐ | ☐ |
+| 2 | Dashboard | headings + stat pills; money in the tenant currency | ☐ | ☐ |
+| 3 | Sidebar / navigation | Turkish labels, brand chip intact | ☐ | ☐ |
+| 4 | `/book/tr-demo` | full journey in Turkish; service/staff names NOT translated | ☐ | ☐ |
+| 5 | Booking date picker | weekday row = `Paz Pzt Sal Çar Per Cum Cmt`, never `Güneş`/`Doygunluk` | ☐ | ☐ |
+| 6 | Staff Today | day header + prices; `staff.salown.com` splash wordmark | ☐ | ☐ |
+| 7 | Staff Week | Mon–Sun grid in Istanbul time | ☐ | ☐ |
+| 8 | Client detail | client name unchanged by the translator | ☐ | ☐ |
+| 9 | Checkout | totals in ₺, labels Turkish | ☐ | ☐ |
+| 10 | Settings → Regional settings | effective values + provenance + live preview | ☐ | ☐ |
+| 11 | A UK tenant (whitecross) | **unchanged**: English, £, London times | ☐ | ☐ |
+| 12 | Logos | correct aspect ratio, adequate contrast, no duplicate wordmark beside a logo | ☐ | ☐ |
+
+Attach screenshots (or tick + sign) here when complete.

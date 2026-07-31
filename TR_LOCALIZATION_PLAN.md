@@ -1,6 +1,24 @@
 # TR Localization Plan — Gap Analysis & Roadmap
 
-> **Status:** 🔵 Planned (analysis complete 2026-07-23, no code changes yet).
+> **Status:** ✅ **Items 1–4 SHIPPED by TR-A on 2026-07-31** (`424747d`, deployed + live-verified).
+> This document remains the ANALYSIS of record; the implementation decisions live in
+> [DECISIONS.md](DECISIONS.md) ADR-018/ADR-019 and the evidence in [TESTS.md](TESTS.md) §12.
+>
+> What TR-A closed: the foundational blocker (§1, tenant locale fields — now
+> `settings/settings.presentation` + a public root mirror), the central formatters (§2.2/§2.3),
+> i18n infrastructure (§2.1) with the customer-facing booking SPA translated end to end, the email
+> `lang` parameter (§3.1, booking lifecycle only), and the timezone/DST work (§2.2/§3.2).
+>
+> What is still OPEN, with the numbers RE-MEASURED at `2c81834` (the July counts below are the
+> point-in-time snapshot they were always labelled as, and the codebase has grown since):
+> **631 hardcoded `£` across 56 files** · **106 `'en-GB'` literals** · 14 non-comment
+> `Europe/London` sites, all outside the demo journey. Heaviest: `Finance.tsx` (152 — Whitecross-only
+> by the standing Finance-vs-Reports rule, legitimately out of TR scope), `BookingDetailPanel` (50),
+> `CheckoutPanel` (43), `Clients` (31), `Reports` (30). Public booking and staff Today are at ZERO.
+> Also still open: §2.3's `£`-prefixed STORED data (TR-A added a read-side `/[£₺,]/` tolerance in
+> the email path, which is not the migration), §3.5 askAI, §3.6 KVKK, §4 the `/tr/` marketing tree.
+>
+> **Original status line (2026-07-23):** 🔵 Planned (analysis complete, no code changes yet).
 > **Goal:** make salOWN usable by a Turkish salon (Turkish UI, ₺/TRY, `Europe/Istanbul`, 24-hour time, Turkish emails).
 > **Method:** two parallel code-audit agents (frontend `src/` + `src/staff/`; backend `functions/src/` + `hosting/`), 2026-07-23.
 

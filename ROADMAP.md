@@ -252,12 +252,14 @@
 
 ## 🌍 Internationalization (TR market)
 
-- 💡 **L1 TR localization** — gap analysis ✅ 2026-07-23: zero i18n infra; ~1,500–2,000 hardcoded EN strings, 486 `£`, 110 `'en-GB'`, ~45 `Europe/London`, no tenant `language`/`currency`/`timezone` field (the foundational blocker). Sequence: tenant locale triplet → central money/date formatters (incl. `£`-in-stored-data fix) → i18n + string extraction (customer-facing first) → email `lang` → tz/DST → small items. Minimum TR pilot = locale fields + formatters + booking SPA/email translation (panel may stay EN). Parser explicitly out of TR scope (owner 2026-07-23: no parsers in TR; iCal feed instead). Full analysis: [TR_LOCALIZATION_PLAN.md](TR_LOCALIZATION_PLAN.md).
+- ✅ **TR-A Turkey pilot foundation** — DEPLOYED + LIVE 2026-07-31 (`424747d`). Canonical tenant `presentation` (language/locale/currency/timezone/timeFormat/countryCode) on `settings/settings` + a public-safe root mirror, layered resolver (location → tenant → platform default) with a byte-identical functions twin; native i18n (no dependency, static dictionaries, EN complete fallback, measured TR coverage); brand protection + browser page-translation disabled on both app shells; tenant-timezone dates across the staff app (365-day UK regression anchor); owner-only Regional Settings enforced in `firestore.rules`; Turkish transactional emails; guarded idempotent `tr-demo` seed (LIVE). Existing UK tenants carry NO `presentation` key ⇒ platform default ⇒ unchanged (verified against all 6 live tenants). ⚠️ REMAINING: manual visual pass (incl. the Chrome auto-translate condition) — checklist in [TESTS.md](TESTS.md) §12, NOT yet done.
+- 🔄 **TR-B / TR-C** — payment settings editor (a TR-resident PSP; salOWN never shares a Stripe key) and online-booking settings editor. Their Settings tabs already exist as real routed shells with clearly-labelled unavailable controls. Integration contract: read `presentation` via `resolvePresentation`, never re-derive locale.
+- 💡 **L1 TR localization (superseded by TR-A for items 1–4)** — gap analysis ✅ 2026-07-23: zero i18n infra; ~1,500–2,000 hardcoded EN strings, 486 `£`, 110 `'en-GB'`, ~45 `Europe/London`, no tenant `language`/`currency`/`timezone` field (the foundational blocker). Sequence: tenant locale triplet → central money/date formatters (incl. `£`-in-stored-data fix) → i18n + string extraction (customer-facing first) → email `lang` → tz/DST → small items. Minimum TR pilot = locale fields + formatters + booking SPA/email translation (panel may stay EN). Parser explicitly out of TR scope (owner 2026-07-23: no parsers in TR; iCal feed instead). Full analysis: [TR_LOCALIZATION_PLAN.md](TR_LOCALIZATION_PLAN.md).
 
 ---
 
 ## 🧪 Test Lists → [TESTS.md](TESTS.md)
-All test records in one place: Firestore Rules (automatic, latest ✅ 95/95) · Security gate manual · Stripe live (TEST) · Staff App · Post-Class-A · Busy-slot v2.
+All test records in one place: Firestore Rules (automatic, latest ✅ 145/145) · Security gate manual · Stripe live (TEST) · Staff App · Post-Class-A · Busy-slot v2.
 
 ---
 

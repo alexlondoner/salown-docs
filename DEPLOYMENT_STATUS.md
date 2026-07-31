@@ -17,6 +17,56 @@
 
 ---
 
+## 🇹🇷 TR-A — Turkey pilot foundation · DEPLOYED + LIVE-VERIFIED 2026-07-31 ~14:5x UK
+
+**Baseline commit `424747d`** (`origin/main`, clean tree at deploy time). Everything below was
+deployed in the security order **functions → hosting → rules LAST**, then the demo tenant seeded.
+
+### Functions — 9 targeted, europe-west2, `nodejs22` (NEVER blanket: a blanket deploy deletes the 27 us-central1 legacy functions)
+
+| Function | Cloud Run revision (rollback anchor) |
+|---|---|
+| `salownBookingConfirmationTrigger` | `-00043-zom` |
+| `salownBookingConfirmedEmailTrigger` | `-00041-fon` |
+| `salownCancelByToken` | `-00068-jur` |
+| `salownNotifyBookingUpdated` | `-00109-vux` |
+| `salownRescheduleByToken` | `-00074-zab` |
+| `salownSendBookingConfirmation` | `-00108-nof` |
+| `salownSendCancellationEmail` | `-00103-yif` |
+| `salownSendLoyaltyEmail` | `-00062-hok` |
+| `salownSendManualLoyaltyAdjustmentEmail` | `-00050-buj` |
+
+All nine reported "Successful update operation". **Function name set: 65 before → 65 after,
+`diff` empty** — no orphan deleted.
+
+### Hosting
+- `hosting:salown` → release complete (24 files uploaded). Live shell verified by `curl`:
+  `<html lang="en" translate="no">` + `<meta name="google" content="notranslate">`.
+- `hosting:salown-staff` → release complete. Live: `<title>salOWN Professionals</title>`,
+  `apple-mobile-web-app-title` = `salOWN Pro`, splash wordmark renders `>OWN<`.
+- Live manifest: `name` = `salOWN Professionals`, `short_name` = `salOWN Pro`.
+
+### Rules
+Deployed LAST. **145/145** against the deployed file. Pre-change snapshot saved as
+`docs/firestore.rules.PREV-20260731-pre-tr-a`. The `[W] 33:56 Invalid variable name: request`
+warning is **pre-existing** (identical on the file 5 commits back).
+
+### Data
+`tenants/tr-demo` seeded — 23 documents, guarded + idempotent. Re-run hit the demo-marker guard
+and rewrote the same 23 documents.
+
+### UK regression — measured, not assumed
+All 6 tenants in the project were audited after deploy: **`tr-demo` is the ONLY one carrying a
+`presentation` key.** whitecross, herohairs, demo, the-hair-lab and yusufo have none, so the
+resolver returns the platform default, which IS the pre-TR-A UK behaviour.
+
+### ⚠️ Outstanding
+The manual **visual verification pass** (TESTS.md §12.3), including the Chrome
+auto-translate-to-Turkish condition, is **NOT done** — the browser extension was not connected in
+the deploying session. The mechanism is verified statically and live; the human pass is not.
+
+---
+
 ## Hosting baseline — what is ACTUALLY live (measured 2026-07-26 19:45 UK)
 
 **Live `salown` hosting release = `1785091173083000`** (2026-07-26T18:39:33Z, bundle
