@@ -10,10 +10,40 @@
 > separate `whitecross-site` repo deploy manually**, so code can sit on `origin/main` for days while
 > production runs older behavior. Confusing "merged" with "live" has caused real incidents.
 >
-> **Snapshot date:** 2026-07-31 01:5x UK — **three deploy waves have landed since the previous snapshot and this file now reflects them.** 2026-07-30 ~14:4x (Session A: ANY-BARBER + PUSH-RECOVERY + RECEIPT-WRITER), 2026-07-30 ~17:5x–18:1x (Session B: receipt READER + the remaining UK financial work), 2026-07-31 ~00:5x–01:4x (master closure: whitecross saas hosting + LC1 live chat). The previous revision of this line said *no deploy occurred* on 07-30; that was true when written and false within the hour. · 2026-07-27 15:05 UK after the Treatwell parser deploy + T2188888050 repair (previous: 12:55 UK after the whitecross test-mode lockdown deploy) (previous
+> **Snapshot date:** 2026-07-31 ~15:5x UK — TR-C Phase 1 pushed but deliberately NOT deployed (see the TR-C row directly below). Previous snapshot 2026-07-31 01:5x UK — **three deploy waves have landed since the previous snapshot and this file now reflects them.** 2026-07-30 ~14:4x (Session A: ANY-BARBER + PUSH-RECOVERY + RECEIPT-WRITER), 2026-07-30 ~17:5x–18:1x (Session B: receipt READER + the remaining UK financial work), 2026-07-31 ~00:5x–01:4x (master closure: whitecross saas hosting + LC1 live chat). The previous revision of this line said *no deploy occurred* on 07-30; that was true when written and false within the hour. · 2026-07-27 15:05 UK after the Treatwell parser deploy + T2188888050 repair (previous: 12:55 UK after the whitecross test-mode lockdown deploy) (previous
 > revisions: 2026-07-26 19:45 UK; 2026-07-24 16:40 UK after Parser-3C landed on `origin/main`; earlier
 > 16:05 revision during BSP-H1, see the hosting-baseline correction below). Verify against `git log origin/main` + the live system before acting;
 > a row here is a claim about a moment, not a standing guarantee.
+
+---
+
+## 🇹🇷 TR-C — treatment session lifecycle + client recovery · **PUSHED, NOT DEPLOYED** 2026-07-31 ~15:5x UK
+
+**Baseline commit `bc82454`** (`origin/main`). This row exists precisely because push ≠ deploy:
+the code is on `origin/main` and **production is deliberately NOT on it**.
+
+| Surface | State |
+|---|---|
+| Functions | ❌ **NOT deployed** — the three callable cores exist and are fully tested, but they are not exported from `functions/src/index.ts`, so no Cloud Function was created or changed. Function name set: **unchanged**. |
+| Hosting `salown` | ❌ **NOT deployed** — pushed with `[skip ci]`, so the GitHub Actions hosting deploy did not fire. |
+| Hosting `salown-staff` | ❌ not touched (TR-C adds nothing to the staff app). |
+| `firestore.rules` | ❌ not changed, and **not needed** — the `[G4]` catch-all already grants same-tenant READ and denies client WRITE on unlisted collections, which is exactly the posture the three new collections want. |
+| `firestore.indexes.json` | ❌ not changed, and not needed — every query is a plain collection read. |
+
+**Why it is not deployed:** TR-C Phase 1 stopped at the five shared registration files that
+TR-B holds claims on (`functions/src/index.ts`, `src/pages/AppRouter.tsx`,
+`src/components/Sidebar.tsx`, both i18n dictionary barrels). CLAUDE.md coordination rule 7
+makes a claim conflict a hard stop. Owner decision 2026-07-31: two-phase delivery rather than
+appending to another session's claimed files.
+
+**Live blast radius of this commit: ZERO.** Nothing was deployed, and even if hosting were
+deployed the new UI renders `null` for every tenant with no `treatmentSessions` documents —
+which is all six live tenants.
+
+**Phase 2 deploy order when TR-B releases:** `functions:salown:salownCreateTreatmentSession,`
+`salownTransitionTreatmentSession,salownRecordFollowUp` (⚠️ explicit list — a blanket
+`--only functions` deletes the 27 us-central1 legacy functions) → `hosting:salown` → rules
+(none needed) → live-verify on `tr-demo`.
 
 ---
 
