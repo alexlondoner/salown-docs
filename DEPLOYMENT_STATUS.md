@@ -10,7 +10,7 @@
 > separate `whitecross-site` repo deploy manually**, so code can sit on `origin/main` for days while
 > production runs older behavior. Confusing "merged" with "live" has caused real incidents.
 >
-> **Snapshot date:** 2026-07-30 (P1-RECEIPT-MATH row added to the pending-deploy watch — no deploy occurred; the rest of this file is unchanged since) · 2026-07-27 15:05 UK after the Treatwell parser deploy + T2188888050 repair (previous: 12:55 UK after the whitecross test-mode lockdown deploy) (previous
+> **Snapshot date:** 2026-07-31 01:5x UK — **three deploy waves have landed since the previous snapshot and this file now reflects them.** 2026-07-30 ~14:4x (Session A: ANY-BARBER + PUSH-RECOVERY + RECEIPT-WRITER), 2026-07-30 ~17:5x–18:1x (Session B: receipt READER + the remaining UK financial work), 2026-07-31 ~00:5x–01:4x (master closure: whitecross saas hosting + LC1 live chat). The previous revision of this line said *no deploy occurred* on 07-30; that was true when written and false within the hour. · 2026-07-27 15:05 UK after the Treatwell parser deploy + T2188888050 repair (previous: 12:55 UK after the whitecross test-mode lockdown deploy) (previous
 > revisions: 2026-07-26 19:45 UK; 2026-07-24 16:40 UK after Parser-3C landed on `origin/main`; earlier
 > 16:05 revision during BSP-H1, see the hosting-baseline correction below). Verify against `git log origin/main` + the live system before acting;
 > a row here is a claim about a moment, not a standing guarantee.
@@ -27,7 +27,20 @@ BSP-H1, Parser-3C Super Admin panel + two lint cleanups); before that `ad20475` 
 "I1 canonical UK phone foundation"). Exactly ONE new release was created — verified by listing the
 site's last 3 releases (new / 07-25 baseline / 07-24), so CI did not also fire.
 
-🚨 **SUPERSEDED 2026-07-27 18:23 UK — live `salown` is now release `1785173028995000`** (2026-07-27T17:23:48.995Z,
+🚨 **SUPERSEDED AGAIN 2026-07-31 — the DOCID-1 baseline below is three waves old.** Current live state,
+measured against the Hosting API:
+
+| Site | Live version | Rollback target | Deployed |
+|---|---|---|---|
+| `salown` | **`f91b1d339413588a`** | `8efc472260ec00e7` | 2026-07-31 (LC1 widget) |
+| `salown-staff` | **`3290e71ede72802e`** | `05a26b9bcfe00925` | 2026-07-30 (Session B staff checkout) |
+| `salown-admin` | **`52d85c362cc267ef`** | `a6f09dd274562d5a` | 2026-07-31 (LC1 agent inbox) |
+| `whitecrossbarbers-saas` | **`c5f243463afdc6df`** | `ff062a75bc1e5ea0` | 2026-07-31 (staff-shift SSOT + testMode removal) |
+
+The `salown-staff` line in the section below — *"release `1784882253065000`, UNCHANGED since 2026-07-24"* —
+is therefore also superseded: the staff bundle now carries the Session B checkout-payload fix.
+
+🚨 **SUPERSEDED 2026-07-27 18:23 UK — live `salown` was then release `1785173028995000`** (2026-07-27T17:23:48.995Z,
 version `a6b54b3273c9f7a4`, bundle `index-Dv_tTyTd.js`), deployed from branch **`hotfix/docid-1` HEAD `ae61566`** —
 **NOT from `main`**. This is the DOCID-1 booking hotfix (INCIDENTS 2026-07-27); see the dedicated wave entry below.
 The `f30ae4a` / `index-D0JrelmL.js` baseline described in this section is now the ROLLBACK TARGET.
@@ -233,12 +246,11 @@ their behavior as live.
 > `e879220`, BSP-I2 hosting `321ff19` (staff-bundle half still pending a `salown-staff` deploy), BSP-H1
 > `9480185`, Parser-3C `308a7c0` (both halves), C1 reschedule-guard thread `cb88af0`, R1 phase (a) `2a6a641`.
 
-- **P1-RECEIPT-MATH canonical receipt snapshot** — 🟡 **not live, and mostly not even pushed** (measured 2026-07-30 01:5x UK). `782c5de` (pure `receiptMath.ts` helper + tests) IS on `origin/main` but was **never deployed**: the head of that push, `dbcc56e`, carried `[skip ci]`, so CI skipped the whole wave. Practically inert — at that commit the helper is imported from nowhere. The parts that would change behavior, `44d75fe` (checkout persists the snapshot) + `f1ad9e7` (add-on parity / award contract) + the claim extension `4f9339f`, are **local-only on the alish Air-M1** (`main` ahead 3 / behind 2). *Live proof of absence:* the served bundles `index-B6rqLP05.js` (sha `62038c3e…f547b`) and `staff-TCnxREdE.js` contain `I3_COLUMN_RECONCILES` **0×** — the snapshot is written nowhere in production. ⚠️ **The reader half was never started** (`functions/src/index.ts:726-740` still re-derives the receipt from raw `after.price`), so even a full deploy of the writer changes no customer-visible output — it only starts populating the fields. Deploying the writer alone is therefore safe but pointless; deploying the reader **before** the writer would regress live receipts to the legacy fallback. Order is writer → backfill window → reader. Two 🔴 open bugs on the same chain (INCIDENTS 2026-07-30) are independent of this deploy.
+- **P1-RECEIPT-MATH canonical receipt snapshot** — ✅ **WRITER AND READER BOTH LIVE** (2026-07-30). The row that stood here said *"not live, and mostly not even pushed"* and *"the reader half was never started"*; both statements are now false. Writer `aeed3cf`+`5dcd5a4` (Session A, `hosting:salown`); reader `61ee2c1` plus the rest of the UK financial closure `e02ddc5`·`e70ed5f`·`af2fb8c`·`7290ccb` (Session B). `salownSendLoyaltyEmail` now READS the snapshot — supported version + writer-reconciled + invariants re-checked at read time — instead of re-deriving from `after.price`, which is what double-counted the add-on. Deployed revisions: `salownsendloyaltyemail-00061-zix` · `salownbookingconfirmationtrigger-00042-xac` · `salownbookingconfirmedemailtrigger-00040-xuz` · `salownnotifybookingupdated-00108-vij` · `salownreschedulebytoken-00073-foj`; deployed function source was re-downloaded and is **byte-identical** to the local build. **Deliberate residue, no backfill:** a booking already CHECKED_OUT before that release with a folded price still over-counts its add-on in Sales/Finance/Reports — after checkout the document cannot tell "folded at booking" from "added at the desk", and guessing would shrink real revenue. Pinned by a named test. See INCIDENTS 2026-07-30 (three entries).
 - **BSP-I2 staff-bundle half** `321ff19` — the staff app (`salown-staff`) still runs the pre-I2 bundle; ships on the next `salown-staff` deploy (this wave deployed `hosting:salown` only).
-- **premium staff-shift** `e0003845` — `whitecross-site` separate manual deploy pending.
-- **`?testMode=1` canary removal** (`whitecross-site` `script.js`, in `8dcdebc7`) — 🟡 **hosting NOT
-  deployed.** The server-side rejection is live, so the hole is closed; this is defence-in-depth.
-  Deploy with `firebase deploy --only hosting:whitecrossbarbers-saas --config firebase.saas.json`.
+- **premium staff-shift** `e0003845` — ✅ **DEPLOYED 2026-07-31**, `whitecrossbarbers-saas` version `c5f243463afdc6df`. Live proof: `overrun` 0×→1× in the served `script.js`, which is byte-identical to `origin/main`.
+- **`?testMode=1` canary removal** (`whitecross-site` `script.js`, in `8dcdebc7`) — ✅ **DEPLOYED 2026-07-31** in the same `whitecrossbarbers-saas` release. Live `script.js` now has `IS_TEST_MODE` **0×** (was 4×) and no `testMode` on any executable line. The server-side rejection had been live since 07-27, so this closed the defence-in-depth half.
+- **LC1 landing live chat** — ✅ **DEPLOYED AND LIVE-VERIFIED 2026-07-31** across three surfaces, in order, each verified before the next: function `salownLandingChat` rev **`salownlandingchat-00001-qay`** (europe-west2) → `hosting:salown` **`f91b1d339413588a`** (the widget) → `hosting:salown-admin` **`52d85c362cc267ef`** (the agent inbox). Commits: salown-app `173db95`, super-admin `06d2a4c`. Two abuse gaps were closed before it shipped — `lead` was an unauthenticated mail-flood on info@salown.com and could create session documents for invented ids; it is now IP-metered, 404s on an unknown session and notifies once. `poll` is deliberately unmetered (two reads; a counter would add a costlier write). Live checks: GET→405, path-injection session ids→`Bad session`, `lead`/`handoff` on a missing session→404 **with no email**, one bot reply per turn, no prompt/guide/IP/stack leak, and flipping a session to `mode:'human'` silenced the live bot. Verified with a synthetic session that was then deleted. No firestore.rules change — everything is under `superAdmin/liveChat/**`.
 - **BSP-W1 premium cutover** — ⬜ not started; blocks R1 phase (b).
 - **E1 payment E2E** — ⬜ not started; gates R1 phase (b).
 - **R1 phase (b)** deny-anonymous-create — ⬜ blocked on W1 + E1; rules LAST when it lands.
