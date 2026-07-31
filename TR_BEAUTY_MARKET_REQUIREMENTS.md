@@ -172,8 +172,11 @@ listed here so the market record does not imply a completeness the product does 
   the Packages screen and the Staff App sheet, but not yet while taking a booking.
 - **Custom-instalment UI** — the engine supports arbitrary schedules; the panel currently
   offers the generated ones.
-- **Finance / Reports package-revenue policy + integration** — package money does not yet
-  flow into the Finance or Reports surfaces, and the accounting policy for it is undecided.
+- ~~**Finance / Reports package-revenue policy + integration**~~ — ✅ **CLOSED by TR-B2 Stage 1**
+  (`c5bd1dc`, 2026-07-31). The policy is decided and shipped: cash received, delivered/earned
+  value, outstanding, deferred, accrued and refunds are reported **side by side and never
+  summed**, on a Reports tab — not Finance, which is gated to one UK tenant and can never be
+  opened by a Turkish salon. See [TREATMENT_PACKAGE_SYSTEM.md §16](TREATMENT_PACKAGE_SYSTEM.md).
 
 ## 6. Open questions for the owner
 
