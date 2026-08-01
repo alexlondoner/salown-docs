@@ -722,3 +722,36 @@ The exclusion is asserted as a decision so it does not read as an oversight late
 
 Live run 2026-08-01: **anchor holds** — `whitecross` and `herohairs` both effective-disabled;
 `demo` enabled (reported); `the-hair-lab`, `tr-demo`, `yusufo` disabled.
+
+### Stage 3 — package selection in booking and walk-in flows (`b40e182`)
+
+**Automated: 23 new tests.** Gates: frontend **953/953** · functions **816** (797 pass / 19 self-skip / 0 fail) · emulator **105/105**.
+
+| Suite | Count | Command |
+|---|---|---|
+| Eligibility — service/expiry/barber/tenant/client rules | 23 | `npx vitest run src/utils/packageEligibility.test.ts` |
+
+- [x] eligible for a matching service; the session number counts reservations (`3 of 8`)
+- [x] refused for: packages off · no client · cancelled · exhausted · expired · wrong service · disallowed barber · other tenant · other client · booking already linked · location mismatch
+- [x] exhausted **and** expired reads as **exhausted** — the reason staff can act on
+- [x] expiry is judged on the **appointment date**, not today, and the expiry day itself is inclusive
+- [x] ineligible packages are still listed, ordered after eligible ones, with their reason
+- [x] most-used course offered first; a legacy barber tenant and a packages-off tenant get `[]`
+
+### Stage 3 live verification — production, `tr-demo` only
+
+**29/29 passed**, including a deliberate **negative control**.
+
+- [x] `reserve` stamps the booking `price: 0` + `packagePrepaid` + `packageListPrice_m`, and leaves `soldProducts` untouched
+- [x] reserve → complete consumes **exactly one** entitlement (8 → 7); a repeat completion **replays**, still 7
+- [x] **the negative control:** `complete` WITHOUT `reserve` consumes the entitlement but leaves the booking at **full price** — the double-charge and double-loyalty the reserve-first rule exists to prevent, demonstrated rather than asserted
+- [x] linking a booking writes **no ledger entry** — delivery is not a payment; the balance is untouched
+- [x] a booking already using a package cannot be linked to a second
+- [x] anonymous walk-in gets nothing; cross-tenant refused; wrong service refused
+- [x] **cleanup verified** — all five collections back to 0, `packageSettings` removed
+
+### Stage 3 deployment
+
+- `hosting:salown` — entry `index-dGzcP6IS.js`, EN + TR markers confirmed live.
+- `hosting:salown-staff` — **deployed**, and the live bundle `staff-CE_2hRPk.js` is **byte-identical** to the tested tracked bundle. The pushed-but-undeployed Staff discrepancy carried since Stage 1 is **cleared**.
+- **No Function deployed** — Stage 3 changed no `functions/` path.
