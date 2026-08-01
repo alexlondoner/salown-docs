@@ -25,7 +25,7 @@ stage** — every gap turned out to be backed by the contract TR-B already shipp
 
 | Stage | Commit | Deployed | Live verification |
 |---|---|---|---|
-| 1 · package accounting + Reports | `c5bd1dc` | `hosting:salown` (CI 23:18:12) | `tr-demo` 22/23 + 8/8 anchors |
+| 1 · package accounting + Reports | `c5bd1dc` | `hosting:salown` (CI 23:18:12) | `tr-demo` **23/23** + 8/8 anchors |
 | 2 · catalogue archive/restore + custom instalments | `b0a2051` | `hosting:salown` | `tr-demo` **35/35** |
 | 3 · booking / walk-in package selection | `b40e182` | `hosting:salown` **+ `hosting:salown-staff`** | `tr-demo` **29/29** incl. a negative control |
 | 4 · Follow-ups → a view of Clients | `a5b6f20` | `hosting:salown` + `hosting:salown-staff` | markers live; 16 routing tests |

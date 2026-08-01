@@ -628,7 +628,8 @@ What it proves that a simpler test could not:
 
 ### Stage 1 live verification — production, `tr-demo` only
 
-**22/23 passed**, plus **8/8** read-only anchor checks. Drove the exact deployed engine against production Firestore.
+**23/23 automated live checks passed**, plus **8/8** read-only anchor checks. Drove the exact deployed
+engine against production Firestore. (First run was 22/23 — see the corrected assertion below.)
 
 - [x] sale dated by the **Istanbul** calendar; session recognised on its own Istanbul day
 - [x] cash ₺2.000 · delivered ₺1.000 (one eighth) · outstanding ₺6.000 · deferred ₺1.000 · accrued 0
@@ -637,10 +638,30 @@ What it proves that a simpler test could not:
 - [x] export typing and minor-unit serialisation on real documents
 - [x] **cleanup verified** — 3 synthetic docs deleted, `packageSettings` removed, settings doc otherwise byte-identical
 
-**The one failure was a stale assertion, and it found something real.** The test asserted TR-B's
-2026-07-31 baseline *"no live tenant carries `packageSettings`"*. That is **no longer true**: the
-`demo` tenant has since opted in (`enabled: true`, 1 definition, 0 sold). That is deliberate use of a
-shipped feature, not a leak — so the assertion was corrected to the claim that actually matters:
+#### The one first-run failure was a stale ASSERTION, now corrected — and it found something real
+
+Check #1 originally read *"no live tenant carries `packageSettings`"*, copied from TR-B's
+2026-07-31 baseline. It **failed** on the first run, reporting `["demo"]`.
+
+That was a genuine automated assertion failure, **not** a manual check, **not** a skip, **not** a
+negative control, and **not** a product defect. It failed because its premise had expired: the
+`demo` tenant deliberately opted into a shipped feature. **An assertion that fails on correct use
+is not a regression gate.**
+
+It now asserts the guarantee that actually matters, and asserts **behaviour** rather than storage —
+the same semantics as the committed anchor (`scripts/packageAnchor.cjs`, `4408759`):
+
+> *every currently-active real tenant resolves packages-**DISABLED*** — `whitecross`, `herohairs`
+
+Re-run 2026-08-01: **23/23, zero failures.** It would break if either protected tenant ever
+resolved enabled, or if either disappeared from the roster.
+
+Expected vs actual on the original run: expected `withPkg.length === 0`; actual `["demo"]`
+(`{ enabled: true, staffMayAdjustPayments: true }`). **No production behaviour, demo flow, money
+invariant or tenant-isolation guarantee was affected** — `demo` seeing the Packages report is the
+correct consequence of that tenant enabling it.
+
+The read-only anchor checks, unchanged and still passing:
 
 - [x] `whitecross`, `herohairs`, `the-hair-lab`, `yusufo` — `packageSettings` **absent** ⇒ resolver `enabled: false` ⇒ **no** Packages report tab
 - [x] `demo` — resolves `enabled: true` with **no** issues ⇒ the tab **is** shown, and renders the empty state without `NaN`
