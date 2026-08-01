@@ -10,10 +10,34 @@
 > separate `whitecross-site` repo deploy manually**, so code can sit on `origin/main` for days while
 > production runs older behavior. Confusing "merged" with "live" has caused real incidents.
 >
-> **Snapshot date:** 2026-08-01 — **TR-B2 is fully deployed and live-verified** (row directly below); no Function or rules revision changed. Previous snapshot 2026-07-31 ~16:3x UK — **TR-B is fully deployed and live-verified** (row directly below); TR-C Phase 1 remains pushed but deliberately NOT deployed. Previous snapshot 2026-07-31 ~15:5x UK. Previous snapshot 2026-07-31 01:5x UK — **three deploy waves have landed since the previous snapshot and this file now reflects them.** 2026-07-30 ~14:4x (Session A: ANY-BARBER + PUSH-RECOVERY + RECEIPT-WRITER), 2026-07-30 ~17:5x–18:1x (Session B: receipt READER + the remaining UK financial work), 2026-07-31 ~00:5x–01:4x (master closure: whitecross saas hosting + LC1 live chat). The previous revision of this line said *no deploy occurred* on 07-30; that was true when written and false within the hour. · 2026-07-27 15:05 UK after the Treatwell parser deploy + T2188888050 repair (previous: 12:55 UK after the whitecross test-mode lockdown deploy) (previous
+> **Snapshot date:** 2026-08-01 (later) — **TR-D1 Phase 0.5 deployed and live-verified** (row directly below). Previous: **TR-B2 fully deployed and live-verified** (row directly below); no Function or rules revision changed. Previous snapshot 2026-07-31 ~16:3x UK — **TR-B is fully deployed and live-verified** (row directly below); TR-C Phase 1 remains pushed but deliberately NOT deployed. Previous snapshot 2026-07-31 ~15:5x UK. Previous snapshot 2026-07-31 01:5x UK — **three deploy waves have landed since the previous snapshot and this file now reflects them.** 2026-07-30 ~14:4x (Session A: ANY-BARBER + PUSH-RECOVERY + RECEIPT-WRITER), 2026-07-30 ~17:5x–18:1x (Session B: receipt READER + the remaining UK financial work), 2026-07-31 ~00:5x–01:4x (master closure: whitecross saas hosting + LC1 live chat). The previous revision of this line said *no deploy occurred* on 07-30; that was true when written and false within the hour. · 2026-07-27 15:05 UK after the Treatwell parser deploy + T2188888050 repair (previous: 12:55 UK after the whitecross test-mode lockdown deploy) (previous
 > revisions: 2026-07-26 19:45 UK; 2026-07-24 16:40 UK after Parser-3C landed on `origin/main`; earlier
 > 16:05 revision during BSP-H1, see the hosting-baseline correction below). Verify against `git log origin/main` + the live system before acting;
 > a row here is a claim about a moment, not a standing guarantee.
+
+---
+
+## 💷 TR-D1 Phase 0.5 — legacy split-payment report correction · **DEPLOYED + LIVE-VERIFIED** 2026-08-01
+
+**Baseline commit `5926c1c`** (`origin/main`). Production **is** on it.
+
+| Surface | State |
+|---|---|
+| `hosting:salown` | ✅ live — entry `index-BKqdCc8k.js`, chunk `Reports-_UZ4qFUZ.js`; old `g.cash+=net` predicate **absent** |
+| `hosting:salown-staff` | ⏸️ **not deployed** — Reports is panel-only; tracked staff bundle unchanged and still byte-identical to production |
+| Functions / rules / indexes | ⏸️ **unchanged** — nothing outside `src/` was touched |
+
+Fixes an **existing** production defect (not introduced by TR-D1): split checkouts were bucketed by
+`paymentMethod` alone, so `financeGrouped` **lost** the money entirely and `financeTotals`
+attributed it wholly to card. Live proof on synthetic `tr-demo` data: expected net £340 →
+old grouped reported **£100**, corrected reports **£340** (cash 222.50 / card 117.50).
+
+**UK regression:** `whitecross` has **0** SPLIT rows across 400 checked-out bookings, so its cash/card
+totals are **byte-identical** before and after (read-only check, nothing written).
+
+⚠️ **Known, unfixed, authorized separately:** `Finance.tsx:48` maps `'SPLIT'` → `'CARD'`. Reported in
+[TESTS.md](TESTS.md) §17; not claimed, not changed. Finance is whitecross-gated and whitecross has no
+split rows, so live impact is nil today.
 
 ---
 

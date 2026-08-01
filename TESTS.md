@@ -881,3 +881,61 @@ session, so no screenshot pass was performed. Recorded as outstanding rather tha
 - [ ] `/app/services` desktop, EN — the `Services | Packages` control, and `+ Add service` only on the Services view
 - [ ] `/app/services` desktop, native TR — `Hizmetler | Paketler`
 - [ ] a staff-role account confirms Services (and therefore the catalogue) is not reachable
+
+---
+
+## 17. TR-D1 Phase 0.5 — legacy split-payment report correction (`5926c1c`, 2026-08-01)
+
+**An existing production defect**, found by the Phase 0 audit — not introduced by TR-D1.
+
+### The two failures (they were different)
+
+| Aggregation | Old code | Effect on a £30 cash + £20 card checkout |
+|---|---|---|
+| `financeGrouped` | `if(pm==='CASH')…; if(pm==='CARD')…` | `'SPLIT'` matched **neither** ⇒ the whole £50 **vanished** |
+| `financeTotals` | `if(pm==='CASH')…; else card+=net` | fell into the `else` ⇒ reported as **£50 card, £0 cash** |
+
+### Semantics pinned from the WRITER, not the field names
+
+The names invite the wrong reading. `CheckoutPanel.tsx` renders *"Split between Cash and:"* with the
+input labelled **"Cash £"**, and displays the second leg as `total - splitAmount`. Therefore:
+
+- the primary leg is always **CASH**, and its amount **is** `splitAmount`;
+- the secondary is `splitSecond`, taking `total − splitAmount`;
+- `paidAmount` is the **full collected total**, not the primary allocation.
+
+Split is written by the **admin panel only** — the Staff App has no split flow — so there is one
+writer and one convention, which is what makes the legacy shape reconcilable at all.
+
+**Automated: 21 tests.** Frontend **1014/1014**.
+
+- [x] cash-only, card-only, and non-split rows **unchanged**; a stale `splitAmount` on a non-split row is ignored
+- [x] £30 cash + £20 card, both entry orders; zero secondary; zero cash leg; VOUCHER as second method
+- [x] missing second method → remainder to **OTHER**, never a guessed CARD; flagged
+- [x] over-allocation **clamped** and flagged; negative and absent legs handled; empty split still names a bucket
+- [x] discounts/tips: allocates the caller's `net`, never a re-derived total
+- [x] **Σ allocations === net across a 1,728-case matrix** of valid and malformed inputs; no float residue
+- [x] input object never mutated
+
+### Live verification — `tr-demo` synthetic + `whitecross` negative control
+
+**16/16 passed.** Seven synthetic bookings covering every legacy tender shape, expected net **£340**:
+
+| | cash | card | total |
+|---|---|---|---|
+| **corrected** | 222.50 | 117.50 | **340.00** ✅ |
+| old `financeTotals` | 50.00 | 290.00 | 340.00 (mis-attributed) |
+| old `financeGrouped` | 50.00 | 50.00 | **100.00 — £240 lost** |
+
+**UK negative control:** 400 checked-out `whitecross` bookings read **read-only** — **0 SPLIT rows** ⇒
+cash `£2449.10` / card `£9466.50` **byte-identical** before and after. No whitecross document was
+written. All synthetic `tr-demo` bookings deleted; collection back to 0.
+
+Deployed `hosting:salown` only (entry `index-BKqdCc8k.js`, chunk `Reports-_UZ4qFUZ.js`); the old
+`g.cash+=net` predicate is **absent** from the live bundle. No Functions, rules or staff deploy.
+
+### ⚠️ Finance.tsx shares a DIFFERENT defect — reported, NOT fixed
+
+`src/pages/Finance.tsx:48` — `m==='cash' ? 'CASH' : 'CARD'` maps `'SPLIT'` wholly to **CARD**. It was
+not claimed and is not changed here; it needs its own authorization. Finance is `whitecross`-gated and
+whitecross currently has **0** split rows, so the live impact is nil today.
