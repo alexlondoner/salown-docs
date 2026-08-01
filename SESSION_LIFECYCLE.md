@@ -365,9 +365,14 @@ plain collection read, filtered and sorted in memory.
 
 ### Two things that DID change for existing UK tenants
 
-1. A **"Follow-ups" sidebar item** now appears for every tenant. Opening it shows
-   *"This salon has no treatment sessions yet."* — cards and timeline render nothing.
-   (Same precedent TR-B set with "Packages".)
+1. ~~A **"Follow-ups" sidebar item** now appears for every tenant.~~ **SUPERSEDED by TR-B2 Stage 4**
+   (`a5b6f20`, 2026-08-01): the standalone sidebar item was removed and the workspace became a
+   **view of Clients** — `/app/clients?view=follow-ups`, a third option in the existing
+   `All Clients | Segments` control. `/app/follow-ups` remains as a redirect (not a second mount),
+   carrying `?flag=` verbatim, so bookmarks and Dashboard deep-links keep working. **Nothing in this
+   document changed**: the lifecycle, the continuity engine, the collections, the callables, the
+   follow-up statuses, the authorization rules and the dashboard/list parity are all untouched — only
+   where the screen hangs in the navigation. A UK tenant now sees no extra sidebar row at all.
 2. The **Staff App bundle** grew the treatments dictionary, because the Staff App consumes
    the same i18n barrel. It renders none of those strings.
 

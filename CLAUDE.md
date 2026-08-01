@@ -109,3 +109,21 @@ Full protocol: `salown-app/ops/claims/README.md`
 5. **Feature flag:** read from tenant doc, don't hardcode
 6. **Fix:** one bug, changed lines report, then move to the next
 7. **Bug/incident:** Before starting to diagnose a problem (email not sending, booking not landing/showing, blank page, 404, payment/confirmation), **read [docs/INCIDENTS.md](docs/INCIDENTS.md) FIRST** — the same patterns recur, the root cause + diagnosis method is probably there. Also add a resolved serious incident there with the **standard template**: `## YYYY-MM-DD — title` + metadata line (**Severity** 🔴/🟠/🟡/🟢 · **Owner** · **Status** ✅/🟡/🔴) + **Impact/Root Cause/Resolution/Prevention** + **Lessons**. The template is at the top of the file; where possible write a permanent guard/test into Prevention. If the same bug returns, Status = 🔴 Regressed.
+
+---
+
+## Information architecture — where a screen belongs (TR-B2, 2026-08-01)
+
+Recorded because these were being answered inconsistently, and a feature landing in the
+wrong place is expensive to move once salons have learned it.
+
+| Concern | Lives in |
+|---|---|
+| Package **catalogue** (what the salon sells) | Packages → Catalogue |
+| Client **recovery / follow-ups** | **Clients → Follow-ups** (`?view=follow-ups`) |
+| A client's **purchased packages + treatment journey** | Client Detail |
+| Package **financial reporting** | Reports → Packages *(Finance remains Whitecross-specific)* |
+| Tenant **configuration** | Settings |
+
+This is navigation only. **No collection, document path, callable or stored field changes** —
+it is not a data migration, and nothing about TR-C's lifecycle or continuity engine moved.
