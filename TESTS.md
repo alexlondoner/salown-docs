@@ -939,3 +939,81 @@ Deployed `hosting:salown` only (entry `index-BKqdCc8k.js`, chunk `Reports-_UZ4qF
 `src/pages/Finance.tsx:48` — `m==='cash' ? 'CASH' : 'CARD'` maps `'SPLIT'` wholly to **CARD**. It was
 not claimed and is not changed here; it needs its own authorization. Finance is `whitecross`-gated and
 whitecross currently has **0** split rows, so the live impact is nil today.
+
+---
+
+## 18. TR-D1 Phase 1 — contracts and pure engines (`881a6ef`, `22cf85f`, 2026-08-01)
+
+**Built and pushed. NOT registered, NOT deployed as a feature, NOT user-reachable.**
+
+**Automated: 55 new tests.** Frontend **1069/1069**; Functions package engine **72/72**.
+
+| Suite | Count | Command |
+|---|---|---|
+| checkoutSettings resolver, capability, tender engine, twin parity | 55 | `npx vitest run src/utils/checkoutTender.test.ts` |
+
+### B2 logical extraction — the safety proof
+
+Pinned **before** the edit, re-run **after**:
+
+| Evidence | Before | After |
+|---|---|---|
+| Serialized fold over 10 fixtures | sha `9a891b62…` | sha `9a891b62…` **identical** |
+| Functions package-engine tests | 72 pass / 0 fail | **72 pass / 0 fail** |
+| Frontend package tests | 103 | **103** |
+| `packagePlan` parity cores | byte-identical | **byte-identical** |
+| Test files modified | — | **none** |
+
+Fixtures: empty · partial payment · paid in full · refund · adjustment · reversal · bad reversal
+(`M7`) · negative amount (`M6`) · foreign currency (`M4`) · zero base. **No expected value was
+updated to bless the refactor** — that is the only thing that makes this proof mean anything.
+
+`foldReceivableLedger` contains no `clientPackageId`, definition, entitlement, `PER_SESSION`,
+delivered-session or package-status concept. It stays **inside** the existing parity core because
+that core has never had a runtime import (`import type` only, elided at compile time), which is what
+lets the Functions CJS build resolve nothing there. Physical relocation waits for Phase 3's second
+consumer.
+
+### Contracts
+
+- [x] absent settings ⇒ UK default, feature dark; TR settings select TR mode
+- [x] **no IP/geo concept exists in the contract** — asserted by grep over the resolved shape and the core
+- [x] explicit `false`/`0` survive (own-property, never truthiness); `null` meaningful only where a limit means "none"
+- [x] malformed layers resolve conservatively with `issues[]`; duplicate provider ids rejected; a nonsense split list falls back rather than locking the till
+- [x] **no PAY-1 field** is readable as a checkoutSettings field; **no `packageSettings` permission** is duplicated
+- [x] capability returns a struct so a screen can say WHICH of platform/tenant/role refused
+
+### Tender engine
+
+- [x] cash · card · bank transfer · **three-way split** (the legacy two-tender ceiling is gone)
+- [x] partial · fully unpaid · bank instalment (no receivable) · salon instalment (receivable)
+- [x] **package-only checkout succeeds with every tender disabled** — there is no money to take
+- [x] package + paid extra charges only the extra
+- [x] rejects: negative · non-integer · unknown method · duplicate allocation id · over-allocation · unexplained shortfall · disabled checkout/method/split · unknown/disabled provider · unsupported instalment count · staff over unpaid limit · partial below minimum · missing due date/note · **stale settings version**
+- [x] reports **every** reason, not just the first
+
+### Loyalty basis (pure contract, not wired)
+
+- [x] partial earns on the collected eligible portion; unpaid earns zero; package-prepaid earns zero; a paid extra stays eligible; tips/service charge never earn
+
+### Currency boundary
+
+`receiptCurrency` is widened to an explicit ISO string **in the new shared contract only**.
+`src/utils/receiptMath.ts` still types `'GBP'` and the live client-side writer is **unchanged** —
+switching it before the server executor exists would alter deployed behaviour. **Writer migration is
+Phase 3**, where currency will be resolved server-side from tenant presentation.
+
+### ⚠️ Process deviation — `[skip ci]` omitted
+
+Both Phase 1 commits were pushed **without `[skip ci]`**, so CI deployed hosting
+(`index-BETIZlFt.js`). Phase 1 was specified as no-deploy. **What actually reached production was
+nothing new:**
+
+| Marker | entry | Services | Packages | PackageAtoms |
+|---|---|---|---|---|
+| `CHECKOUT_SETTINGS_DEFAULTS` / `admitTender` / `checking_unknown_result` / `SALON_CREDIT` | 0 | 0 | 0 | — |
+| package engine (`M1_RECONCILES`) | 0 | 0 | 0 | **1 — intact** |
+
+The tender/settings engine is **tree-shaken out entirely** (nothing imports it). The only shipped
+delta is the `packagePlan` adapter, whose output is proven byte-identical. No Functions, rules or
+staff deploy occurred. Nothing became user-reachable.

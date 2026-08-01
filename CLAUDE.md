@@ -141,3 +141,28 @@ it is not a data migration, and nothing about TR-C's lifecycle or continuity eng
 > *sold packages* list. They keep package selection in the booking and walk-in forms and
 > remaining-sessions/balance on the Staff App client card. If the desk list is needed back, the
 > answer is a client-scoped view, not re-exposing catalogue configuration.
+
+
+---
+
+## TR-D1 checkout — which settings contract owns what (Phase 1, 2026-08-01)
+
+Three payment-ish contracts now exist. They are **not** interchangeable and must never be merged.
+
+| Contract | Location | Public? | Owns |
+|---|---|---|---|
+| **PAY-1** `paymentSettings` | `tenants/{tid}` **root** | **PUBLIC** | ONLINE booking payment: pay-at-venue vs salOWN Connect, deposit/full/optional, expiry |
+| **TR-B** `packageSettings` | `settings/settings` | private, owner-only | package sale, ledger, plan, outstanding, refunds, entitlement, **package payment permission** |
+| **TR-D1** `checkoutSettings` | `settings/settings` | private, owner-only | IN-SALON tender methods, split, partial, unpaid, salon instalments, POS providers, general checkout permissions, receivables policy |
+
+**Where both apply, both gates apply.** A staff member recording a PACKAGE payment by card needs
+`packageSettings.staffMayRecordPayments` **and** the checkout card permission. There is deliberately
+no second `staffMayRecordPayments` in `checkoutSettings`.
+
+**Receivable arithmetic is shared, package semantics are not.** `foldReceivableLedger` in the
+packagePlan parity core is package-free; `foldPackageLedger` is a thin adapter over it (TR-D1
+strategy B, *logical* extraction — the generic functions live in a package-named file for now
+because that core has no runtime imports by design; relocation waits for a second consumer).
+
+**Nothing selects checkout mode from IP.** `countryCode`/tenant configuration decides. A TR tenant
+opened from London stays TR.
