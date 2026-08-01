@@ -10,10 +10,42 @@
 > separate `whitecross-site` repo deploy manually**, so code can sit on `origin/main` for days while
 > production runs older behavior. Confusing "merged" with "live" has caused real incidents.
 >
-> **Snapshot date:** 2026-07-31 ~16:3x UK — **TR-B is fully deployed and live-verified** (row directly below); TR-C Phase 1 remains pushed but deliberately NOT deployed. Previous snapshot 2026-07-31 ~15:5x UK. Previous snapshot 2026-07-31 01:5x UK — **three deploy waves have landed since the previous snapshot and this file now reflects them.** 2026-07-30 ~14:4x (Session A: ANY-BARBER + PUSH-RECOVERY + RECEIPT-WRITER), 2026-07-30 ~17:5x–18:1x (Session B: receipt READER + the remaining UK financial work), 2026-07-31 ~00:5x–01:4x (master closure: whitecross saas hosting + LC1 live chat). The previous revision of this line said *no deploy occurred* on 07-30; that was true when written and false within the hour. · 2026-07-27 15:05 UK after the Treatwell parser deploy + T2188888050 repair (previous: 12:55 UK after the whitecross test-mode lockdown deploy) (previous
+> **Snapshot date:** 2026-08-01 — **TR-B2 is fully deployed and live-verified** (row directly below); no Function or rules revision changed. Previous snapshot 2026-07-31 ~16:3x UK — **TR-B is fully deployed and live-verified** (row directly below); TR-C Phase 1 remains pushed but deliberately NOT deployed. Previous snapshot 2026-07-31 ~15:5x UK. Previous snapshot 2026-07-31 01:5x UK — **three deploy waves have landed since the previous snapshot and this file now reflects them.** 2026-07-30 ~14:4x (Session A: ANY-BARBER + PUSH-RECOVERY + RECEIPT-WRITER), 2026-07-30 ~17:5x–18:1x (Session B: receipt READER + the remaining UK financial work), 2026-07-31 ~00:5x–01:4x (master closure: whitecross saas hosting + LC1 live chat). The previous revision of this line said *no deploy occurred* on 07-30; that was true when written and false within the hour. · 2026-07-27 15:05 UK after the Treatwell parser deploy + T2188888050 repair (previous: 12:55 UK after the whitecross test-mode lockdown deploy) (previous
 > revisions: 2026-07-26 19:45 UK; 2026-07-24 16:40 UK after Parser-3C landed on `origin/main`; earlier
 > 16:05 revision during BSP-H1, see the hosting-baseline correction below). Verify against `git log origin/main` + the live system before acting;
 > a row here is a claim about a moment, not a standing guarantee.
+
+---
+
+## 🇹🇷 TR-B2 — package booking UX, custom instalments, Finance/Reports, Clients IA · **DEPLOYED + LIVE-VERIFIED** 2026-08-01
+
+**Baseline commit `a5b6f20`** (`origin/main`). Production **is** on it. Four stages, each pushed,
+deployed and live-verified on the same cycle. **No Function or rules revision was deployed by any
+stage** — every gap turned out to be backed by the contract TR-B already shipped.
+
+| Stage | Commit | Deployed | Live verification |
+|---|---|---|---|
+| 1 · package accounting + Reports | `c5bd1dc` | `hosting:salown` (CI 23:18:12) | `tr-demo` 22/23 + 8/8 anchors |
+| 2 · catalogue archive/restore + custom instalments | `b0a2051` | `hosting:salown` | `tr-demo` **35/35** |
+| 3 · booking / walk-in package selection | `b40e182` | `hosting:salown` **+ `hosting:salown-staff`** | `tr-demo` **29/29** incl. a negative control |
+| 4 · Follow-ups → a view of Clients | `a5b6f20` | `hosting:salown` + `hosting:salown-staff` | markers live; 16 routing tests |
+| — · production package-gating anchor | `4408759` | n/a (script + unit gate) | **anchor holds** |
+
+| Surface | State |
+|---|---|
+| `hosting:salown` | ✅ live — entry `index-DEnMEobb.js` |
+| `hosting:salown-staff` | ✅ live — `staff-bURxN_lq.js`, **byte-identical to the tracked bundle**. No tracked deployable Staff artifact is ahead of production. |
+| Functions | ⏸️ **unchanged** — all seven package/treatment callables still on their TR-B/TR-C revisions and still failing closed (`UNAUTHENTICATED`) |
+| `firestore.rules` | ⏸️ **unchanged** — no rule change was needed or made; **no Firestore delete permission was added** |
+
+**Scope note, stated so it is not over-read:** package accounting is live in **Reports** for
+package-enabled tenants. The legacy **Finance** page remains Whitecross-specific
+(`tenantId === 'whitecross'`, `£`-hardcoded); making Finance tenant-generic is a separate
+TR-D/platform task. `Finance.tsx` is not in any TR-B2 diff, and its built chunk was verified
+**byte-identical live vs local** — the `2a69735` date-selection fix is provably untouched.
+
+**Gates at `a5b6f20`:** frontend **969** · functions **816** (797 pass / 19 self-skip / 0 fail) ·
+emulator **105**. ⚠️ Manual visual pass NOT done — checklist in [TESTS.md](TESTS.md) §15.
 
 ---
 
