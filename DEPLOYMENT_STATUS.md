@@ -137,7 +137,7 @@ Two visible changes, both intended:
    *"This salon has no treatment sessions yet."* (Same precedent TR-B set with "Packages".)
 2. The Staff App bundle carries the treatments dictionary and renders none of it.
 
-Everything else is inert: whitecross / herohairs / eekurt have zero `treatmentSessions`,
+Everything else is inert: the active UK tenants whitecross / herohairs have zero `treatmentSessions`,
 so `buildRecoveryRows` returns `[]`, the dashboard strip renders `null` and the client
 card is unchanged.
 

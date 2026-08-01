@@ -119,11 +119,25 @@ wrong place is expensive to move once salons have learned it.
 
 | Concern | Lives in |
 |---|---|
-| Package **catalogue** (what the salon sells) | Packages → Catalogue |
-| Client **recovery / follow-ups** | **Clients → Follow-ups** (`?view=follow-ups`) |
-| A client's **purchased packages + treatment journey** | Client Detail |
-| Package **financial reporting** | Reports → Packages *(Finance remains Whitecross-specific)* |
+| Package **catalogue** | **Services → Packages** (`/app/services?view=packages`) |
+| **Purchased packages / history** | **Client Detail** |
+| **Package accounting** | **Reports** *(Finance remains Whitecross-specific — see below)* |
+| **Follow-ups** | **Clients → Follow-ups** (`/app/clients?view=follow-ups`) |
 | Tenant **configuration** | Settings |
 
 This is navigation only. **No collection, document path, callable or stored field changes** —
 it is not a data migration, and nothing about TR-C's lifecycle or continuity engine moved.
+
+> ⚠️ **Correction of record.** The first version of this table (written at `a5b6f20`) said the
+> catalogue lived under "Packages → Catalogue". That recorded what had been *built* rather than the
+> rule that had been *specified*, and it hid a real source gap: `a5b6f20` moved Follow-ups under
+> Clients but left **Packages as a top-level sidebar item**, in source and in production. The owner
+> found it by opening the app. Closed by `58624ea`, which also made the navigation contract
+> test-asserted against the source (`src/pages/servicesView.test.ts`) so a report claiming a
+> completed move now fails a test instead of reaching the owner.
+>
+> **Authorization consequence:** Services is the owner/admin configuration area, so catalogue
+> management inherits that gate. Reception no longer sees the Packages page — including its
+> *sold packages* list. They keep package selection in the booking and walk-in forms and
+> remaining-sessions/balance on the Staff App client card. If the desk list is needed back, the
+> answer is a client-scoped view, not re-exposing catalogue configuration.

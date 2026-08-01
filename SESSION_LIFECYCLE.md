@@ -292,7 +292,9 @@ rather than pretending to share a contract it does not.
 
 ## 7. Inert for every existing tenant
 
-whitecross, herohairs and eekurt have **zero** `treatmentSessions` documents. Therefore
+The active UK tenants — **whitecross** and **herohairs** — have **zero** `treatmentSessions`
+documents. (`eekurt` left the platform on 2026-07-18: data retained, not an active tenant.
+`demo` and `tr-demo` are mutable demo/pilot tenants.) Therefore
 `buildRecoveryRows` returns `[]`, the dashboard strip renders `null`, and the client card is
 unchanged. This is the same regression anchor TR-A used ("existing UK tenants carry no
 `presentation` key ⇒ platform default ⇒ unchanged"), and it is asserted directly:

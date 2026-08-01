@@ -813,3 +813,71 @@ Live run 2026-08-01: **anchor holds** — `whitecross` and `herohairs` both effe
 - [ ] an old `/app/follow-ups?flag=…` bookmark
 - [ ] narrow-screen: the control does not clip or overflow the page
 - [ ] a UK tenant (`whitecross`): All Clients and Segments unchanged, no new sidebar row
+
+---
+
+## 16. Pre-TR-D IA remediation — package catalogue under Services (`58624ea`, 2026-08-01)
+
+**Why this exists.** The pre-TR-D audit found a **SOURCE GAP**: `a5b6f20` reported the
+information-architecture work complete, but `Sidebar.tsx` still carried a top-level Packages item —
+in source *and* in production. Source and live agreed with each other and disagreed with the report.
+Prose could not catch that, so **the navigation contract is now asserted against the source.**
+
+**Automated: 24 tests.** Frontend gate **993/993**.
+
+| Suite | Count | Command |
+|---|---|---|
+| Services view routing + navigation contract | 24 | `npx vitest run src/pages/servicesView.test.ts` |
+
+Routing contract:
+- [x] default Services URL resolves to Services; `?view=packages` resolves to Packages
+- [x] invalid/unknown/foreign view names fall back safely — a bad URL never blanks the page
+- [x] each segment produces the canonical URL; the default view writes **no** parameter
+- [x] `/app/packages` redirects to `?view=packages`, preserves the query, and **cannot loop**
+- [x] direct refresh preserves the view; params are never mutated in place
+- [x] Services and Clients share one convention, and neither accepts the other's view name
+
+Navigation contract, read from the **source registry** (not prose):
+- [x] **no** top-level Packages nav entry — the gap this closes
+- [x] **no** top-level Follow-ups nav entry
+- [x] exactly **one** Services entry; exactly **one** Clients entry
+- [x] `OWNER_ONLY` still contains `services` and was **not** weakened (`packages`/`clients` not added)
+- [x] `/app/packages` is a redirect, **not** a second catalogue mount (`element={<Packages ` absent)
+- [x] `/app/follow-ups` compatibility redirect still intact
+- [x] the Services route is **role-gated**, so an unauthorized URL cannot open configuration
+- [x] Clients still shows All Clients | Segments | Follow-ups, with + Add Client separate
+
+### Live verification — downloaded production artefacts
+
+Entry `index-DTpuvt8f.js`:
+
+| Check | Result |
+|---|---|
+| top-level Packages nav item | **absent** (`id:\`packages\`` = 0, `ti-ticket` = 0) |
+| Services nav item | present **exactly once** |
+| top-level Follow-ups nav item | absent (`ti-phone-call` = 0) |
+| `/app/services?` redirect target | present |
+| `/app/clients?` (Follow-ups) redirect | still present |
+| Services chunk `Services-DvIUckd2.js` | carries `nav.servicesTabs.` + lazy `Packages-BO7Ma3e2.js` |
+| Packages chunk | HTTP 200, catalogue intact (`packages.catalogue.archive`, `packages.sell.title`) |
+| EN / TR labels | `servicesTabs:{services:\`Services\`,packages:\`Packages\`}` and `{services:\`Hizmetler\`,packages:\`Paketler\`}` |
+
+**Auto-translate ruled out by evidence:** the Turkish labels are **literal values inside the deployed
+bundle**, not runtime translations of English ones.
+
+**No service-worker/cache explanation applies** — `/sw.js` and `/service-worker.js` are 404, and the
+new navigation was verified by downloading the server artefact itself.
+
+Deployed: `hosting:salown` only. **`hosting:salown-staff` deliberately NOT deployed** — no staff
+source changed; the staff bundle was rebuilt only because `panel.ts` rides in the shared i18n barrel,
+so the rebuild was reverted and the tracked artefact remains **byte-identical** to production.
+No Functions, rules or indexes touched.
+
+### ⚠️ Manual visual pass — NOT done
+
+The Chrome extension is not connected in this environment and the panel requires an authenticated
+session, so no screenshot pass was performed. Recorded as outstanding rather than claimed.
+
+- [ ] `/app/services` desktop, EN — the `Services | Packages` control, and `+ Add service` only on the Services view
+- [ ] `/app/services` desktop, native TR — `Hizmetler | Paketler`
+- [ ] a staff-role account confirms Services (and therefore the catalogue) is not reachable
