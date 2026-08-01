@@ -345,9 +345,7 @@ left exactly as found. No email sent, no card touched.
 Closed and still-open items are tracked by TR-B2 (see §16).
 
 - ~~**Finance / Reports** do not include package revenue.~~ **CLOSED by TR-B2 Stage 1** (`c5bd1dc`) — see §16.
-- **Booking-flow package selection.** A session is redeemed from the client card (walk-in) or by
-  linking an existing booking. Choosing a package *inside* `NewBookingSheet` / `WalkInFlow` is a
-  further integration — TR-B2 Stage 3.
+- ~~**Booking-flow package selection**~~ — ✅ **CLOSED by TR-B2 Stage 3** (`b40e182`), see §18.
 - ~~**Custom instalment amounts/dates**~~ — ✅ **CLOSED by TR-B2 Stage 2** (`b0a2051`), see §17.
 - ~~**Catalogue archive/restore**~~ — ✅ **CLOSED by TR-B2 Stage 2** (`b0a2051`), see §17.
 
@@ -491,3 +489,76 @@ needs to change terms today records an `ADJUSTMENT` (which is audited and append
 re-sells. A real implementation would need a new server verb that leaves paid instalments immutable,
 replaces only future unpaid rows, re-checks the sum, and records actor and reason — that is its own
 package.
+
+---
+
+## 18. Package selection in booking and walk-in flows (TR-B2 Stage 3, `b40e182`)
+
+> ✅ DEPLOYED + LIVE-VERIFIED 2026-08-01. **No Function deployed.**
+> Picker: `src/components/packages/PackagePicker.tsx` · rules: `src/utils/packageEligibility.ts`
+> · linking: `linkBookingToPackage` in `src/lib/packagesApi.ts`.
+
+### The ordering rule, and why it is not optional
+
+§6 explains that a redeemed session is stamped `price: 0` at **link** time, which is what keeps the
+checkout, the canonical receipt writer/reader and the loyalty award ignorant of packages. Stage 3
+surfaced the precise condition:
+
+```ts
+if (bookingRef && target === 'scheduled') { tx.update(bookingRef, { price: 0, … }) }
+```
+
+**Only on `scheduled`.** A booking taken straight to `complete` therefore consumes the entitlement
+while keeping its full price — and the checkout charges the client a second time for a session they
+have already bought, *and* awards loyalty on it.
+
+That is not a defect in TR-B. The `(none) → completed` shortcut exists for redemptions with **no
+booking** (the client card), where there is nothing to stamp. A booking-linked session is meant to
+pass through `scheduled`. So:
+
+> **Every booking-linked redemption goes `reserve` → `complete`, in that order, always.**
+
+The rule lives in `linkBookingToPackage`, once, rather than in four call sites. Both calls share the
+derived session id (`{clientPackageId}__{bookingDocId}`), so a retry replays and two devices contend
+for one Firestore path.
+
+Whether the session is *also* completed answers one honest question — **is the treatment happening
+now?** A walk-in reserves and completes; a scheduled appointment stops at reserve and is completed
+later through the ordinary lifecycle.
+
+Proven live with a **negative control**: complete-without-reserve was run deliberately and left the
+booking at full price. The failure is demonstrated, not asserted.
+
+### Customer-first eligibility
+
+The picker renders **nothing** — not an empty list, not a disabled control — until a client is
+RESOLVED: picked from the existing list or just created, never free-typed. A package belongs to a
+person, and burning a session off the wrong client's course is the failure worth designing against.
+**An anonymous walk-in can never use a package.**
+
+Only that one client's packages are ever read. There is no "all packages" query on this path.
+
+Eligibility (`packageEligibility.ts`, pure) is computed locally so the desk is told instantly in the
+salon's own words, and **re-decided by the server inside its transaction**, which is the only
+authority — a stale tab is refused and shown why. Ineligible packages are still listed, after the
+eligible ones, **with their reason**: hiding them looks like the package vanished.
+
+Two ordering choices worth knowing: a package that is both exhausted and expired reads as
+**exhausted** (the reason staff can act on), and expiry is judged against the **appointment date**,
+not today — booking into next month against a package that expires next week is refused now rather
+than discovered on the day.
+
+### Money stays where it belongs
+
+- A covered session leaves the staff walk-in cart total. **One** session is covered; extra
+  quantities, other services, add-ons and products stay chargeable exactly as before.
+- Selecting a package **records no payment**, and an outstanding balance is displayed but **never
+  auto-collected** at the point of booking.
+- Linking writes **no ledger entry** — delivery and payment remain separate facts.
+
+### One additive change to `firestoreActions.ts`
+
+`createWalkIn` discarded `addDoc`'s `DocumentReference`, and the derived session id needs that doc
+id. `createWalkInDetailed` returns `{ bookingId, docId }`; `createWalkIn` is now a thin wrapper, so
+no existing caller changed. The write itself is byte-for-byte what it was — this captures a value
+that was already being produced and thrown away.
