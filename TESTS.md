@@ -693,3 +693,32 @@ really backs the new controls.
 
 Hosting `salown` deployed by CI (entry `index-CBqtF43Y.js`); EN and TR markers confirmed live.
 `hosting:salown-staff` intentionally not deployed — see the Stage 1 note and Stage 3.
+
+### Production regression anchor — package gating (`4408759`)
+
+`node scripts/packageAnchor.cjs` · policy unit-tested by `npx vitest run scripts/packageAnchor.test.js` (14 tests, no credentials needed).
+
+Replaces TR-B's *"no live tenant carries `packageSettings`"* baseline, which was true when written
+and false within a day — `demo` deliberately opted into a shipped feature. **A gate that fails on
+correct use teaches people to ignore the gate.**
+
+| | Old baseline | This anchor |
+|---|---|---|
+| Asserts | a field is absent (**storage**) | `resolvePackageSettings(...).settings.enabled` (**behaviour**) |
+| Protected | "every live tenant" | `whitecross`, `herohairs` — the two `TENANTS.md` lists as live |
+| Demo/pilot | asserted, so it broke | **reported, never asserted** — `demo`/`tr-demo` exist to be switched |
+| Unlisted tenants | not covered | covered by a **universal property**, not by name |
+
+- [x] absent settings ⇒ disabled; an explicit `enabled: false` doc ⇒ equally disabled; a malformed layer ⇒ still disabled, and not a violation
+- [x] a protected tenant resolving `enabled: true` ⇒ **BREAKS**
+- [x] a protected tenant missing from the roster ⇒ **BREAKS** (silence is not proof)
+- [x] the platform default ever ceasing to mean disabled ⇒ **BREAKS** — the tripwire for every unconfigured salon silently gaining the feature
+- [x] `demo`/`tr-demo` flipping either way ⇒ still holds
+- [x] an unlisted self-signup tenant opting in ⇒ not a violation (the roster is open; `/signup` is never gated)
+
+**`eekurt` is deliberately NOT protected** — it left the platform 2026-07-18 (owner). Its Firestore
+data is untouched; if it returns it comes back through onboarding with explicit fresh configuration.
+The exclusion is asserted as a decision so it does not read as an oversight later.
+
+Live run 2026-08-01: **anchor holds** — `whitecross` and `herohairs` both effective-disabled;
+`demo` enabled (reported); `the-hair-lab`, `tr-demo`, `yusufo` disabled.

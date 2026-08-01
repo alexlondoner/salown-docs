@@ -22,7 +22,7 @@ All tenant data lives under `tenants/{tenantId}/...`.
 | [GLOSSARY.md](docs/GLOSSARY.md) | Term glossary — tenant/Class A-B/walk-in/aggregator/squeeze-in/canary/SSOT/`pp()`/`toDateKey()`... check here when stuck on jargon |
 | [MANIFESTO.md](docs/MANIFESTO.md) | Why it exists, "grabbing" philosophy, goal |
 | [SYSTEM_ARCHITECTURE.md](docs/SYSTEM_ARCHITECTURE.md) | Repo map, Firebase, stack, key files, DO NOT list |
-| [TENANTS.md](docs/TENANTS.md) | Whitecross/HeroHairs/EeKurt details, Class A/B definition |
+| [TENANTS.md](docs/TENANTS.md) | **Tenant roster of record** — active: Whitecross + HeroHairs. EeKurt left the platform 2026-07-18 (record kept, data preserved, NOT a current tenant). Class A/B definition |
 | [PEOPLE.md](docs/PEOPLE.md) | People, roles, emails |
 | [FIRESTORE_SCHEMA.md](docs/FIRESTORE_SCHEMA.md) | Data structure, booking model quirks, client identity |
 | [BUSINESS_RULES.md](docs/BUSINESS_RULES.md) | Cancel/reschedule policy, slot generation, deposit flow |
