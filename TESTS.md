@@ -755,3 +755,40 @@ Live run 2026-08-01: **anchor holds** — `whitecross` and `herohairs` both effe
 - `hosting:salown` — entry `index-dGzcP6IS.js`, EN + TR markers confirmed live.
 - `hosting:salown-staff` — **deployed**, and the live bundle `staff-CE_2hRPk.js` is **byte-identical** to the tested tracked bundle. The pushed-but-undeployed Staff discrepancy carried since Stage 1 is **cleared**.
 - **No Function deployed** — Stage 3 changed no `functions/` path.
+
+### Stage 4 — Follow-ups into the Clients segmented control (`a5b6f20`)
+
+**Automated: 16 new tests.** Frontend gate **969/969**; TR-C's own 111 tests re-run green.
+
+| Suite | Count | Command |
+|---|---|---|
+| Clients view routing — URL contract, legacy redirect, card deep-links | 16 | `npx vitest run src/pages/clientsView.test.ts` |
+
+- [x] Clients defaults to **All Clients**; a bad/unknown/removed `?view=` value falls back to it rather than blanking the page
+- [x] the default view writes **no** parameter, so Back does not stutter between `/clients` and `/clients?view=list`
+- [x] a direct refresh on `?view=follow-ups&flag=…` stays on Follow-ups, filtered
+- [x] unrelated query parameters are preserved; the params object is never mutated
+- [x] leaving Follow-ups **clears the flag** — an armed but invisible filter is worse than none
+- [x] `/app/follow-ups` resolves to Clients → Follow-ups, carrying `?flag=` verbatim, and **can never target itself** (no redirect loop)
+- [x] every Dashboard recovery flag round-trips to the filtered list, so a card's count and the list it opens cannot diverge
+
+**Structural checks, asserted against the codebase:**
+
+- [x] exactly **one** `<FollowUps>` mount exists (`src/pages/Clients.tsx`) — the legacy route is a redirect, not a second mount
+- [x] the standalone Follow-ups **sidebar item is gone**; the only remaining reference is a comment
+- [x] `isAdmin` is the prop `AppRouter` already computes, not a second derivation ⇒ authorization provably unchanged
+- [x] the workspace is **lazily loaded**, so the continuity engine is never mounted behind the client list
+
+### Stage 4 deployment
+
+- `hosting:salown` — entry `index-DEnMEobb.js`; `Tüm Müşteriler` / `Segmentler` / `Takip Listesi` and the `/app/clients?` redirect target confirmed live, `nav.clientsTabs.*` + `treatments.navLabel` present in `Clients-DFYjn-yt.js`.
+- `hosting:salown-staff` — redeployed with the shared i18n barrel; live bundle `staff-bURxN_lq.js` **byte-identical** to the tracked one.
+- **No Function deployed** — Stage 4 touched no `functions/` path, no collection, no callable.
+
+### ⚠️ Manual visual pass — NOT done
+
+- [ ] `/app/clients` in **Turkish** (`tr-demo`): the three-option control, and that `+ Müşteri Ekle` still reads as the primary action
+- [ ] a Dashboard recovery card → the filtered Follow-ups list, then **Back** returns to the card
+- [ ] an old `/app/follow-ups?flag=…` bookmark
+- [ ] narrow-screen: the control does not clip or overflow the page
+- [ ] a UK tenant (`whitecross`): All Clients and Segments unchanged, no new sidebar row
