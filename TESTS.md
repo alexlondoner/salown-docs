@@ -1017,3 +1017,44 @@ nothing new:**
 The tender/settings engine is **tree-shaken out entirely** (nothing imports it). The only shipped
 delta is the `packagePlan` adapter, whose output is proven byte-identical. No Functions, rules or
 staff deploy occurred. Nothing became user-reachable.
+
+---
+
+## 19. TR-D1 Phase 2A — package session transaction seam (`ef2cd1f`, 2026-08-02)
+
+**Behaviour-neutral refactor. Pushed, NOT deployed** — the public callable behaves identically and
+the seam has no external consumer until Phase 2B.
+
+**Why it exists:** `packageSessionCore` owned its `db.runTransaction`, and Firestore has no nested
+transactions, so a checkout executor could not consume an entitlement *and* complete a booking in one
+atomic commit. The two alternatives were forbidden and wrong — uncoordinated double-commit, or a
+second copy of the entitlement arithmetic.
+
+**Automated: 12 new seam tests.**
+
+| Gate | Pinned before | After |
+|---|---|---|
+| Package engine | 72 pass / 0 fail | **72 / 0** |
+| Package emulator concurrency | 27 pass / 0 fail | **27 / 0** |
+| Full emulator suite | 105 | **105** |
+| Full Functions suite | 816 (797 pass / 19 skip) | **828** (809 / 19) — the +12 are the seam tests |
+| Frontend | 1069 | **1069** |
+
+**No existing financial expectation changed; no existing test file touched.**
+
+### What the seam tests pin (contract, not arithmetic)
+
+- [x] exactly **ONE** entitlement implementation — counted over code lines, ignoring the import line and the prose comment a naive substring count mistakes for duplicates
+- [x] the wrapper **delegates** and contains no `tx.*`, no `applyEntitlementTransition`, no `derivePackageStatus`
+- [x] the body opens **no nested transaction**
+- [x] the body performs **no external side effect** — a transaction callback can be RETRIED, so `emitAudit` stays in the wrapper, after commit (order asserted)
+- [x] **every read precedes every write** (one `tx.getAll` at the top)
+- [x] `prepareSessionRequest` is **pure of I/O**
+- [x] derived ids unchanged: `{cp}__{booking}` and `{cp}__manual__{key}`
+- [x] every existing rejection preserved (`INVALID_IDEMPOTENCY_KEY`, `INVALID_INPUT` incl. unknown field, `INVALID_TENANT`)
+- [x] an **external transaction can drive the body** — proven with a fake tx that throws if nesting is attempted, observing exactly one entitlement reserved (8 → 7, scheduled 1)
+- [x] a denied path stages **no write at all**
+
+**Not deployed.** `packageSessionCore`'s runtime behaviour is unchanged, so redeploying the package
+Functions would be churn without benefit. Phase 2B deploys the new checkout callable that consumes
+this seam.
