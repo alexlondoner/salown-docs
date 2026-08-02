@@ -35,6 +35,42 @@ Every incident opens with `## YYYY-MM-DD — short title`, immediately followed 
 
 **Tag dictionary (CANONICAL — only these; sprawl forbidden):** `#security` `#stripe` `#secrets` `#config` `#deploy` `#normalization` `#permission` `#race` `#timezone` `#parser` `#email` `#data-loss` `#shared-infra`. A new tag is added only if a genuinely new class emerges (e.g. twins like `#payment`+`#payments`+`#stripe-payment` are FORBIDDEN → all `#stripe`). Every entry carries a `**Tags:**` line.
 
+## 2026-08-02 — A cleared price box charged £38 for a £0 service, and the receipt withheld the customer's own £2 redemption
+
+**Severity:** 🟠 High (customer-facing receipt understated, loyalty award short, reported revenue wrong) · **Owner:** Claude + owner · **Status:** ✅ Resolved — **DEPLOYED + LIVE-VERIFIED** (`4587f50` + `53bf4a1`, salown-app; `salownSendLoyaltyEmail` rev `-00063-vec`; `hosting:salown` released 2026-08-02 15:53:59 UK) · **Affected area:** walk-in creation → checkout receipt → loyalty award → Sales/Finance/Reports
+
+**Tags:** `#normalization` `#email`
+
+**Discovery:** Owner test — the owner opened a checked-out booking, saw `Loyalty redeemed −£2.00` in the panel, opened the emailed receipt for the same booking, and found no redemption row at all. Reported as "loyalty receipt breakdown is broken again".
+**Impact:** ONE booking (`WCB-1785666258751-w5ee`, Mason Borrett, 2 Aug). The customer's receipt showed only `Total Paid £38.00` — no service line, no subtotal, and none of the `Points redeemed · 40 pts −£2.00` they had just spent. The client was also awarded 36 points instead of 38, and the booking was reported to Sales/Finance/Reports as £36 net instead of £38 collected.
+**Root Cause:** Truthiness on money. The admin walk-in price editor read `parseFloat(e.target.value) || 0`; clearing the box gives `''`, `parseFloat('')` is `NaN`, and `NaN || 0` is `0`. A £40 service was therefore stored as `price: 0` with nothing downstream able to distinguish it from a genuinely free service. A £0 service that collects £38 cannot satisfy the receipt identity, so `computeReceipt` correctly wrote the snapshot flagged (`I3_COLUMN_RECONCILES` + `I4_EARN_POINTS_PARITY`), and the canonical reader correctly refused it. **The consumer was not the bug** — the legacy-safe fallback did exactly what it was designed to do. What was wrong is that it withheld deductions that were fully known, on a receipt whose only genuine unknown was the service line.
+**Bug Class:** State normalization (SSOT violation) — a sentinel (`0`) and an absence (`''`) collapsed into the same value by `||`, exactly the distinction `resolveServiceBaseAmount` already draws elsewhere with `{ known, amount }`.
+**Resolution:** Two commits. `4587f50` replaces the coercion with an explicit contract (`utils/walkInPrice`): a cleared box stays cleared, the catalogue price is carried uncoerced so a genuine £0 stays valid, and both Save paths REFUSE an unexplained zero instead of defaulting it. `53bf4a1` adds `readSalvageableReceipt` — a flagged snapshot may be reconstructed only when it has exactly one unknown with exactly one solution (`service = paidToday + redeemed`), behind five gates, never consulting today's catalogue. `bookingNetWithoutTip` reads the same contract, which removes the double subtraction that produced £36.
+**Prevention:** The canonical gate was deliberately NOT weakened — salvage is a separate, narrower reader that can never promote a snapshot to trustworthy. Invariant codes are re-checked from the stored numbers rather than read from `receiptFailures`, so a forged code list cannot unlock salvage. The points award is never repaired during rendering; the mismatch is logged (`MISMATCH` in the salvage log line) and corrected through the loyalty ledger.
+**Regression Tests:** `src/utils/walkInPrice.test.ts` (8 required shapes incl. cleared / accidental zero / genuine free / explicit override / discount-as-discount / package-prepaid / product-only / ordinary walk-in) · `functions/src/receipts/salvage.test.js::23 cases` (salvage + every ambiguous refusal + no-mutation-during-render + rendered-HTML assertions) · `src/utils/receiptMath.test.ts::readSalvageableReceipt` (frontend mirror) · `src/utils/bookingUtils.test.ts::bookingNetWithoutTip` (net £38, not £36)
+**Related:** commits `4587f50` `53bf4a1` · roadmap P1-RECEIPT-MATH follow-up · files `src/utils/walkInPrice.ts` `src/components/WalkInForm.tsx` `src/utils/receiptMath.ts` `src/utils/bookingUtils.ts` `functions/src/receipts/index.ts` `functions/src/index.ts`
+
+**What happened / Diagnosis / Fix:**
+
+The panel and the email disagreed, which is what made this look like a template regression. It was not. `BookingDetailPanel` back-derives its breakdown from what was collected (`serviceGross = total − tip + discount + loyaltyDed`), so it happily printed `Service total £40.00` from `paidAmount 38 + loyaltyDed 2` without ever reading `price`. The email refuses to derive anything, so it printed what the snapshot could prove: £38, and nothing else. Two different philosophies, one of which was right for the wrong reason.
+
+The decisive evidence was arithmetic, not code reading. The booking recorded `loyaltyPointsEarned: 36` on a £38 payment. Under the deployed source, `price: 0` is a KNOWN zero (`e02ddc5`), which yields an earn base of £0 and an award of 0 points — not 36. Only the pre-`e02ddc5` logic (`bookingData.price ? … : (total + depositPaid)`, where `0` is falsy) produces exactly 36, via `38 − 2`. Cross-referencing hosting releases pinned the executing bundle to the `salown` release of **2026-07-30T14:46:52Z** — the one window in which the receipt writer exists but the fold-contract unification does not. The desk had a panel tab open for ~44 hours. Hosting sends `no-cache, no-store` and the staff service worker is network-first, so nothing pinned it; it was simply never reloaded.
+
+Note that `e02ddc5` would NOT have saved this receipt. It changes the failure mode, not the failure: service £0, £38 collected, I3 still fails, still the legacy view — and the client would have earned 0 points instead of 36. The genuine root was always the £0 price.
+
+Blast radius was one booking. Across both live tenants, every `receiptMathVersion: 1` snapshot was checked: whitecross 37 → 36 reconciled, 1 flagged; herohairs 5 → 5 reconciled. Only 1 walk-in in 314 since 1 June had a zero/missing price.
+
+Live-verified after deploy with two synthetic bookings (deleted): the salvageable shape logged `salvaged view — derived-service-line (service 4000p, redeemed 200p, points awarded 36 implied 38 MISMATCH)`, and its ambiguous twin (a discount added) correctly stayed on `legacy view — writer-flagged`. Independently confirmed by the owner's first real post-deploy redemption (`WCB-1785686381122-9uzy`), which reconciled canonically and rendered Service £40 + Add-on £6 → Subtotal £46, `Points redeemed · 40 pts −£2.00`, Total £44.
+
+**Lessons Learned:**
+- `|| 0` on money is a bug waiting for its input. `0` is a value; `''` is an absence. Every money edge in this codebase should return `{ known, amount }` — `resolveServiceBaseAmount` already did, and the walk-in editor did not.
+- A refusal that is correct can still be too broad. The legacy view refused deductions because a Subtotal row with no line items would read as broken — a RENDERING constraint used to justify withholding ARITHMETIC the system actually had.
+- "Which update broke it?" is sometimes answered by the stored numbers, not the diff. 36 points could only come from one build, and that identified a stale client no code inspection would have found.
+- Hosting releases are a diagnostic instrument. `no-store` guarantees a fresh LOAD, not a fresh TAB — a till left open for days runs whatever shipped that day.
+- The panel back-deriving money while the email refuses to is a latent disagreement. It happened to flatter the panel here; next time it will flatter the wrong one.
+
+---
+
 ## 2026-07-31 — Finance silently jumped to the 1st of the month, so a correct P&L was read as a wage bug
 
 **Severity:** 🟡 Medium (wrong day displayed; no data or money touched) · **Owner:** Claude + owner · **Status:** ✅ Resolved — **DEPLOYED + LIVE-VERIFIED** (`e22dcc2` + `ba5b820`, salown-app; `hosting:salown` released 2026-07-31 21:36:48 UK) · **Affected area:** Finance — Day/Month date selection

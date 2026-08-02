@@ -371,6 +371,43 @@ Total **47 (functions) + 25 (frontend conflictUtils)**. Categories:
 
 Note: `any` usage is intentional and labeled — `grep -rn "TODO(ts-migration)" salown-app/src` (zeroed out in Phase 4 strict).
 
+## 21. LOYALTY-RECEIPT-SALVAGE — zero-price walk-in guard + unambiguous flagged-receipt recovery (`4587f50` · `53bf4a1`, 2026-08-02)
+
+**Status:** ✅ DEPLOYED + LIVE-VERIFIED. Functions `salownSendLoyaltyEmail` rev `-00063-vec`; `hosting:salown` + `hosting:salown-staff` released 2026-08-02 15:53:59 UK (CI, one `--only hosting` deploy covers both targets).
+
+Context: [INCIDENTS.md 2026-08-02](INCIDENTS.md). One booking (`WCB-1785666258751-w5ee`) stored `price: 0` and collected £38, so its canonical receipt was flagged and the emailed breakdown withheld the customer's own £2 redemption.
+
+### Automated
+
+| Suite | Cases | Pins |
+|---|---|---|
+| `src/utils/walkInPrice.test.ts` | 13 | The 8 required shapes: cleared price · accidental zero · genuine £0 catalogue service · valid explicit override · discount represented AS a discount (incl. 100% = complimentary) · package-prepaid known zero · product-only known zero · ordinary UK walk-in. Plus junk/negative/unknown-catalogue refusals and once-only pence rounding. |
+| `functions/src/receipts/salvage.test.js` | 23 | The salvageable shape and its derivation · award mismatch diagnosed not repaired · every ambiguous refusal (discount, tip, service charge, deposit, add-ons, products, non-zero service line, failure outside the explained set, £0 transaction, forged `receiptFailures`, future version, no snapshot, malformed, negative redemption) · **no mutation during render** (frozen input) · rendered HTML asserts the redemption row appears for salvage and still does NOT for legacy. |
+| `src/utils/receiptMath.test.ts` | +9 | Frontend mirror of the salvage contract; salvage never promotes to canonical. |
+| `src/utils/bookingUtils.test.ts` | +7 | `bookingNetWithoutTip` reports **£38, not £36**; canonical, ordinary legacy, ambiguous-flagged, products/add-ons/deposits/tips, product-only and package-prepaid all unchanged. |
+| drift guard (existing) | 1 | `reader.test.js` still proves the CJS mirror matches `src/utils/receiptMath.ts`. |
+
+Full run at the deploy commit: frontend **1098/1098** (50 files), functions **864 pass / 20 skipped, 0 fail**, both typechecks clean, both builds clean, lint delta **zero** on every touched file.
+
+> ⚠️ Flake note: `src/staff/lib/dateRange.test.ts` (a 365-day loop) can hit the 5 s vitest timeout on a cold transform. It is unrelated to this work and passes on a warm run.
+
+### Live verification (synthetic only — Mason's record was never used for testing)
+
+Two throwaway whitecross bookings (`__synthetic: true`, undeliverable `@example.com` address), triggered and then deleted:
+
+| Record | Shape | Deployed function logged |
+|---|---|---|
+| `SYNTH-SALVAGE-20260802` | the confirmed flagged shape | `receipt: salvaged view — derived-service-line (service 4000p, redeemed 200p, points awarded 36 implied 38 MISMATCH)` |
+| `SYNTH-AMBIGUOUS-20260802` | same + a £5 discount | `receipt: legacy view — writer-flagged` |
+
+Independent real-world confirmation: the owner's first post-deploy redemption, `WCB-1785686381122-9uzy` (Sean Glynn), reconciled **canonically** — Service £40 + Add-on Nose Wax £6 → Subtotal £46, `Points redeemed · 40 pts −£2.00`, Total Paid £44.00, +44 pts on £44. The canonical path was never broken; only the £0-price booking ever fell through it.
+
+### Not done
+
+The +2 loyalty correction for Mason Borrett (`uKNNUjZDp0xntHhxUrCP`, 36 → 38) is **prepared as a dry run only** and awaits owner approval, as does any resend of his receipt. See the closure report / INCIDENTS entry.
+
+---
+
 ## Related
 - [SECURITY.md](SECURITY.md) — rules/security (source of the tested behaviors)
 - [ROADMAP.md](ROADMAP.md) — work list (tests moved here, only a pointer there)

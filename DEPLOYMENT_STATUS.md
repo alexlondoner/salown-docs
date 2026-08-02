@@ -10,10 +10,48 @@
 > separate `whitecross-site` repo deploy manually**, so code can sit on `origin/main` for days while
 > production runs older behavior. Confusing "merged" with "live" has caused real incidents.
 >
-> **Snapshot date:** 2026-08-02 — **TR-D1 Phase 2B deployed and live-verified**: ONE new callable, `salownCheckoutBooking` (row directly below). No hosting target, no rules, no existing Function revision changed. Previous: 2026-08-01 (later) — **TR-D1 Phase 0.5 deployed and live-verified**. Previous: **TR-B2 fully deployed and live-verified** (row directly below); no Function or rules revision changed. Previous snapshot 2026-07-31 ~16:3x UK — **TR-B is fully deployed and live-verified** (row directly below); TR-C Phase 1 remains pushed but deliberately NOT deployed. Previous snapshot 2026-07-31 ~15:5x UK. Previous snapshot 2026-07-31 01:5x UK — **three deploy waves have landed since the previous snapshot and this file now reflects them.** 2026-07-30 ~14:4x (Session A: ANY-BARBER + PUSH-RECOVERY + RECEIPT-WRITER), 2026-07-30 ~17:5x–18:1x (Session B: receipt READER + the remaining UK financial work), 2026-07-31 ~00:5x–01:4x (master closure: whitecross saas hosting + LC1 live chat). The previous revision of this line said *no deploy occurred* on 07-30; that was true when written and false within the hour. · 2026-07-27 15:05 UK after the Treatwell parser deploy + T2188888050 repair (previous: 12:55 UK after the whitecross test-mode lockdown deploy) (previous
+> **Snapshot date:** 2026-08-02 (later) — **LOYALTY-RECEIPT-SALVAGE deployed and live-verified**: one Function updated (`salownSendLoyaltyEmail`) and both hosting targets released by CI (row directly below). Previous: 2026-08-02 — **TR-D1 Phase 2B deployed and live-verified**: ONE new callable, `salownCheckoutBooking` (row directly below). No hosting target, no rules, no existing Function revision changed. Previous: 2026-08-01 (later) — **TR-D1 Phase 0.5 deployed and live-verified**. Previous: **TR-B2 fully deployed and live-verified** (row directly below); no Function or rules revision changed. Previous snapshot 2026-07-31 ~16:3x UK — **TR-B is fully deployed and live-verified** (row directly below); TR-C Phase 1 remains pushed but deliberately NOT deployed. Previous snapshot 2026-07-31 ~15:5x UK. Previous snapshot 2026-07-31 01:5x UK — **three deploy waves have landed since the previous snapshot and this file now reflects them.** 2026-07-30 ~14:4x (Session A: ANY-BARBER + PUSH-RECOVERY + RECEIPT-WRITER), 2026-07-30 ~17:5x–18:1x (Session B: receipt READER + the remaining UK financial work), 2026-07-31 ~00:5x–01:4x (master closure: whitecross saas hosting + LC1 live chat). The previous revision of this line said *no deploy occurred* on 07-30; that was true when written and false within the hour. · 2026-07-27 15:05 UK after the Treatwell parser deploy + T2188888050 repair (previous: 12:55 UK after the whitecross test-mode lockdown deploy) (previous
 > revisions: 2026-07-26 19:45 UK; 2026-07-24 16:40 UK after Parser-3C landed on `origin/main`; earlier
 > 16:05 revision during BSP-H1, see the hosting-baseline correction below). Verify against `git log origin/main` + the live system before acting;
 > a row here is a claim about a moment, not a standing guarantee.
+
+---
+
+## 🧾 LOYALTY-RECEIPT-SALVAGE — zero-price walk-in guard + flagged-receipt recovery · **DEPLOYED + LIVE-VERIFIED** 2026-08-02
+
+**Baseline commit `53bf4a1`** (`origin/main`). Production **is** on it.
+
+| Surface | State |
+|---|---|
+| `functions:salown:salownSendLoyaltyEmail` | ✅ **updated** — revision **`salownsendloyaltyemail-00063-vec`**, service `updateTime` `2026-08-02T14:54:44Z` (previous `-00062-hok`) |
+| Every other Function | ⏸️ **unchanged** — a single targeted deploy, never a blanket `--only functions` |
+| `hosting:salown` | ✅ **released** by CI — version `76dc0749d03789d0`, `2026-08-02T14:53:59Z` (walk-in price guard + reporting reader) |
+| `hosting:salown-staff` | ✅ **released** by the same CI run — see the note below |
+| `firestore.rules` / indexes | ⏸️ **unchanged** — no rules change was made and none is needed |
+
+**Deployed command, verbatim:**
+`npx firebase-tools deploy --only functions:salown:salownSendLoyaltyEmail --project havuz-44f70`
+→ `updating Node.js 22 (2nd Gen) function salown:salownSendLoyaltyEmail(europe-west2)` → `Successful update operation.`
+
+### Why the Staff bundle shipped too
+
+`.github/workflows/deploy.yml` runs `firebase deploy --only hosting`, which covers **both** targets — the split is not available on a push-triggered deploy. It is also correct here: `src/staff/views/WeekView.tsx` and `src/staff/sheets/ClientDetailSheet.tsx` both import `bookingNetWithoutTip`, so the reporting fix is genuinely staff-visible. Shipping the panel alone would have left the two surfaces disagreeing about the same money. `hosting/staff-bundle/` is committed build output (unlike `hosting/public-bundle/`, which is gitignored and built in CI), so it was rebuilt and committed in `53bf4a1`.
+
+### The canonical gate was NOT weakened
+
+`readCanonicalReceipt` is byte-unchanged. `readSalvageableReceipt` is a **separate, narrower** reader that only ever runs after the canonical one has refused, and it can never promote a snapshot to trustworthy. It applies to a flagged receipt with exactly one unknown and exactly one solution (`service = paidToday + redeemed`), re-checks the invariant codes from the stored numbers rather than trusting `receiptFailures`, and refuses any future `receiptMathVersion` exactly as the canonical reader does.
+
+### Live verification
+
+Two synthetic whitecross bookings (created, triggered, deleted — never Mason's record): the salvageable shape logged `salvaged view — derived-service-line (… awarded 36 implied 38 MISMATCH)`, the ambiguous twin stayed on `legacy view — writer-flagged`. Confirmed independently by the owner's first post-deploy real redemption, `WCB-1785686381122-9uzy`, which reconciled canonically and rendered the full breakdown. Detail: [TESTS.md §21](TESTS.md). Cause: [INCIDENTS.md 2026-08-02](INCIDENTS.md).
+
+### Outstanding — needs owner approval
+
+Mason Borrett's loyalty balance is **2 points short** (36, should be 38) and his receipt has not been resent. Both are prepared as a dry run and **not executed**.
+
+### Rollback
+
+`git revert 53bf4a1 4587f50` then redeploy the same two targets. The Function revision rolls back with it; no data migration to unwind, because nothing was written to any booking or client.
 
 ---
 
