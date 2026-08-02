@@ -10,10 +10,44 @@
 > separate `whitecross-site` repo deploy manually**, so code can sit on `origin/main` for days while
 > production runs older behavior. Confusing "merged" with "live" has caused real incidents.
 >
-> **Snapshot date:** 2026-08-02 (latest) — **TR-D1 Phase 3B deployed**: `hosting:salown` ONLY, a presentation-only settings-UX fix after the Phase 3 visual review failed (row directly below). No Function, no rules, no staff hosting. Previous: 2026-08-02 — **TR-D1 Phase 3 deployed and live-verified**: one NEW callable (`salownSaveCheckoutSettings`), `hosting:salown`, and the **first `firestore.rules` release since TR-A** (row directly below). `hosting:salown-staff` deliberately NOT deployed. Previous: 2026-08-02 (earlier) — **LOYALTY-RECEIPT-SALVAGE deployed and live-verified**: one Function updated (`salownSendLoyaltyEmail`) and both hosting targets released by CI (row directly below). Previous: 2026-08-02 — **TR-D1 Phase 2B deployed and live-verified**: ONE new callable, `salownCheckoutBooking` (row directly below). No hosting target, no rules, no existing Function revision changed. Previous: 2026-08-01 (later) — **TR-D1 Phase 0.5 deployed and live-verified**. Previous: **TR-B2 fully deployed and live-verified** (row directly below); no Function or rules revision changed. Previous snapshot 2026-07-31 ~16:3x UK — **TR-B is fully deployed and live-verified** (row directly below); TR-C Phase 1 remains pushed but deliberately NOT deployed. Previous snapshot 2026-07-31 ~15:5x UK. Previous snapshot 2026-07-31 01:5x UK — **three deploy waves have landed since the previous snapshot and this file now reflects them.** 2026-07-30 ~14:4x (Session A: ANY-BARBER + PUSH-RECOVERY + RECEIPT-WRITER), 2026-07-30 ~17:5x–18:1x (Session B: receipt READER + the remaining UK financial work), 2026-07-31 ~00:5x–01:4x (master closure: whitecross saas hosting + LC1 live chat). The previous revision of this line said *no deploy occurred* on 07-30; that was true when written and false within the hour. · 2026-07-27 15:05 UK after the Treatwell parser deploy + T2188888050 repair (previous: 12:55 UK after the whitecross test-mode lockdown deploy) (previous
+> **Snapshot date:** 2026-08-02 (latest) — **`demo` checkout mode set to `tr`, CONFIGURATION ONLY, no deploy of any kind** (row directly below); the same pass corrected a stale claim in this file that `demo` had `checkoutSettings` ABSENT. Previous: 2026-08-02 — **TR-D1 Phase 3B deployed**: `hosting:salown` ONLY, a presentation-only settings-UX fix after the Phase 3 visual review failed (row directly below). No Function, no rules, no staff hosting. Previous: 2026-08-02 — **TR-D1 Phase 3 deployed and live-verified**: one NEW callable (`salownSaveCheckoutSettings`), `hosting:salown`, and the **first `firestore.rules` release since TR-A** (row directly below). `hosting:salown-staff` deliberately NOT deployed. Previous: 2026-08-02 (earlier) — **LOYALTY-RECEIPT-SALVAGE deployed and live-verified**: one Function updated (`salownSendLoyaltyEmail`) and both hosting targets released by CI (row directly below). Previous: 2026-08-02 — **TR-D1 Phase 2B deployed and live-verified**: ONE new callable, `salownCheckoutBooking` (row directly below). No hosting target, no rules, no existing Function revision changed. Previous: 2026-08-01 (later) — **TR-D1 Phase 0.5 deployed and live-verified**. Previous: **TR-B2 fully deployed and live-verified** (row directly below); no Function or rules revision changed. Previous snapshot 2026-07-31 ~16:3x UK — **TR-B is fully deployed and live-verified** (row directly below); TR-C Phase 1 remains pushed but deliberately NOT deployed. Previous snapshot 2026-07-31 ~15:5x UK. Previous snapshot 2026-07-31 01:5x UK — **three deploy waves have landed since the previous snapshot and this file now reflects them.** 2026-07-30 ~14:4x (Session A: ANY-BARBER + PUSH-RECOVERY + RECEIPT-WRITER), 2026-07-30 ~17:5x–18:1x (Session B: receipt READER + the remaining UK financial work), 2026-07-31 ~00:5x–01:4x (master closure: whitecross saas hosting + LC1 live chat). The previous revision of this line said *no deploy occurred* on 07-30; that was true when written and false within the hour. · 2026-07-27 15:05 UK after the Treatwell parser deploy + T2188888050 repair (previous: 12:55 UK after the whitecross test-mode lockdown deploy) (previous
 > revisions: 2026-07-26 19:45 UK; 2026-07-24 16:40 UK after Parser-3C landed on `origin/main`; earlier
 > 16:05 revision during BSP-H1, see the hosting-baseline correction below). Verify against `git log origin/main` + the live system before acting;
 > a row here is a claim about a moment, not a standing guarantee.
+
+---
+
+## ⚙️ PRE-ADMIN-TR-CHECKOUT — `demo` checkout mode set to `tr` · **CONFIGURATION ONLY** 2026-08-02
+
+**No deploy.** Not a code release and deliberately not one: **no Function, no hosting target, no rules,
+no Staff bundle** changed, and `origin/main` is unchanged except for documentation. It is recorded here
+anyway because it changes what production *resolves* for a tenant, which is exactly the
+"committed ≠ live" gap this file exists to close — live behaviour can move without a deploy.
+
+| Surface | State |
+|---|---|
+| Every Function | ⏸️ **unchanged** — no deploy issued |
+| `hosting:salown` / `hosting:salown-staff` | ⏸️ **unchanged** |
+| `firestore.rules` / indexes | ⏸️ **unchanged** |
+| `tenants/demo/settings/settings.checkoutSettings` | ✅ **`mode: uk → tr`**, `schemaVersion` **1 → 2** |
+
+Written through the deployed owner-authoritative callable **`salownSaveCheckoutSettings`** (not a direct
+Firestore patch), authenticated as the `demo` tenant **owner**, under the real `expectedVersion: 1`
+stale-version gate and strict validation. The submitted payload was `{ enabled: true, mode: 'tr' }` and
+nothing else; the callable's top-level merge preserved every other stored field.
+
+**Why:** `demo` presents as Turkish (`countryCode: TR`, `TRY`, `tr-TR`, `Europe/Istanbul`) but its
+authoritative checkout mode still said `uk`, so the persistent Turkish sales demo was configured to
+resolve UK checkout. The mode is a stamped label on the checkout intent and receipt, not a gate over
+other fields, so nothing else had to move with it.
+
+**Verified read-only after the save:** exactly **three** fields differ — `mode`, and the two the server
+owns (`schemaVersion`, `updatedAt`); **43** stored fields are unchanged. `packageSettings` is
+**byte-identical** (`sha256/16 40a4e26d0a7d0cc8` before and after), `paymentSettings` (PAY-1) is still
+absent, and the settings key set is unchanged. **No booking, payment, receipt, loyalty award,
+receivable, `checkoutIntent`, package definition, client package or package-ledger row was created** —
+every count is flat; `auditLogs` `70 → 71` is the one expected `CHECKOUT_SETTINGS_SAVED` record.
+`tr-demo`, `whitecross` and `herohairs` settings documents are byte-identical and untouched.
 
 ---
 
@@ -155,8 +189,16 @@ by any of it.
 
 **`tr-demo` was restored byte-exactly** — the settings document is identical to its pre-verification
 JSON, and the two synthetic staff docs minted for the role test (the tenant had none) were deleted, back
-to 0. **`whitecross`, `herohairs`, `demo` and `tr-demo` all have `checkoutSettings` ABSENT**, so every one
-of them resolves to today's UK behaviour with the feature dark.
+to 0.
+
+> **⚠️ CORRECTED 2026-08-02 (later).** This paragraph used to end: *"`whitecross`, `herohairs`, `demo`
+> and `tr-demo` all have `checkoutSettings` ABSENT."* That was true **when Phase 3 was verified** and
+> stopped being true within the hour — the owner saved a real configuration on `demo` from the Phase 3B
+> UI at `2026-08-02T20:58:43Z`. It is the tenant-state line that is corrected, not the `tr-demo`
+> restoration above it, which still holds. Current live truth is in
+> [TENANTS.md → Demo & verification tenants](TENANTS.md#demo--verification-tenants); the short version:
+> `whitecross`, `herohairs` and `tr-demo` have `checkoutSettings` **ABSENT** (today's UK behaviour,
+> feature dark), and **`demo` has it PRESENT, `enabled: true`, `mode: tr`** by owner decision.
 
 ### `firestore.rules.LIVE` was stale and is now refreshed
 
@@ -175,6 +217,9 @@ it was, a stale snapshot, not as the previously-live ruleset.
 
 - **Admin / Staff Checkout UI cutover** — nothing calls `salownCheckoutBooking`. The existing browser
   checkout path is untouched, and this phase deliberately did not change it.
+- **P0 — a selected package cannot be saved or checked out.** User-visible, open, and the exact
+  next implementation package. See
+  [TREATMENT_PACKAGE_SYSTEM.md → P0: package selection does not reach the cart](TREATMENT_PACKAGE_SYSTEM.md#151-p0--package-selection-does-not-reach-the-cart).
 - **Finance SPLIT→CARD defect** — out of scope, unchanged.
 - **Staff visual pass** — pending.
 

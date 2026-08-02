@@ -267,6 +267,20 @@ count · discount above the discountable subtotal · checkout not enabled for th
 not deliberately opted in gets `CHECKOUT_DISABLED`. That is what makes deploying this callable safe
 while the UI still uses the old path.
 
+**Who has opted in, live (2026-08-02).** Exactly one tenant, and it is a demo:
+
+| Tenant | `checkoutSettings` | Resolves to |
+|---|---|---|
+| `demo` | **PRESENT** — `enabled: true`, `mode: tr`, `schemaVersion: 2` | checkout **enabled**, TR mode |
+| `tr-demo` | ABSENT | `CHECKOUT_DISABLED` — today's UK behaviour, feature dark |
+| `whitecross` | ABSENT | `CHECKOUT_DISABLED` |
+| `herohairs` | ABSENT | `CHECKOUT_DISABLED` |
+
+Enabling `demo` is **not** a soft launch, because opting in changes nothing a user can reach: no UI
+calls this executor (§12), so `demo` merely resolves `enabled: true` for a code path with no call
+site. Roles and per-tenant configuration: [TENANTS.md](TENANTS.md#demo--verification-tenants). Do not
+read `tr-demo`'s absent settings as a decision — it is the restored verification baseline.
+
 ---
 
 ## 11. Rules boundary — nothing changed, and that is the point
@@ -315,6 +329,14 @@ covers it, so the Phase 1 resolver does not project the field at all.
 
 - No UI change. Admin `CheckoutPanel`, Staff `CheckoutSheet` / `WalkInFlow`, Payment Settings,
   Reports and Finance are untouched and nothing calls the callable.
+
+> **Still true at `4476fc9` (2026-08-02) — `salownCheckoutBooking` is deployed and
+> user-unreachable.** `grep -rn salownCheckoutBooking src/` returns **no call site**. Admin
+> `CheckoutPanel.tsx:948` and Staff `CheckoutSheet.tsx:79` both still call the legacy client-side
+> `checkoutBooking` from `firestoreActions`. The executor cutover is **not** done, and it is one half
+> of the next implementation package — the other half being the P0 package→service auto-link, without
+> which a user cannot reach a checkout with a package on it at all
+> ([TREATMENT_PACKAGE_SYSTEM.md §15.1](TREATMENT_PACKAGE_SYSTEM.md#151-p0--package-selection-does-not-reach-the-cart)).
 - No rules change, no migration, no backfill.
 - No `inventorySaleTx` extraction, no stock decrement (§5).
 - No re-checkout / later-collection verb. `staffMayRecordLaterPayment` is a named capability with no

@@ -378,10 +378,55 @@ left exactly as found. No email sent, no card touched.
 
 Closed and still-open items are tracked by TR-B2 (see §16).
 
+- 🔴 **P0 — a selected package cannot be saved or checked out.** **OPEN**, user-visible. See
+  [§15.1](#151-p0--package-selection-does-not-reach-the-cart) directly below.
 - ~~**Finance / Reports** do not include package revenue.~~ **CLOSED by TR-B2 Stage 1** (`c5bd1dc`) — see §16.
 - ~~**Booking-flow package selection**~~ — ✅ **CLOSED by TR-B2 Stage 3** (`b40e182`), see §18.
 - ~~**Custom instalment amounts/dates**~~ — ✅ **CLOSED by TR-B2 Stage 2** (`b0a2051`), see §17.
 - ~~**Catalogue archive/restore**~~ — ✅ **CLOSED by TR-B2 Stage 2** (`b0a2051`), see §17.
+
+### 15.1 P0 — package selection does not reach the cart
+
+**Status: OPEN. Not fixed. This is the exact next implementation package.**
+Verified against source at `4476fc9` on 2026-08-02.
+
+A user can select a package and then cannot complete the visit. The selection is recorded in React
+state and nothing downstream acts on it, so the flow dead-ends at a disabled button with no
+explanation of why.
+
+**The chain, as it actually is:**
+
+1. **`PackagePicker` stores only `selectedPackageId`.** Its entire output contract is
+   `onChange: (clientPackageId: string) => void` (`src/components/packages/PackagePicker.tsx:27`).
+   A package id is the only thing it can emit.
+2. **It does not add the covered service to the cart.** Every host — `BookingForm.tsx`,
+   `WalkInForm.tsx`, `staff/sheets/WalkInFlow.tsx`, `staff/sheets/NewBookingSheet.tsx` — wires
+   `onChange={setSelectedPackageId}` and nothing else. No host inserts a line into `items`.
+3. **With an empty service cart, Save/Checkout stays disabled.** In `WalkInFlow.tsx` the Save
+   control is `disabled={loading || items.length === 0 || !barber}` (:812), the submit path refuses
+   with `if (!base) { toast('Add a service'); return }` (:300), and coverage itself is
+   `packageCovers = selectedPackageId !== '' && !!base` (:155) — **coverage requires a cart line the
+   picker never creates.**
+4. **The circularity that makes it a dead end.** Eligibility is scoped by `ctx.serviceId`, so the
+   picker only offers a package once a service is chosen — while the picker is the surface that is
+   supposed to *bring* that service in. Choosing the package first can never satisfy the gate.
+
+**The two properties this must not break when it is fixed** (both load-bearing today, §18 *Money
+stays where it belongs*): auto-linking the covered service must still leave **exactly one** session
+covered — extra quantities, other services, add-ons and products stay chargeable — and it must still
+**record no payment and write no ledger entry**, because delivery and payment remain separate facts.
+
+**Executor half of the same package** — the till this feeds is also not wired up:
+
+- Admin `CheckoutPanel.tsx:948` and Staff `CheckoutSheet.tsx:79` both still call the **legacy
+  client-side `checkoutBooking`** from `firestoreActions`.
+- **`salownCheckoutBooking` is deployed but user-unreachable** — `grep -rn salownCheckoutBooking src/`
+  returns **no call site**. It is live (`salowncheckoutbooking-00001-taf`) and nothing invokes it.
+
+So the next package is two halves that have to land together to be visible at all:
+**package→service auto-link in the cart** and **the Admin/Staff executor cutover onto
+`salownCheckoutBooking`**. Fixing only the cart leaves the covered visit going through the legacy
+path; fixing only the executor leaves the user still unable to reach it.
 
 ---
 

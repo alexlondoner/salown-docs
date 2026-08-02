@@ -1098,6 +1098,58 @@ this seam.
 
 ---
 
+## 23. PRE-ADMIN-TR-CHECKOUT — `demo` checkout mode remediation (documentation + config, 2026-08-02)
+
+**No test-suite change. No code change.** One configuration save on the `demo` tenant, verified
+read-only. Recorded here because it is live evidence, and because the same pass corrected a stale
+claim that this file's neighbours had been repeating.
+
+**Method.** Written through the deployed owner-authoritative callable **`salownSaveCheckoutSettings`**
+— *not* a direct Firestore patch — authenticated as the `demo` tenant **owner** (`tenantId` claim
+`demo`, stored staff role `owner`, `superAdmin: false`), under the real `expectedVersion: 1`
+stale-version gate. The harness refuses to run if the minted token's `tenantId` is anything but
+`demo`, or if it carries `superAdmin` — the callable writes to `token.tenantId` and nothing else, so a
+wrong token would have silently configured a different salon.
+
+**Payload — the whole of it:** `{ enabled: true, mode: 'tr' }`, `expectedVersion: 1`. Everything else
+was omitted deliberately, so the callable's top-level merge preserves each stored owner value.
+
+### What the read-back proves (all pass)
+
+- **Exactly 3 of 46 stored fields differ:** `mode` `uk → tr`, plus the two the server owns
+  (`schemaVersion` `1 → 2`, `updatedAt`). **43 fields byte-unchanged** — every `methods`,
+  `providers`, `permissions` and `receivables` value survived.
+- Settings version incremented **exactly once**; `contractVersion` still `1`.
+- `demo` presentation still **TR** (`countryCode: TR`, `TRY`, `tr-TR`) on the root doc **and**
+  `settings/settings`.
+- `packageSettings` **byte-identical** — canonical `sha256/16` `40a4e26d0a7d0cc8` before and after.
+- PAY-1 `paymentSettings` still **absent**; the settings key set is unchanged (nothing added or removed).
+- **No financial record created.** `bookings` 772 · `receipts` 0 · `receivables` 0 · `loyalty` 0 ·
+  `checkoutIntents` 0 · `clientPackages` 1 · `packageLedger` 1 · `packageSessions` 0 ·
+  `packageDefinitions` 2 — every count flat. `auditLogs` `70 → 71`: the one expected
+  `CHECKOUT_SETTINGS_SAVED` row, which is the writer behaving correctly, not a side effect.
+- **`tr-demo` untouched** — settings doc hash identical, `updateTime` still `2026-08-02T20:32:29Z`,
+  `checkoutSettings` still **ABSENT**, all 10 collection counts flat.
+- **`whitecross` and `herohairs` untouched** — settings doc hashes and `updateTime` identical
+  (`2026-07-12T19:31:48Z` / `2026-07-13T14:32:21Z`), `checkoutSettings` still ABSENT.
+
+### The stale claim that was corrected
+
+`DEPLOYMENT_STATUS.md` and `ROADMAP.md` both asserted that *"`whitecross`, `herohairs`, `demo` and
+`tr-demo` all have `checkoutSettings` ABSENT."* True when Phase 3 was verified; false within the hour,
+because the owner saved a real configuration on `demo` at `2026-08-02T20:58:43Z` from the Phase 3B UI.
+Both are corrected, and [TENANTS.md](TENANTS.md#demo--verification-tenants) is now the single durable
+home for per-tenant configuration truth so the fact lives in one place rather than three.
+
+### Not covered by this record
+
+**The P0 package→Save gap is documented, not fixed** — no test asserts it and none should yet
+([TREATMENT_PACKAGE_SYSTEM.md §15.1](TREATMENT_PACKAGE_SYSTEM.md#151-p0--package-selection-does-not-reach-the-cart)).
+Nothing about the executor was exercised: `salownCheckoutBooking` still has **no call site in `src/`**,
+so `demo` resolving `enabled: true` changes nothing a user can reach.
+
+---
+
 ## 22. TR-D1 Phase 3B — regional disclosure on Payment Settings (`ecb6d93`, 2026-08-02)
 
 Phase 3 passed every gate in §21 and **failed the owner's visual review**. Both things are true, and

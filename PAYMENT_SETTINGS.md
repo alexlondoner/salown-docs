@@ -91,6 +91,15 @@ This is what makes the Phase 2B deploy safe: `salownCheckoutBooking` is live in 
 tenant lacking `checkoutSettings` gets `CHECKOUT_DISABLED`. Absent settings preserve current UK
 defaults, and the existing UK UI stays on its old browser path regardless.
 
+**Live opt-in status (2026-08-02).** The default is still doing its job everywhere that matters:
+`whitecross`, `herohairs` and `tr-demo` have `checkoutSettings` **ABSENT**. The single tenant with a
+stored configuration is **`demo`** — `enabled: true`, `mode: tr`, `schemaVersion: 2` — the persistent
+Turkish sales demo, set deliberately so it stops resolving UK checkout while presenting as Turkish.
+Roles and the full per-tenant table: [TENANTS.md](TENANTS.md#demo--verification-tenants).
+
+Enabling a tenant here still reaches no user: nothing in `src/` calls `salownCheckoutBooking`, so
+`enabled: true` currently only changes what the resolver returns, not what a till does.
+
 ---
 
 ## 5. Three-level capability resolution
@@ -224,6 +233,7 @@ debt-producing capability off — but the owner must save it deliberately. No te
 
 ## 8. Related
 
+- [TENANTS.md](TENANTS.md#demo--verification-tenants) — which tenant has which configuration, and why `demo` ≠ `tr-demo`
 - [TR_CHECKOUT_ARCHITECTURE.md](TR_CHECKOUT_ARCHITECTURE.md) — how a checkout is decided and committed
 - [PAYMENT_PLAN_ENGINE.md](PAYMENT_PLAN_ENGINE.md) — the receivable/instalment arithmetic
 - [TREATMENT_PACKAGE_SYSTEM.md](TREATMENT_PACKAGE_SYSTEM.md) — TR-B package semantics
