@@ -402,9 +402,9 @@ Two throwaway whitecross bookings (`__synthetic: true`, undeliverable `@example.
 
 Independent real-world confirmation: the owner's first post-deploy redemption, `WCB-1785686381122-9uzy` (Sean Glynn), reconciled **canonically** — Service £40 + Add-on Nose Wax £6 → Subtotal £46, `Points redeemed · 40 pts −£2.00`, Total Paid £44.00, +44 pts on £44. The canonical path was never broken; only the £0-price booking ever fell through it.
 
-### Not done
+### Deliberately not done — owner decision 2026-08-02
 
-The +2 loyalty correction for Mason Borrett (`uKNNUjZDp0xntHhxUrCP`, 36 → 38) is **prepared as a dry run only** and awaits owner approval, as does any resend of his receipt. See the closure report / INCIDENTS entry.
+The +2 loyalty correction for Mason Borrett (`uKNNUjZDp0xntHhxUrCP`, 36 → 38) and a resend of his receipt were both **declined by the owner** ("it's fine if it's gonna work ok from now on, no need another email"). The dry run stands recorded in case it is ever wanted; nothing was written to his booking or client doc. **This is closed, not pending** — do not action it from a later reading.
 
 ---
 

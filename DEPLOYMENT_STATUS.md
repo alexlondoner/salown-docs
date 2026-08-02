@@ -45,9 +45,9 @@
 
 Two synthetic whitecross bookings (created, triggered, deleted — never Mason's record): the salvageable shape logged `salvaged view — derived-service-line (… awarded 36 implied 38 MISMATCH)`, the ambiguous twin stayed on `legacy view — writer-flagged`. Confirmed independently by the owner's first post-deploy real redemption, `WCB-1785686381122-9uzy`, which reconciled canonically and rendered the full breakdown. Detail: [TESTS.md §21](TESTS.md). Cause: [INCIDENTS.md 2026-08-02](INCIDENTS.md).
 
-### Outstanding — needs owner approval
+### Closed by owner decision, not outstanding
 
-Mason Borrett's loyalty balance is **2 points short** (36, should be 38) and his receipt has not been resent. Both are prepared as a dry run and **not executed**.
+Mason Borrett's loyalty balance is **2 points short** (36, should be 38) and his receipt was not resent. The owner declined both on 2026-08-02 — going-forward correctness was what mattered. Nothing was written to his booking or client doc, and no follow-up is owed.
 
 ### Rollback
 
