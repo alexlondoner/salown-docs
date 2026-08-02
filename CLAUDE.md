@@ -40,6 +40,8 @@ All tenant data lives under `tenants/{tenantId}/...`.
 | [PRINCIPLES.md](docs/PRINCIPLES.md) | **How we engineer** (P1-P14) — each principle tagged ⚙️ machine-enforceable / 🧠 human-discipline. (DECISIONS=why, INVARIANTS=what won't break, PRINCIPLES=how) |
 | [PARSER_NOTES.md](docs/PARSER_NOTES.md) | Booksy/Fresha/Treatwell parser architecture, dedup system, recurring bug patterns |
 | [TREATMENT_PACKAGE_SYSTEM.md](docs/TREATMENT_PACKAGE_SYSTEM.md) | **TR-B session packages** (LIVE): immutable commercial snapshot, append-only `packageLedger`, entitlement consumed exactly once (derived doc ids), owner-only Payment settings, and WHY package payments earn no loyalty (`price: 0` at link time — no checkout code changed) |
+| [TR_CHECKOUT_ARCHITECTURE.md](docs/TR_CHECKOUT_ARCHITECTURE.md) | **TR-D1 in-salon checkout** (server executor DEPLOYED 2026-08-02, deliberately unreachable): one transaction over booking + tenders + receivable + package entitlement + loyalty + receipt, the read-before-write ordering rule and WHY a refusal may never follow the package seam, idempotent intent/result recovery, and the explicit `stockQty` deferral |
+| [PAYMENT_SETTINGS.md](docs/PAYMENT_SETTINGS.md) | **The three payment settings contracts** — PAY-1 `paymentSettings` (public, online) vs TR-B `packageSettings` vs TR-D1 `checkoutSettings` (both private): what each owns, why `enabled: false` is load-bearing, three-level capability resolution, and the owner-only rules gap still open on `checkoutSettings` |
 | [PAYMENT_PLAN_ENGINE.md](docs/PAYMENT_PLAN_ENGINE.md) | **TR-B arithmetic**: instalment split (remainder on the first payment, and why), oldest-first allocation, overdue + grace, admissibility gates, why overpayment is refused, TR/UK money-input parsing, idempotency (incl. the UI half people lose) |
 | [STRIPE_CONNECT_PLAN.md](docs/STRIPE_CONNECT_PLAN.md) | DESIGN: salOWN payment = Stripe Connect Standard + Checkout Session; fixed £ deposit; per-tenant policy; disabled/future |
 | [TIERS_AND_UPGRADE.md](docs/TIERS_AND_UPGRADE.md) | DESIGN: tiers (Free/Starter/Pro/Pro+) + tenant's **in-account** plan upgrade ("like Anthropic"); Phase 1 request→approve (no charge), Phase 2 Stripe **Billing** subscription (Connect≠Billing), Pro+ = premium website+SEO; ROADMAP **Monetization** theme |
@@ -146,6 +148,9 @@ it is not a data migration, and nothing about TR-C's lifecycle or continuity eng
 ---
 
 ## TR-D1 checkout — which settings contract owns what (Phase 1, 2026-08-01)
+
+> Long form: [PAYMENT_SETTINGS.md](docs/PAYMENT_SETTINGS.md). Phase 2B deployed the server executor
+> 2026-08-02 — see [TR_CHECKOUT_ARCHITECTURE.md](docs/TR_CHECKOUT_ARCHITECTURE.md). **Nothing calls it yet.**
 
 Three payment-ish contracts now exist. They are **not** interchangeable and must never be merged.
 

@@ -1058,3 +1058,114 @@ second copy of the entitlement arithmetic.
 **Not deployed.** `packageSessionCore`'s runtime behaviour is unchanged, so redeploying the package
 Functions would be churn without benefit. Phase 2B deploys the new checkout callable that consumes
 this seam.
+
+---
+
+## 20. TR-D1 Phase 2B — the server-authoritative checkout executor (`a0bc7fa` · `ceb5316`, 2026-08-02)
+
+**DEPLOYED + LIVE-VERIFIED.** One new callable, `salownCheckoutBooking` (europe-west2).
+**Nothing calls it yet** — see [TR_CHECKOUT_ARCHITECTURE.md](TR_CHECKOUT_ARCHITECTURE.md).
+
+| Gate | Pinned before | After |
+|---|---|---|
+| Functions suite | 828 (809 pass / 19 skip) | **861** (841 / 20) — +32 new, +1 pre-existing skip counted |
+| Full emulator suite | 105 | **147** — +42 new |
+| Frontend | 1069 | **1069** unchanged |
+| Firestore rules | 145/145 | **154/154** — +9 new |
+| Package engine · concurrency | 72 · 27 | **72 · 27** unchanged |
+| Frontend + Functions typecheck | clean | **clean** |
+| `git diff --check` · secret scan | clean | **clean** |
+
+**No existing test file was touched and no existing expected value was changed.** Lint is +14, all
+`no-undef` on `require`/`process`/`__dirname` in the two new CJS test files — byte-for-byte the
+pattern every existing functions test file already carries; `executor.ts` itself lints clean.
+
+### 32 pure tests (`functions/src/checkout/executor.test.js`)
+
+The load-bearing ones are **byte-proofs**: the suite reads `src/utils/receiptMath.ts` and the
+executor, extracts `computeEarnBase_p` and `expectedPointsFor` from each, and compares the bodies
+character for character. `functions/` is a separate CJS build with `noResolve` and cannot import the
+frontend ESM module; copying a money rule across that boundary *without* the proof is how a product
+grows two loyalty policies.
+
+Also pinned statically:
+- [x] exactly ONE definition of each loyalty function in the executor
+- [x] the Phase 2A seam is driven; the package **callable** never is
+- [x] exactly one transaction, no nesting
+- [x] every read precedes every write
+- [x] no external side effect inside the transaction body (a callback can be RETRIED)
+- [x] **NOTHING can refuse after the seam has staged its writes**
+- [x] no `stockQty` write, no dormant inventory call
+- [x] no customer name, phone or email in the returned result
+- [x] the request shape: unknown fields rejected loudly, client product price/name rejected,
+      currency not a field at all, money integer-minor-units only, known zero accepted
+- [x] the fingerprint: same intent replays, every operator decision changes it, the clock and every
+      resolved price are excluded, cart order is irrelevant, tenants cannot collide
+
+### 42 real-Firestore tests (`functions/src/checkout/executor.emulator.test.js`)
+
+Genuine optimistic concurrency, genuine `tx.create` rejection, genuine rollback — a fake would only
+prove that our fake behaves the way we imagined Firestore behaves.
+
+Auth + tenant isolation · role denial · BLOCKED / cancelled / no-show / already-checked-out · cash ·
+card · bank transfer · 3-way split · partial · fully unpaid · Kart Taksiti with **no** salon
+receivable and snapshotted commission · Salon Taksit Planı with a schedule summing to the debt ·
+disabled methods · unknown provider · unsupported bank and salon instalment counts · stale settings ·
+checkout disabled · known zero vs unrecorded price · package-only · package plus extra · exhausted
+and cross-client packages · **a refused checkout rolling the package consumption back with it** ·
+product-only catalogue pricing · service plus products · inactive / out-of-stock / malformed-price /
+missing products · client-supplied price · historical snapshot stability across a price rise ·
+anonymous sale · product-only earning nothing and counting no visit · replay · fingerprint conflict ·
+double tap · two-device race · one visit/spend/award/receipt-intent/receivable · TRY · GBP incl. the
+flagged non-reconciling receipt · prior deposit · discount and tip bounds · **no `stockQty`
+movement** · a package plan never restruck as an ordinary receivable · missing/archived service.
+
+### Two real defects this suite caught
+
+Both fixed in the executor before commit, rather than pinned as expected behaviour:
+
+1. **Refusals sited AFTER the package seam** would have committed an entitlement consumption with no
+   checkout attached — `packageSessionTx` stages writes, and a `return { kind: 'reject' }` afterwards
+   does not abort a Firestore transaction. Every refusal moved ahead of the seam; the static test now
+   forbids the regression.
+2. **A product-only sale computed and STORED a loyalty award it never granted** — 100 points on the
+   sale document, nothing on the client. The award is now gated at source. A document that records an
+   award nobody received is a lie every later reader compounds.
+
+### 9 rules cases (`docs/test-firestore-rules.py`, 145 → 154)
+
+**No rules change was made and none is needed** — `checkoutIntents`, `receivables` and
+`receivableLedger` are not in the `[G4]` explicit write list, so the catch-all `allow write: if
+false` already denies every client write. The cases pin that, because the guarantee is currently a
+property of a list nobody edited rather than of a rule anybody wrote. Admin/owner/staff create and
+update are DENY; cross-tenant and unauthenticated read are DENY; same-tenant read stays ALLOW
+(deliberately — the till must show a client their balance).
+
+### 28 live assertions on `tr-demo` (2026-08-02)
+
+Invoked through the **deployed** callable with a real Firebase ID token, not the local core.
+
+- Unauthenticated HTTP POST → `401 UNAUTHENTICATED` with the executor's own `sign-in required`,
+  proving the deployed revision runs the new code.
+- Before enabling anything: `CHECKOUT_DISABLED` — the fail-closed default, live.
+- Cash · card · 3-way split · partial (+ receivable TRY/OPEN/reconciled) · fully unpaid ·
+  Kart Taksiti (no receivable; 250bp + 25 fee → settlement 9725) · Salon Taksit Planı (3 instalments
+  summing to 9000).
+- Product-only sale priced from the catalogue · service+product earning 150 · client-submitted price
+  rejected · **`stockQty` 7 → 7 unchanged**.
+- Replay returns the stored result · fingerprint conflict · double tap charges once · two-device race
+  has one winner.
+- TRY receipt currency-explicit · the pence-named legacy snapshot **not** written for TRY · one
+  deterministic `receiptEmailIntentKey` and `sendLoyaltyEmail` untouched.
+- BLOCKED refused · stale settings refused · booking outside the claimed tenant not found.
+
+**Cleanup verified.** 34 synthetic documents plus 12 `CHECKOUT_COMPLETED` audit rows deleted; the
+synthetic auth user deleted; `settings/settings` restored and confirmed **identical by sha256**
+(1178 bytes, all 18 original keys, `checkoutSettings` removed). Seeded content untouched — services
+12, barbers 4, serviceCategories 4. `bookings`/`clients`/`products`/`staff` are 0 because the seeder
+never creates them, not because anything was removed.
+
+> One honest note on the run: the harness first reported the settings restore as *not* byte-identical.
+> That was the harness comparing JSON key ORDER after a Firestore round-trip, not a data difference —
+> confirmed by canonical-form sha256 equality. The check was wrong, not the restore.
+

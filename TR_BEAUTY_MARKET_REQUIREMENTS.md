@@ -101,6 +101,44 @@ reconciliation invariant, entitlement counters.
 TR-C reads it through one narrow interface and writes none of it. See
 [SESSION_LIFECYCLE.md §2](SESSION_LIFECYCLE.md#2-the-ownership-split-with-tr-b--the-single-most-important-thing-in-this-document).
 
+### 4.2b In-salon checkout: split, partial, unpaid and the two kinds of taksit — 🟡 BUILT, NOT REACHABLE (TR-D1 Phase 2B, `a0bc7fa`, deployed 2026-08-02)
+
+The server-authoritative checkout executor is **deployed and live-verified on `tr-demo`**, and
+**nothing calls it yet** — the Admin panel and the Staff App keep their existing browser path, and a
+tenant without `checkoutSettings` gets `CHECKOUT_DISABLED`. Full design:
+**[TR_CHECKOUT_ARCHITECTURE.md](TR_CHECKOUT_ARCHITECTURE.md)** · settings contract:
+**[PAYMENT_SETTINGS.md](PAYMENT_SETTINGS.md)**.
+
+What the Turkish market actually asked for, and what now exists server-side:
+
+- **The two taksit are different debts and are modelled as different debts.**
+  **Kart Taksiti** — the customer owes their **BANK**. The salon is paid today, so there is **no
+  salon receivable**; what is recorded is what reconciling a settlement needs: provider, count,
+  commission in basis points, fixed fee and expected settlement, **snapshotted** at checkout so a
+  rate change next month cannot restate this transaction.
+  **Salon Taksit Planı** — the customer owes the **SALON**, so it creates an ordinary receivable with
+  a real schedule built by the same engine that splits a package plan.
+  Collapsing these two into one "instalment" concept would have made every settlement reconciliation
+  and every debtor list wrong in a different direction.
+- **An N-way split**, not the legacy two-tender ceiling (`paymentMethod` + `splitSecond`). A salon
+  splitting three ways today has nowhere to record it; now it does.
+- **Partial and fully unpaid** checkouts, each producing a receivable with a due date — and each
+  defaulting **OFF**, because they create debt and must be switched on out loud.
+- **Loyalty on what was actually collected.** Full collection earns the canonical amount; a partial
+  earns only on the eligible portion taken; an unpaid checkout earns nothing; package-prepaid value
+  earns nothing. Same rule as the UK, byte-proven against the canonical implementation.
+- **TRY throughout**, resolved from the tenant's own `presentation` contract. Nothing selects
+  currency or checkout mode from IP — a TR tenant opened from London stays TR.
+
+⛔ **Not claimed:** this receipt is **not** an e-Fatura / e-Arşiv and not a fiscal document. It is the
+salon's own record of what it took. Fiscal integration is a separate question with a separate answer
+and is not being quietly implied by the word "receipt".
+
+⛔ **Not wired:** product **stock quantity**. Catalogue pricing is authoritative and the
+active/`inStock` flags are honoured, but `stockQty` is dormant in production and is neither read for
+admission nor decremented — a stock figure nothing maintains is worse than none. See
+[TR_CHECKOUT_ARCHITECTURE.md §5](TR_CHECKOUT_ARCHITECTURE.md).
+
 ### 4.3 Client recovery — ✅ LIVE
 
 Deterministic queue, filters, follow-up outcomes, one follow-up record per client
@@ -159,6 +197,12 @@ one-way iCal feed (`salownIcalFeed`). See [TR_LOCALIZATION_PLAN.md](TR_LOCALIZAT
 | Work a follow-up queue | ✅ |
 | Record a package sale, instalments and payments | ✅ TR-B |
 | See a client's outstanding balance in the recovery queue | ✅ read-only from TR-B |
+| Split a bill across three tenders | 🟡 server ready, no UI — §4.2b |
+| Take a partial payment or leave a balance | 🟡 server ready, no UI — §4.2b |
+| Record Kart Taksiti with its commission terms | 🟡 server ready, no UI — §4.2b |
+| Offer a Salon Taksit Planı on an ordinary bill | 🟡 server ready, no UI — §4.2b |
+| Issue an e-Fatura / e-Arşiv | ⛔ not claimed — §4.2b |
+| Track product stock quantity | ⛔ not wired — §4.2b |
 | Take a card payment online | ❌ no TR-resident PSP — §4.5 |
 | Store before/after photos | ⛔ deferred — KVKK art.6 / UK GDPR art.9, §4.6 |
 | Send an automated win-back | ⛔ by design — no lawful basis, §4.3 |

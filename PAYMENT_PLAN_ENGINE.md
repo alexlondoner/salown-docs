@@ -10,6 +10,34 @@
 
 ---
 
+## 0. The generic receivable fold now has a second consumer (TR-D1, 2026-08-02)
+
+`foldReceivableLedger` was extracted in TR-D1 Phase 1 (`22cf85f`) as strategy B — a *logical*
+extraction. It names nothing about packages: no `clientPackageId`, no definition, no entitlement, no
+`PER_SESSION`, no delivered sessions, no package status. `foldPackageLedger` became a thin adapter
+mapping the generic `total_m` onto the package contract's `packageTotal_m` — the same number under
+two names, no stored field renamed and no value recomputed.
+
+As of Phase 2B it has that second consumer: the **checkout executor** folds an ordinary salon
+receivable — a partial balance, an unpaid checkout, a Salon Taksit Planı — through exactly this
+function, and `buildInstalmentSchedule` builds its schedule. So the remainder rule documented in §3
+below is now literally the same rule for a course of laser treatment and for a haircut paid off over
+three months, and a reconciliation of either can be repeated from the ledger alone.
+
+**Physical relocation is still deferred.** These functions live inside the package-named parity core
+because that core has never had a runtime import — only `import type`, which is elided, which is
+exactly what lets the Functions CJS build resolve nothing there. Moving them into their own file
+would introduce the first runtime import into the most load-bearing money code in the product, plus a
+second twin pair to keep byte-identical. Semantic independence is what matters and these signatures
+have it; the move is a separate, mechanical change whenever it earns its keep.
+
+**What the checkout executor does NOT reuse:** package semantics. An ordinary receivable never
+carries an entitlement, and a package payment plan's debt is never restruck as one — the checkout's
+`chargeableTotal_m` has `packagePrepaid_m` removed before the debt is struck, so the exclusion is
+structural rather than a check. See [TR_CHECKOUT_ARCHITECTURE.md](TR_CHECKOUT_ARCHITECTURE.md) §4/§7.
+
+---
+
 ## 1. The engine is pure
 
 Nothing in `packagePlan.ts` reads Firestore, the clock, `Intl`, or any global. Plain data in,

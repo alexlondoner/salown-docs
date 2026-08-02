@@ -9,6 +9,40 @@
 
 ---
 
+## 0. The entitlement seam, and its first external consumer (TR-D1, 2026-08-02)
+
+`packageSessionCore` used to own its `db.runTransaction`. Firestore has no nested transactions, so a
+checkout executor could not consume an entitlement *and* complete a booking in one atomic commit —
+and the two alternatives were both wrong: an uncoordinated double-commit, or a second copy of the
+entitlement arithmetic.
+
+TR-D1 Phase 2A (`ef2cd1f`) split the body out as **`packageSessionTx(tx, req, actor, deps)`**, driven
+by a caller-supplied transaction, with `prepareSessionRequest` doing the I/O-free validation and ref
+derivation. `packageSessionCore` is now the wrapper: same request shape, same response shape, same
+error codes, same stored documents, same idempotency. **Nothing about this file's behaviour changed**,
+and 12 seam tests pin that there is exactly ONE entitlement implementation in the product.
+
+Phase 2B (`a0bc7fa`, deployed 2026-08-02) is the first external consumer. The checkout executor calls
+`packageSessionTx` from inside its **own** transaction, so a package-linked checkout is one atomic
+state change. It never calls the package callable.
+
+**The contract a caller must honour** — and the one that bit first:
+
+- ALL READS FIRST. The body opens with a single `tx.getAll` and writes only afterwards.
+- NO EXTERNAL SIDE EFFECT inside it. A transaction callback can be RETRIED, so audit emission stays
+  in the wrapper, after commit.
+- ⚠️ **The body STAGES WRITES, so a caller may not refuse after calling it.** Returning a rejection
+  afterwards does not abort the transaction — the commit lands and the salon has a consumed
+  entitlement with no checkout attached. Every refusal must happen *before* the call. The checkout
+  executor was restructured for this and has a static test that fails if a refusal moves back.
+
+**Package prepayment at checkout.** A linked session covers the whole base service line — which is
+exactly what `price: 0` at link time already means, so §6's "package payments earn no loyalty" holds
+unchanged: the executor removes `packagePrepaid_m` before computing the charge and before computing
+the earn base. TR-B's `snapshot` / `financialCache` / `plan` are byte-identical either way.
+
+---
+
 ## 1. Why this is not part of the checkout
 
 A booking's money is **one transaction**, resolved once, at checkout, into the canonical receipt

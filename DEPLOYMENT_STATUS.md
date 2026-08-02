@@ -10,10 +10,68 @@
 > separate `whitecross-site` repo deploy manually**, so code can sit on `origin/main` for days while
 > production runs older behavior. Confusing "merged" with "live" has caused real incidents.
 >
-> **Snapshot date:** 2026-08-01 (later) — **TR-D1 Phase 0.5 deployed and live-verified** (row directly below). Previous: **TR-B2 fully deployed and live-verified** (row directly below); no Function or rules revision changed. Previous snapshot 2026-07-31 ~16:3x UK — **TR-B is fully deployed and live-verified** (row directly below); TR-C Phase 1 remains pushed but deliberately NOT deployed. Previous snapshot 2026-07-31 ~15:5x UK. Previous snapshot 2026-07-31 01:5x UK — **three deploy waves have landed since the previous snapshot and this file now reflects them.** 2026-07-30 ~14:4x (Session A: ANY-BARBER + PUSH-RECOVERY + RECEIPT-WRITER), 2026-07-30 ~17:5x–18:1x (Session B: receipt READER + the remaining UK financial work), 2026-07-31 ~00:5x–01:4x (master closure: whitecross saas hosting + LC1 live chat). The previous revision of this line said *no deploy occurred* on 07-30; that was true when written and false within the hour. · 2026-07-27 15:05 UK after the Treatwell parser deploy + T2188888050 repair (previous: 12:55 UK after the whitecross test-mode lockdown deploy) (previous
+> **Snapshot date:** 2026-08-02 — **TR-D1 Phase 2B deployed and live-verified**: ONE new callable, `salownCheckoutBooking` (row directly below). No hosting target, no rules, no existing Function revision changed. Previous: 2026-08-01 (later) — **TR-D1 Phase 0.5 deployed and live-verified**. Previous: **TR-B2 fully deployed and live-verified** (row directly below); no Function or rules revision changed. Previous snapshot 2026-07-31 ~16:3x UK — **TR-B is fully deployed and live-verified** (row directly below); TR-C Phase 1 remains pushed but deliberately NOT deployed. Previous snapshot 2026-07-31 ~15:5x UK. Previous snapshot 2026-07-31 01:5x UK — **three deploy waves have landed since the previous snapshot and this file now reflects them.** 2026-07-30 ~14:4x (Session A: ANY-BARBER + PUSH-RECOVERY + RECEIPT-WRITER), 2026-07-30 ~17:5x–18:1x (Session B: receipt READER + the remaining UK financial work), 2026-07-31 ~00:5x–01:4x (master closure: whitecross saas hosting + LC1 live chat). The previous revision of this line said *no deploy occurred* on 07-30; that was true when written and false within the hour. · 2026-07-27 15:05 UK after the Treatwell parser deploy + T2188888050 repair (previous: 12:55 UK after the whitecross test-mode lockdown deploy) (previous
 > revisions: 2026-07-26 19:45 UK; 2026-07-24 16:40 UK after Parser-3C landed on `origin/main`; earlier
 > 16:05 revision during BSP-H1, see the hosting-baseline correction below). Verify against `git log origin/main` + the live system before acting;
 > a row here is a claim about a moment, not a standing guarantee.
+
+---
+
+## 🧾 TR-D1 Phase 2B — server-authoritative checkout executor · **DEPLOYED + LIVE-VERIFIED** 2026-08-02
+
+**Baseline commit `ceb5316`** (`origin/main`). Production **is** on it.
+
+| Surface | State |
+|---|---|
+| `functions:salown:salownCheckoutBooking` | ✅ **NEW — created** (europe-west2, v2 callable, nodejs22, 256 MB) |
+| Every other Function | ⏸️ **unchanged** — a single targeted deploy, never a blanket `--only functions` |
+| `hosting:salown` | ⏸️ **not deployed** — every app commit carried `[skip ci]`; no bundle changed |
+| `hosting:salown-staff` | ⏸️ **not deployed** — same |
+| `firestore.rules` / indexes | ⏸️ **unchanged** — no rules change was made and none is needed (below) |
+
+**Deployed command, verbatim:**
+`firebase deploy --only functions:salown:salownCheckoutBooking --project havuz-44f70`
+→ `creating Node.js 22 (2nd Gen) function salown:salownCheckoutBooking(europe-west2)` → `Successful create operation.`
+
+### ⚠️ Deployed but DELIBERATELY UNREACHABLE
+
+**Nothing calls this callable.** The Admin panel and the Staff App keep their existing browser
+checkout path (`src/firestoreActions.ts`), unchanged and undeployed. A tenant with no
+`checkoutSettings` resolves to `enabled: false`, so the callable fails closed with
+`CHECKOUT_DISABLED` — verified live on `tr-demo` **before** the synthetic settings were applied.
+All four UK production tenants are therefore unaffected by construction, not by care.
+
+This is the same "built, pushed, not reachable" posture TR-D1 Phase 1 and Phase 2A hold, except the
+server half is now genuinely running so it can be verified against real Firestore behaviour rather
+than only against an emulator.
+
+### Rules: nothing changed, and the ledger should say why
+
+`checkoutIntents`, `receivables` and `receivableLedger` are **not** in the `[G4]` explicit write
+list, so the existing catch-all `allow write: if false` already denies every client write to them.
+Nine new rules cases pin that (145 → **154/154**) so a future edit to that list fails a test instead
+of silently opening a financial collection. Rules tightening beyond this happens only **after** the
+Admin and Staff UI cutover — the current UI still writes bookings directly.
+
+### Rollback / deletion
+
+The function is **new**, so rollback is deletion, and deletion is safe precisely because nothing
+calls it:
+
+```
+firebase functions:delete salownCheckoutBooking --region europe-west2 --project havuz-44f70
+```
+
+No data migration to unwind: the executor's collections are new and, since no UI writes them, empty
+in every production tenant. Reverting the code alone (`git revert ceb5316 a0bc7fa`) leaves the
+deployed function orphaned — delete it explicitly rather than relying on a blanket redeploy, which
+would also destroy the 27 legacy `us-central1` functions.
+
+### Live verification
+
+28 assertions through the deployed callable on `tr-demo` only, with a real Firebase ID token. All
+synthetic records removed and `settings/settings` restored **sha256-identical**; the synthetic auth
+user deleted. Detail: [TESTS.md §20](TESTS.md). Design: [TR_CHECKOUT_ARCHITECTURE.md](TR_CHECKOUT_ARCHITECTURE.md).
 
 ---
 
