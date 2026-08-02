@@ -23,7 +23,7 @@
 
 | Surface | State |
 |---|---|
-| `functions:salown:salownCheckoutBooking` | ✅ **NEW — created** (europe-west2, v2 callable, nodejs22, 256 MB) |
+| `functions:salown:salownCheckoutBooking` | ✅ **NEW — created** (europe-west2, v2 callable, nodejs22, 256 MB) · revision **`salowncheckoutbooking-00001-taf`**, created `2026-08-02T10:21:22Z`, `RoutesReady` + `ConfigurationsReady` = SUCCEEDED |
 | Every other Function | ⏸️ **unchanged** — a single targeted deploy, never a blanket `--only functions` |
 | `hosting:salown` | ⏸️ **not deployed** — every app commit carried `[skip ci]`; no bundle changed |
 | `hosting:salown-staff` | ⏸️ **not deployed** — same |
