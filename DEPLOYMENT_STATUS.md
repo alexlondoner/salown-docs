@@ -87,10 +87,13 @@ is the unchanged Phase 3 shape, no booking / receivable / clientPackage / checko
 finance_payment was created by editing Settings, `packageSettings` and `presentation` untouched, and
 the tenant was **restored byte-exactly** with its synthetic owner doc removed.
 
-> ⚠️ **Browser click-through visual evidence was NOT captured.** The Chrome extension was disconnected
-> for this session, so the responsive pass at 320/360/390/430/desktop and the UK and TR screenshots were
-> not taken. Verification here is artifact-level and behavioural, not visual — the same limitation
-> recorded for the FIN-DAY-DEFAULT release. **The owner's visual re-review is still outstanding.**
+> ✅ **Owner-confirmed on the live release**, 2026-08-02 — *"its fine i checked it"*. The Phase 3
+> visual review that failed is now closed.
+>
+> Scope of that confirmation, stated so it is not read as more than it is: the owner reviewed the
+> deployed page. Automated verification here is artifact-level and behavioural. **No 320/360/390/430
+> width matrix was walked** — the Chrome extension was disconnected — so a narrow-width regression is
+> not something this release is proven against.
 
 ---
 

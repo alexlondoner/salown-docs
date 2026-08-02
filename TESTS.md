@@ -1156,10 +1156,15 @@ Deployed `Settings-DeAHVGgw.js` is **byte-identical** to the local build. The sh
 executed across all five shapes and matched. On `tr-demo`, Save still reaches the deployed callable
 (version `1 → 2`), nothing financial was created, and the tenant was restored byte-exactly.
 
-> ⚠️ **NOT DONE: the visual pass.** The Chrome extension was disconnected, so 320/360/390/430/desktop
-> responsive checks and UK/TR screenshots were not captured. Touch-target and wrap affordances are
-> asserted statically in source (`minHeight: 44`, `flexWrap`, `wordBreak`) — which is not the same as
-> looking at it. **The owner's visual re-review remains outstanding.**
+> ✅ **Visual pass: CONFIRMED BY THE OWNER**, 2026-08-02, on the deployed release
+> (`hosting:salown` `34d390b1afb16bc9`) — *"its fine i checked it"*. This closes the review that
+> **failed** on Phase 3 and is what this package existed to fix.
+>
+> Recorded precisely, because the two are not the same evidence: the automated side asserts the
+> touch-target and wrap affordances statically in source (`minHeight: 44`, `flexWrap`, `wordBreak`),
+> and the owner looked at the live page. **No per-width matrix (320/360/390/430/desktop) was walked
+> by either side** — the Chrome extension was disconnected for this session, so if a specific narrow
+> width regresses later, that is a gap this record does not cover.
 
 ---
 
