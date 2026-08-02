@@ -85,7 +85,7 @@ No Emulator/Java REQUIRED; uses the Firebase Rules Test API (token: firebase-too
 python3 docs/test-firestore-rules.py salown-app/firestore.rules
 ```
 
-**Last run: 2026-07-31 → ✅ 145/145 passed** (TR-A added 14 cases on top of the 131/131 R1 phase-A baseline).
+**Last run: 2026-08-02 → ✅ 170/170 passed** (TR-D1 Phase 3 added 16 on top of Phase 2B's 154; Phase 2B added 9 on top of the TR-A 145; TR-A added 14 on top of the 131/131 R1 phase-A baseline).
 
 TR-A's 14 cases gate the `presentation` write (owner/super-admin only, on BOTH the canonical
 settings doc and the world-readable root mirror). Half of them are deliberately NO-REGRESSION
@@ -426,7 +426,7 @@ rules 145/145 · `tenants/tr-demo` seeded.
 |---|---|
 | Frontend (`npx vitest run`) | ✅ **702 pass / 33 files** (+96 new) |
 | Functions (`npm test` in `functions/`) | ✅ **678: 662 pass / 16 skip / 0 fail** (+16 new) |
-| Firestore rules (`test-firestore-rules.py`) | ✅ **145/145** (+14 TR-A) |
+| Firestore rules (`test-firestore-rules.py`) | ✅ **145/145** (+14 TR-A) — superseded, now **170/170**, see §21 |
 | `tsc --noEmit` (frontend + functions) | ✅ clean |
 | `npm run build` + `build:staff` | ✅ both green |
 | `eslint src scripts` | 3 errors — all **pre-existing** (verified against a stashed tree) |
@@ -1095,6 +1095,102 @@ second copy of the entitlement arithmetic.
 **Not deployed.** `packageSessionCore`'s runtime behaviour is unchanged, so redeploying the package
 Functions would be churn without benefit. Phase 2B deploys the new checkout callable that consumes
 this seam.
+
+---
+
+## 21. TR-D1 Phase 3 — private checkout Payment Settings (`9dfb2c8` · `8239620`, 2026-08-02)
+
+The owner's control panel for the executor Phase 2B deployed. **The executor itself was not touched**
+and was not redeployed — see [TR_CHECKOUT_ARCHITECTURE.md §11b](TR_CHECKOUT_ARCHITECTURE.md).
+
+| Gate | Before | After (measured 2026-08-02) |
+|---|---|---|
+| Frontend (`npm test`) | 1098 | **1185 / 1185**, 52 files — +59 write-core, +28 form-logic |
+| Functions (`npm test`) | 864 pass / 20 skip | **877 pass / 0 fail / 21 skip** (898 total) — +13 pure |
+| Functions emulator (`npm run test:emulator`) | 147/147 | **165/165, 0 fail** — +18 new |
+| Firestore rules (`test-firestore-rules.py`) | 154/154 | **170/170** — +16 new |
+| Frontend typecheck | clean | clean |
+| Functions typecheck | clean | clean |
+| Panel + staff builds | clean | clean |
+| Live `tr-demo` | — | **22/22** |
+
+> The emulator total is a real run, not `147 + 18` on paper: the full suite was re-run because
+> package and treatment emulator tests share the same `settings/settings` document this phase writes
+> to, and "my 18 pass" would not have shown a collision there.
+
+### What the 59 write-core tests pin (`src/utils/checkoutSettingsWrite.test.ts`)
+
+The strict WRITE half of the contract, whose lenient READ half Phase 1 pinned. The valuable
+assertions are the negative ones — what the writer **refuses** to store — because a settings document
+the reader has to repair is a document that silently means something other than what the owner chose.
+
+Contract separation is asserted **structurally, not by intention**: the Phase 3 sources are stripped
+of comments and scanned, so `paymentSettings` and `packageSettings` cannot appear as code in any of
+them (the files discuss both at length in prose, which is why a naive substring scan would have been
+useless — and weakening it to let prose through would have let a real reference through with it). The
+writer is proven to name exactly two document paths, to write exactly one field, never to write the
+staff doc it reads, and never to mention a money, mail, package or booking collection. The Phase 1
+core is asserted un-imported by this phase.
+
+Also pinned: explicit `false` and `0` survive; `null` stays distinct from `0`; every one of the 15
+method switches and all 9 staff permissions flip independently **without disturbing a neighbour**;
+duplicate provider ids, unsupported instalment counts, float commission rates, rates for unsupported
+counts, and an archived-but-enabled provider are each refused; the TR template is a pure value that
+the panel loads into the form and never saves; and no tenant id appears anywhere in the sources, so a
+pilot cannot become a production anchor.
+
+### What the 28 form-logic tests pin (`src/components/checkoutSettingsPanel.test.ts`)
+
+That **what the owner sees is what gets sent**: an untouched form round-trips to a payload resolving
+to exactly the stored values. That an unreadable box is **reported, never defaulted** — a blank
+"smallest deposit" that silently became 0 would change salon policy with nobody deciding to. That a
+Turkish-typed `1.250,50` is read as 125050 minor units. That a provider id survives a rename, that
+archiving always disables, and that `archived` is read from the RAW document rather than guessed from
+`enabled` — the bug this suite actually caught during development, where a merely switched-off
+provider would have been reported as archived.
+
+### What the 18 emulator tests pin (`checkoutSettings.emulator.test.js`)
+
+The properties only a real transaction engine shows. Owner writes; **stylist AND admin are refused**;
+the role comes from the STORED staff doc, so a token minted before a demotion does not work; a caller
+with no staff doc is refused; super-admin works without one; cross-tenant is structurally impossible
+because the claim picks the document. The version increments by exactly one per save, a stale save is
+refused **and changes nothing**, and a document written by a newer contract is not overwritten.
+
+The blast-radius test is the one worth keeping: after a save, `bookings`, `receivables`,
+`clientPackages`, `packageLedger`, `checkoutIntents`, `finance_payments`, `notifications` and
+`auditLogs` are all still empty, `packageSettings` and `presentation` are byte-identical to seed, and
+the **public tenant root was never even created**.
+
+### The 16 rules cases
+
+staff/admin denied · owner/super-admin allowed · cross-tenant denied · unauthenticated read AND write
+denied · the create branch (which cannot diff against a prior resource) · **the self-escalation
+attempt the rule exists to stop** — a stylist raising their own `unpaid.staffLimit_m` · and three
+no-regression proofs: same-tenant staff still READ the settings doc, PAY-1 on the public root is
+unchanged, and `packageSettings` keeps its own independent gate.
+
+### Live verification — `tr-demo`, 22/22
+
+Against the **deployed** callable and **deployed** rules with real minted ID tokens. Owner saved;
+version `1 → 2`; superseded-version save refused `SETTINGS_VERSION_CONFLICT` and changed nothing;
+stylist `PERMISSION_DENIED`; unauthenticated `UNAUTHENTICATED`; unauthenticated REST read **HTTP 403**.
+The deployed Phase 2B executor resolved the saved configuration without redeploy —
+`STALE_SETTINGS_VERSION` on a superseded version, past the gate to `BOOKING_NOT_FOUND` on the current
+one. PAY-1, `packageSettings` and `presentation` byte-compared unchanged. `tr-demo` restored
+byte-exactly, and the two synthetic staff docs minted for the role test removed (the tenant had none).
+
+> One probe failed on the first run and it was the **test** that was wrong, not the product: the
+> payload carried `outstanding_m`, which is not in the executor's accepted request field list, so it
+> was refused at input validation before ever reaching the settings gate — proving nothing. Recorded
+> because a green "executor accepts the version" that never reached the version check is exactly the
+> kind of false pass a verification run exists to avoid.
+
+### Lint
+
++16 problems, all `no-undef` on `require`/`process`/`__dirname` in the two new CJS Functions test
+files — identical in class to every existing functions test, since the frontend ESLint config has no
+Node environment for `functions/`. **Zero** new problems in any TypeScript or TSX source.
 
 ---
 

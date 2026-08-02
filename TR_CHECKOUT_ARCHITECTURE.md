@@ -7,8 +7,16 @@
 > receivable arithmetic (that is [PAYMENT_PLAN_ENGINE.md](PAYMENT_PLAN_ENGINE.md)), and not package
 > semantics (that is [TREATMENT_PACKAGE_SYSTEM.md](TREATMENT_PACKAGE_SYSTEM.md)).
 
-**Status: Phase 2B DEPLOYED 2026-08-02 · `salownCheckoutBooking` live in `europe-west2` · NOTHING
-CALLS IT YET.** The Admin panel and the Staff App keep their existing browser checkout path. See
+**Status: Phase 3 DEPLOYED 2026-08-02 · the executor is now CONFIGURABLE but still UNREACHABLE.**
+`salownCheckoutBooking` is live in `europe-west2` at `salowncheckoutbooking-00001-taf` — the revision
+Phase 2B created, unchanged by Phase 3 — and **nothing calls it.** The Admin panel and the Staff App
+keep their existing browser checkout path.
+
+What Phase 3 added is the owner's control panel for it: `salownSaveCheckoutSettings`
+(`salownsavecheckoutsettings-00001-pic`) plus a Settings screen, so a tenant can now switch this
+checkout on and configure it. A tenant that does not resolves to `enabled: false` and the executor
+still refuses with `CHECKOUT_DISABLED`. **The UI cutover is a later package.** See
+[PAYMENT_SETTINGS.md](PAYMENT_SETTINGS.md) for the settings contract and
 [DEPLOYMENT_STATUS.md](DEPLOYMENT_STATUS.md) for the live/pushed ledger.
 
 ---
@@ -275,6 +283,31 @@ a salon discovering that staff can forge a receivable.
 Read stays same-tenant ALLOW, deliberately and explicitly asserted: the till has to show a client
 their outstanding balance. Tightening it belongs **with** the Admin/Staff UI cutover, never before —
 the current UI still writes bookings directly.
+
+---
+
+## 11b. What Phase 3 changed about this executor: nothing
+
+Worth stating plainly, because "Phase 3" and "checkout" in the same sentence invite the assumption
+that the executor moved. It did not:
+
+- `functions/src/checkout/executor.ts` — **unedited**.
+- `checkoutTender.ts`, the Phase 1 parity core it imports — **unedited**, byte-for-byte as deployed.
+  The Phase 3 strict validator lives in a **separate** twin (`checkoutSettingsWrite.ts`) precisely so
+  this one did not have to be touched and the deployed revision stays honest about its source.
+- `salowncheckoutbooking-00001-taf` — **not redeployed**.
+
+The one thing that *did* become real is the staleness gate. The executor has always compared
+`req.settingsVersion !== settings.schemaVersion`; until Phase 3 nothing incremented that number, so
+the comparison could never fire. Now every owner save increments it, which is why the incrementing
+value went into `schemaVersion` rather than a tidier new `revision` field the deployed executor would
+never have read. Proven live: against `tr-demo` with a superseded version the deployed executor
+answered `TENDER_REFUSED / STALE_SETTINGS_VERSION`, and with the current one it moved past the gate to
+`BOOKING_NOT_FOUND`.
+
+`archived` on a provider is likewise invisible here. It is a presentation concern; archiving always
+sets `enabled: false` alongside, and the executor's existing `PROVIDER_DISABLED` refusal already
+covers it, so the Phase 1 resolver does not project the field at all.
 
 ---
 

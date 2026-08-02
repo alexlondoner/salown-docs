@@ -57,7 +57,7 @@ methods
   partial           { enabled, minimumPaidPercent?, requireDueDate, requireNote }
   unpaid            { enabled, requireDueDate, requireNote, staffLimit_m?, ownerApprovalAbove_m? }
   salonInstalments  { enabled, allowedCounts[], maximumTermDays?, requireDeposit, minimumDepositPercent? }
-providers[]     { id, name, enabled, supportedInstalmentCounts[], commissionMode,
+providers[]     { id, name, enabled, archived, supportedInstalmentCounts[], commissionMode,
                   commissionRatesByCount (BASIS POINTS, integer), fixedFee_m, effectiveFrom/To }
 permissions     staffMayTakeCash | TakeCard | TakeBankTransfer | UseSplitTender |
                 CreatePartialBalance | MarkUnpaid | CreateSalonInstalments |
@@ -125,23 +125,100 @@ match /settings/{document=**} {
 }
 ```
 
-> ⚠️ **`checkoutSettings` is NOT yet in that `hasAny()` list.** Today it inherits the general
-> `isTenantAny` write on `settings/settings`, so an admin — not only an owner — can write it. That is
-> acceptable *while the feature is dark and no UI writes it*, and it must be closed **with** the
-> Settings-UI package that first exposes these switches: they decide who may create salon debt and at
-> what threshold approval is required, and a stylist who could edit them could raise their own unpaid
-> limit. Tracked as an explicit follow-on, not an oversight.
+> ✅ **CLOSED by Phase 3** (2026-08-02, ruleset `b30abf64-5515-4429-87f8-fafaa085af2c`). The list is
+> now `['presentation', 'packageSettings', 'checkoutSettings']` — one added key, no new match block,
+> and the **read** rule untouched, so same-tenant members still read the private Settings document
+> they already needed.
+>
+> Phase 1 left it open deliberately and recorded it as a follow-on rather than an oversight: while the
+> feature was dark and nothing wrote the field, `checkoutSettings` inherited the general `isTenantAny`
+> write, so an **admin** — not only an owner — could have written it. That was acceptable exactly
+> until a UI exposed the switches, which Phase 3 does. They decide who may create salon debt and above
+> what amount approval is required, so a stylist who could edit them could raise their own unpaid
+> limit.
+>
+> Proven by 16 new cases in `docs/test-firestore-rules.py` (suite 154 → 170), including the
+> self-escalation attempt itself, and by live verification against the deployed ruleset.
 
 ---
 
-## 7. Settings versioning
+## 7. Settings versioning — two numbers, and why
 
-`CHECKOUT_SETTINGS_VERSION` is bumped when the **meaning** of a stored field changes. The client
-sends the version it rendered against; the executor refuses a mismatch with
-`STALE_SETTINGS_VERSION` **before anything is priced**.
+The client sends the version it rendered against; the executor refuses a mismatch with
+`STALE_SETTINGS_VERSION` **before anything is priced**. That is what stops a till that has been open
+since this morning from committing a checkout under rules the owner changed at lunchtime.
 
-That is what stops a till that has been open since this morning from committing a checkout under
-rules the owner changed at lunchtime.
+Phase 3 made that gate real, and doing so split the number in two:
+
+| Stored field | Meaning | Who writes it |
+|---|---|---|
+| `schemaVersion` | The **monotonic settings version**. Starts at 1 and goes up by exactly one on every successful owner save. | `salownSaveCheckoutSettings` only |
+| `contractVersion` | The **contract** version — bumped only when the MEANING of a stored field changes. `CHECKOUT_CONTRACT_VERSION`, currently 1. | `salownSaveCheckoutSettings` only |
+
+**Why `schemaVersion` carries the revision.** The Phase 2B executor is deployed and compares
+`req.settingsVersion !== settings.schemaVersion`. That comparison *is* the staleness gate. A separate
+`revision` field would have been tidier taxonomy and would have been enforced by **nothing**, because
+the deployed executor does not read it — and reworking the executor was out of scope. So the
+incrementing number went where the gate already looks, and the meaning-version moved to
+`contractVersion`, where a future contract change can still be expressed. Net effect: a till opened
+before a change cannot commit under it, with zero change to deployed code.
+
+**The ceiling is real.** `schemaVersion` is clamped to 1–9999 by the lenient reader, so past 9999 a
+stored value would fall back to 1 and every open till would look current again. The writer refuses at
+that point (`SETTINGS_VERSION_EXHAUSTED`) rather than wrapping silently. At ~27 owner saves a day that
+is a year of headroom; it is refused rather than ignored because the failure would otherwise be
+invisible.
+
+**Two guards, one number.** The same value is also optimistic concurrency on the WRITE path: the form
+submits `expectedVersion`, and a save made against a version another owner has already superseded is
+refused with `SETTINGS_VERSION_CONFLICT` and changes nothing.
+
+**Server-owned fields.** `schemaVersion`, `contractVersion`, `updatedAt` and `updatedBy` are refused
+on input. A browser that could set its own settings version could defeat the staleness gate by simply
+claiming to be current.
+
+---
+
+## 7b. The write path (Phase 3)
+
+The read path is lenient; the write path is **strict**, and the two are not redundant. The reader's
+forgiveness is a **safety net, not a storage format**: writing a value the reader would have to repair
+is how a salon ends up with settings that silently mean something other than what the owner selected.
+
+`validateCheckoutSettingsInput` (`checkoutSettingsWrite.ts`, a byte-identical frontend/Functions parity
+twin, separate from the Phase 1 core so the deployed executor's twin stays untouched) refuses:
+
+- any unknown key, top-level or nested — never stored, never ignored;
+- a wrong type, including a string where a boolean belongs — never coerced;
+- a float where minor units or basis points belong — never rounded, because a rate that arrives as
+  `2.9` and is stored as `3` under-reports every settlement taken under it;
+- a duplicate provider id, or an id outside `^[a-z0-9][a-z0-9_-]{1,39}$`;
+- an instalment count outside 2–36 (the reader tolerates `1` because it must tolerate what is already
+  stored; the writer does not create it);
+- a commission rate for a count the provider does not support;
+- an archived provider that is also enabled;
+- salon instalments switched ON with no permitted count;
+- an empty split-method list;
+- any server-owned field.
+
+**Explicit `false` and `0` survive; `null` stays distinct from `0`** (it is the stored way to say "no
+limit"). Own-property checks throughout — never truthiness.
+
+**One writer, by design.** `salownSaveCheckoutSettings` re-validates, decides the role from the
+**stored** staff doc rather than the token, merges at the top level only, increments the version and
+writes the audit metadata — all in one transaction. The browser runs the same validator so an invalid
+form is refused before the round-trip, but it is not the authority. The rule is the boundary that holds
+when no callable runs.
+
+**Archive, never delete.** A provider id is snapshotted into `BankInstalmentMeta` on every instalment
+payment, so destroying the row would leave settled money pointing at nothing. Archiving always sets
+`enabled: false` alongside, and the deployed executor already refuses a disabled provider with
+`PROVIDER_DISABLED` — so the archive flag needs no new gate on the checkout path and the Phase 1
+resolver deliberately does not project it.
+
+**The TR template is offered, never written.** A conservative Turkey starting point can be loaded into
+the form — cash, single card payment and split payment on; bank transfer, card instalments and every
+debt-producing capability off — but the owner must save it deliberately. No tenant is backfilled.
 
 ---
 

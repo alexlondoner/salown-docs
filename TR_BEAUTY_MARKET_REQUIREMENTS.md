@@ -101,11 +101,26 @@ reconciliation invariant, entitlement counters.
 TR-C reads it through one narrow interface and writes none of it. See
 [SESSION_LIFECYCLE.md §2](SESSION_LIFECYCLE.md#2-the-ownership-split-with-tr-b--the-single-most-important-thing-in-this-document).
 
-### 4.2b In-salon checkout: split, partial, unpaid and the two kinds of taksit — 🟡 BUILT, NOT REACHABLE (TR-D1 Phase 2B, `a0bc7fa`, deployed 2026-08-02)
+### 4.2b In-salon checkout: split, partial, unpaid and the two kinds of taksit — 🟡 BUILT + CONFIGURABLE, STILL NOT REACHABLE (TR-D1 Phase 2B `a0bc7fa` + Phase 3 `8239620`, deployed 2026-08-02)
 
 The server-authoritative checkout executor is **deployed and live-verified on `tr-demo`**, and
 **nothing calls it yet** — the Admin panel and the Staff App keep their existing browser path, and a
-tenant without `checkoutSettings` gets `CHECKOUT_DISABLED`. Full design:
+tenant without `checkoutSettings` gets `CHECKOUT_DISABLED`.
+
+**Phase 3 added the owner's half**: a salon owner can now switch this checkout on and configure it
+from **Settings → Payment settings → Ödeme Ayarları** — which methods the desk may take, the POS
+providers and their commission in basis points, what each team member may do, and the receivable
+policy. What it does **not** do is make the till use any of it: the checkout screens are unchanged.
+So a Turkish salon can now *describe* how it wants to be paid, and still cannot *be* paid that way
+until the UI cutover.
+
+The screen speaks the salon's own words rather than translated English — Nakit, Kart, Havale/EFT,
+Parçalı Ödeme, Kısmi Ödeme, Sonra Öde / Ödenmedi, Kart Taksiti, Salon Taksit Planı — while the
+**stored** tender values stay language-independent (`CASH`, `CARD`, …), so a historical report never
+depends on who was logged in when the row was written. Every debt-producing option is **off by
+default and must be switched on out loud**, with its financial consequence stated next to the switch.
+
+Full design:
 **[TR_CHECKOUT_ARCHITECTURE.md](TR_CHECKOUT_ARCHITECTURE.md)** · settings contract:
 **[PAYMENT_SETTINGS.md](PAYMENT_SETTINGS.md)**.
 
@@ -197,10 +212,13 @@ one-way iCal feed (`salownIcalFeed`). See [TR_LOCALIZATION_PLAN.md](TR_LOCALIZAT
 | Work a follow-up queue | ✅ |
 | Record a package sale, instalments and payments | ✅ TR-B |
 | See a client's outstanding balance in the recovery queue | ✅ read-only from TR-B |
-| Split a bill across three tenders | 🟡 server ready, no UI — §4.2b |
-| Take a partial payment or leave a balance | 🟡 server ready, no UI — §4.2b |
-| Record Kart Taksiti with its commission terms | 🟡 server ready, no UI — §4.2b |
-| Offer a Salon Taksit Planı on an ordinary bill | 🟡 server ready, no UI — §4.2b |
+| **Configure** how the salon wants to be paid in person | ✅ **Settings → Payment settings** (TR-D1 Phase 3) |
+| Record its POS providers and their commission (bp) | ✅ owner-only, private, never on the public root |
+| Decide what each team member may do at the till | ✅ owner-only — §4.2b |
+| Split a bill across three tenders | 🟡 server + settings ready, **no checkout UI** — §4.2b |
+| Take a partial payment or leave a balance | 🟡 server + settings ready, **no checkout UI** — §4.2b |
+| Record Kart Taksiti with its commission terms | 🟡 server + settings ready, **no checkout UI** — §4.2b |
+| Offer a Salon Taksit Planı on an ordinary bill | 🟡 server + settings ready, **no checkout UI** — §4.2b |
 | Issue an e-Fatura / e-Arşiv | ⛔ not claimed — §4.2b |
 | Track product stock quantity | ⛔ not wired — §4.2b |
 | Take a card payment online | ❌ no TR-resident PSP — §4.5 |

@@ -150,7 +150,14 @@ it is not a data migration, and nothing about TR-C's lifecycle or continuity eng
 ## TR-D1 checkout — which settings contract owns what (Phase 1, 2026-08-01)
 
 > Long form: [PAYMENT_SETTINGS.md](docs/PAYMENT_SETTINGS.md). Phase 2B deployed the server executor
-> 2026-08-02 — see [TR_CHECKOUT_ARCHITECTURE.md](docs/TR_CHECKOUT_ARCHITECTURE.md). **Nothing calls it yet.**
+> 2026-08-02 and Phase 3 deployed the owner's Settings for it the same day — see
+> [TR_CHECKOUT_ARCHITECTURE.md](docs/TR_CHECKOUT_ARCHITECTURE.md). **Nothing calls the executor yet:**
+> a salon can now configure this checkout, but the Admin and Staff checkout screens are unchanged.
+>
+> **`checkoutSettings` is owner-only in `firestore.rules` as of Phase 3** (ruleset `b30abf64…`) — the
+> gap Phase 1 recorded is closed. **The stored `schemaVersion` is now the monotonic settings version**
+> (contract version moved to `contractVersion`), because the deployed executor compares exactly that
+> field; every owner save increments it, so a till opened before a change cannot commit under it.
 
 Three payment-ish contracts now exist. They are **not** interchangeable and must never be merged.
 

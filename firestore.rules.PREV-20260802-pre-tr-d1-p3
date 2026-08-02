@@ -5,12 +5,7 @@ rules_version = '2';
 // ║  G2 (bookings read auth-only) + G3 (create financial forge) CANLIDA.       ║
 // ║  [G1]+[G4] (2026-06-27) CANLIDA: tenantRole==null fallback KALDIRILDI +    ║
 // ║     catch-all write→false + 14 koleksiyon explicit. staff self-escalate    ║
-// ║     KAPANDI, P1-D + booking-delete admin-gate BAĞLADI.                     ║
-// ║  [R1-A] (2026-07-24) Anonymous booking create REJECTS 7 server-owned     ║
-// ║     identity/linkage keys. Anonymous create ITSELF STAYS ALLOWED (locked ║
-// ║     decision 18); phase (b) is gated on H1 + W1 + E1. AUTHORED, NOT      ║
-// ║     DEPLOYED. Tests 131/131 (prev baseline 95/95; the stale 49/49 marker ║
-// ║     that sat on the [G1]+[G4] line above is corrected in this package).  ║
+// ║     KAPANDI, P1-D + booking-delete admin-gate BAĞLADI. Test 49/49.         ║
 // ║  ⚠️ HÂLÂ AÇIK: G5 (tek ruleset blast radius — yapısal).                    ║
 // ║  Rollback: docs/firestore.rules.ROLLBACK.txt                              ║
 // ╚══════════════════════════════════════════════════════════════════════════╝
@@ -43,16 +38,9 @@ service cloud.firestore {
       // gate whether the public site is live. Only super-admin — or the
       // salownPublishProfile / salownReviewProfile callables, which use the Admin
       // SDK and bypass rules — may change them. Tenant admins edit everything else.
-      // [TR-A] `presentation` also appears here as a PUBLIC-SAFE MIRROR of
-      // settings/settings.presentation — the hosted booking page cannot read the
-      // settings subdoc (auth-only) but must still show the salon's own language
-      // and currency. Same owner/super-admin gate as the canonical copy, so an
-      // admin cannot make the public page disagree with the panel. (Presentation
-      // holds no secrets, so mirroring it onto the world-readable root is safe.)
       allow update: if isSuperAdmin() || (isAdmin(tenantId)
         && !request.resource.data.diff(resource.data).affectedKeys()
-             .hasAny(['profileStatus','profileSelfManaged','profilePublishedAt','profileSubmittedAt','profileReviewNotes','profileCheckIssues'])
-        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['presentation']) || isOwner(tenantId)));
+             .hasAny(['profileStatus','profileSelfManaged','profilePublishedAt','profileSubmittedAt','profileReviewNotes','profileCheckIssues']));
 
       // ── Bookings (public CREATE + callable update; read artık auth-only) ─────
       match /bookings/{docId} {
@@ -69,25 +57,9 @@ service cloud.firestore {
         //   create'te paidAmount/discount/tip YAZMIYOR — bunları yalnız authenticated panel checkout
         //   yazar (üstteki isTenantAny dalı, kısıttan muaf). status zaten PENDING/CONFIRMED ile sınırlı.
         //   paymentState/paymentType BİLEREK serbest: whitecross-site create'te bunları yazıyor.
-        // [R1-A] (2026-07-24) Server-owned identity/linkage fields cannot be forged on an
-        //   ANONYMOUS create. These seven are written ONLY by salownCreateBooking (Admin SDK,
-        //   rules bypassed) or by authenticated staff surfaces — both of which take the
-        //   isSuperAdmin()/isTenantAny() branches above and are unaffected by this clause.
-        //   Verified: neither BookingPage's legacy direct-create (src/pages/BookingPage.tsx:739)
-        //   nor whitecross-site's public create (script.js:1462 single + :1695 group) sends any
-        //   of them; `note` in whitecross-site is opening-hours copy, never a booking field.
-        //   `note` is forbidden publicly because it carries reserved block-time semantics
-        //   ('Busy'/'Quick block' in BookingDetailPanel) — a public note could masquerade a
-        //   booking as a staff block.
-        //   ⚠️ This is R1 phase (a) ONLY. Anonymous direct create REMAINS ALLOWED (locked
-        //   decision 18) for H1/W1 coexistence; phase (b) is gated on H1 + W1 + E1.
         allow create: if isSuperAdmin() || isTenantAny(tenantId) || (
           request.resource.data.status in ['PENDING', 'CONFIRMED'] &&
-          !request.resource.data.keys().hasAny(['paidAmount', 'discount', 'tip']) &&
-          !request.resource.data.keys().hasAny([
-            'clientManualId', 'matchedBy', 'identityLinkedBy', 'identityLinkedAt',
-            'clientPhoneCanonical', 'emailCanonical', 'note'
-          ])
+          !request.resource.data.keys().hasAny(['paidAmount', 'discount', 'tip'])
         );
         allow update: if isSuperAdmin() || isTenantAny(tenantId) || (
           resource.data.clientEmail != null &&
@@ -116,15 +88,7 @@ service cloud.firestore {
       match /barbers/{docId} {
         allow read:  if true;
         allow create, update: if isSuperAdmin() || isTenantAny(tenantId);
-        allow delete: if isSuperAdmin() || isOwner(tenantId);   // [E1b+ 2026-07-11] owner kendi ekibini silebilir (UI'da güçlü onay ŞART)
-      }
-      // [S1 2026-07-15] Staff comp (STAFF_MANAGEMENT_DESIGN §1.3): finansal veri —
-      //   owner + super-admin DIŞINDA kimse okuyamaz/yazamaz (Finance gate ile tutarlı).
-      //   Doc id = barber doc id. Comp verisi world-readable barbers'a ASLA yazılmaz.
-      //   ⚠️ OR-semantiği: bu blok tek başına yetmez — aşağıdaki [G4] catch-all READ'i
-      //   staffComp'u DIŞLAYACAK şekilde daraltıldı; ikisi birlikte deploy edilmeli.
-      match /staffComp/{barberId} {
-        allow read, write: if isSuperAdmin() || isOwner(tenantId);
+        allow delete: if isSuperAdmin();   // [DEL] delete = super-admin only
       }
       match /gallery/{docId} {
         allow read:  if true;
@@ -200,54 +164,7 @@ service cloud.firestore {
       //   Storage (logo/cover/barbers/*/photo) Firestore değil → hariç. emailOptOuts/config = functions/read.
       //   ⚠️ YENİ bir client-yazma koleksiyonu eklenince buraya da satır eklenmeli (yoksa write DENY).
       match /clients/{document=**}                { allow read, create, update: if isSuperAdmin() || isTenantAny(tenantId); allow delete: if isSuperAdmin() || isOwner(tenantId); } // + clients/{id}/campaignsSent
-      // [TR-A] (2026-07-31) `presentation` (language/locale/currency/timezone/
-      //   timeFormat/countryCode) is OWNER-or-super-admin only. Everything else on
-      //   the settings docs keeps its existing isTenantAny() write, so no current
-      //   behaviour changes — the clause only bites when the diff TOUCHES
-      //   `presentation`. Rationale: regional settings decide the salon's CURRENCY
-      //   and its calendar day; a stylist flipping GBP→TRY is a commercial
-      //   accident, not a preference. The Settings tab is hidden for non-owners,
-      //   but hiding a control is not a control — this is.
-      //   Note the create branch is deliberately looser than update: on create
-      //   there is no `resource.data` to diff against, so it checks the incoming
-      //   keys instead.
-      // [TR-B] (2026-07-31) `packageSettings` joins `presentation` as OWNER-or-
-      //   super-admin only, for the same class of reason and by the same
-      //   mechanism (one added key in the existing hasAny() list — no new match
-      //   block, no change to any other field's write rule).
-      //   Rationale: these switches decide WHO MAY MOVE MONEY —
-      //   staffMayRecordPayments / staffMayAdjustPayments /
-      //   requireApprovalForWriteOff. A stylist who could edit them could grant
-      //   themselves the right to record refunds, so leaving this to the UI
-      //   would make the permission model advisory. The Settings tab is already
-      //   owner-gated, and salownSavePackageSettings re-checks the role inside
-      //   its transaction; this is the boundary that holds when neither runs.
-      // [TR-D1 Phase 3] (2026-08-02) `checkoutSettings` joins `presentation` and
-      //   `packageSettings` as OWNER-or-super-admin only. Phase 1 shipped the
-      //   contract with this gap OPEN and recorded it as an explicit follow-on:
-      //   while the feature was dark and nothing wrote the field, it inherited
-      //   the general isTenantAny() write, so an ADMIN could have edited it.
-      //   That was acceptable only until a UI exposed the switches. It does now.
-      //   Rationale: these decide WHO MAY CREATE SALON DEBT and above what
-      //   amount an owner must approve it — staffMayMarkUnpaid,
-      //   staffMayCreatePartialBalance, unpaid.staffLimit_m,
-      //   permissions.ownerApprovalAbove_m. A stylist or an admin who could edit
-      //   them could raise their own unpaid limit, which would make the whole
-      //   permission model advisory. salownSaveCheckoutSettings re-checks the
-      //   role against the STORED staff doc inside its transaction; this is the
-      //   boundary that holds when no callable runs.
-      //   Mechanism is deliberately the SAME as TR-A/TR-B: one added key in the
-      //   existing hasAny() list. No new match block, no change to any other
-      //   field's write rule, and the read rule is untouched — same-tenant
-      //   members still read the private Settings document they already needed.
-      match /settings/{document=**}               {
-        allow read: if isSuperAdmin() || isTenantAny(tenantId);
-        allow create: if isSuperAdmin() || (isTenantAny(tenantId)
-          && (!request.resource.data.keys().hasAny(['presentation', 'packageSettings', 'checkoutSettings']) || isOwner(tenantId)));
-        allow update: if isSuperAdmin() || (isTenantAny(tenantId)
-          && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['presentation', 'packageSettings', 'checkoutSettings']) || isOwner(tenantId)));
-        allow delete: if isSuperAdmin();
-      }
+      match /settings/{document=**}               { allow read, create, update: if isSuperAdmin() || isTenantAny(tenantId); allow delete: if isSuperAdmin(); }
       match /campaigns/{document=**}              { allow read, create, update: if isSuperAdmin() || isTenantAny(tenantId); allow delete: if isSuperAdmin() || isOwner(tenantId); }
       match /notifications/{document=**}          { allow read, create, update: if isSuperAdmin() || isTenantAny(tenantId); allow delete: if isSuperAdmin(); }
       match /fcmTokens/{document=**}              { allow read, create, update: if isSuperAdmin() || isTenantAny(tenantId); allow delete: if isSuperAdmin(); }
@@ -263,12 +180,8 @@ service cloud.firestore {
 
       // [G4] Catch-all: READ same-tenant'a açık kalır (kaçan salt-okunur koleksiyon kırılmasın);
       //   WRITE kapalı → staff/{uid}, tenant-root, bookings yalnız kendi spesifik kurallarından yazılır.
-      // [S1 2026-07-15] staffComp catch-all READ'den DIŞLANDI: rules match'leri OR'lanır,
-      //   yani explicit owner-only blok tek başına admin/staff okumasını engelleyemezdi.
-      //   {coll} tek segment + {document=**} (v2: sıfır+ segment) = eski kapsamla birebir,
-      //   yalnız staffComp hariç. Süper-admin staffComp'u kendi bloğundan okur.
-      match /{coll}/{document=**} {
-        allow read:  if (isSuperAdmin() || isTenantAny(tenantId)) && coll != 'staffComp';
+      match /{document=**} {
+        allow read:  if isSuperAdmin() || isTenantAny(tenantId);
         allow write: if false;
       }
     }
