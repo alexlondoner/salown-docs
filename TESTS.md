@@ -1098,6 +1098,71 @@ this seam.
 
 ---
 
+## 22. TR-D1 Phase 3B — regional disclosure on Payment Settings (`ecb6d93`, 2026-08-02)
+
+Phase 3 passed every gate in §21 and **failed the owner's visual review**. Both things are true, and
+the gap between them is the lesson: a settings screen can be correct, validated, permission-gated and
+still unusable, because "every control is present and disabled" is not a design — it is the absence of
+one. A UK owner met the whole Turkey-native checkout form greyed out.
+
+Presentation only. No Functions, no rules, no shared schema — verified against `git status`, not
+asserted.
+
+| Gate | Before | After (measured 2026-08-02) |
+|---|---|---|
+| Frontend (`npm test`) | 1185 / 52 files | **1229 / 1229**, 53 files — +44 disclosure |
+| Frontend typecheck | clean | clean |
+| Production build | clean | clean |
+| Lint | 2377 | **2377 — delta ZERO** |
+| Functions / emulator / rules | 877 · 165/165 · 170/170 | **not run — untouched by this phase** |
+| Live `tr-demo` | — | Save + version + blast radius re-checked |
+
+### What the 44 tests pin (`src/components/settingsDisclosure.test.ts`)
+
+The decision table across all five tenant shapes, and — the load-bearing group — that **disclosure
+cannot change data**:
+
+- a permission the screen no longer renders is still submitted **with its stored value**;
+- a hidden `unpaid.staffLimit_m` and its approval threshold survive a save;
+- hidden provider commission terms survive turning Kart Taksiti off;
+- the section toggle is asserted **in source** to call `setOpenSection` and never the form setter, so
+  expanding an accordion cannot mark the page dirty and be saved as a change;
+- the Save payload still has exactly the six Phase 3 top-level keys.
+
+Plus: the module is proven to contain no `fetch`, `geo`, `navigator`, `Intl`, `timeZone`,
+`localStorage` or `document` — **IP address cannot participate in the decision**, which is the one
+property this screen shares with the executor.
+
+`LEGACY_TR_ACTIVE` earns its own tests. A non-TR tenant with an **enabled** configuration is not
+hidden, because it is a live policy; a saved-but-off one is reported without a warning. Collapsing
+those two into "not TR → show nothing" would have been simpler and would have hidden a financial
+setting from the only person allowed to change it.
+
+Packages: `resolvePackageDisclosure` is asserted to be **explicit-true only** (`1` and `'yes'` resolve
+compact), every existing package control is still present in source, and the panel is proven **not** to
+consult `countryCode` at all — packages are not being made a Turkey-only feature by a UX change.
+
+### A guard that fired, and was obeyed rather than weakened
+
+The first version of the module was called `paymentSettingsDisclosure.ts`, which broke §21's blunt
+"no Phase 3 source may contain `paymentSettings`" check — the guard against confusing PAY-1 with the
+private contract. The *file name* was the only offender, but the correct move was to rename the module
+(`settingsDisclosure.ts`), not to teach the guard about exceptions. A guard with a carve-out is a guard
+that will miss the real thing later.
+
+### Live verification
+
+Deployed `Settings-DeAHVGgw.js` is **byte-identical** to the local build. The shipped decision table was
+executed across all five shapes and matched. On `tr-demo`, Save still reaches the deployed callable
+(version `1 → 2`), nothing financial was created, and the tenant was restored byte-exactly.
+
+> ⚠️ **NOT DONE: the visual pass.** The Chrome extension was disconnected, so 320/360/390/430/desktop
+> responsive checks and UK/TR screenshots were not captured. Touch-target and wrap affordances are
+> asserted statically in source (`minHeight: 44`, `flexWrap`, `wordBreak`) — which is not the same as
+> looking at it. **The owner's visual re-review remains outstanding.**
+
+---
+
 ## 21. TR-D1 Phase 3 — private checkout Payment Settings (`9dfb2c8` · `8239620`, 2026-08-02)
 
 The owner's control panel for the executor Phase 2B deployed. **The executor itself was not touched**

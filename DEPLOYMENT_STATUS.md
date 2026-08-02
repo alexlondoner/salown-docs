@@ -10,10 +10,87 @@
 > separate `whitecross-site` repo deploy manually**, so code can sit on `origin/main` for days while
 > production runs older behavior. Confusing "merged" with "live" has caused real incidents.
 >
-> **Snapshot date:** 2026-08-02 (latest) — **TR-D1 Phase 3 deployed and live-verified**: one NEW callable (`salownSaveCheckoutSettings`), `hosting:salown`, and the **first `firestore.rules` release since TR-A** (row directly below). `hosting:salown-staff` deliberately NOT deployed. Previous: 2026-08-02 (earlier) — **LOYALTY-RECEIPT-SALVAGE deployed and live-verified**: one Function updated (`salownSendLoyaltyEmail`) and both hosting targets released by CI (row directly below). Previous: 2026-08-02 — **TR-D1 Phase 2B deployed and live-verified**: ONE new callable, `salownCheckoutBooking` (row directly below). No hosting target, no rules, no existing Function revision changed. Previous: 2026-08-01 (later) — **TR-D1 Phase 0.5 deployed and live-verified**. Previous: **TR-B2 fully deployed and live-verified** (row directly below); no Function or rules revision changed. Previous snapshot 2026-07-31 ~16:3x UK — **TR-B is fully deployed and live-verified** (row directly below); TR-C Phase 1 remains pushed but deliberately NOT deployed. Previous snapshot 2026-07-31 ~15:5x UK. Previous snapshot 2026-07-31 01:5x UK — **three deploy waves have landed since the previous snapshot and this file now reflects them.** 2026-07-30 ~14:4x (Session A: ANY-BARBER + PUSH-RECOVERY + RECEIPT-WRITER), 2026-07-30 ~17:5x–18:1x (Session B: receipt READER + the remaining UK financial work), 2026-07-31 ~00:5x–01:4x (master closure: whitecross saas hosting + LC1 live chat). The previous revision of this line said *no deploy occurred* on 07-30; that was true when written and false within the hour. · 2026-07-27 15:05 UK after the Treatwell parser deploy + T2188888050 repair (previous: 12:55 UK after the whitecross test-mode lockdown deploy) (previous
+> **Snapshot date:** 2026-08-02 (latest) — **TR-D1 Phase 3B deployed**: `hosting:salown` ONLY, a presentation-only settings-UX fix after the Phase 3 visual review failed (row directly below). No Function, no rules, no staff hosting. Previous: 2026-08-02 — **TR-D1 Phase 3 deployed and live-verified**: one NEW callable (`salownSaveCheckoutSettings`), `hosting:salown`, and the **first `firestore.rules` release since TR-A** (row directly below). `hosting:salown-staff` deliberately NOT deployed. Previous: 2026-08-02 (earlier) — **LOYALTY-RECEIPT-SALVAGE deployed and live-verified**: one Function updated (`salownSendLoyaltyEmail`) and both hosting targets released by CI (row directly below). Previous: 2026-08-02 — **TR-D1 Phase 2B deployed and live-verified**: ONE new callable, `salownCheckoutBooking` (row directly below). No hosting target, no rules, no existing Function revision changed. Previous: 2026-08-01 (later) — **TR-D1 Phase 0.5 deployed and live-verified**. Previous: **TR-B2 fully deployed and live-verified** (row directly below); no Function or rules revision changed. Previous snapshot 2026-07-31 ~16:3x UK — **TR-B is fully deployed and live-verified** (row directly below); TR-C Phase 1 remains pushed but deliberately NOT deployed. Previous snapshot 2026-07-31 ~15:5x UK. Previous snapshot 2026-07-31 01:5x UK — **three deploy waves have landed since the previous snapshot and this file now reflects them.** 2026-07-30 ~14:4x (Session A: ANY-BARBER + PUSH-RECOVERY + RECEIPT-WRITER), 2026-07-30 ~17:5x–18:1x (Session B: receipt READER + the remaining UK financial work), 2026-07-31 ~00:5x–01:4x (master closure: whitecross saas hosting + LC1 live chat). The previous revision of this line said *no deploy occurred* on 07-30; that was true when written and false within the hour. · 2026-07-27 15:05 UK after the Treatwell parser deploy + T2188888050 repair (previous: 12:55 UK after the whitecross test-mode lockdown deploy) (previous
 > revisions: 2026-07-26 19:45 UK; 2026-07-24 16:40 UK after Parser-3C landed on `origin/main`; earlier
 > 16:05 revision during BSP-H1, see the hosting-baseline correction below). Verify against `git log origin/main` + the live system before acting;
 > a row here is a claim about a moment, not a standing guarantee.
+
+---
+
+## 🧭 TR-D1 Phase 3B — regional disclosure on Payment Settings · **DEPLOYED** 2026-08-02
+
+**Baseline commit `ecb6d93`** (`origin/main`). Production **is** on it.
+
+Phase 3 shipped functionally correct and **failed the owner's visual review**: a UK tenant was shown
+the entire Turkey-native checkout configuration with every irrelevant control merely *disabled*, which
+made Settings a long, confusing wall. This release is the fix and is **presentation only**.
+
+| Surface | State |
+|---|---|
+| `hosting:salown` | ✅ **released** — version **`34d390b1afb16bc9`**, `2026-08-02T20:29:09Z` (previous `2aed6e662d41ad1b`) |
+| `hosting:salown-staff` | ⏸️ **NOT deployed** — still `8409e666da7ea223` |
+| `salownSaveCheckoutSettings` | ⏸️ **unchanged** — `salownsavecheckoutsettings-00001-pic` |
+| `salownCheckoutBooking` | ⏸️ **unchanged** — `salowncheckoutbooking-00001-taf` |
+| `firestore.rules` | ⏸️ **unchanged** — ruleset `b30abf64-5515-4429-87f8-fafaa085af2c` |
+| Every other Function / indexes | ⏸️ **unchanged** |
+
+**Deployed command, verbatim:**
+`firebase deploy --only hosting:salown --project havuz-44f70`
+
+`[skip ci]` again, for the same reason as Phase 3 and one more: CI's `--only hosting` covers **both**
+targets, and this release must not ship `salown-staff`.
+
+### Scope was verified, not asserted
+
+The diff touches `src/components/`, `src/i18n/dictionaries/` and nothing else. No file under
+`functions/`, no `firestore.rules`, no `packages/shared/` — checked against `git status` before commit.
+`src/pages/Settings.tsx` did not need to change at all: the Payments tab already held both cards.
+
+### What a UK owner now sees
+
+One line — *"In-salon checkout: GB — your current checkout remains active."* — and nothing else. No
+Türkiye wall, no disabled debt fields, no POS instalment controls, no Salon Taksit Planı, no irrelevant
+staff permissions, and **no invitation to configure TR-only functionality**.
+
+The one case that is deliberately NOT hidden: a non-TR tenant with an **enabled** stored configuration.
+That is a live policy the executor would honour, so hiding it would hide a financial setting from the
+only person allowed to change it. It gets a warning, an inspect path and a switch-off action — and
+nothing is discarded or rewritten. A saved-but-off configuration is reported without a warning.
+
+### What a TR owner now sees
+
+Summary first (status · region/currency · methods · balances), then **one** action: activate, or edit.
+Sections appear only when they mean something — Card/POS when Card is on, provider and commission rows
+when Kart Taksiti is on, receivable policy only once a debt capability exists, staff permissions
+collapsed and filtered to the enabled methods. Version, contract version and resolver issues moved
+behind **Technical details**, closed by default.
+
+### The property that mattered while fixing it
+
+**Hiding a control never changes a stored value.** A permission the screen no longer renders is still
+submitted with its stored value; hidden provider commission terms survive turning Kart Taksiti off;
+collapsing a section cannot mark the page dirty. The Save payload is byte-identical to the Phase 3
+contract, and `saveCheckoutSettings(payload, storedVersion)` is the same call.
+
+### Verification
+
+Frontend **1229/1229** (was 1185; +44 disclosure tests) · typecheck clean · production build clean ·
+**lint delta ZERO** (2377 both sides) · secret scan and `git diff --check` clean.
+
+The deployed `Settings-DeAHVGgw.js` chunk is **byte-identical** to the local build and carries every
+disclosure marker and both languages' new copy. The shipped decision table was executed across all five
+tenant shapes: `GB`+none → `REGIONAL_COMPACT` (no detail form), `GB`+saved-off → `LEGACY_TR_DORMANT`,
+`GB`+active → `LEGACY_TR_ACTIVE` (disable offered), `TR`+none → `TR_OFF`, `TR`+on → `TR_ON`.
+
+Live on `tr-demo`: **Save still reaches the deployed callable** (version `1 → 2`), the stored document
+is the unchanged Phase 3 shape, no booking / receivable / clientPackage / checkoutIntent /
+finance_payment was created by editing Settings, `packageSettings` and `presentation` untouched, and
+the tenant was **restored byte-exactly** with its synthetic owner doc removed.
+
+> ⚠️ **Browser click-through visual evidence was NOT captured.** The Chrome extension was disconnected
+> for this session, so the responsive pass at 320/360/390/430/desktop and the UK and TR screenshots were
+> not taken. Verification here is artifact-level and behavioural, not visual — the same limitation
+> recorded for the FIN-DAY-DEFAULT release. **The owner's visual re-review is still outstanding.**
 
 ---
 
