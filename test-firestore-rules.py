@@ -363,6 +363,60 @@ cases=[
       req("get","/tenants/whitecross/checkoutIntents/i1",None),{"status":"completed"}),
  case("TR-D1: same-tenant admin READS a receivable → still ALLOW (catch-all read)","ALLOW",
       req("get","/tenants/whitecross/receivables/r1",WX),{"total_m":10000}),
+ # ── [TR-D1 Phase 3] (2026-08-02) `checkoutSettings` is OWNER-or-super-admin only.
+ #   Phase 1 shipped this gap OPEN on purpose (the feature was dark and nothing
+ #   wrote the field) and recorded it as an explicit follow-on. The Settings UI
+ #   now exposes the switches, so the gap closes with it. These decide WHO MAY
+ #   CREATE SALON DEBT and above what amount an owner must approve it, so an
+ #   admin — not only a stylist — must be refused.
+ #   Same mechanism as TR-A/TR-B: one key added to the existing hasAny() list.
+ case("TR-D1p3: WXSTAFF writes checkoutSettings → DENY","DENY",
+      req("update","/tenants/whitecross/settings/settings",WXSTAFF,
+          {"checkoutSettings":{"enabled":True}}),{"shopName":"Y"}),
+ case("TR-D1p3: WX(admin) writes checkoutSettings → DENY (owner-only; admins run the shop)","DENY",
+      req("update","/tenants/whitecross/settings/settings",WX,
+          {"checkoutSettings":{"enabled":True}}),{"shopName":"Y"}),
+ case("TR-D1p3: WXOWNER writes checkoutSettings → ALLOW","ALLOW",
+      req("update","/tenants/whitecross/settings/settings",WXOWNER,
+          {"checkoutSettings":{"enabled":True,"mode":"tr"}}),{"shopName":"Y"}),
+ case("TR-D1p3: SUPER-ADMIN writes checkoutSettings → ALLOW","ALLOW",
+      req("update","/tenants/whitecross/settings/settings",SUP,
+          {"checkoutSettings":{"enabled":True}}),{"shopName":"Y"}),
+ case("TR-D1p3: WXSTAFF raises their OWN unpaid limit → DENY (the reason this rule exists)","DENY",
+      req("update","/tenants/whitecross/settings/settings",WXSTAFF,
+          {"checkoutSettings":{"permissions":{"staffMayMarkUnpaid":True},
+                               "methods":{"unpaid":{"staffLimit_m":99999999}}}}),{"shopName":"Y"}),
+ case("TR-D1p3: WXSTAFF CREATES a settings doc carrying checkoutSettings → DENY","DENY",
+      req("create","/tenants/whitecross/settings/newdoc",WXSTAFF,{"checkoutSettings":{"enabled":True}})),
+ case("TR-D1p3: WXOWNER CREATES a settings doc carrying checkoutSettings → ALLOW","ALLOW",
+      req("create","/tenants/whitecross/settings/newdoc",WXOWNER,{"checkoutSettings":{"enabled":True}})),
+ case("TR-D1p3: HEROOWNER writes WHITECROSS checkoutSettings → DENY (cross-tenant)","DENY",
+      req("update","/tenants/whitecross/settings/settings",HEROOWNER,
+          {"checkoutSettings":{"enabled":True}}),{"shopName":"Y"}),
+ case("TR-D1p3: UNAUTH reads the private settings doc → DENY (commission terms are not public)","DENY",
+      req("get","/tenants/whitecross/settings/settings",None),
+      {"checkoutSettings":{"providers":[{"id":"pos-1","commissionRatesByCount":{"3":290}}]}}),
+ case("TR-D1p3: UNAUTH writes checkoutSettings → DENY","DENY",
+      req("update","/tenants/whitecross/settings/settings",None,
+          {"checkoutSettings":{"enabled":True}}),{"shopName":"Y"}),
+ case("TR-D1p3: same-tenant STAFF READS the settings doc → still ALLOW (no read regression)","ALLOW",
+      req("get","/tenants/whitecross/settings/settings",WXSTAFF),
+      {"checkoutSettings":{"enabled":True}}),
+ case("TR-D1p3: WXSTAFF writes a NON-checkoutSettings field → still ALLOW (no regression)","ALLOW",
+      req("update","/tenants/whitecross/settings/settings",WXSTAFF,{"shopName":"X"}),{"shopName":"Y"}),
+ # PAY-1 lives on the PUBLIC tenant root and is a different contract entirely —
+ # unchanged by this phase, asserted here so a future edit cannot merge them.
+ case("TR-D1p3: WX(admin) writes root-doc paymentSettings (PAY-1) → still ALLOW (unchanged)","ALLOW",
+      req("update","/tenants/whitecross",WX,{"paymentSettings":{"mode":"deposit"}}),{"name":"WC"}),
+ case("TR-D1p3: UNAUTH reads the tenant root PAY-1 mirror → still ALLOW (unchanged)","ALLOW",
+      req("get","/tenants/whitecross",None),{"name":"WC","paymentSettings":{"mode":"deposit"}}),
+ # packageSettings keeps its own owner-only gate, independently of the new key.
+ case("TR-D1p3: WX(admin) writes packageSettings → still DENY (TR-B unchanged)","DENY",
+      req("update","/tenants/whitecross/settings/settings",WX,
+          {"packageSettings":{"enabled":True}}),{"shopName":"Y"}),
+ case("TR-D1p3: WXOWNER writes packageSettings → still ALLOW (TR-B unchanged)","ALLOW",
+      req("update","/tenants/whitecross/settings/settings",WXOWNER,
+          {"packageSettings":{"enabled":True}}),{"shopName":"Y"}),
 ]
 url="https://firebaserules.googleapis.com/v1/projects/havuz-44f70:test"
 body={"source":{"files":[{"name":"firestore.rules","content":RULES}]},
