@@ -323,6 +323,46 @@ cases=[
  # Presentation carries no secrets, so the world-readable root stays readable.
  case("TR-A: UNAUTH reads the tenant root (public mirror) → still ALLOW","ALLOW",
       req("get","/tenants/whitecross",None),{"name":"WC","presentation":{"language":"tr"}}),
+
+ # ══════════════════════════════════════════════════════════════════════════════
+ # [TR-D1 Phase 2B] (2026-08-02) The checkout executor's new SERVER-OWNED
+ #   collections — `checkoutIntents` (the idempotency/result record) and
+ #   `receivables` (ordinary salon debt and its schedule).
+ #
+ #   NO RULES CHANGE WAS MADE, and none is needed: neither collection is in the
+ #   [G4] explicit write list, so the catch-all `allow write: if false` already
+ #   denies every client write to them. These cases exist to PIN that, because
+ #   the guarantee is a property of a list nobody edited rather than of a rule
+ #   anybody wrote — and the day somebody adds one of these names to the [G4]
+ #   list "so the panel can read it", this is what fails.
+ #
+ #   Read stays same-tenant ALLOW, deliberately: the till has to be able to show
+ #   a client their outstanding balance, and the catch-all read has always been
+ #   open. Tightening it belongs with the Admin/Staff UI cutover, not before.
+ #
+ #   ⚠️ The executor writes these documents with the Admin SDK, which BYPASSES
+ #   rules entirely — the same caveat the [R1-A] block records. Do NOT add a case
+ #   emulating the callable as a client: it would assert a permission the
+ #   callable never asks for and go green for the wrong reason.
+ # ══════════════════════════════════════════════════════════════════════════════
+ case("TR-D1: ADMIN creates a checkoutIntent → DENY (server-owned)","DENY",
+      req("create","/tenants/whitecross/checkoutIntents/i1",WX,{"status":"completed"})),
+ case("TR-D1: ADMIN updates a checkoutIntent → DENY","DENY",
+      req("update","/tenants/whitecross/checkoutIntents/i1",WX,{"status":"completed"}),{"status":"completed"}),
+ case("TR-D1: OWNER updates a checkoutIntent → DENY (owner is not a bypass)","DENY",
+      req("update","/tenants/whitecross/checkoutIntents/i1",WXOWNER,{"status":"x"}),{"status":"completed"}),
+ case("TR-D1: STAFF creates a receivable → DENY (staff cannot forge salon debt)","DENY",
+      req("create","/tenants/whitecross/receivables/r1",WXSTAFF,{"total_m":10000})),
+ case("TR-D1: ADMIN writes off a receivable → DENY","DENY",
+      req("update","/tenants/whitecross/receivables/r1",WX,{"total_m":0}),{"total_m":10000}),
+ case("TR-D1: OWNER appends to the receivable ledger → DENY","DENY",
+      req("create","/tenants/whitecross/receivableLedger/e1",WXOWNER,{"kind":"PAYMENT","amount_m":5000})),
+ case("TR-D1: CROSS-tenant owner reads a receivable → DENY","DENY",
+      req("get","/tenants/whitecross/receivables/r1",HEROOWNER),{"total_m":10000}),
+ case("TR-D1: UNAUTH reads a checkoutIntent → DENY","DENY",
+      req("get","/tenants/whitecross/checkoutIntents/i1",None),{"status":"completed"}),
+ case("TR-D1: same-tenant admin READS a receivable → still ALLOW (catch-all read)","ALLOW",
+      req("get","/tenants/whitecross/receivables/r1",WX),{"total_m":10000}),
 ]
 url="https://firebaserules.googleapis.com/v1/projects/havuz-44f70:test"
 body={"source":{"files":[{"name":"firestore.rules","content":RULES}]},
