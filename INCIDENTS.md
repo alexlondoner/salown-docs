@@ -35,6 +35,29 @@ Every incident opens with `## YYYY-MM-DD — short title`, immediately followed 
 
 **Tag dictionary (CANONICAL — only these; sprawl forbidden):** `#security` `#stripe` `#secrets` `#config` `#deploy` `#normalization` `#permission` `#race` `#timezone` `#parser` `#email` `#data-loss` `#shared-infra`. A new tag is added only if a genuinely new class emerges (e.g. twins like `#payment`+`#payments`+`#stripe-payment` are FORBIDDEN → all `#stripe`). Every entry carries a `**Tags:**` line.
 
+## 2026-08-03 — I reconstructed document ids from my own masked output and created three junk records
+
+**Severity:** 🟠 High · **Owner:** alish/a1b · **Status:** ✅ Resolved · **Affected area:** `tenants/demo/bookings`, data repair tooling
+
+**Discovery:** self-caught, in the verification line of the repair script itself. The output read `status=undefined price=undefined` and all three records shared one "before" hash — the hash of an empty document. A real booking has twenty-odd fields.
+**Impact:** three documents that were never bookings appeared in `tenants/demo/bookings`, each carrying only `serviceId` + `serviceName`. They existed for about four minutes. No real booking was modified, no financial record was touched, and the intended repair had not yet run.
+**Root Cause:** the read-only dry run printed **masked** ids (`OGFe…gORL`) so the report would not expose record identifiers. I then wrote the repair script by **reconstructing the full ids from that masked display** — inventing the middle characters. Those ids addressed nothing, and Firestore `PATCH` on a path that does not exist **creates** it.
+**Bug Class:** Output formatted for a human re-consumed as machine input (masked/redacted value treated as an identifier).
+**Resolution:** deleted all three, each guarded by a pre-check refusing to delete anything carrying more than `serviceId,serviceName`; verified `404` after each. Collection count back to its original 300. The repair was then re-run correctly: document ids are read from the SAME query that classifies the record and are never re-derived, so `realDocId` and the decision can never refer to different records.
+**Prevention:** permanent rule — **a masked or redacted value is a display artefact and must never be fed back into a command.** Any repair must carry the identifier through in the same pass that decided the repair. The re-run also verifies each write landed on a record with a plausible field count, which is what would have caught this in one line.
+**Regression Tests:** none in the app suite — this is tooling discipline, not product code. The guard is the pre-delete field-set check and the single-pass id rule, both in the repair scripts.
+**Related:** `tenants/demo/bookings` — three created and deleted 2026-08-03 21:41–21:45 UTC · rollback data `a2-rollback.json`
+
+**What happened / Diagnosis / Fix:** The A2 dry run classified eight `demo` bookings whose `serviceId` held a service NAME, and printed masked ids so the owner-facing report carried no record identifiers. Writing the repair, I copied those masked strings and filled in the gaps by hand. Every `PATCH` returned `200` — because it was creating a new document each time, exactly as designed. The tell was in my own verification output: an empty "before" state, identical across three supposedly different records.
+
+**Lessons Learned:**
+- **Masking is for the reader, not for me.** The moment a value is redacted it stops being usable as an address. Carrying the real id through the same pass is not an optimisation — it is the only correct shape for a repair script.
+- **`PATCH` creates.** On a document path this is not an update-or-fail; it is an upsert. A repair script must read the target first and refuse when it is absent, rather than trusting the status code.
+- **The verification line found it, and it was almost too quiet.** `status=undefined` is the kind of output that scrolls past. Comparing the before-hashes across records is what made it undeniable, and that comparison should be in every repair script by default.
+- **Doing it on the persistent pilot rather than the synthetic tenant made it worse.** `demo` is the tenant a prospect is shown; three phantom bookings there are visible, not theoretical.
+
+---
+
 ## 2026-08-03 — A missing `[skip ci]` deployed the Staff app nobody had approved
 
 **Severity:** 🟠 High · **Owner:** alish/a0 · **Status:** ✅ Resolved · **Affected area:** release process, `hosting:salown-staff`
