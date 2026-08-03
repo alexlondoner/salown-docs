@@ -101,14 +101,23 @@ defaults, and the existing UK UI stays on its old browser path regardless.
 > This replaces the Phase 3B non-TR shapes (`REGIONAL_COMPACT` / `LEGACY_TR_DORMANT` /
 > `LEGACY_TR_ACTIVE`), which are gone.
 
-**Live opt-in status (2026-08-02).** The default is still doing its job everywhere that matters:
-`whitecross`, `herohairs` and `tr-demo` have `checkoutSettings` **ABSENT**. The single tenant with a
-stored configuration is **`demo`** — `enabled: true`, `mode: tr`, `schemaVersion: 2` — the persistent
-Turkish sales demo, set deliberately so it stops resolving UK checkout while presenting as Turkish.
-Roles and the full per-tenant table: [TENANTS.md](TENANTS.md#demo--verification-tenants).
+**Live opt-in status (2026-08-03).** The default is still doing its job where it matters: the two
+real UK tenants, `whitecross` and `herohairs`, have `checkoutSettings` **ABSENT** and are country-
+gated on top of that. The tenants carrying a stored configuration are both demos:
 
-Enabling a tenant here still reaches no user: nothing in `src/` calls `salownCheckoutBooking`, so
-`enabled: true` currently only changes what the resolver returns, not what a till does.
+| Tenant | Country | Stored | Routes to |
+|---|---|---|---|
+| `demo` | TR | `enabled: true`, `mode: tr`, `schemaVersion: 3` | **the executor** |
+| `tr-demo` | TR | `enabled: true`, `mode: uk`, `schemaVersion: 1` | legacy (`MODE_UK`) |
+| `whitecross` · `herohairs` | GB | absent | legacy (`NON_TR_TENANT`) |
+
+`tr-demo` is the disposable verification tenant and is left in whatever state the last run ended in —
+**never cite its configuration as a product decision**. Roles: [TENANTS.md](TENANTS.md#demo--verification-tenants).
+
+**As of 2026-08-03 this contract reaches real users.** The Admin panel calls
+`salownCheckoutBooking` for a tenant that is country-TR and switched on, so these switches now decide
+what a till actually does — not merely what the resolver returns. The Staff App has **not** been cut
+over and still uses the legacy writer.
 
 ---
 
