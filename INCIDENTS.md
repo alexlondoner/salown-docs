@@ -35,6 +35,29 @@ Every incident opens with `## YYYY-MM-DD — short title`, immediately followed 
 
 **Tag dictionary (CANONICAL — only these; sprawl forbidden):** `#security` `#stripe` `#secrets` `#config` `#deploy` `#normalization` `#permission` `#race` `#timezone` `#parser` `#email` `#data-loss` `#shared-infra`. A new tag is added only if a genuinely new class emerges (e.g. twins like `#payment`+`#payments`+`#stripe-payment` are FORBIDDEN → all `#stripe`). Every entry carries a `**Tags:**` line.
 
+## 2026-08-03 — A missing `[skip ci]` deployed the Staff app nobody had approved
+
+**Severity:** 🟠 High · **Owner:** alish/a0 · **Status:** ✅ Resolved · **Affected area:** release process, `hosting:salown-staff`
+
+**Discovery:** self-caught, in the post-deploy verification step that reads both hosting sites' release lists. `salown-staff` showed a release from **today** when its last approved one was 2026-08-02.
+**Impact:** the Staff app was replaced by a build nobody had reviewed or approved for release, and it stayed live for **~23 minutes** (`19:39:17.958Z` → `20:01:49.052Z`). No Staff behaviour was verified while it was live, so nothing can be claimed about what it did.
+**Root Cause:** the A0 commit `0f9a064` shipped **without `[skip ci]`**. Every other commit that day carried it. `.github/workflows/deploy.yml:30` runs `firebase deploy --only hosting`, which is BOTH targets — the workflow has no way to express "release one site", so the tag on the commit is the only control, and it was left off by hand.
+**Bug Class:** Human-memory control in a two-target release (no machine enforcement of a per-target release intent).
+**Resolution:** rolled back `salown-staff` to the known-live `8409e666da7ea223` via a targeted Hosting release (`type: ROLLBACK`, release `1785787309052000`) against that one site — no blanket deploy, no new artifact built. `hosting:salown` was deliberately **left at `70e2484f73e74264`**: the Admin A0 release is wanted and was verified. Functions, rules and indexes untouched throughout (executor `salowncheckoutbooking-00001-taf`, ruleset `b30abf64…`, both unchanged since 2026-08-02).
+**Prevention:** `ops/release-guard.sh` — refuses a push whose new commits touch `src/`, `hosting/` or `public/` unless every one of them carries `[skip ci]`, on the grounds that any such push will otherwise release BOTH hosting targets. A commit template would have been another memory aid; this is a check that runs.
+**Regression Tests:** none possible in the frontend suite — this is a repository/release-process control, covered by `ops/release-guard.sh` and its self-test.
+**Related:** commits `0f9a064` (cause) · rollback release `sites/salown-staff/releases/1785787309052000` · files `.github/workflows/deploy.yml`, `ops/release-guard.sh`
+
+**What happened / Diagnosis / Fix:** A0 was deployed by hand with `firebase deploy --only hosting:salown` at `19:38:41Z`. The same commit had already been pushed, and because it lacked `[skip ci]` GitHub Actions started its own run, which at `19:39:17Z` released **both** sites — overwriting the hand-made Admin release with an equivalent CI build of the same commit, and replacing the Staff app. Diagnosis took one API call: the routine post-deploy check prints the last two releases of both sites, and a Staff release dated today is impossible under the intended process.
+
+**Lessons Learned:**
+- **A deploy flag that cannot express the target makes the commit message load-bearing.** `--only hosting` is all-or-nothing, so "which site ships" is decided by a five-character tag a human types. That is not a process, it is a habit — and habits fail on the one commit that matters.
+- **The check that caught it was the boring one.** Reading both sites' release lists after every deploy costs one call and is the only reason this was found in 23 minutes rather than by a staff member reporting something odd next week.
+- **Rolling back to a version is not the same as redeploying.** Re-pointing the live release at `8409e666da7ea223` restored the exact artifact that had been serving, with no rebuild — which is what makes "the Staff app is back to what it was" a fact rather than a hope. The restored version serves `/assets/staff-CU9kxXXw.js`, byte-identical to the bundle tracked in the repo.
+- **Say what was NOT verified.** Staff was live for 23 minutes on an unapproved build and nobody looked at it. The honest record is "unverified", not "no impact observed".
+
+---
+
 ## 2026-08-03 — A Turkish-checkout safety guard disabled the UK till
 
 **Severity:** 🔴 Critical · **Owner:** alish/admin-tr-checkout · **Status:** ✅ Resolved · **Affected area:** checkout (Admin CheckoutPanel), whitecross
