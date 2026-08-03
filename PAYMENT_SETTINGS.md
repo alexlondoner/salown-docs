@@ -91,6 +91,16 @@ This is what makes the Phase 2B deploy safe: `salownCheckoutBooking` is live in 
 tenant lacking `checkoutSettings` gets `CHECKOUT_DISABLED`. Absent settings preserve current UK
 defaults, and the existing UK UI stays on its old browser path regardless.
 
+> **🇬🇧 A non-TR tenant never sees this contract at all (owner decision, 2026-08-03).** The
+> Settings card renders **nothing** for a tenant whose `presentation.countryCode` is not `TR` —
+> not a disabled form, not an "available in Turkey" line, not a mode/version readout. The route
+> is country-gated too, so a stored `checkoutSettings` on a non-TR tenant is **inert**: it cannot
+> reach the executor, which is what makes hiding it honest rather than deceptive. Such a document
+> is **not deleted** — silently erasing financial configuration destroys the answer to "what was
+> switched on when this happened" — it is reported to support via `nonTrStoredConfigAnomaly`.
+> This replaces the Phase 3B non-TR shapes (`REGIONAL_COMPACT` / `LEGACY_TR_DORMANT` /
+> `LEGACY_TR_ACTIVE`), which are gone.
+
 **Live opt-in status (2026-08-02).** The default is still doing its job everywhere that matters:
 `whitecross`, `herohairs` and `tr-demo` have `checkoutSettings` **ABSENT**. The single tenant with a
 stored configuration is **`demo`** — `enabled: true`, `mode: tr`, `schemaVersion: 2` — the persistent

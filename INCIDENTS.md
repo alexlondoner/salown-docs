@@ -35,6 +35,29 @@ Every incident opens with `## YYYY-MM-DD — short title`, immediately followed 
 
 **Tag dictionary (CANONICAL — only these; sprawl forbidden):** `#security` `#stripe` `#secrets` `#config` `#deploy` `#normalization` `#permission` `#race` `#timezone` `#parser` `#email` `#data-loss` `#shared-infra`. A new tag is added only if a genuinely new class emerges (e.g. twins like `#payment`+`#payments`+`#stripe-payment` are FORBIDDEN → all `#stripe`). Every entry carries a `**Tags:**` line.
 
+## 2026-08-03 — A Turkish-checkout safety guard disabled the UK till
+
+**Severity:** 🔴 Critical · **Owner:** alish/admin-tr-checkout · **Status:** ✅ Resolved · **Affected area:** checkout (Admin CheckoutPanel), whitecross
+
+**Discovery:** owner, on the live panel, minutes after the ADMIN-TR-CHECKOUT deploy — "checkout is not becoming active in whitecross". Screenshot showed the Payment step with the confirm button stuck on `…` and disabled. No automated test caught it: every gate was green.
+**Impact:** whitecross could not take a payment at all through the Admin panel. A real salon's till was dead while customers were in the chair.
+**Root Cause:** the TR cutover made a **Firestore snapshot listener a hard precondition for the confirm button** — `if (!settingsLoaded) return` plus `disabled={… || !settingsLoaded …}`. `watchSettingsDoc` accepts an `onError` callback that was not passed and there was no timeout, so any settings read that did not resolve left `settingsLoaded` false **forever**. The guard's intent was sound (stop a TR tenant being routed to the legacy writer before settings load) but the reasoning was inverted: the failure mode of "wait" is a salon that cannot take money, while the failure mode of proceeding is the behaviour that already existed before TR checkout — legacy.
+**Bug Class:** Fail-closed guard on a non-guaranteed async source (availability inverted against the thing it protected).
+**Resolution:** removed the flag entirely rather than repairing it — with no flag there is nothing for a later change to re-wire into the button. Until settings arrive `checkoutSettingsRaw` is undefined, the route resolves to legacy, and the till behaves exactly as it did before TR checkout existed. The listener now also **clears** rather than keeps a stale value on error, so a half-read TR config can never route a checkout. Deployed `hosting:salown` `edb2f277b0f3ca93` (`a212db5`); broken release was `9627d13cf9311ca8` (`c8bfcc0`), ~75 minutes exposed.
+**Prevention:** permanent rule — **a remote read may never be a precondition for a control that takes money.** A new term in a checkout button's `disabled` expression must be provably inert on every path it does not own. Pinned by a test that parses the expression and fails on any term that can be truthy for a UK tenant.
+**Regression Tests:** `src/utils/adminCheckoutRouting.test.ts::NEVER lets the settings listener disable the till` · `::has no loaded-flag to gate on at all` · `::the UK Checkout button reduces EXACTLY to the old disabled={saving}` · `::the legacy writer call is untouched by this package`
+**Related:** commits `c8bfcc0` (introduced) · `a212db5` (fix) · roadmap TR-D1 Admin cutover · files `src/components/CheckoutPanel.tsx`
+
+**What happened / Diagnosis / Fix:** The Admin TR checkout cutover routes a TR-configured tenant to `salownCheckoutBooking` and leaves every UK tenant on the legacy browser writer. Because the route is derived from `checkoutSettings`, there is a window on mount where nothing has loaded and the route reads as legacy — so a TR salon tapping instantly could have been written through the browser path. A `settingsLoaded` gate was added to close that window. It closed a different one: the UK till. Diagnosis took one screenshot plus one `grep` — the button's `disabled` expression named the flag, and the flag had exactly one writer, inside a snapshot callback with no error path. The fix removes the concept rather than adding an error handler and a timeout, because the safest version of this guard is the one that cannot exist.
+
+**Lessons Learned:**
+- **The blast radius of a guard is not the case it guards.** This one protected a theoretical mis-route on one demo tenant and took down payment collection on the live one. Ask what the guard does when its input never arrives, and who is standing at the counter when that happens.
+- **`onError` is not optional on a listener whose result gates a control.** The signature offered one; not passing it turned a transient read failure into a permanent dead state.
+- **Green gates said nothing.** 1361 tests, typecheck, build and lint all passed, because every test asserted the guard was *present* — the thing that was wrong. A test that pins new behaviour cannot notice that the behaviour is harmful; only asking "what must still be true for everyone else" does, which is why the UK-equivalence assertion now exists.
+- **Failing open to the previous behaviour is not a compromise.** Before this package, every tenant used the legacy writer. Falling back to that is exactly the status quo, so there was never a real trade-off to make — the gate bought nothing that waiting for the first snapshot did not already provide.
+
+---
+
 ## 2026-08-02 — A cleared price box charged £38 for a £0 service, and the receipt withheld the customer's own £2 redemption
 
 **Severity:** 🟠 High (customer-facing receipt understated, loyalty award short, reported revenue wrong) · **Owner:** Claude + owner · **Status:** ✅ Resolved — **DEPLOYED + LIVE-VERIFIED** (`4587f50` + `53bf4a1`, salown-app; `salownSendLoyaltyEmail` rev `-00063-vec`; `hosting:salown` released 2026-08-02 15:53:59 UK) · **Affected area:** walk-in creation → checkout receipt → loyalty award → Sales/Finance/Reports

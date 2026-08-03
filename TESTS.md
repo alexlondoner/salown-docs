@@ -1098,6 +1098,41 @@ this seam.
 
 ---
 
+## 24. ADMIN TR CHECKOUT — package auto-link, executor cutover, regional isolation (`8eaf741` → `d2e3ee2`, 2026-08-03)
+
+**Frontend 1229 → 1383 (+154).** Functions **877 pass / 0 fail** and rules **170/170** are unchanged and were re-run, because this package changed no Function and no rule.
+
+### What the suites pin, and why each one exists
+
+**Package → service auto-link (`packageAutoLink.test.ts`, 45).** The mapping is READ from the sale snapshot (`allowedServiceIds`, else `serviceId`) and never inferred. The load-bearing tests are the refusals: a snapshot naming no service, or naming one this catalogue no longer has, is REFUSED with an actionable message rather than matched by name — a fuzzy match would burn a paid session off the wrong client's course, which is worse than the bug being fixed. A multi-service package always asks; it never auto-picks. A static guard greps the module for `serviceName`, `toLowerCase`, `localeCompare` and `.name ===` **with comments stripped**, because a guard that trips on its own documentation is one the next person weakens.
+
+**Routing and isolation (`adminCheckoutRouting.test.ts`, 50).** Two writers are live at once. The tests assert a tenant reaches EXACTLY one: TR returns immediately after the executor call so it cannot fall through to the legacy writer below, the executor seam imports nothing from `firestoreActions`, and a refusal is surfaced rather than routed around.
+
+**Intent and double-charge (`checkoutIntent.test.ts`, 19).** The key is minted once per screen, pinned against the executor's OWN `IDEMPOTENCY_KEY_RE` so a key this app mints can never be refused as malformed. The fingerprint is order-independent for allocations, products and option ids — cash-then-card and card-then-cash are the same checkout — but changes on any real money edit. An unrecognised error code is treated as UNKNOWN, because guessing "definitely failed" on an error nobody has seen is the guess that double-charges.
+
+**Payment summary and debt (`trCheckoutSummary.test.ts`, 40).** Package value is removed BEFORE discount, proven by a case where the two orders differ. `collected + remaining === due` reconciles exactly in integer minor units. A fully unpaid checkout creates NO tender allocation: a zero-amount CASH leg would read as a completed cash payment in every report that counts allocations.
+
+**Regional isolation (owner decision 2026-08-03).** `countryCode: GB` never renders the TR panel and never routes to the executor — including with a stale stored `mode: tr`, which is what makes hiding it safe rather than deceptive. Both modules are greped for `navigator`, `geolocation`, `language`, `Intl`, `timeZone` and `fetch(`, so no VPN, device language, timezone or page translation can participate.
+
+**Live tenant fixtures.** The shipped decision functions are run over the configuration the four real tenants actually carry, so "whitecross is safe" is an assertion, not a claim: whitecross/herohairs → `HIDDEN` + `uk-legacy`; demo → `TR_ON` + `tr-executor` at version 3.
+
+### Two defects the suites caught before they reached a salon
+
+1. **`outstanding_m` was in the client payload and is not an accepted executor key.** Every TR checkout would have failed `INVALID_INPUT: unknown field(s)`. The executor derives the shortfall itself; a client that could state the balance could understate a client's debt. Now pinned against the sent payload specifically, excluding the local fingerprint.
+2. **`isTurkeyCountry` trimmed whitespace and `isTurkeyTenant` did not**, so `' tr '` would have routed to the executor while the Settings card stayed hidden — a live Turkish checkout nobody could configure. A drift test now runs both over every casing/whitespace input.
+
+### One defect the suites did NOT catch — see INCIDENTS 2026-08-03
+
+The `settingsLoaded` gate that disabled the whitecross till passed 1361 tests, typecheck, build and lint. Every test asserted the guard was *present*, which was the thing that was wrong. A test that pins new behaviour cannot notice the behaviour is harmful; only asking "what must still be true for everyone else" does. That is now `::the UK Checkout button reduces EXACTLY to the old disabled={saving}`, which parses the button's `disabled` expression and fails on any term that can be truthy for a UK tenant.
+
+### ⚠️ NOT verified
+
+**No browser UI pass was performed** — the Chrome extension was not connected. Everything above is source, unit and deployed-artifact evidence. The live Admin flow on `demo` (package auto-link → Save → full → partial → unpaid) is **unverified through the UI** and is listed as the outstanding step in DEPLOYMENT_STATUS. A direct callable run was deliberately NOT substituted for it.
+
+One functions-suite run reported 876/1 and three consecutive re-runs reported 877/0; the failing test was not identified before it stopped reproducing, so it is recorded as an unexplained flake rather than a clean result.
+
+---
+
 ## 23. PRE-ADMIN-TR-CHECKOUT — `demo` checkout mode remediation (documentation + config, 2026-08-02)
 
 **No test-suite change. No code change.** One configuration save on the `demo` tenant, verified

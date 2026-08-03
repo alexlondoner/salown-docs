@@ -378,8 +378,9 @@ left exactly as found. No email sent, no card touched.
 
 Closed and still-open items are tracked by TR-B2 (see §16).
 
-- 🔴 **P0 — a selected package cannot be saved or checked out.** **OPEN**, user-visible. See
-  [§15.1](#151-p0--package-selection-does-not-reach-the-cart) directly below.
+- ~~**P0 — a selected package cannot be saved or checked out.**~~ ✅ **CLOSED 2026-08-03**
+  (`a240925`, deployed `hosting:salown` `9cdeb39163cc258e`) — see [§15.1](#151-p0--package-selection-does-not-reach-the-cart).
+  ⚠️ Closed on source, unit and deployed-artifact evidence; the live UI walk-through is still outstanding.
 - ~~**Finance / Reports** do not include package revenue.~~ **CLOSED by TR-B2 Stage 1** (`c5bd1dc`) — see §16.
 - ~~**Booking-flow package selection**~~ — ✅ **CLOSED by TR-B2 Stage 3** (`b40e182`), see §18.
 - ~~**Custom instalment amounts/dates**~~ — ✅ **CLOSED by TR-B2 Stage 2** (`b0a2051`), see §17.
@@ -387,8 +388,21 @@ Closed and still-open items are tracked by TR-B2 (see §16).
 
 ### 15.1 P0 — package selection does not reach the cart
 
-**Status: OPEN. Not fixed. This is the exact next implementation package.**
-Verified against source at `4476fc9` on 2026-08-02.
+**Status: ✅ CLOSED 2026-08-03** (`a240925`). Kept in full because the shape of the bug is
+the reason the fix looks the way it does. Originally verified against source at `4476fc9`.
+
+**How it was closed:** a new pure module `src/utils/packageAutoLink.ts` resolves the covered
+service from the sale SNAPSHOT — `allowedServiceIds` when non-empty, else `serviceId` — and
+**never infers one from a name**. A package whose snapshot names no service, or names one the
+catalogue no longer has, is REFUSED with a message the desk can act on; matching by text would
+burn a paid session off the wrong client's course, which is worse than the bug. A package
+covering more than one service always asks. `PackagePicker` gained an OPT-IN `autoLinkService`
+prop (default `false`, so both Staff sheets are untouched) which relaxes the service scope
+**only while nothing is selected** — once a package is chosen the real `serviceId` is enforced
+again, so switching the service away still clears the selection.
+
+⚠️ **Evidence limit:** closed on source, unit (45 tests) and deployed-artifact evidence. The
+live UI walk-through on `demo` had not been performed when this was written.
 
 A user can select a package and then cannot complete the visit. The selection is recorded in React
 state and nothing downstream acts on it, so the flow dead-ends at a disabled button with no
