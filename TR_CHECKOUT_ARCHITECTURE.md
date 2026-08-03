@@ -269,16 +269,23 @@ while the UI still uses the old path.
 
 **Who has opted in, live (2026-08-02).** Exactly one tenant, and it is a demo:
 
-| Tenant | `checkoutSettings` | Resolves to |
-|---|---|---|
-| `demo` | **PRESENT** — `enabled: true`, `mode: tr`, `schemaVersion: 2` | checkout **enabled**, TR mode |
-| `tr-demo` | ABSENT | `CHECKOUT_DISABLED` — today's UK behaviour, feature dark |
-| `whitecross` | ABSENT | `CHECKOUT_DISABLED` |
-| `herohairs` | ABSENT | `CHECKOUT_DISABLED` |
+| Tenant | Country | `checkoutSettings` | Resolves to |
+|---|---|---|---|
+| `demo` | TR | **PRESENT** — `enabled: true`, `mode: tr`, `schemaVersion: 3` | checkout **enabled**, TR mode |
+| `tr-demo` | TR | PRESENT — `enabled: true`, `mode: uk` | legacy — `MODE_UK` |
+| `whitecross` | GB | ABSENT | legacy — `NON_TR_TENANT`, and `CHECKOUT_DISABLED` if ever called |
+| `herohairs` | GB | ABSENT | legacy — `NON_TR_TENANT` |
 
-Enabling `demo` is **not** a soft launch, because opting in changes nothing a user can reach: no UI
-calls this executor (§12), so `demo` merely resolves `enabled: true` for a code path with no call
-site. Roles and per-tenant configuration: [TENANTS.md](TENANTS.md#demo--verification-tenants). Do not
+**Updated 2026-08-03: `demo` is no longer a dark opt-in.** The Admin panel was cut over, so `demo`
+now genuinely checks out through this executor. Two independent gates keep everyone else off it: the
+client route is **country-gated** (a non-TR tenant can never call it, whatever it stores), and the
+executor's own `enabled` check refuses a tenant with no configuration.
+
+> ⚠️ **Residual, reported not fixed:** the executor gates on `checkoutSettings.enabled`, **not** on
+> the tenant's country. A non-TR tenant with an enabled TR configuration would be accepted *if
+> something called it*. Nothing does — the only caller is country-gated, and both real UK tenants
+> have `checkoutSettings` absent so they fail `CHECKOUT_DISABLED` anyway. Closing it means changing
+> and redeploying a Function, which was deliberately out of scope for the Admin cutover. Roles and per-tenant configuration: [TENANTS.md](TENANTS.md#demo--verification-tenants). Do not
 read `tr-demo`'s absent settings as a decision — it is the restored verification baseline.
 
 ---
