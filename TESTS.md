@@ -9,6 +9,49 @@
 
 ---
 
+## 0-B. ⭐ Email audience rules — who is offered loyalty points (2026-08-04)
+
+**Automated · `functions/src/emails/reviewCtaAudience.test.js` · 5/5 green.** Run with the Functions
+suite (`cd functions && npm test`, currently **932 tests / 911 pass / 0 fail / 21 skipped**). Requires
+`npm run build` first — these tests assert against the COMPILED `lib/`, so a build or import
+regression fails them too.
+
+The suite pins the **audience, not the wording**: the CTA is detected by its link target, so the copy
+can be rewritten freely.
+
+- [x] Non-member receipt **is** offered the review CTA.
+- [x] Member receipt is **not** — a member holds a standing discount and is already excluded from
+      every other points-based inducement (`!isMember` in the confirmation trigger and the loyalty mail).
+- [x] Absent `isMember` is treated as non-member (legacy behaviour preserved).
+- [x] No review URL ⇒ no CTA for either audience.
+- [x] Suppressing the CTA does not swallow the surrounding receipt.
+
+**Live-verification recipe (no customer email required).** Compile the pre-change template from git
+alongside the deployed build and render both audiences from synthetic data; assert (a) the non-member
+render is byte-identical before/after, and (b) the member render equals the OLD render with an empty
+review URL. This isolates the change from the ~1.5 kB member/non-member difference that predates it
+(`memberVisit` and the loyalty card already branch on `isMember`). Used for the 2026-08-04 release.
+
+### 🔴 P0 OPEN — the confirmation email promises points the award writer will not grant
+
+Not a test to run; a defect to close. **A customer must never be promised points that the award path
+will not honour.** Evidence:
+
+| | Confirmation email (`functions/src/emails/index.ts`, `dpActive`) | Award writer (`src/firestoreActions.ts`, `multiplier`) |
+|---|---|---|
+| Source eligibility | **no check at all** | requires `isWebsite` (`website`/`online`/`web`) |
+| Date compared | the **appointment** date | **today** (the checkout date) |
+
+Consequences: during a double-points campaign a booking entered from the panel (`source: 'Walk-in'`)
+is emailed "You'll collect +N points on this visit" and then awarded nothing; and a booking whose
+appointment falls inside the window but whose checkout falls outside is promised and not granted
+(and vice versa). Deliberately NOT fixed in the REVIEW-CTA-AUDIENCE-1 release. It gets worse under
+the agreed-price contract, where the promise can read "+96 points" while the award is 0 — so the
+confirmation email's double-points block must be aligned with the award path's real eligibility
+**before** the agreed-price email stage ships.
+
+---
+
 ## 0. 🔥 PRIORITY — Whitecross-site EXTRA SERVICE go-live (2026-07-18)
 
 > **Context:** Single-person multi-service (extras) added to whitecross-site (client Phase 1). Currently `EXTRAS_ENABLED=false` (dormant). Enabling step = flag `true` + `firebase.saas.json` hosting redeploy. The salOWN consuming side is ready (`normalizeSoldAddOns` bookingUtils.ts, `CheckoutPanel` idOf=`productId||serviceId||id`, `TimeGrid` duration>0 chaining). The webhook was NOT touched (client writes `soldAddOns` to PENDING, webhook merge preserves it).

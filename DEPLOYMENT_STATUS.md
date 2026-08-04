@@ -10,10 +10,53 @@
 > separate `whitecross-site` repo deploy manually**, so code can sit on `origin/main` for days while
 > production runs older behavior. Confusing "merged" with "live" has caused real incidents.
 >
-> **Snapshot date:** 2026-08-03 (latest) — **A0 deployed** (`hosting:salown` `70e2484f73e74264`): the TR till now renders and binds the canonical booking id, but **payment is deliberately held closed** until A1. A Staff release went out by accident in the same push and was rolled back to `8409e666da7ea223`. Previous: 2026-08-03 — **Admin TR checkout deployed** (`hosting:salown` `9cdeb39163cc258e`): package→service auto-link, executor cutover for TR tenants, and Turkey checkout configuration now hidden from UK tenants entirely. **The live UI pass is outstanding.** One live incident during the release (whitecross checkout disabled ~75 min, repaired). Previous: 2026-08-02 — **`demo` checkout mode set to `tr`, CONFIGURATION ONLY, no deploy of any kind**; the same pass corrected a stale claim in this file that `demo` had `checkoutSettings` ABSENT. Previous: 2026-08-02 — **TR-D1 Phase 3B deployed**: `hosting:salown` ONLY, a presentation-only settings-UX fix after the Phase 3 visual review failed (row directly below). No Function, no rules, no staff hosting. Previous: 2026-08-02 — **TR-D1 Phase 3 deployed and live-verified**: one NEW callable (`salownSaveCheckoutSettings`), `hosting:salown`, and the **first `firestore.rules` release since TR-A** (row directly below). `hosting:salown-staff` deliberately NOT deployed. Previous: 2026-08-02 (earlier) — **LOYALTY-RECEIPT-SALVAGE deployed and live-verified**: one Function updated (`salownSendLoyaltyEmail`) and both hosting targets released by CI (row directly below). Previous: 2026-08-02 — **TR-D1 Phase 2B deployed and live-verified**: ONE new callable, `salownCheckoutBooking` (row directly below). No hosting target, no rules, no existing Function revision changed. Previous: 2026-08-01 (later) — **TR-D1 Phase 0.5 deployed and live-verified**. Previous: **TR-B2 fully deployed and live-verified** (row directly below); no Function or rules revision changed. Previous snapshot 2026-07-31 ~16:3x UK — **TR-B is fully deployed and live-verified** (row directly below); TR-C Phase 1 remains pushed but deliberately NOT deployed. Previous snapshot 2026-07-31 ~15:5x UK. Previous snapshot 2026-07-31 01:5x UK — **three deploy waves have landed since the previous snapshot and this file now reflects them.** 2026-07-30 ~14:4x (Session A: ANY-BARBER + PUSH-RECOVERY + RECEIPT-WRITER), 2026-07-30 ~17:5x–18:1x (Session B: receipt READER + the remaining UK financial work), 2026-07-31 ~00:5x–01:4x (master closure: whitecross saas hosting + LC1 live chat). The previous revision of this line said *no deploy occurred* on 07-30; that was true when written and false within the hour. · 2026-07-27 15:05 UK after the Treatwell parser deploy + T2188888050 repair (previous: 12:55 UK after the whitecross test-mode lockdown deploy) (previous
+> **Snapshot date:** 2026-08-04 (latest) — **REVIEW-CTA-AUDIENCE-1 deployed**: one Function
+> (`salownSendLoyaltyEmail`) updated so a member's checkout receipt no longer carries the
+> points-incentivised Google review CTA. No hosting target, no rules, no other Function; the commit
+> carried `[skip ci]`. Verified at template level against a compiled pre-change build — non-member
+> output byte-identical, member output equal to the old no-CTA render. Previous: 2026-08-03 — **A0 deployed** (`hosting:salown` `70e2484f73e74264`): the TR till now renders and binds the canonical booking id, but **payment is deliberately held closed** until A1. A Staff release went out by accident in the same push and was rolled back to `8409e666da7ea223`. Previous: 2026-08-03 — **Admin TR checkout deployed** (`hosting:salown` `9cdeb39163cc258e`): package→service auto-link, executor cutover for TR tenants, and Turkey checkout configuration now hidden from UK tenants entirely. **The live UI pass is outstanding.** One live incident during the release (whitecross checkout disabled ~75 min, repaired). Previous: 2026-08-02 — **`demo` checkout mode set to `tr`, CONFIGURATION ONLY, no deploy of any kind**; the same pass corrected a stale claim in this file that `demo` had `checkoutSettings` ABSENT. Previous: 2026-08-02 — **TR-D1 Phase 3B deployed**: `hosting:salown` ONLY, a presentation-only settings-UX fix after the Phase 3 visual review failed (row directly below). No Function, no rules, no staff hosting. Previous: 2026-08-02 — **TR-D1 Phase 3 deployed and live-verified**: one NEW callable (`salownSaveCheckoutSettings`), `hosting:salown`, and the **first `firestore.rules` release since TR-A** (row directly below). `hosting:salown-staff` deliberately NOT deployed. Previous: 2026-08-02 (earlier) — **LOYALTY-RECEIPT-SALVAGE deployed and live-verified**: one Function updated (`salownSendLoyaltyEmail`) and both hosting targets released by CI (row directly below). Previous: 2026-08-02 — **TR-D1 Phase 2B deployed and live-verified**: ONE new callable, `salownCheckoutBooking` (row directly below). No hosting target, no rules, no existing Function revision changed. Previous: 2026-08-01 (later) — **TR-D1 Phase 0.5 deployed and live-verified**. Previous: **TR-B2 fully deployed and live-verified** (row directly below); no Function or rules revision changed. Previous snapshot 2026-07-31 ~16:3x UK — **TR-B is fully deployed and live-verified** (row directly below); TR-C Phase 1 remains pushed but deliberately NOT deployed. Previous snapshot 2026-07-31 ~15:5x UK. Previous snapshot 2026-07-31 01:5x UK — **three deploy waves have landed since the previous snapshot and this file now reflects them.** 2026-07-30 ~14:4x (Session A: ANY-BARBER + PUSH-RECOVERY + RECEIPT-WRITER), 2026-07-30 ~17:5x–18:1x (Session B: receipt READER + the remaining UK financial work), 2026-07-31 ~00:5x–01:4x (master closure: whitecross saas hosting + LC1 live chat). The previous revision of this line said *no deploy occurred* on 07-30; that was true when written and false within the hour. · 2026-07-27 15:05 UK after the Treatwell parser deploy + T2188888050 repair (previous: 12:55 UK after the whitecross test-mode lockdown deploy) (previous
 > revisions: 2026-07-26 19:45 UK; 2026-07-24 16:40 UK after Parser-3C landed on `origin/main`; earlier
 > 16:05 revision during BSP-H1, see the hosting-baseline correction below). Verify against `git log origin/main` + the live system before acting;
 > a row here is a claim about a moment, not a standing guarantee.
+
+---
+
+## ⭐ REVIEW-CTA-AUDIENCE-1 — members are not offered points for a review · **DEPLOYED** 2026-08-04
+
+**Baseline commit `280cdb5`** (reachable from `origin/main` at `f9c6596`). Production is on it.
+
+| Surface | State |
+|---|---|
+| `salownSendLoyaltyEmail` | ✅ **released** — `firebase deploy --only functions:salown:salownSendLoyaltyEmail`, europe-west2, "Successful update operation" |
+| every other Function | ⏸️ **untouched** — targeted single-function deploy, blanket forbidden |
+| `hosting:salown` | ⏸️ **untouched** — commit carried `[skip ci]`, so no CI hosting release could pick it up |
+| `hosting:salown-staff` | ⏸️ **untouched** |
+| `firestore.rules` / indexes | ⏸️ **unchanged** |
+
+**What changed:** one call site in `functions/src/emailTemplates.ts` — the checkout-receipt review CTA
+is now gated `d.isMember ? '' : reviewCta(…)`. A member holds a standing discount and is already
+excluded from every other points-based inducement we mail (the confirmation trigger and the loyalty
+mail both suppress the double-points block with `!isMember`); the review CTA was the last place still
+offering them points. Owner decision 2026-08-04: hide the **entire** CTA for members, with no
+replacement copy.
+
+**Live verification — no customer email was sent.** Verified at template level by compiling the
+pre-change `emailTemplates.ts` (from `55906e5`) alongside the deployed build and rendering both
+audiences from synthetic data:
+
+- **non-member receipt is BYTE-IDENTICAL before vs after** → zero regression on the untouched audience;
+- **member receipt is now byte-identical to the old no-review-URL render** → the CTA block (1323 B) was
+  removed and *nothing else* in the receipt changed;
+- member render contains neither the review link nor the "100 loyalty points" offer;
+- the member's own loyalty/receipt sections (balance, earned block, "Book Online Next Time") remain.
+
+> The member and non-member receipts differ by ~1.5 kB for reasons that predate this release
+> (`memberVisit` and the loyalty card already branch on `isMember`). That difference is NOT this
+> change; the before/after comparison above is what isolates it.
+
+**Known open defect, deliberately NOT in this release:** the confirmation email's double-points
+promise and the checkout award use different eligibility (see TESTS.md and the P0 note in
+INCIDENTS/handoff). Recorded, not fixed here.
 
 ---
 
