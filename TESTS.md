@@ -1459,3 +1459,40 @@ never creates them, not because anything was removed.
 > That was the harness comparing JSON key ORDER after a Firestore round-trip, not a data difference —
 > confirmed by canonical-form sha256 equality. The check was wrong, not the restore.
 
+---
+
+## Canonical emulator gate — TWO mandatory phases (2026-08-04)
+
+`cd functions && npm run test:emulator` runs `ops/test-emulator.sh`, which executes **two**
+`firebase emulators:exec` invocations and aggregates their totals:
+
+| Phase | Suites | Tests |
+|---|---|---|
+| general | bookings · inventory · treatmentSessions · checkout | 164 |
+| packages | packages (own emulator lifecycle) | 27 |
+| **TOTAL** | | **191** |
+
+Either phase failing fails the command. **No test was removed, skipped or weakened** — the
+total is identical to the previous single-phase run.
+
+**Why split:** `EMU: two DIFFERENT concurrent payments both land` intermittently failed with
+`INVALID_ARGUMENT: Transaction is invalid or closed`, raised at `tx.get(ledgerQuery)` — a
+query inside a transaction — while two transactions contend on one `clientPackages` document.
+Measured: package suite alone 5/5 pass · last in the combined run 2/2 pass · 3rd in the old
+order 4 fail / 5 runs after Unit 6 and 1 fail / 3 before it. Intermittent, not deterministic;
+Unit 6's added fixtures raised the rate, they did not create it. **No retry budget was
+raised** — that is production semantics, and bending it to green a test would change how real
+checkouts behave under real contention.
+
+## Unit 5–7B suites
+
+| Suite | Tests | Covers |
+|---|---|---|
+| `functions/src/checkout/discountRedemption.test.js` | 23 | code validity, server-derived amount, redemption key twin |
+| `executor.emulator.test.js` 19b–19j | 9 | atomic redemption, retry, oncePerCustomer, usage-limit race |
+| `executor.emulator.test.js` 37–49 | 13 | loyalty parity: Whitecross fixture, other tenant, partial/unpaid, concurrency |
+| `functions/src/checkout/loyaltyParity.test.js` | 6 | ESM/CJS twin byte-identity |
+| `src/utils/loyaltyPolicy.test.ts` | 27 | resolver, conversions, effective cashback, settings write |
+| `src/utils/saleFacts.test.ts` | 18 | currency-explicit facts, collected/delivered/outstanding split |
+| `src/pages/reportsCurrency.test.ts` | 14 | GBP-only isolation + disclosure, UK byte-equivalence |
+
