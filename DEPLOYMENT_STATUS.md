@@ -83,6 +83,55 @@ its own terms.
 
 ---
 
+## 📊 UNIT 7B — Reports is a GBP surface, and now says so · **DEPLOYED** 2026-08-04
+
+**Baseline `a4d889b`.** Production is on it.
+
+| Surface | State |
+|---|---|
+| `hosting:salown` | ✅ **released** — **`10e9e521fb359585`**, `2026-08-04T20:44:13Z` · rollback anchor `e11b02def41cfd6a` |
+| `hosting:salown-staff` | ⏸️ untouched — `8409e666da7ea223`, serving `/assets/staff-CU9kxXXw.js` |
+| `salownCheckoutBooking` | ⏸️ unchanged — `salowncheckoutbooking-00004-soq` |
+| `firestore.rules` / indexes | ⏸️ unchanged — ruleset `b30abf64…` |
+
+Reports prints `£` in thirty places and folds revenue with its own local helpers over
+legacy major-unit fields. A TR executor checkout carries none of those — it carries
+`checkoutReceipt` in minor units with `checkoutCurrency: 'TRY'` — so it would have been
+read as stale or zero **and** printed behind a pound sign. Non-GBP is now excluded at the
+single funnel every aggregate descends from, and the exclusion is disclosed on screen with
+the currencies named and counted.
+
+**UK is byte-equivalent by construction:** the adapter is asked only what currency a record
+is in, no revenue arithmetic moved, and with nothing foreign present the funnel returns the
+period array unchanged by identity. Records with **no** readable snapshot stay included —
+unknown is not foreign, and dropping them would have silently shrunk historic UK totals.
+
+**Currency-grouped totals were deliberately NOT introduced** — this UI cannot present two
+currencies clearly yet (Unit 8). **SalesView is out of scope**: it ships in
+`hosting:salown-staff`, which this programme may not deploy, so **Unit 7 remains PARTIAL
+for that consumer.** Whitecross Finance untouched; SPLIT→CARD neither addressed nor fixed.
+
+---
+
+## 🧾 UNITS 5–6 + emulator gate · **DEPLOYED** 2026-08-04
+
+| Item | Live |
+|---|---|
+| Unit 5 — atomic discount-code redemption | `salowncheckoutbooking-00002-ril`, `hosting:salown` `c213c7498aa1c35b` |
+| Unit 6 — canonical tenant loyalty policy | `-00003-hin`, `5a28b8b5f262853f` |
+| Emulator gate split + loyalty settings contract | `-00004-soq`, `e11b02def41cfd6a` |
+
+Unit 5 made the server redeem the code inside the sale's own commit — `usedCount` never
+incremented on the TR route before, so a code was effectively unlimited. Unit 6 replaced two
+disagreeing redeem-rate definitions with one tenant-resolved policy and made `redeemRate` an
+explicit stored field (exactly 20 for every current tenant, so nothing moved). The gate split
+runs the package suite in its own emulator lifecycle after an intermittent
+`Transaction is invalid or closed`; no retry budget was raised and no test was removed —
+191 = 164 + 27. The same pass closed a live Settings defect: the screen labelled
+`cashbackPct: 5` while `earnRate: 2` yielded 10% actual cashback.
+
+---
+
 ## 🧩 A0 — TR till made visible, canonical booking id, payment HELD · **DEPLOYED** 2026-08-03
 
 **Baseline commit `0f9a064`.** Production is on it.
