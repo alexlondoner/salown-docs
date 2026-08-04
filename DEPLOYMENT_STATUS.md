@@ -17,6 +17,72 @@
 
 ---
 
+## 📦 UNIT 4 — package walk-in lifecycle, `PACKAGE_REJECTED` closed · **DEPLOYED** 2026-08-04
+
+**Baseline commit `7c21e18`** (SYNC + claim release `b6a99b7`). Production is on it.
+
+| Surface | State |
+|---|---|
+| `hosting:salown` | ✅ **released** — **`5e4bbcf7233da8cf`**, `2026-08-03T23:32:15.980Z` · previous (A2) `1a5005df6ca93118` |
+| `hosting:salown-staff` | ⏸️ **untouched** — still **`8409e666da7ea223`** (the 2026-08-03 ROLLBACK), serving `/assets/staff-CU9kxXXw.js` |
+| `salownCheckoutBooking` | ⏸️ unchanged — `salowncheckoutbooking-00001-taf`, ACTIVE, last updated 2026-08-02. **No Function source changed**, so no Function release |
+| `firestore.rules` / indexes | ⏸️ unchanged — ruleset `b30abf64…` |
+
+**What it fixed.** A package-linked Admin walk-in could not be checked out at all. Save both
+reserved AND completed the entitlement; the package session id is derived
+(`{clientPackageId}__{bookingDocId}`), so the executor's Phase 2 seam re-ran `complete` on that
+same document under the checkout's own idempotency key — not a replay (the stored key differs),
+and `from: 'completed'` is terminal, so `applyEntitlementTransition` returned `ALREADY_TERMINAL`
+and the executor reported `PACKAGE_REJECTED`. Every attempt, permanently. Nothing was corrupted —
+the seam sits after every refusal point — but the salon could not take money for paid extras
+either, and the operator's only reading was a machine string about an entitlement.
+
+Reserve still happens at Save on **both** routes: it stamps the booking `price: 0` +
+`packagePrepaid` and holds the session against a second booking. Only **completion** moved, and
+only for executor tenants, because the two writers have opposite needs — the legacy browser
+writer has never known packages exist, so a session Save leaves reserved there is completed by
+nothing. **UK is byte-unchanged**, and an unreadable settings document falls to legacy rather than
+blocking a save. On the executor the till is where completion belongs anyway: `packageSessionTx`
+runs inside the checkout's own transaction, so an abandoned or refused checkout leaves the
+entitlement reserved and recoverable instead of burnt against a sale that never happened.
+
+**Live verification is source-level, not filename-level.** The published `Dashboard` chunk is
+SHA-256 identical to the tested HEAD build; the walk-in path reads a variable (`alsoComplete:Ze`)
+and `alsoComplete:!0` — the hardcoded completion — appears **zero** times in the live bundle.
+
+Gates: frontend **1488** (+11) · typecheck · build · lint 0 on changed files · functions 877 pass
+/ 0 fail · emulator **169/169** across two consecutive runs (17b–17e pin the reserved→completed
+path). **TR payment integrity hold remains ACTIVE.**
+
+### ⚠️ An Admin-only deploy rebuilds the Staff bundle locally — it does NOT release it
+
+Both hosting entries share one `firebase.json` array, and `firebase deploy --only hosting:salown`
+ran the **`build:staff` predeploy hook too**, regenerating `hosting/staff-bundle/`. Worth knowing
+because it will recur on every Admin-only deploy.
+
+What actually happened, precisely:
+
+- the Admin predeploy **rebuilt Staff output locally** — one chunk replaced, `index.html` modified;
+- **no Staff deployment occurred.** `hosting:salown-staff` never left `8409e666da7ea223`, verified
+  before and after; the live site still serves `/assets/staff-CU9kxXXw.js`, and the rebuilt
+  `staff-CKHeZIMF.js` returns the SPA `index.html` fallback (`text/html`), exactly as a made-up
+  filename does — it is not present on the site;
+- the **generated output was explicitly restored** to HEAD (`git restore` on the two tracked paths,
+  `rm` on the one generated file; no `git clean`, no broad glob, no reset, no source file touched);
+- the **committed Staff bundle therefore stays intentionally aligned with the currently live Staff
+  release**, so a future blanket `--only hosting` ships what is already running.
+
+**Known handoff, deliberately not closed here:** the committed Staff bundle is **stale relative to
+source** — `9dfb2c8`, `ba42250` and `c8bfcc0` changed staff-reachable `src/lib/` after the last
+rebuild (`53bf4a1`, 2026-08-02) and none rebuilt it. Committing the rebuild would pre-stage a Staff
+release carrying TR checkout changes never reviewed for Staff, which `ops/release-guard.sh` cannot
+catch — it gates on the commit message, and such a bundle would sit inside a `[skip ci]` commit that
+a later untagged push then ships. Owner decision 2026-08-04: **discard the rebuild, keep the drift**,
+and resolve it inside the **Staff Mobile TR Checkout** package where a Staff release is reviewed on
+its own terms.
+
+---
+
 ## 🧩 A0 — TR till made visible, canonical booking id, payment HELD · **DEPLOYED** 2026-08-03
 
 **Baseline commit `0f9a064`.** Production is on it.
