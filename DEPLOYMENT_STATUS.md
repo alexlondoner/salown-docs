@@ -126,6 +126,46 @@ its own terms.
 
 ---
 
+## 🧭 UNIT 7 — SCOPE SPLIT OF RECORD (owner, 2026-08-04)
+
+Unit 7 was delivered in three parts, and only two of them are done. Recorded here because
+"Unit 7" on its own would otherwise read as finished, and it is not.
+
+| Part | Scope | State |
+|---|---|---|
+| **7A** | canonical `resolveSaleFacts` reader — currency-explicit sale facts, one fold reused | ✅ **complete** (`1c1575c`, no deploy: unreferenced module is not bundled) |
+| **7B** | Admin **Reports** GBP safety boundary + visible foreign-currency exclusion | ✅ **complete / live** (`a4d889b` → `hosting:salown` `10e9e521fb359585`) |
+| **7S** | Staff **SalesView** currency consumer | ⏸️ **DEFERRED** to the separately approved **Staff Checkout** package |
+
+**7S is deferred deliberately, and it does not block Admin Unit 8.** `SalesView` lives in
+`src/staff/**` and ships in `hosting:salown-staff`, which this Admin programme may not deploy.
+Wiring it here would have produced a change that could only reach production through a Staff
+release nobody has approved.
+
+> ⚠️ **TRY reporting is NOT complete.** Today TRY records are **excluded from Reports with an
+> on-screen disclosure** — the page states it is in £, names the excluded currencies and counts
+> them. They are **not** yet presented as currency-grouped totals. Describing TR reporting as
+> done would be wrong; presentation is Unit 8's work.
+
+**`hosting:salown-staff` remains FROZEN at `8409e666da7ea223`** (the 2026-08-03 ROLLBACK),
+serving `/assets/staff-CU9kxXXw.js`. Every Admin deploy in this programme regenerates
+`hosting/staff-bundle/**` via the shared predeploy hook; that artefact is restored by exact path
+each time and has never been released.
+
+### Concurrent-session fact — `280cdb5` (REVIEW-CTA-AUDIENCE-1)
+
+Recorded because it entered `origin/main` inside an Admin-programme push, not through its own.
+
+- `280cdb5` is on `origin/main`; it carries `[skip ci]`;
+- **only Functions source changed** (`emailTemplates.ts` + a new test) — no hosting asset;
+- it was **not deployed by the Admin programme**, and its `[skip ci]` meant no CI release could
+  pick it up;
+- it was subsequently claimed, verified, deployed and closed by its own session — verified live
+  as `salownsendloyaltyemail-00064-saz`, updated `2026-08-04T20:45:27Z` (row above);
+- **do not amend, replay or duplicate that commit.**
+
+---
+
 ## 📊 UNIT 7B — Reports is a GBP surface, and now says so · **DEPLOYED** 2026-08-04
 
 **Baseline `a4d889b`.** Production is on it.
