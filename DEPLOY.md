@@ -44,11 +44,48 @@ in the landing index.html redirect to `/hub` if `location.host==='hub.salown.com
 
 ## salown-app Deploy
 
+**⛔ Never `--only hosting`.** That is BOTH sites. Name the target:
+
 ```bash
 cd ~/Desktop/alex/salown-app
-npm run build          # only needed if src/ changed
-npx firebase-tools deploy --only hosting --project havuz-44f70
+npx firebase deploy --only hosting:salown --project havuz-44f70        # Admin/landing
+npx firebase deploy --only hosting:salown-staff --project havuz-44f70  # Staff — separate approval
 ```
+
+The predeploy hook builds for you; a manual `npm run build` first is optional.
+
+### ⚠️ OPEN DEBT — the predeploy topology is shared, so a single-target deploy still builds BOTH
+
+**Observed on the Unit 8 release, 2026-08-05.** `firebase deploy --only hosting:salown` **does not
+release** `salown-staff` (verified: it stayed at `8409e666da7ea223`), but it **does run that target's
+predeploy hook**. The tracked `hosting/staff-bundle/**` is rebuilt and left dirty on every Admin
+deploy — `staff-CU9kxXXw.js` deleted, `staff-M0geOKYo.js` written, `index.html` modified.
+
+It is not `npm run build` doing it: that script is plain `vite build`. It is the hook attached to the
+*other* hosting entry in `firebase.json` running regardless of the `--only` filter.
+
+**This is a release-process debt, NOT a Staff deployment incident** — the live Staff version did not
+move on that run. But the topology is wrong: a single-target Admin deploy must not build or mutate
+the other target's tracked artifact. Two things follow from it that are worth naming: the tracked
+staff bundle can silently drift out of step with what is actually served, and the Admin site's
+mirrored `/staff-bundle/` path carries whatever the hook last produced.
+
+**REQUIRED until the fix is designed and tested — after every `hosting:salown` deploy:**
+
+```bash
+git status --short                      # expect ONLY hosting/staff-bundle/** churn
+rm -f hosting/staff-bundle/assets/<newly-generated>.js
+git restore hosting/staff-bundle/assets/<tracked>.js hosting/staff-bundle/index.html
+git status --porcelain | wc -l          # must be 0 before committing
+```
+
+Explicit paths only — never `git restore .`, never `git checkout .`: other sessions share this repo
+([`ops/claims/README.md`](../salown-app/ops/claims/README.md)).
+
+**The fix is not yet designed.** Candidates: move the staff build out of `firebase.json` predeploy
+into an explicit step; stop tracking `hosting/staff-bundle/**` (it is build output, and
+`hosting/public-bundle/` is already ignored); or split the two sites' public roots so neither
+contains the other. Tracked under Tech Debt in [ROADMAP.md](ROADMAP.md).
 
 **Separate deploy targets** (owner approval required):
 ```bash

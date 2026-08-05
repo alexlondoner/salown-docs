@@ -1537,5 +1537,46 @@ checkouts behave under real contention.
 | `functions/src/checkout/loyaltyParity.test.js` | 6 | ESM/CJS twin byte-identity |
 | `src/utils/loyaltyPolicy.test.ts` | 27 | resolver, conversions, effective cashback, settings write |
 | `src/utils/saleFacts.test.ts` | 18 | currency-explicit facts, collected/delivered/outstanding split |
-| `src/pages/reportsCurrency.test.ts` | 14 | GBP-only isolation + disclosure, UK byte-equivalence |
+| `src/pages/reportsCurrency.test.ts` | 20 | GBP-only isolation, UK byte-equivalence, panel↔funnel set identity, no GBP group possible |
+| `src/utils/currencyGroups.test.ts` | 20 | currency grouping + `£`/`₺` formatting (Unit 8) |
+| `ops/test-release-guard.sh` | 16 | release guard: every commit needs `[skip ci]`; real incident commits refused by hash |
+
+### Unit 8 — what the 20 currency tests actually pin
+
+Chosen so the *negative* properties are the load-bearing ones — any fold can be made to add up:
+
+- **currencies never meet** — two currencies give two groups; a group is byte-identical whether or
+  not another currency sits beside it (an accidentally shared accumulator would make the TRY total
+  depend on how many GBP rows happened to be nearby); the API exposes **no grand total** and no
+  `rate`/`converted_m`/`total_m` field, so a cross-currency figure cannot be produced without writing
+  the addition by hand in the open;
+- **what may join a group** — a record with no readable snapshot joins **none** (unknown is not a
+  currency, and it must not inflate a neighbouring count); an unreadable snapshot joins none; junk
+  (`null`, `7`, `'x'`, `[]`) cannot throw inside a render memo; `try`/`TRY` normalise to one group;
+  an empty period is an empty list, never a zero-valued card claiming "0 sales in TRY";
+- **the facts stay separate** — collected / outstanding / delivered are three answers; outstanding is
+  never folded into collected; a package-delivered session reports value and **zero** cash;
+  300 sales of 3333 minor units sum to exactly 999900 (integer, no float dust);
+- **formatting** — `₺1,234.50` in `en-GB` (never Intl's default `TRY 1,234.50`), `₺1.234,50` and
+  `£1.234,50` in `tr-TR`, `-£5.00` keeps a refund's sign, and a broken locale degrades to a form that
+  still cannot mislabel the money.
+
+### ⏸️ OUTSTANDING — real TRY on screen (carried to Unit 11)
+
+**Not run, and not runnable today.** Unit 8's TRY path has never rendered production data: a
+read-only sweep on 2026-08-05 found **zero `checkoutReceipt` documents across all six tenants**
+(demo 772 · herohairs 333 · the-hair-lab 1 · tr-demo 2 · whitecross 1441 · yusufo 0), and tr-demo's
+two bookings are both `CONFIRMED`. The executor has never run in production because the **TR payment
+integrity hold is active** — the absence *is* the evidence.
+
+**Forbidden ways to close this:** writing synthetic production data (it fabricates the thing being
+measured) or lifting the hold to manufacture a sale (it removes a safety boundary to satisfy a
+checklist).
+
+**Correct way:** **Unit 11 controlled E2E, after hold-removal approval** — a real TR checkout, then
+the grouped panel read on screen against money the executor actually wrote. Until then the honest
+status is *shipped, tested, unexercised in production*.
+
+The GBP half needs no such caveat: it was verified against **real** whitecross (1429 sales / 0
+foreign) and herohairs (130 / 0) data, and by artifact comparison against the previously-live chunk.
 

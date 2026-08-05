@@ -10,7 +10,7 @@
 > separate `whitecross-site` repo deploy manually**, so code can sit on `origin/main` for days while
 > production runs older behavior. Confusing "merged" with "live" has caused real incidents.
 >
-> **Snapshot date:** 2026-08-04 (latest) — **REVIEW-CTA-AUDIENCE-1 deployed**: one Function
+> **Snapshot date:** 2026-08-05 (latest) — **Admin TR Checkout Unit 8 deployed** (`hosting:salown` `452e75959e3131ea`): Reports now groups money by currency and still never sums across currencies. GBP output verified unchanged against real whitecross/herohairs data AND by artifact comparison; **the TRY rendering is NOT yet proven in production** because production holds zero `checkoutReceipt` documents — the TR payment integrity hold is active — so that check is carried into **Unit 11 controlled E2E after hold-removal approval**. `hosting:salown-staff` untouched at `8409e666da7ea223`. Previous: 2026-08-04 — **REVIEW-CTA-AUDIENCE-1 deployed**: one Function
 > (`salownSendLoyaltyEmail`) updated so a member's checkout receipt no longer carries the
 > points-incentivised Google review CTA. No hosting target, no rules, no other Function; the commit
 > carried `[skip ci]`. Verified at template level against a compiled pre-change build — non-member
@@ -18,6 +18,45 @@
 > revisions: 2026-07-26 19:45 UK; 2026-07-24 16:40 UK after Parser-3C landed on `origin/main`; earlier
 > 16:05 revision during BSP-H1, see the hosting-baseline correction below). Verify against `git log origin/main` + the live system before acting;
 > a row here is a claim about a moment, not a standing guarantee.
+
+---
+
+## ⭐ Admin TR Checkout **Unit 8** — currency-grouped Reports · **DEPLOYED** 2026-08-05 · **TRY rendering NOT YET PROVEN IN PRODUCTION**
+
+**Baseline commit `bf62745`** (tree `7d22443`). Production is on it.
+
+| Surface | State |
+|---|---|
+| `hosting:salown` | ✅ **released** — `da6d0a281e42e3c4` → **`452e75959e3131ea`**, `2026-08-05T08:52:27.566Z`, single-target manual deploy |
+| live artifact | `Reports-_4WXvOpR.js` — SHA-256 `d6f63a5b…a9d9e409`, **identical to the local build**; all three Unit 8 markers present |
+| `hosting:salown-staff` | ⏸️ **untouched** — exactly `8409e666da7ea223`, serving `staff-CU9kxXXw.js` |
+| Functions (103) | ⏸️ **unchanged** — newest update `2026-08-04T20:45:27Z`, before the deploy |
+| `firestore.rules` | ⏸️ **unchanged** — ruleset `b30abf64-5515-4429-87f8-fafaa085af2c` (2026-08-02) |
+| indexes | ⏸️ **unchanged** — 2 composite, both `READY` |
+
+**Rollback anchor:** `da6d0a281e42e3c4`.
+
+### What is proven, and by what
+
+| Claim | Evidence | Verdict |
+|---|---|---|
+| `bf62745` is live in Admin | Hosting version `452e75959e3131ea` serves `Reports-_4WXvOpR.js`; served bytes SHA-256-identical to the local build of that tree | ✅ **proven** |
+| GBP figures unchanged | Real production data: **whitecross 1429** checked-out sales, **0** foreign; **herohairs 130**, **0** foreign → the panel returns `null` and the funnel takes its identity path. Plus a direct artifact comparison: rebuilding 7B (`a4d889b`) locally **reproduced the exact chunk that had been live** (`Reports-hhL4Uz1u.js`), and a full string-literal diff of the two chunks moves the £-bearing set 13 → 12 — the single real difference being the deliberately retired 7B banner, the other five being minifier variable renames (`U.lmRev` → `V.lmRev`). **No `£` format string was added, changed or removed.** | ✅ **proven against production data** |
+| Currency grouping + `₺` formatting | 20 focused tests (`currencyGroups.test.ts`), including `₺1,234.50` in `en-GB`, `₺1.234,50` in `tr-TR`, `£1.234,50` in `tr-TR`, refund sign, and the negative properties (no grand-total API, no rate/conversion field, a group identical whether or not another currency sits beside it). The live artifact is byte-identical to the build those tests ran against. | ✅ **proven by test + artifact identity** |
+| Real TRY rendered on screen in production | **NOTHING.** A read-only sweep of all six tenants found **zero documents carrying `checkoutReceipt`** (demo 772 · herohairs 333 · the-hair-lab 1 · tr-demo 2 · whitecross 1441 · yusufo 0), and tr-demo's two bookings are both `CONFIRMED`. The executor has never run in production. | ⏸️ **PENDING — not claimed** |
+
+**Why it is pending, and why that is correct.** There is no TRY sale to render because the **TR payment
+integrity hold is active** — the absence of `checkoutReceipt` anywhere in production is the direct
+evidence of it. Closing this proof by writing synthetic production data, or by lifting the hold to
+generate a sale, is **forbidden**: the first fabricates the thing being measured, and the second
+removes a deliberate safety boundary to satisfy a checklist.
+
+**Where it goes instead:** the real TRY visual/runtime check is carried into **Unit 11 controlled E2E**,
+to be run only after **hold-removal approval**. Until then Unit 8's TRY path is "shipped, tested,
+unexercised in production" — and must be described that way.
+
+**Unit 7S remains DEFERRED** to the Staff Checkout package: `SalesView` ships on `hosting:salown-staff`,
+a target this programme does not deploy.
 
 ---
 
