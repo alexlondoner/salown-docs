@@ -60,7 +60,57 @@ a target this programme does not deploy.
 
 ---
 
-## 🎯 DPPP Stage 2 — the double-points promise snapshot · **PUSHED, TESTED, NOT LIVE** 2026-08-05
+## 🎯 DPPP — the double-points promise snapshot · **DEPLOYED & LIVE** 2026-08-05
+
+**Source `0a5aa14` (DPPP) combined with Unit 9b `943f859` / `b348cb7`.** Production is on it.
+
+| Surface | State |
+|---|---|
+| whitecross campaign `multiplier` | ✅ **migrated** — absent → `2`; `active`/`startDate`/`endDate` unchanged, read back and verified |
+| `firestore.rules` | ✅ **released** (deployed FIRST, see the ordering note below) |
+| `salownCreateBooking` | ✅ **released** — europe-west2 |
+| `salownBookingConfirmationTrigger` | ✅ **released** |
+| `salownBookingConfirmedEmailTrigger` | ✅ **released** |
+| `salownCheckoutBooking` | ✅ **released** |
+| `hosting:salown` | ✅ **released** — `452e75959e3131ea` → **`838faa77330f8574`** (`2026-08-05T11:48:43.348Z`); **rollback anchor `452e75959e3131ea`** |
+| `hosting:salown-staff` | ⏸️ **UNCHANGED** — `8409e666da7ea223` (2026-08-04T22:48:48Z), still serving `staff-CU9kxXXw.js` |
+| indexes | ⏸️ unchanged |
+
+**Release gates, in the owner's order:** ① migration applied and read back ② rules released
+③ **10/10** booking-creation cases verified against the deployed rules via the Rules Test API —
+*no test booking was written to production* ④ sweep re-run: 2,548 bookings / 6 tenants, **0**
+pre-existing snapshots ⑤ exactly four Functions, targeted, no blanket deploy ⑥ hosting:salown from
+the combined tree ⑦ Staff confirmed unchanged.
+
+> **Rules went FIRST, deliberately inverting the house rule** (`CLAUDE.md`: functions → hosting →
+> rules last). That rule exists so a tightened rule cannot lock out code that has not shipped. This
+> change only *forbids* a key **no legitimate writer sends** — the snapshot is written solely by the
+> Admin SDK, which bypasses rules — so shipping it first could not break a booking path, while
+> shipping it last would have left a window where Functions wrote real snapshots and a browser could
+> still forge one.
+
+> **Migration had to precede the Functions.** Strict multiplier is the default: a campaign that does
+> not state its own multiplier fails closed with `CAMPAIGN_MULTIPLIER_MISSING`. Whitecross's campaign
+> is ACTIVE, and deploying first would have closed it silently.
+
+**Live verification (source-level, not by filename):** the live chunk `index-CIYwq4Bf.js` is
+**byte-identical** to the local build (1,151,973 B); `loyaltyPromotionSnapshot` and `NO_SNAPSHOT` are
+present in the live bundle; the old checkout source list (`website|online|web`) is **gone** — the one
+remaining `online` is the Firebase SDK's `addEventListener('online')` and the one remaining
+`doublePointsCampaign` is the public BookingPage banner, not the award path.
+
+**REL-1 recurred and was cleaned by the documented procedure:** the single-target Admin deploy
+rebuilt `hosting/staff-bundle/**`; the generated file was removed and the tracked ones restored by
+explicit path (never `git restore .`), leaving a clean tree before commit.
+
+**⚠️ Outstanding:** no end-to-end live test yet. The first real online booking should be checked for
+`loyaltyPromotionSnapshot`, and the points figure in its confirmation email compared against what
+checkout awards. Function revision ids could not be read back from the CLI (as previously); the
+evidence is the four "Successful update operation" lines in the deploy output.
+
+---
+
+## 🗂️ DPPP Stage 2 — pre-release record (superseded by the entry above) · 2026-08-05
 
 **Source commit `0a5aa14`** on `origin/main`. **Production is NOT on it and must not be put on it
 yet.** The commit carries `[skip ci]`, so no CI hosting run can pick it up by accident.
