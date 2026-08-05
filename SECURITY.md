@@ -13,6 +13,43 @@
 
 ---
 
+## 🔓 SECURITY-SUPERADMIN-WRITE-SCOPE — accepted trusted-role residual (opened 2026-08-05)
+
+**Status: OPEN DEBT. Accepted as a trusted-role residual pending audit — NOT claimed as eliminated.**
+
+```
+match /{document=**} { allow read, write: if isSuperAdmin(); }
+```
+
+This root rule grants platform-wide read/write. **Firestore ORs across every matching rule**, so no
+clause in a narrower `match` can take it away: the booking-level protections added for
+`loyaltyPromotionSnapshot` (P0 DPPP) bind anonymous, staff, admin and tenant-owner identities, and
+are silently overridden for a super-admin. A **browser-held super-admin token can still write
+protected booking fields**, the promotion snapshot among them — which is a money-adjacent promise the
+confirmation email announces and the till pays.
+
+**Discovered:** during the DPPP rules hardening. The hardening closed the authenticated
+panel/staff/admin/owner forge path; this residual is what remained, and it is recorded rather than
+quietly accepted or blindly "fixed".
+
+**Exposure assessment at the time of opening:** the read-only inventory over **2,549 bookings found
+zero** documents carrying `loyaltyPromotionSnapshot`, so no suspicious or unexplained snapshot exists.
+The super-admin claim is held by a single operator identity and is never granted to a tenant owner
+(see the delete-policy note), so the practical blast radius is one trusted human, not a tenant surface.
+
+**Do NOT narrow or remove the catch-all blindly.** Closing this properly requires, in order:
+
+1. a full inventory of every legitimate super-admin **browser** write in production — super-admin
+   tooling reaches collections that have no narrower rule at all, and removing the catch-all without
+   that inventory breaks them silently;
+2. explicit replacement permissions per collection, written to cover exactly those writes;
+3. emulator coverage proving each legitimate write still passes and each protected field still fails;
+4. a rollback plan and a recorded pre-change ruleset id.
+
+**Guard in the meantime:** `scripts/testPromotionSnapshotRules.py` reports this residual on every run
+(`RESIDUE  super-admin create WITH snapshot: STILL ALLOWED`) rather than asserting a contract we do
+not hold, so it cannot quietly be forgotten or mistaken for closed.
+
 ## 0. Quick status table
 
 | # | Topic | Status | Risk |
