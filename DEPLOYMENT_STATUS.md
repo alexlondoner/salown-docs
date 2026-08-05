@@ -60,6 +60,76 @@ a target this programme does not deploy.
 
 ---
 
+## 🎯 DPPP Stage 2 — the double-points promise snapshot · **PUSHED, TESTED, NOT LIVE** 2026-08-05
+
+**Source commit `0a5aa14`** on `origin/main`. **Production is NOT on it and must not be put on it
+yet.** The commit carries `[skip ci]`, so no CI hosting run can pick it up by accident.
+
+| Surface | State |
+|---|---|
+| `salownCreateBooking` | ⏸️ **not deployed** — source calls `ensureDirectBookingPromotionSnapshot` |
+| `salownBookingConfirmationTrigger` | ⏸️ **not deployed** — source stamps before rendering |
+| `salownBookingConfirmedEmailTrigger` | ⏸️ **not deployed** — same |
+| `salownCheckoutBooking` | ⏸️ **not deployed** — TR executor multiplier now from the snapshot |
+| `hosting:salown` | ⏸️ **not deployed** — UK checkout multiplier now from the snapshot |
+| `firestore.rules` | ⏸️ **not deployed** — forbids a client-written `loyaltyPromotionSnapshot` |
+| `hosting:salown-staff` | ⏸️ **untouched, and must stay untouched** |
+| whitecross campaign `multiplier` | ⏸️ **NOT migrated** — dry run reviewed, nothing written |
+
+**What is live today is still the defective behaviour**, unchanged: the confirmation email applies
+no source test and compares the APPOINTMENT date, while the award requires `website|online|web` and
+compares the CHECKOUT date. Panel bookings are still promised points nobody grants, and `Salown`
+self-bookings still receive none. Nothing about that is fixed until the release below runs.
+
+### Approved release order (owner, 2026-08-05) — only after Unit 9b completes and is approved
+
+1. migrate whitecross `doublePointsCampaign.multiplier` absent → `2`, leaving `active`, `startDate`
+   and `endDate` untouched;
+2. **deploy `firestore.rules` FIRST;**
+3. verify every legitimate booking-creation path is still allowed;
+4. read-only production sweep must find **zero** pre-existing `loyaltyPromotionSnapshot` documents —
+   **if any exist, STOP**;
+5. deploy exactly four Functions — `salownCreateBooking`, `salownBookingConfirmationTrigger`,
+   `salownBookingConfirmedEmailTrigger`, `salownCheckoutBooking`;
+6. deploy `hosting:salown` only, from the **combined DPPP + completed Unit 9** tree;
+7. verify `hosting:salown-staff` is unchanged.
+
+> **Rules go FIRST here, and that is a deliberate inversion of the house rule** (`CLAUDE.md`: security
+> changes deploy functions → hosting → rules last). The usual order exists so a tightened rule cannot
+> lock out code that has not shipped yet. This rules change only *forbids* a key that **no legitimate
+> writer sends** — the snapshot is written exclusively by the Admin SDK, which bypasses rules — so
+> shipping it first cannot break a booking path, while shipping it last would leave a window in which
+> Functions write real snapshots and a browser could still forge one.
+
+> **Ordering hazard — migration MUST precede the Function deploy.** The strict multiplier is the
+> default: a campaign that does not state its own multiplier fails closed with
+> `CAMPAIGN_MULTIPLIER_MISSING`. Whitecross's campaign is ACTIVE (2026-05-24 → 2026-08-24) and has no
+> `multiplier` field, so deploying first would stop its double points. Nobody would be promised
+> anything false — the email reads the same snapshot — but the campaign would quietly go dark.
+
+**Gate 4 pre-checked 2026-08-05 (read-only, zero writes):** 2,548 bookings across 6 tenants,
+**0 carrying a `loyaltyPromotionSnapshot`**. The gate is green as of that sweep and must be re-run at
+release time.
+
+**Migration diff, reviewed and NOT applied** — `scripts/migrateCampaignMultiplier.cjs`, dry run:
+
+```
+tenants/whitecross/settings/settings
+  doublePointsCampaign.multiplier: (absent)  →  2
+  campaign stays: active=true  window=2026-05-24 → 2026-08-24  (UNCHANGED)
+```
+
+One planned write, one tenant. The other five have no campaign, and no `campaigns/` document carries
+a double-points shape. The script refuses to write without `--apply` and re-reads inside a
+transaction so a concurrent owner edit cannot be clobbered.
+
+**Gates at `0a5aa14`:** frontend 1656 · functions 956 (935 pass, 21 pre-existing skips) · both
+typechecks 0 · both builds 0 · lint 0 errors · `diff --check` clean · secret scan clean · claims valid.
+The functions figure includes 15 race tests over an in-memory Firestore with real optimistic
+concurrency, covering all ten scenarios the owner specified.
+
+---
+
 ## ⭐ REVIEW-CTA-AUDIENCE-1 — members are not offered points for a review · **DEPLOYED** 2026-08-04
 
 **Baseline commit `280cdb5`** (reachable from `origin/main` at `f9c6596`). Production is on it.
