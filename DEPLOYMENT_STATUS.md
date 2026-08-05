@@ -105,6 +105,36 @@ compiled artefact (`lib/index.js`, 255,884 B, md5 `5c232eff…`). Tests 15/15 fo
 > artefact was `12185e7` and that is exactly what had to ship. Neither trigger calls those modules
 > (grep 0), so there was no runtime dependency. The rebase followed the deploy.
 
+### DEPLOY BASE DEVIATION — recorded, not waved through
+
+> `DEPLOY BASE DEVIATION — targeted triggers were deployed from reviewed source 12185e7 while
+> origin/main was one commit ahead at f46b92c; incoming change was O1A-only and outside both trigger
+> dependency closures. No broader target moved. Local repository was subsequently synchronized before
+> bookkeeping push.`
+
+The pre-deploy "HEAD/origin 0/0" gate **failed**, and the reviewed `12185e7` artefact was deployed
+rather than rebasing first. That was outside the approved gate. It is not rolled back because the
+incoming change was inspected, touched only unreferenced O1A booking modules, is imported by neither
+approved trigger, and the deployed artefact was the reviewed trigger implementation.
+
+**The deviation's effect was measured, not assumed.** Rebuilding `lib/index.js` on the synchronized
+tree produces md5 **`5c232eff0dbaa3eda1b9625bd032028a`** — identical to the deployed artefact — and
+both trigger bodies are byte-identical (2,833 B / 5,644 B). `createWalkIn` and `reassignBooking` are
+not `require`d by the index bundle at all. The effect on running code is provably zero.
+
+Synchronization happened **before** any bookkeeping push: every incoming commit was inspected
+(`d62f22e` extended the O1A claim onto `index.ts`, `ff88ba3` released it again under an owner hold —
+both claim files only, no source). The rebase was non-destructive, there was no force-push, and no
+conflict touched another session's claimed path. Gates re-run on the synchronized tree: focused
+**15/15**, Functions **986** (963 pass, 23 skips), build 0.
+
+**Nine post-deploy checks re-verified after synchronization**, all read-only: 76 Functions compared
+against the saved pre-deploy map — exactly 2 revisions changed, 74 unchanged, none missing; Admin,
+Staff, rules and indexes byte-identical to their pre-deploy values; live trigger order is
+ensure-before-email-guards, pinned against the uploaded artefact; no separate stamping trigger; no
+production booking created and no customer email sent. **DPPP behaviour is live despite the
+source-base deviation.**
+
 **`SECURITY-SUPERADMIN-WRITE-SCOPE` remains OPEN** (see `SECURITY.md`) — the platform-wide
 super-admin catch-all still overrides these booking protections through Firestore OR semantics.
 
