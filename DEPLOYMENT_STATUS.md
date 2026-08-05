@@ -60,6 +60,56 @@ a target this programme does not deploy.
 
 ---
 
+## 📧 DPPP-EMAIL-INDEPENDENT-SNAPSHOT — the promise no longer depends on the email · **DEPLOYED** 2026-08-05
+
+**Source `12185e7`.** Two Functions only.
+
+| Surface | Before → After |
+|---|---|
+| `salownBookingConfirmationTrigger` | ✅ `salownbookingconfirmationtrigger-00044-dis` → **`-00045-nac`** (`13:44:47.805Z`) |
+| `salownBookingConfirmedEmailTrigger` | ✅ `salownbookingconfirmedemailtrigger-00042-cox` → **`-00043-luv`** (`13:44:47.014Z`) |
+| `salownCreateBooking` | ⏸️ unchanged — `salowncreatebooking-00003-viv` (source not changed; it already stamps unconditionally) |
+| `salownCheckoutBooking` | ⏸️ unchanged — `salowncheckoutbooking-00005-vaz` |
+| every other Function (74) | ⏸️ unchanged |
+| `hosting:salown` | ⏸️ `838faa77330f8574` |
+| `hosting:salown-staff` | ⏸️ `8409e666da7ea223`, serving `staff-CU9kxXXw.js` |
+| `firestore.rules` | ⏸️ ruleset `640c3dae-a9c8-4cb3-80c4-bc189e72874a` |
+| indexes | ⏸️ unchanged (digest identical before/after) |
+
+**The defect.** `ensure` sat *below* the confirmation trigger's four delivery guards, so a Website or
+Salown booking written by whitecross-site's browser `addDoc` path **without a `clientEmail`** never
+received a snapshot and silently lost the double points it used to earn. Eligibility is a property of
+the booking; a missing email may suppress delivery and nothing else.
+
+**The change is ordering, not logic.** In the create trigger the stamp moved above all four guards, so
+every created booking is stamped — walk-ins and imports simply get an explicitly *ineligible*
+snapshot, and uniform stamping is what lets "no snapshot" mean exactly one thing: created before this
+contract existed. In the update trigger it sits below the PENDING→CONFIRMED transition (the event
+selector) and above the `stripeSessionId`/online guard (which only decides whether we send). **No
+separate stamping trigger** — that would race the email triggers, the failure this design exists to
+prevent. Neither call site passes an event time: an update fires when a booking was CONFIRMED, not
+when it was made, so the document's server `createTime` remains the authoritative instant.
+
+**Verification: all 76 Functions compared before and after — exactly 2 revisions changed, 74
+unchanged, none missing.** Hosting, rules and indexes verified byte-for-byte identical to their
+pre-deploy values. Ordering and the single-writer property were pinned against the **uploaded**
+compiled artefact (`lib/index.js`, 255,884 B, md5 `5c232eff…`). Tests 15/15 focused; Functions 986
+(963 pass, 23 skips); frontend 1705.
+
+> **No production data was created or modified for verification**, and **no live customer E2E was
+> performed** — every check was a read-only API call. The first real online booking remains the
+> outstanding end-to-end observation.
+
+> **⚠️ At deploy time the tree was one commit BEHIND `origin/main`** (`f46b92c`, another session's
+> O1A work touching `functions/src/bookings/`). It was deliberately **not** rebased: the approved
+> artefact was `12185e7` and that is exactly what had to ship. Neither trigger calls those modules
+> (grep 0), so there was no runtime dependency. The rebase followed the deploy.
+
+**`SECURITY-SUPERADMIN-WRITE-SCOPE` remains OPEN** (see `SECURITY.md`) — the platform-wide
+super-admin catch-all still overrides these booking protections through Firestore OR semantics.
+
+---
+
 ## 🛡️ DPPP rules hardening — authenticated snapshot forge closed · **DEPLOYED** 2026-08-05
 
 **Ruleset `640c3dae-a9c8-4cb3-80c4-bc189e72874a`** (`2026-08-05T12:52:07Z`). **rules ONLY.**
