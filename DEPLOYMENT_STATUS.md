@@ -60,6 +60,61 @@ a target this programme does not deploy.
 
 ---
 
+## 🛡️ DPPP rules hardening — authenticated snapshot forge closed · **DEPLOYED** 2026-08-05
+
+**Ruleset `640c3dae-a9c8-4cb3-80c4-bc189e72874a`** (`2026-08-05T12:52:07Z`). **rules ONLY.**
+
+| Surface | State |
+|---|---|
+| `firestore.rules` | ✅ **released** — live ruleset verified byte-identical to the repo file |
+| four DPPP Functions | ⏸️ **unchanged** — not redeployed |
+| `hosting:salown` | ⏸️ **unchanged** — `838faa77330f8574` |
+| `hosting:salown-staff` | ⏸️ **unchanged** — `8409e666da7ea223` |
+| indexes | ⏸️ unchanged |
+
+**The catch.** The first DPPP rule banned `loyaltyPromotionSnapshot` only *inside* the anonymous
+create clause. `isSuperAdmin()` and `isTenantAny()` short-circuit ahead of that clause, so any
+authenticated panel/staff/admin/owner client could create a booking carrying a forged
+`{eligible:true, multiplier:10}` — which the confirmation email would have announced and the till
+would have paid. The release verification printed that exact case as `ALLOW` and it was reported as
+a pass. The owner caught it.
+
+**The fix.** The ban is hoisted **above** the branch on create, so no rules-evaluated identity can
+bring the field to a create. On update a single `affectedKeys()` guard covers add, change and delete,
+while unrelated updates stay fully allowed — cancel, reschedule and checkout still work on a booking
+that already carries a snapshot, which rides along untouched. The Admin SDK bypasses rules, so the
+only legitimate writer needs no allow path; granting one is what made the field forgeable.
+
+**Tests.** New `scripts/testPromotionSnapshotRules.py` — **17/17**, covering all ten specified cases.
+Case 10 does not simulate a server write: it asserts structurally that no `allow` clause *grants* on
+the field, and the server writer's behaviour lives in the Functions suite. Existing rules
+regressions **170/170**, zero drift.
+
+> **⚠️ Disclosed residue, deliberately not silently closed.** The root rule
+> `match /{document=**} { allow read, write: if isSuperAdmin(); }` grants platform-wide write, and
+> Firestore ORs across matching rules — so nothing inside `/bookings/{docId}` can take it away. A
+> **super-admin browser session can still write this field.** Closing it means editing that
+> platform-wide catch-all, which is outside this narrow change and carries real blast radius. The
+> suite reports it on every run rather than asserting a contract we do not hold. **Owner decision.**
+
+**Exposure window and inventory.** Start: release of the rules that allowed an authenticated snapshot
+create (~`2026-08-05T11:4xZ`). End: corrected ruleset (`2026-08-05T12:52:07Z`). Read-only inventory
+over **2,549 bookings: zero carrying `loyaltyPromotionSnapshot`.** No forged snapshot was created
+during the window; nothing suspicious, nothing deleted or modified.
+
+**First live observation:** two bookings created after the release, both walk-ins (past start,
+already checked out) — correctly stamped with **no** snapshot, and with no snapshot the multiplier
+reads back as 1, so the award is correct.
+
+> **⚠️ Coverage gap found, NOT fixed here** (Function deploy was out of scope). The `ensure` call in
+> the confirmation trigger sits **after** its four email guards (`CONFIRMED`, `clientEmail`,
+> `isEmailableBooking`, future-dated). A direct-source booking written by whitecross-site's addDoc
+> path **without a `clientEmail`** therefore never receives a snapshot and silently loses double
+> points it previously earned. `salownCreateBooking` stamps unconditionally, so salown.com is
+> unaffected. This is a behaviour regression, not a security hole; it needs its own package.
+
+---
+
 ## 🎯 DPPP — the double-points promise snapshot · **DEPLOYED & LIVE** 2026-08-05
 
 **Source `0a5aa14` (DPPP) combined with Unit 9b `943f859` / `b348cb7`.** Production is on it.
