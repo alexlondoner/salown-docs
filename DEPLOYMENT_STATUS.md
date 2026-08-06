@@ -10,7 +10,7 @@
 > separate `whitecross-site` repo deploy manually**, so code can sit on `origin/main` for days while
 > production runs older behavior. Confusing "merged" with "live" has caused real incidents.
 >
-> **Snapshot date:** 2026-08-05 (latest) — **Admin TR Checkout Unit 8 deployed** (`hosting:salown` `452e75959e3131ea`): Reports now groups money by currency and still never sums across currencies. GBP output verified unchanged against real whitecross/herohairs data AND by artifact comparison; **the TRY rendering is NOT yet proven in production** because production holds zero `checkoutReceipt` documents — the TR payment integrity hold is active — so that check is carried into **Unit 11 controlled E2E after hold-removal approval**. `hosting:salown-staff` untouched at `8409e666da7ea223`. Previous: 2026-08-04 — **REVIEW-CTA-AUDIENCE-1 deployed**: one Function
+> **Snapshot date:** 2026-08-06 (latest) — **ADMIN-SALES-FILTER-1 deployed** (`hosting:salown` ONLY, `73f57ac0dd04b54a` → `274d34604d2894d7`): Admin Sales now fetches the selected period instead of a fixed one-month lookback, so June and July read whole. Served bytes are SHA-256 identical to the local build and the new markers were absent from the previous live chunk. **The live authenticated UI pass is outstanding** — no browser was connected to the releasing session, so the deploy is verified and the running screen is not. S4A `3097521` did **not** enter the bundle (functions-only) and stays NOT LIVE. Staff untouched at `8409e666da7ea223`; Functions, rules and indexes unchanged; zero production writes. Previous: 2026-08-05 — **Admin TR Checkout Unit 8 deployed** (`hosting:salown` `452e75959e3131ea`): Reports now groups money by currency and still never sums across currencies. GBP output verified unchanged against real whitecross/herohairs data AND by artifact comparison; **the TRY rendering is NOT yet proven in production** because production holds zero `checkoutReceipt` documents — the TR payment integrity hold is active — so that check is carried into **Unit 11 controlled E2E after hold-removal approval**. `hosting:salown-staff` untouched at `8409e666da7ea223`. Previous: 2026-08-04 — **REVIEW-CTA-AUDIENCE-1 deployed**: one Function
 > (`salownSendLoyaltyEmail`) updated so a member's checkout receipt no longer carries the
 > points-incentivised Google review CTA. No hosting target, no rules, no other Function; the commit
 > carried `[skip ci]`. Verified at template level against a compiled pre-change build — non-member
@@ -18,6 +18,54 @@
 > revisions: 2026-07-26 19:45 UK; 2026-07-24 16:40 UK after Parser-3C landed on `origin/main`; earlier
 > 16:05 revision during BSP-H1, see the hosting-baseline correction below). Verify against `git log origin/main` + the live system before acting;
 > a row here is a claim about a moment, not a standing guarantee.
+
+---
+
+## 📊 ADMIN-SALES-FILTER-1 — period-accurate Admin Sales · **DEPLOYED** 2026-08-06 · **LIVE UI PASS OUTSTANDING**
+
+**Baseline commit `571ab9d`** (bookkeeping `690eed3`). Production is on it.
+
+| Surface | State |
+|---|---|
+| `hosting:salown` | ✅ **released** — `73f57ac0dd04b54a` → **`274d34604d2894d7`**, `2026-08-06T12:09:27.354Z`, single-target manual deploy (`firebase deploy --only hosting:salown --project havuz-44f70`) |
+| live artifacts | `/app` = `index-B2SvG1Jq.js`; Sales chunk `Bookings-CrZnhZIM.js` — both **SHA-256 identical to the local build** (`15bb58e5…`, `84588690…`); 8 new Sales markers present, and **none of them existed** in the previous live chunk `Bookings-DLQPo308.js` |
+| `hosting:salown-staff` | ⏸️ **untouched** — exactly `8409e666da7ea223`, serving `staff-CU9kxXXw.js` on both `staff.salown.com` and `salown-staff.web.app` |
+| Functions | ⏸️ **unchanged** — europe-west2 79 (newest `2026-08-05T23:13:25Z`), us-central1 27 (newest `2026-07-27T11:39:12Z`), both **before** the deploy |
+| `firestore.rules` | ⏸️ **unchanged** — ruleset `640c3dae-a9c8-4cb3-80c4-bc189e72874a` (2026-08-05) |
+| indexes | ⏸️ **unchanged** — 2 composite + 1 fieldOverride |
+
+**Rollback anchor:** `73f57ac0dd04b54a` (serving `index-DGUG14q6.js`, source `63efafc`).
+
+**What entered the bundle, verified by path-filtered diff rather than by commit list:** between the
+previously-live source `63efafc` and this release, the **only** commit touching `src/**` is `571ab9d`
+(4 files: `Bookings.tsx`, `Bookings.test.tsx`, `salesPeriod.ts`, `salesPeriod.test.ts`). **S4A `3097521`
+is in the tree but touches only `functions/**` + `ops/test-emulator.sh`**, so it cannot reach the Admin
+bundle and remains **NOT LIVE** — see the S4A row. Nothing unrelated was silently bundled.
+
+**Pre-deploy gates:** Sales-focused 54/54 · full frontend 78 files / 1792 tests · `tsc --noEmit` 0 ·
+`vite build` exit 0 · `git diff --check` clean · release-guard OK · clean tree, `HEAD == origin/main`.
+
+**Zero production writes** during the release and its verification — no test booking, no checkout,
+no customer email. REL-1 staff-bundle drift was cleaned with explicit paths (never `git restore .`).
+
+### ⚠️ What is NOT proven
+
+**The live authenticated UI smoke test did not run** — no Chrome extension was connected to the
+releasing session, so there was no authenticated browser. What is proven is **the deploy**: the
+correct bytes are served from the correct target, and the previous bundle demonstrably lacked them.
+What is **not** proven is **the working screen**. Outstanding checklist, unchanged:
+
+- Admin → Sales, **June 2026** → 266 period rows / **£8,084.75** checked-out revenue
+- **July 2026** → 286 rows / **£8,725.60**
+- return to June → identical values (generation-guard / no stale overwrite)
+- a filter matching nothing renders **"filtered zero"**, not "empty month"
+- **Clear filters** restores the whole month
+- pagination resets on month change and on filter change
+- Admin / Salown / Manual source choices visible
+- no console error, no repeated fetch loop
+
+Note the same June/July figures were already verified **at model level** against live Firestore on
+2026-08-06 12:3x (`be05792`); the gap is the **render** layer only.
 
 ---
 
