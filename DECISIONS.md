@@ -390,3 +390,72 @@ silently changed, and recognising it in Finance is a deliberate later decision (
 delivered-value), not an accident.
 
 **See:** [TREATMENT_PACKAGE_SYSTEM.md](TREATMENT_PACKAGE_SYSTEM.md) §6 · INV-PARA-11
+
+---
+
+## ADR-022 — Staff **access** is its own axis; `barbers.status` must never control it
+
+**Date:** 2026-08-06 · **Status:** ✅ Implemented in source (STAFF-OFFBOARDING S4A) · **NOT deployed**
+
+**Context.** The only lever that resembled "turn this person off" was `barbers/{id}.status`
+(`active`/`passive`/`leave`). It is a **service-provider assignability** field: it answers *can a
+booking be assigned TO this person*. Reaching for it as an access control has two failure modes, in
+opposite directions. Wire `passive` to app access and the owner who stops taking clients is locked
+out of their own business the day they stop cutting hair. Leave it as the only lever and a barber who
+has **left** keeps a working Staff account, valid claims and live push tokens, because nothing about
+`barbers.status` touches any of those.
+
+**Decision.** A second, independent axis: `tenants/{tid}/staff/{uid}.accessStatus` =
+`active | suspended | offboarded`, enforced server-side inside each mutation core's existing
+transaction, on the staff snapshot **already read for the role** (no new Firestore read). **Absent
+means active** (every pre-S4A document lacks the field; anything else would lock out every existing
+user on deploy). A present-but-unrecognised value **fails closed**. `leave` is never an access value.
+Every denial returns one code, `ACTOR_OFFBOARDED` → `permission-denied`; the precise state goes to
+the audit record, not to the denied caller.
+
+**Why not reuse `barbers.status`** — one field, less schema? Because the two questions have different
+answers for the same person at the same time, and the product needs both: a passive barber who still
+runs the salon, and an offboarded actor whose barber record is still active for historical
+attribution. Collapsing them means one of those two states becomes unrepresentable.
+
+**Consequences.** Two fields must be read to answer "what is this person's situation", and the S4B UI
+has to present them as visibly different things or salons will conflate them again. Assignability
+rules (`staffEligibility.ts`) and access rules (`accessStatus.ts`) stay in separate modules on
+purpose. The gate is server-side only — any surface still writing to Firestore directly from the
+client bypasses it (see O1S), so S4A is a foundation, not a finished enforcement story.
+
+**See:** [STAFF_ACCESS_CONTROL.md](STAFF_ACCESS_CONTROL.md) · ADR-023
+
+---
+
+## ADR-023 — Offboarding is a resumable state machine, because it CANNOT be a transaction
+
+**Date:** 2026-08-06 · **Status:** ✅ Implemented in source (STAFF-OFFBOARDING S4A) · **NOT deployed**
+
+**Context.** Revoking access spans three systems: Firestore (`accessStatus`, FCM token documents,
+audit), Firebase Auth (custom claims, refresh-token revocation) and the FCM registry. A Firestore
+transaction covers Firestore documents only; `setCustomUserClaims` and `revokeRefreshTokens` are
+Admin-Auth RPCs with no transactional participation and no rollback, and they take effect the moment
+they return. **There is no way to make these atomic together**, and a design that claimed to would be
+lying about its own failure modes.
+
+**Decision.** Model it explicitly as a resumable, idempotent state machine — TX-1 (authorize, flip
+`accessStatus`, open the op record) → individually idempotent effects → TX-2 (mark DONE, emit audit).
+The **ordering is the safety property**: the Firestore state that *denies* access commits first, so a
+crash at any later point leaves the person already locked out with the cleanup visibly pending. The
+failure mode is *more revoked than recorded*, never *recorded as revoked but still able to act*.
+Resumption works under the same idempotency key (same derived op document) or a different one (TX-1
+adopts the op still open on the staff document and writes an alias).
+
+**Why the audit is not `logAuditServer`.** Every other core uses that fire-and-forget sink, which is
+at-most-once and best-effort. For a security event a lost record is as wrong as a duplicate one, so
+the audit is written **inside TX-2 at a derived document id** (`staffaccess_{opId}`): exactly-once
+without depending on the process surviving.
+
+**Consequences.** There is a new server-only collection (`staffAccessOps`) that S4B must add to
+`firestore.rules` before any client reads it, and op documents can sit at stage `PENDING` until
+someone retries — a reconciliation sweep is deliberately deferred, not assumed. Refresh-token
+revocation is one-way: **re-enable cannot un-revoke**, so every restore result carries
+`mustSignInAgain: true` rather than pretending the session survived.
+
+**See:** [STAFF_ACCESS_CONTROL.md](STAFF_ACCESS_CONTROL.md) §4 · ADR-022

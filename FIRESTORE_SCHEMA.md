@@ -14,7 +14,8 @@ tenants/
     services/
     products/
     clients/
-    staff/               ← staff accounts + roles
+    staff/               ← staff accounts + roles + `accessStatus` (S4A access axis)
+    staffAccessOps/      ← S4A: offboard/re-enable operation records (server-only, NOT in rules yet)
     emailOptOuts/        ← GDPR: opt-out records for unknown clients
     auditLogs/           ← booking audit trail
     parserTombstones/    ← deduplication guard (e.g.: SLOT-Booksy-{date}-{time})
@@ -67,6 +68,26 @@ tenants/
 - `paidAmount`: the deposit amount for DEPOSIT bookings. NOT reset on edit/reschedule.
 - On CHECKED_OUT bookings `paidAmount` = full previous total — on re-checkout don't treat it as a deposit, use `platformDepositAmount`.
 - `pp()` preserves negative values (refunds). Don't strip the minus sign.
+
+## Staff access — two axes, never one (S4A)
+
+Full contract: [STAFF_ACCESS_CONTROL.md](STAFF_ACCESS_CONTROL.md).
+
+- `barbers/{id}.status` (`active`/`passive`/`leave`) = **assignability** — can a booking be
+  assigned *to* them. It does **NOT** control app access, and must never be wired to it:
+  an owner who stops taking clients is a `passive` barber who still runs the salon.
+- `staff/{uid}.accessStatus` (`active`/`suspended`/`offboarded`) = **account access**.
+  **Absent ⇒ active** (every pre-S4A doc lacks it); a present-but-unrecognised value
+  (`'ACTIVE'`, `''`, `'leave'`, …) **fails closed**. `leave` is never an access value.
+- Denials return one code, `ACTOR_OFFBOARDED` → `permission-denied`. The precise state is
+  in the audit record, never in the client response.
+- Also on the staff doc: `accessStatusUpdatedAt` / `accessStatusUpdatedBy` /
+  `accessRevocation{opId,op,stage,startedAt,completedAt,actorUid}`.
+- `staffAccessOps/{opId}` — the resumable offboard/re-enable state machine's records.
+  `opId` derived from `(op, tenantId, actorUid, rawKey)`; the raw client key is never the
+  doc id. Audit written at the derived id `auditLogs/staffaccess_{opId}` = exactly-once.
+- ⚠️ `staffAccessOps` has **no `firestore.rules` entry yet** — server-only writes today
+  (Admin SDK bypasses rules); S4B must add one before any client reads it.
 
 ## parserTombstones
 

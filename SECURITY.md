@@ -63,6 +63,8 @@ not hold, so it cannot quietly be forgotten or mistaken for closed.
 | **G5** | Single global ruleset blast radius | ⚠️ Partial (deploy discipline exists, no structural fix) | 🟠 Medium |
 | **S1** | staffComp financial data protection | ✅ **LIVE** (ruleset `1474907b`, 2026-07-16) — `match /staffComp/{barberId}` read/write=`isSuperAdmin()\|\|isOwner(tenantId)` (admin/staff CANNOT SEE comp, Finance gate parity). Catch-all READ narrowed with `{coll}/{document=**}`+`coll!='staffComp'` — because of OR-semantics an explicit block alone was not enough (G4 lesson). Comp is NEVER written to the world-readable barbers. Test 95/95 (12 S1 cases + catch-all regression), pre-deploy live-fetch+diff, post-deploy byte-identical verified | 🟢 Low |
 
+| **S4A** | Staff **access** authority + revocation (`staff/{uid}.accessStatus`) | 🔄 **SOURCE+TESTS, NOT LIVE** (2026-08-06) — canonical access axis, separate from `barbers.status`; enforced in-transaction by all 5 Staff-actor mutation cores, absent=active, unknown fails closed, one `ACTOR_OFFBOARDED` code. Server-only offboard/re-enable state machine (claims cleared, tokens revoked, per-uid FCM sweep, exactly-once audit). **Server-side ONLY — NOT in `firestore.rules`**, so any remaining client direct-write (O1S) bypasses it. ⚠️ New `staffAccessOps` collection has **no rules entry yet**. Detail: [STAFF_ACCESS_CONTROL.md](STAFF_ACCESS_CONTROL.md) | 🟠 Medium |
+
 > **2026-06-24 progress:**
 > - **G2 + G3 WENT LIVE** — `firestore.rules` merged+pushed to main (`851efeb`), `firebase deploy
 >   --only firestore:rules` → ruleset **`22bdc429-9501-4bd5-ae43-df4a694bd850`** (verified via API,
