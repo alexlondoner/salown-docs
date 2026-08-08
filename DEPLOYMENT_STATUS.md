@@ -10,7 +10,7 @@
 > separate `whitecross-site` repo deploy manually**, so code can sit on `origin/main` for days while
 > production runs older behavior. Confusing "merged" with "live" has caused real incidents.
 >
-> **Snapshot date:** 2026-08-06 (latest) — **ADMIN-SALES-FILTER-1 deployed** (`hosting:salown` ONLY, `73f57ac0dd04b54a` → `274d34604d2894d7`): Admin Sales now fetches the selected period instead of a fixed one-month lookback, so June and July read whole. Served bytes are SHA-256 identical to the local build and the new markers were absent from the previous live chunk. **The live authenticated UI pass is outstanding** — no browser was connected to the releasing session, so the deploy is verified and the running screen is not. S4A `3097521` did **not** enter the bundle (functions-only) and stays NOT LIVE. Staff untouched at `8409e666da7ea223`; Functions, rules and indexes unchanged; zero production writes. Previous: 2026-08-05 — **Admin TR Checkout Unit 8 deployed** (`hosting:salown` `452e75959e3131ea`): Reports now groups money by currency and still never sums across currencies. GBP output verified unchanged against real whitecross/herohairs data AND by artifact comparison; **the TRY rendering is NOT yet proven in production** because production holds zero `checkoutReceipt` documents — the TR payment integrity hold is active — so that check is carried into **Unit 11 controlled E2E after hold-removal approval**. `hosting:salown-staff` untouched at `8409e666da7ea223`. Previous: 2026-08-04 — **REVIEW-CTA-AUDIENCE-1 deployed**: one Function
+> **Snapshot date:** 2026-08-08 (latest) — **TEAM-LIFECYCLE-O1 deployed: two Functions, nothing else** (row directly below). `createStaffUser` `-00057-doq` → **`-00058-kur`** and `approveApplication` `-00012-kix` → **`-00013-yob`**, both europe-west2 / codebase `salown`. A new staff account now receives its `tenantRole` claim instead of landing role-less and failing every rules gate, and a super-admin approving an application keeps `superAdmin`. **Live-verified by source marker, not by revision inference** — a token-holding caller with no tenant claim gets the new 403 string, and the probed tenant's staff collection was 3 documents before and after. **`provisionTenant` was deliberately NOT deployed and must not be**: the live europe-west2 artifact carries `firebase-functions-codebase: whitecross` (`provisiontenant-00136-taj`), so self-signup still mints role-less, staff-doc-less owners — ROADMAP **T-h**. No hosting target, no rules, no indexes; 106 functions live, exactly 2 updated; REL-1 not triggered (a functions-only deploy runs no hosting predeploy hook). Previous: 2026-08-06 — **ADMIN-SALES-FILTER-1 deployed** (`hosting:salown` ONLY, `73f57ac0dd04b54a` → `274d34604d2894d7`): Admin Sales now fetches the selected period instead of a fixed one-month lookback, so June and July read whole. Served bytes are SHA-256 identical to the local build and the new markers were absent from the previous live chunk. **The live authenticated UI pass is outstanding** — no browser was connected to the releasing session, so the deploy is verified and the running screen is not. S4A `3097521` did **not** enter the bundle (functions-only) and stays NOT LIVE. Staff untouched at `8409e666da7ea223`; Functions, rules and indexes unchanged; zero production writes. Previous: 2026-08-05 — **Admin TR Checkout Unit 8 deployed** (`hosting:salown` `452e75959e3131ea`): Reports now groups money by currency and still never sums across currencies. GBP output verified unchanged against real whitecross/herohairs data AND by artifact comparison; **the TRY rendering is NOT yet proven in production** because production holds zero `checkoutReceipt` documents — the TR payment integrity hold is active — so that check is carried into **Unit 11 controlled E2E after hold-removal approval**. `hosting:salown-staff` untouched at `8409e666da7ea223`. Previous: 2026-08-04 — **REVIEW-CTA-AUDIENCE-1 deployed**: one Function
 > (`salownSendLoyaltyEmail`) updated so a member's checkout receipt no longer carries the
 > points-incentivised Google review CTA. No hosting target, no rules, no other Function; the commit
 > carried `[skip ci]`. Verified at template level against a compiled pre-change build — non-member
@@ -18,6 +18,49 @@
 > revisions: 2026-07-26 19:45 UK; 2026-07-24 16:40 UK after Parser-3C landed on `origin/main`; earlier
 > 16:05 revision during BSP-H1, see the hosting-baseline correction below). Verify against `git log origin/main` + the live system before acting;
 > a row here is a claim about a moment, not a standing guarantee.
+
+---
+
+## 🔑 TEAM-LIFECYCLE-O1 — Team Member identity/role contract · **DEPLOYED** 2026-08-08 · **2 of 3 writers; the third is BLOCKED**
+
+**Baseline commit `960db19`** (bookkeeping `7ae16d5`). Contract: [TEAM_IDENTITY_CONTRACT.md](TEAM_IDENTITY_CONTRACT.md).
+
+| Surface | State |
+|---|---|
+| `createStaffUser` (europe-west2, `salown`) | ✅ **released** — `createstaffuser-00057-doq` → **`createstaffuser-00058-kur`**, `2026-08-08T10:32:24Z` |
+| `approveApplication` (europe-west2, `salown`) | ✅ **released** — `approveapplication-00012-kix` → **`approveapplication-00013-yob`**, `2026-08-08T10:32:30Z` |
+| `provisionTenant` (europe-west2) | 🔴 **NOT deployed, and must not be from this repo** — unchanged at `provisiontenant-00136-taj`, label `firebase-functions-codebase: whitecross`. ROADMAP **T-h** |
+| every other Function | ⏸️ **unchanged** — 106 live, **exactly 2** updated in the deploy window; us-central1 legacy census intact (25 `whitecross` + 2 unlabelled) |
+| `hosting:salown` / `hosting:salown-staff` | ⏸️ **untouched** — functions-only deploy; no hosting predeploy hook ran, so **REL-1 was not triggered** and the tree stayed clean |
+| `firestore.rules` / indexes | ⏸️ **unchanged** |
+
+**Rollback anchors:** `createstaffuser-00057-doq` · `approveapplication-00012-kix`.
+
+**Deploy command (targeted — a blanket `--only functions` deletes the 27 us-central1 legacy functions):**
+`firebase deploy --only functions:salown:createStaffUser,functions:salown:approveApplication --project havuz-44f70`
+
+**Live verification — a source marker, not a revision number.** A throwaway Auth user holding
+**no** tenant claim called the live `createStaffUser` with `tenantId: 'whitecross'` and received
+**HTTP 403 `"You may only create staff in your own salon."`** — a string that exists only in the new
+code (the old path reached the staff-doc read and answered `"Only owners can create staff accounts."`).
+The guard fires before `auth.createUser` and before any Firestore write: `tenants/whitecross/staff`
+held **3 documents before and after**. The throwaway account was deleted and its absence confirmed.
+No staff account created, no production claim written, no email sent.
+
+**Blast radius, measured against live data before deploying** (read-only audit, 6 tenants): all 7
+existing staff documents already carry claims matching their `role`, so the new "tenant comes from the
+verified claim" guard cannot bite an existing user; and **no `admin`-role document exists in any
+tenant**, so the new "an admin may not mint an owner" guard has no live subject today.
+
+**Known drift, deliberately NOT repaired** (repair is separately authorized work): `the-hair-lab`
+owner has `{tenantId}` with no `tenantRole` and no staff doc; `yusufo` owner has the role claim but no
+staff doc. Both came through `provisionTenant`, so **T-h gates the cleanup** — repairing them while the
+writer is unfixed only refills the set.
+
+**Pre-deploy gates:** functions unit 1203/1203 · emulator 413/413 · frontend 2011/2011 ·
+`deploy-policy` 28/28 · `release-guard` OK · `tsc --noEmit` 0 both configs. Pre-deploy state: HEAD ==
+`origin/main`, tree clean 0/0, `claims.sh validate` clean, and **106 functions all `ACTIVE` with none
+updated in the preceding 30 minutes** (no concurrent session deploying).
 
 ---
 
