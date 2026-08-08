@@ -30,7 +30,8 @@ cd ~/Desktop/alex/salown-app
 firebase deploy --only firestore:rules --project havuz-44f70
 ```
 - The `firestore.rules` copies in other repos are DEAD — don't deploy `firestore:rules` from them.
-- CI (`--only hosting`) doesn't touch rules; rules deploy is always manual + approved.
+- CI never touches rules; rules deploy is always manual + approved. Since 2026-08-08 a
+  `firestore.rules` change does not even start the hosting workflow (see the matrix below).
 - Pull live rule + test (no Java/emulator needed): `python3 docs/test-firestore-rules.py salown-app/firestore.rules`.
 - Rollback: `docs/firestore.rules.ROLLBACK.txt` (old ruleset name). Snapshot: `docs/firestore.rules.LIVE` (before the change).
 
@@ -42,9 +43,42 @@ per host within a single site. It's not "old build overwrote it" — **the domai
 To fix: open a separate hosting site (`salown-hub`) for hub + move the domain to it, OR
 in the landing index.html redirect to `/hub` if `location.host==='hub.salown.com'`.
 
-## salown-app Deploy
+## Deployment matrix — which trigger releases which site (CI-HOSTING-SCOPE-P0, 2026-08-08)
 
-**⛔ Never `--only hosting`.** That is BOTH sites. Name the target:
+**⛔ Never `--only hosting`, anywhere.** It selects the hosting *product*, so it releases every
+site in that config's hosting array — a set that changes when the config changes rather than
+when you decide something. Both repos' workflows and both deploy scripts now name their targets.
+
+| Site | Released by | Trigger / command |
+|---|---|---|
+| `salown` — salown.com, `/app`, `/book`, `/s` | `salown-app/.github/workflows/deploy.yml` | push to `main` touching the Admin-shipped allow-list → `--only hosting:salown` |
+| `salown-staff` — staff.salown.com | **hand only** | `npm run deploy:staff` (`--only hosting:salown-staff`) |
+| `whitecrossbarbers-admin` + `-owner` | `whitecross-site/.github/workflows/deploy.yml` | push to `main` touching `barber-panel/src|public|package*.json`, `firebase.admin.json`, `.firebaserc` → `--only hosting:whitecrossbarbers-admin,hosting:whitecrossbarbers-owner` |
+| `whitecrossbarbers-app` / `-clientapp` | **hand only** | `whitecross-site/deploy.sh` (interactive, confirm-to-ship) |
+| `whitecrossbarbers-saas` — **the live public site** | **hand only** | `--only hosting:whitecrossbarbers-saas --config firebase.saas.json` |
+| functions / rules / indexes | **hand only**, targeted | never CI, never blanket |
+
+**The Admin allow-list** (`salown-app`): `index.html`, `src/**` *except* `src/staff/**`,
+`public/**`, `packages/**`, `hosting/**` *except* `hosting/staff-bundle/**`, `vite.config.js`,
+`package.json`, `package-lock.json`. It is fail-closed: a path nobody listed does not deploy.
+So a commit touching only `functions/`, `firestore.rules`, `firestore.indexes.json`, `docs/`,
+`ops/`, `scripts/`, `SYNC.md` or `src/staff/**` starts no Hosting deploy at all.
+
+Both halves of the salOWN scope — the named target and the allow-list — are asserted by
+`salown-app/ops/deploy-policy.test.js`, in `npm test` and as a step inside the deploy workflow
+itself. Widening CI back to `--only hosting` fails a test before it can reach production.
+
+**Why this mattered:** the unscoped `--only hosting` is exactly how `0f9a064` (2026-08-03) and
+`f01c902` (2026-08-04) put unapproved Staff builds live for 23 and 30 minutes. See
+[INCIDENTS.md](INCIDENTS.md).
+
+**`[skip ci]` is still required on every outgoing salown-app commit** — `ops/release-guard.sh`
+refuses an untagged push, and `ALLOW_CI_RELEASE=1` (legacy alias: `ALLOW_BOTH_TARGETS=1`) is how
+you say you mean it. The path filter decides whether CI *starts*; the guard decides whether the
+release is *deliberate*. They are different questions, because the predeploy hook rebuilds from
+current `src/` — so the first push that does clear the filter ships every unreleased change with it.
+
+## salown-app Deploy
 
 ```bash
 cd ~/Desktop/alex/salown-app
@@ -111,9 +145,15 @@ apex A `199.36.158.100`, www CNAME `whitecrossbarbers-saas.web.app`, Enforce equ
 http→301 automatic in Firebase. Public site deploy:
 ```bash
 cd ~/Desktop/alex/whitecross-site
-firebase deploy --config firebase.saas.json --only hosting --project havuz-44f70
+firebase deploy --only hosting:whitecrossbarbers-saas --config firebase.saas.json --project havuz-44f70
 ```
-For panel/staff/owner sites use `deploy.sh` (interactive selection).
+`firebase.saas.json` currently declares this one site, so the target is redundant *today* — name
+it anyway: the redundancy is what keeps the command correct if a second entry is ever added.
+No workflow deploys this site; a GitHub push does **not** update whitecrossbarbers.com.
+
+For the staff/client/owner panel sites use `deploy.sh` (interactive, confirm-to-ship; every
+option resolves to an explicit `hosting:<site>` list, option 5 included). The admin + owner
+panels also auto-deploy from `whitecross-site`'s own workflow when `barber-panel/` changes.
 
 Whitecross functions deploy — **NEVER WRITE blanket `--only functions`** (it proposes
 deleting salown codebase's 52 functions; see functions-deploy-gotcha):
