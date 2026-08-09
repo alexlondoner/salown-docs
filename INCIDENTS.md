@@ -35,6 +35,27 @@ Every incident opens with `## YYYY-MM-DD — short title`, immediately followed 
 
 **Tag dictionary (CANONICAL — only these; sprawl forbidden):** `#security` `#stripe` `#secrets` `#config` `#deploy` `#normalization` `#permission` `#race` `#timezone` `#parser` `#email` `#data-loss` `#shared-infra`. A new tag is added only if a genuinely new class emerges (e.g. twins like `#payment`+`#payments`+`#stripe-payment` are FORBIDDEN → all `#stripe`). Every entry carries a `**Tags:**` line.
 
+## 2026-08-09 — A green test suite shipped a Staff till outage: the UI's product ids and the server's product ids were different collections
+
+**Severity:** 🟠 High · **Owner:** alish/psa2-resume · **Status:** ✅ Resolved (rolled back) · **Affected area:** Staff App walk-in, products-only sale
+
+**Tags:** `#deploy` `#normalization`
+
+**Discovery:** caught by ME during the live Staff E2E, at the last possible moment — the deploy was already live, but the E2E stopped at "No matches" when searching the Staff catalogue for the test product, before any sale was written. Not caught by any test, any gate, or any review.
+**Impact:** for ~6 minutes, any tenant whose staff sold products from a products-only cart in the Staff App would have been refused with "A product in this sale no longer exists". tr-demo had zero services in the `Products` category, so the path was unreachable there and **no sale was harmed and no wrong row was written**; exposure to other tenants could not be verified from the session, so it was reverted rather than left up.
+**Root Cause:** two different collections were treated as one id space. The Staff cart builds its "Products" group from the **services** collection (`WalkInFlow` catalogue: `category === 'Products'`, `itemKind()`), and `productPayload` sends `productId: i.id` — a *service* doc id. `salownCreateStaffProductSale` resolves `tenants/{tid}/products/{productId}` — the **products** collection. The legacy browser writer never validated that the product existed, so it silently accepted service ids for years; the callable is fail-closed, which correctly refuses them. The cutover did not create the inconsistency, it *revealed* it — and converted a latent data smell into a till outage.
+**Bug Class:** SSOT violation — same concept ("a product") owned by two collections, with the client and the server each authoritative over a different one. Same family as the barberId walk-in/online split.
+**Resolution:** `git revert` of the cutover (`f2426b6` → `cfe60cf`) + immediate redeploy of `hosting:salown-staff`. Live Staff back to the legacy writer (`staff-DPP2bVf5.js`, PSA2 marker absent, bytes identical to the local build). Admin phase 3 (`d9e7684`) unaffected and still live — the Admin panel reads the products collection directly, so its ids *are* the ids the server resolves, which is exactly why its E2E passed.
+**Prevention:** **a cutover to a fail-closed server writer must prove the client's id space is the server's id space, against live or emulator-seeded data — asserting the call is not asserting the contract.** Every test here (mine included) checked payload shape, callable identity and no-fallback; none checked that the ids the UI produces resolve server-side. Before any Staff retry the catalogue and the product authority must be put on one collection — a design decision, not a one-line fix.
+**Regression Tests:** none yet — deliberately. A source-contract test cannot see a cross-collection mismatch; the meaningful guard is an emulator fixture seeded from the real Staff catalogue shape, which belongs with the design fix.
+**Related:** commits `f2426b6` (cutover) · `cfe60cf` (revert) · `d9e7684` (Admin, unaffected) · files `src/staff/sheets/WalkInFlow.tsx`, `functions/src/sales/productSaleCore.ts:220` · roadmap PSA2-WRITER-P0 phase 4
+
+**Lessons Learned**
+- **Green gates measured the wrong thing.** tsc 0, 2027/2027, eslint 0, both builds, diff-check — all passed, and the code was still wrong. Gate count is not evidence of correctness when every gate tests one side of an integration.
+- **A fail-closed rewrite of a permissive writer is a data-quality audit in disguise.** The old writer's silence was hiding a real inconsistency; anything that starts validating will surface it as an outage. Budget for that before deploying, not during the E2E.
+- **The E2E earned its place.** Unit tests, source contracts and production probes all passed; only driving the actual UI against real data found it. The order "deploy → E2E" meant it was found live; "deploy to a preview channel → E2E → promote" would have found it with zero exposure.
+- **The rollback was not byte-exact and that should be stated, not glossed.** `hosting:salown-staff`'s predeploy hook rebuilds from source on every deploy, so the anchor artifact `staff-CU9kxXXw.js` could not be restored byte-for-byte; the revert restored *behaviour* under a new filename. Exact artifact rollback needs a Console release rollback (the CLI at v15 has no `hosting:releases`/`versions` command).
+
 ## 2026-08-04 — The same missing `[skip ci]`, one day later, through the hole the guard was written around
 
 **Severity:** 🟠 High · **Owner:** alish/admin-tr-checkout-unit8 · **Status:** ✅ Resolved · **Affected area:** release process, `hosting:salown-staff`
