@@ -37,7 +37,7 @@ Every incident opens with `## YYYY-MM-DD — short title`, immediately followed 
 
 ## 2026-08-09 — A green test suite shipped a Staff till outage: the UI's product ids and the server's product ids were different collections
 
-**Severity:** 🟠 High · **Owner:** alish/psa2-resume · **Status:** ✅ Resolved (rolled back) · **Affected area:** Staff App walk-in, products-only sale
+**Severity:** 🟠 High · **Owner:** alish/psa2-resume · **Status:** ✅ Resolved (rolled back, then fixed properly — `509e63e`, Staff live + E2E-verified 2026-08-09) · **Affected area:** Staff App walk-in, products-only sale
 
 **Tags:** `#deploy` `#normalization`
 
@@ -47,13 +47,14 @@ Every incident opens with `## YYYY-MM-DD — short title`, immediately followed 
 **Bug Class:** SSOT violation — same concept ("a product") owned by two collections, with the client and the server each authoritative over a different one. Same family as the barberId walk-in/online split.
 **Resolution:** `git revert` of the cutover (`f2426b6` → `cfe60cf`) + immediate redeploy of `hosting:salown-staff`. Live Staff back to the legacy writer (`staff-DPP2bVf5.js`, PSA2 marker absent, bytes identical to the local build). Admin phase 3 (`d9e7684`) unaffected and still live — the Admin panel reads the products collection directly, so its ids *are* the ids the server resolves, which is exactly why its E2E passed.
 **Prevention:** **a cutover to a fail-closed server writer must prove the client's id space is the server's id space, against live or emulator-seeded data — asserting the call is not asserting the contract.** Every test here (mine included) checked payload shape, callable identity and no-fallback; none checked that the ids the UI produces resolve server-side. Before any Staff retry the catalogue and the product authority must be put on one collection — a design decision, not a one-line fix.
-**Regression Tests:** none yet — deliberately. A source-contract test cannot see a cross-collection mismatch; the meaningful guard is an emulator fixture seeded from the real Staff catalogue shape, which belongs with the design fix.
+**Regression Tests:** ✅ landed with the fix (`509e63e`). `src/staff/lib/staffCatalogue.test.ts` (15) pins the boundary as behaviour — products come only from the products collection, a 'Products'-category SERVICE never reaches the group yet stays visible as a service, and a service and product sharing a doc id stay two distinct cart lines. `functions/src/sales/productSaleCore.emulator.test.js` (+6, REAL Firestore, fixture seeds BOTH collections with deliberately different ids) proves a services doc id is refused PRODUCT_NOT_FOUND with zero bookings and zero audit rows, that a mixed cart with one bad id writes nothing at all, and that the canonical id creates exactly one sale with server-stamped `source: 'Staff App'`.
 **Related:** commits `f2426b6` (cutover) · `cfe60cf` (revert) · `d9e7684` (Admin, unaffected) · files `src/staff/sheets/WalkInFlow.tsx`, `functions/src/sales/productSaleCore.ts:220` · roadmap PSA2-WRITER-P0 phase 4
 
 **Lessons Learned**
 - **Green gates measured the wrong thing.** tsc 0, 2027/2027, eslint 0, both builds, diff-check — all passed, and the code was still wrong. Gate count is not evidence of correctness when every gate tests one side of an integration.
 - **A fail-closed rewrite of a permissive writer is a data-quality audit in disguise.** The old writer's silence was hiding a real inconsistency; anything that starts validating will surface it as an outage. Budget for that before deploying, not during the E2E.
 - **The E2E earned its place.** Unit tests, source contracts and production probes all passed; only driving the actual UI against real data found it. The order "deploy → E2E" meant it was found live; "deploy to a preview channel → E2E → promote" would have found it with zero exposure.
+- **The fix was ADDITIVE, which the inventory proved rather than assumed.** Before changing anything, a read-only sweep of every readable tenant found ZERO services in a 'Products' category (whitecross 24 services → 0, herohairs 15 → 0, tr-demo 12 → 0). So the Staff Products group had been empty platform-wide, the products-only branch was unreachable, no migration was needed, and the original blast radius really was zero — established by evidence, not by inability to disprove harm.
 - **The rollback was not byte-exact and that should be stated, not glossed.** `hosting:salown-staff`'s predeploy hook rebuilds from source on every deploy, so the anchor artifact `staff-CU9kxXXw.js` could not be restored byte-for-byte; the revert restored *behaviour* under a new filename. Exact artifact rollback needs a Console release rollback (the CLI at v15 has no `hosting:releases`/`versions` command).
 
 ## 2026-08-04 — The same missing `[skip ci]`, one day later, through the hole the guard was written around
