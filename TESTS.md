@@ -1504,28 +1504,85 @@ never creates them, not because anything was removed.
 
 ---
 
-## Canonical emulator gate — TWO mandatory phases (2026-08-04)
+## Canonical emulator gate — TWO mandatory phases, PINNED emulator (2026-08-04 · pinned 2026-08-10)
 
 `cd functions && npm run test:emulator` runs `ops/test-emulator.sh`, which executes **two**
 `firebase emulators:exec` invocations and aggregates their totals:
 
 | Phase | Suites | Tests |
 |---|---|---|
-| general | bookings · inventory · treatmentSessions · checkout | 164 |
+| general | bookings · parsers · staff · inventory · treatmentSessions · checkout · sales | 392 |
 | packages | packages (own emulator lifecycle) | 27 |
-| **TOTAL** | | **191** |
+| **TOTAL** | | **419** |
 
-Either phase failing fails the command. **No test was removed, skipped or weakened** — the
-total is identical to the previous single-phase run.
+Either phase failing fails the command. **No test has ever been removed, skipped or weakened**
+to reach a green total.
 
-**Why split:** `EMU: two DIFFERENT concurrent payments both land` intermittently failed with
-`INVALID_ARGUMENT: Transaction is invalid or closed`, raised at `tx.get(ledgerQuery)` — a
-query inside a transaction — while two transactions contend on one `clientPackages` document.
-Measured: package suite alone 5/5 pass · last in the combined run 2/2 pass · 3rd in the old
-order 4 fail / 5 runs after Unit 6 and 1 fail / 3 before it. Intermittent, not deterministic;
-Unit 6's added fixtures raised the rate, they did not create it. **No retry budget was
-raised** — that is production semantics, and bending it to green a test would change how real
-checkouts behave under real contention.
+### The emulator version is a repository dependency (EMU-TX-FLAKE-1, 2026-08-10)
+
+`firebase-tools` is pinned **exactly** — `"firebase-tools": "15.26.0"` in
+`functions/package.json`, no `^`, no `~` — and `ops/test-emulator.sh` resolves that CLI by
+**absolute path** (`functions/node_modules/.bin/firebase`), asserts its version, asserts that
+it ships `cloud-firestore-emulator-v1.22.0.jar`, and **exits 2** if any check fails. It can no
+longer fall back to whatever `firebase` the machine has on `$PATH`. The exact pin is required
+because the emulator JAR version is hard-coded inside each firebase-tools release: a floating
+range would silently float the JAR. `FIREBASE_EMULATORS_PATH` still selects the JAR *cache
+location*; it can never select a *version*.
+
+**Why.** The gate failed intermittently at **418/419** with
+
+```
+Error: 3 INVALID_ARGUMENT: Transaction is invalid or closed.
+    at Timeout.makeRequest [as _onTimeout] (retry-request/index.js:159)
+```
+
+on whichever test lost the race that run — `EMU: two DIFFERENT concurrent payments…`
+(packages), `STAFF EMU: concurrent same-key…` (bookings), `EMU-R 8a: same mutationId…`
+(inventory). Different tests, one signature. Never a product defect, never one test's bug.
+
+**Measured root cause** (RPC-level capture, not inference). Under contention the Firestore
+emulator resolved lock waits with two different timeouts carrying two different gRPC statuses:
+
+| Blocked operation | Wait | Status | SDK verdict |
+|---|---|---|---|
+| **commit** blocked on locks | ≈ 2.6 s | `10 ABORTED: Transaction lock timeout.` | retryable ✅ |
+| **read** (`BatchGetDocuments`/`RunQuery`) on an **already-open** transaction | ≈ 10 s | `3 INVALID_ARGUMENT: Transaction is invalid or closed.` | **permanent ❌** |
+
+`isRetryableTransactionError` (`@google-cloud/firestore`, `transaction.js`) accepts
+`INVALID_ARGUMENT` only when the message matches `/transaction has expired/` — the wording
+**real** Firestore uses. The emulator's wording matched nothing, so a pure contention outcome
+was classified permanent and `runTransaction` rejected instead of retrying.
+
+**Production was never affected.** A read-only Cloud Logging sweep (`entries:list`, project
+`havuz-44f70`, 30 days, every booking/checkout callable) returned **zero** hits for
+`"Transaction is invalid or closed"` and **zero** for `ABORTED` / `Transaction lock timeout` /
+`transaction has expired` / `Too much contention`.
+
+**Isolated version probe** — identical harness, identical assertions, 150 two-way contention
+rounds each, the newer CLI installed to a disposable prefix with its own JAR cache:
+
+| Toolchain | Result | `INVALID_ARGUMENT` | `ABORTED` | tx retries |
+|---|---|---|---|---|
+| firebase-tools 15.15.0 · emulator **v1.20.4** | **FAILED at round 30** | 5 | 159 | 53 |
+| firebase-tools 15.26.0 · emulator **v1.22.0** | **150/150 passed** | **0** | 687 | 229 |
+
+v1.22.0 contends **harder**, not less — 4.3× the lock timeouts and 4.3× the transaction
+retries — and returns every one of them as retryable `ABORTED`. The race is intact; only the
+misclassification is gone. Control: 150 rounds at concurrency 1 pass in 15 s on either
+version, so concurrency is necessary and sufficient to trigger it.
+
+**No retry budget was raised, no product transaction code was touched, no concurrency was
+reduced, no sleep was added.** Bending retry policy is production semantics, and bending it to
+green a test would change how real checkouts behave under real contention.
+
+### Correction of record — the 2026-08-04 two-phase split was not the cure
+
+The earlier note here said the flake was decided by "position in a SHARED emulator lifecycle"
+and that the package suite was the site of it. **Both were wrong.** EMU-TX-FLAKE-1 reproduced
+the identical failure on a **brand-new, empty** emulator in **43 seconds** with a single test
+shape, and reproduced it in the *bookings* and *inventory* suites, not packages. The split
+reduced exposure by luck of scheduling; it never addressed the cause. It stays because
+per-suite isolation is good hygiene, not because it fixes anything.
 
 ## Unit 5–7B suites
 
