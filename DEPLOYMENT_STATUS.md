@@ -10,7 +10,7 @@
 > separate `whitecross-site` repo deploy manually**, so code can sit on `origin/main` for days while
 > production runs older behavior. Confusing "merged" with "live" has caused real incidents.
 >
-> **Snapshot date:** 2026-08-08 (latest) — **TEAM-LIFECYCLE-O1 deployed: two Functions, nothing else** (row directly below). `createStaffUser` `-00057-doq` → **`-00058-kur`** and `approveApplication` `-00012-kix` → **`-00013-yob`**, both europe-west2 / codebase `salown`. A new staff account now receives its `tenantRole` claim instead of landing role-less and failing every rules gate, and a super-admin approving an application keeps `superAdmin`. **Live-verified by source marker, not by revision inference** — a token-holding caller with no tenant claim gets the new 403 string, and the probed tenant's staff collection was 3 documents before and after. **`provisionTenant` was deliberately NOT deployed and must not be**: the live europe-west2 artifact carries `firebase-functions-codebase: whitecross` (`provisiontenant-00136-taj`), so self-signup still mints role-less, staff-doc-less owners — ROADMAP **T-h**. No hosting target, no rules, no indexes; 106 functions live, exactly 2 updated; REL-1 not triggered (a functions-only deploy runs no hosting predeploy hook). Previous: 2026-08-06 — **ADMIN-SALES-FILTER-1 deployed** (`hosting:salown` ONLY, `73f57ac0dd04b54a` → `274d34604d2894d7`): Admin Sales now fetches the selected period instead of a fixed one-month lookback, so June and July read whole. Served bytes are SHA-256 identical to the local build and the new markers were absent from the previous live chunk. **The live authenticated UI pass is outstanding** — no browser was connected to the releasing session, so the deploy is verified and the running screen is not. S4A `3097521` did **not** enter the bundle (functions-only) and stays NOT LIVE. Staff untouched at `8409e666da7ea223`; Functions, rules and indexes unchanged; zero production writes. Previous: 2026-08-05 — **Admin TR Checkout Unit 8 deployed** (`hosting:salown` `452e75959e3131ea`): Reports now groups money by currency and still never sums across currencies. GBP output verified unchanged against real whitecross/herohairs data AND by artifact comparison; **the TRY rendering is NOT yet proven in production** because production holds zero `checkoutReceipt` documents — the TR payment integrity hold is active — so that check is carried into **Unit 11 controlled E2E after hold-removal approval**. `hosting:salown-staff` untouched at `8409e666da7ea223`. Previous: 2026-08-04 — **REVIEW-CTA-AUDIENCE-1 deployed**: one Function
+> **Snapshot date:** 2026-08-10 (latest) — **TR-CURRENCY-D+E+A/C deployed: `hosting:salown` only** (row directly below). Admin `81fe195d535f9c5d` → **`0d42517d7cba104a`**; the Admin panel's Product price surfaces — catalogue card, selector line, cart total, and the price-entry box — now read and write in the tenant's own currency, and an unreadable price is no longer rendered as `£0.00`. Verified by executing the deployed minified formatters and by an authenticated read-only pass on a live TRY tenant. **`hosting:salown-staff`, Functions, rules, indexes and Storage were all untouched, and zero production data was written.** ⚠️ **Deployed from an isolated clone of `origin/main`, not the working tree**: a second session began editing `src/pages/Products.tsx` uncommitted while the gates were running, and the `firebase.json` predeploy hook builds from the *current* tree — so an in-place deploy would have published unreviewed work. The isolated build came out byte-identical, and as a side effect **REL-1 never fired** (the shared `hosting/staff-bundle/**` stayed clean). **Two earlier deploys are not yet written up in this file and are recorded in `salown-app/SYNC.md`:** TR-P1 Admin localization Phase 1 (`hosting:salown` `f35a939ea269aba6` → `81fe195d535f9c5d`, 2026-08-09T22:20:10Z — confirmed live as the pre-deploy anchor here) and SERVICE-IDENTITY-A Stage 1 (5 Functions, europe-west2, last updated 2026-08-10T09:05:55Z — confirmed from Cloud Run). Previous: 2026-08-08 — **TEAM-LIFECYCLE-O1 deployed: two Functions, nothing else**. `createStaffUser` `-00057-doq` → **`-00058-kur`** and `approveApplication` `-00012-kix` → **`-00013-yob`**, both europe-west2 / codebase `salown`. A new staff account now receives its `tenantRole` claim instead of landing role-less and failing every rules gate, and a super-admin approving an application keeps `superAdmin`. **Live-verified by source marker, not by revision inference** — a token-holding caller with no tenant claim gets the new 403 string, and the probed tenant's staff collection was 3 documents before and after. **`provisionTenant` was deliberately NOT deployed and must not be**: the live europe-west2 artifact carries `firebase-functions-codebase: whitecross` (`provisiontenant-00136-taj`), so self-signup still mints role-less, staff-doc-less owners — ROADMAP **T-h**. No hosting target, no rules, no indexes; 106 functions live, exactly 2 updated; REL-1 not triggered (a functions-only deploy runs no hosting predeploy hook). Previous: 2026-08-06 — **ADMIN-SALES-FILTER-1 deployed** (`hosting:salown` ONLY, `73f57ac0dd04b54a` → `274d34604d2894d7`): Admin Sales now fetches the selected period instead of a fixed one-month lookback, so June and July read whole. Served bytes are SHA-256 identical to the local build and the new markers were absent from the previous live chunk. **The live authenticated UI pass is outstanding** — no browser was connected to the releasing session, so the deploy is verified and the running screen is not. S4A `3097521` did **not** enter the bundle (functions-only) and stays NOT LIVE. Staff untouched at `8409e666da7ea223`; Functions, rules and indexes unchanged; zero production writes. Previous: 2026-08-05 — **Admin TR Checkout Unit 8 deployed** (`hosting:salown` `452e75959e3131ea`): Reports now groups money by currency and still never sums across currencies. GBP output verified unchanged against real whitecross/herohairs data AND by artifact comparison; **the TRY rendering is NOT yet proven in production** because production holds zero `checkoutReceipt` documents — the TR payment integrity hold is active — so that check is carried into **Unit 11 controlled E2E after hold-removal approval**. `hosting:salown-staff` untouched at `8409e666da7ea223`. Previous: 2026-08-04 — **REVIEW-CTA-AUDIENCE-1 deployed**: one Function
 > (`salownSendLoyaltyEmail`) updated so a member's checkout receipt no longer carries the
 > points-incentivised Google review CTA. No hosting target, no rules, no other Function; the commit
 > carried `[skip ci]`. Verified at template level against a compiled pre-change build — non-member
@@ -18,6 +18,79 @@
 > revisions: 2026-07-26 19:45 UK; 2026-07-24 16:40 UK after Parser-3C landed on `origin/main`; earlier
 > 16:05 revision during BSP-H1, see the hosting-baseline correction below). Verify against `git log origin/main` + the live system before acting;
 > a row here is a claim about a moment, not a standing guarantee.
+
+---
+
+## 💱 TR-CURRENCY-D+E+A/C — tenant-aware Product money in the Admin panel · **DEPLOYED** 2026-08-10 · **LIVE, authenticated TRY pass done**
+
+**Deploy tree `598237e`** (implementation `53ffe30` A+C, `f5a79bf` D, `e850820` E; claim/bookkeeping only after that).
+
+| Surface | State |
+|---|---|
+| `hosting:salown` | ✅ **released** — `81fe195d535f9c5d` → **`0d42517d7cba104a`**, release `1786354702287000`, `2026-08-10T09:38:22.287Z`, single-target manual deploy (`firebase deploy --only hosting:salown --project havuz-44f70`) |
+| live artifacts | `/app` = `index-BrZIXWq7.js` → **`index-DNCMhu3z.js`**; entry, `Products-DCl0oKkx.js` and `Dashboard-Bfcprfr6.js` all **SHA-256 identical** to the local build (`860099c3…`, `455dedd1…`, `cf3bb543…`). All 21 lazy chunks return 200 |
+| `hosting:salown-staff` | ⏸️ **untouched** — exactly `d8de0132fd465ef9`, still serving `staff-BALp7dqM.js` (checked before **and** after) |
+| Functions | ⏸️ **unchanged** — 81 europe-west2 + 27 us-central1 legacy orphans; newest update `2026-08-10T09:05:55Z` (SERVICE-IDENTITY-A), **before** this deploy |
+| `firestore.rules` / Storage rules | ⏸️ **unchanged** — `640c3dae-a9c8-4cb3-80c4-bc189e72874a` (2026-08-05) / `4c00eef7…` (2026-05-24) |
+| indexes | ⏸️ **unchanged** — 2 composite, both READY |
+
+**Rollback anchor:** `81fe195d535f9c5d` (serving `index-BrZIXWq7.js`, source `ac36887`).
+
+**What changed for a salon.** A Turkish tenant's Product price was stored, entered and displayed
+through surfaces that hardcoded `£`. The numbers were never converted — only the symbol lied — so a
+₺13 shampoo read "£13.00" and was sold at that label without anything ever *looking* broken. Now the
+catalogue card, the selector line, the cart total and the price-entry box all resolve locale +
+currency from the tenant's `presentation` record. The entry box also accepts `12,99` (it was
+`type="number"`, which rejects a comma outright) and persists canonical dot-decimal MAJOR units.
+
+**Three slices shipped together, and that is inherent, not accidental.** The predeploy hook builds
+from source, so a `hosting:salown` release ships every unreleased change in `src/**`. Besides D and
+E that meant **TR-CURRENCY-A+C** (`53ffe30`) — Services card price, Products card price, Barbers
+revenue chip. Its one accepted UK-visible difference: Intl always gives GBP two fraction digits, so
+Services cards now read `£25.00` rather than `£25`, and the Barbers chip gained pence.
+
+**Live verification — the deployed bytes were executed, not just grepped.** The minified
+`formatProductPrice` / `formatMoney` / `parseProductPriceInput` were extracted from the served
+`index-DNCMhu3z.js` and run under Node:
+
+| stored `price` | GBP | TRY |
+|---|---|---|
+| `"12.99"` | `£12.99` | `₺12,99` |
+| `"1234.50"` | `£1,234.50` | `₺1.234,50` |
+| `"0"` | `£0.00` | `₺0,00` |
+| `"TBC"` / `"abc"` | `TBC` / `abc` | `TBC` / `abc` |
+| `"12.500"` (ambiguous) | `12.500` | `12.500` |
+
+Zero stays a real price; an unreadable one is returned verbatim rather than dressed up as free. The
+hardcoded `[£, p.price]` node is **absent** from the new ProductSelector and **was present** in the
+previous live chunk; the cart total moved from `[£, total.toFixed(2)]` to `formatMoney(total)`.
+
+**Authenticated live UI pass — read-only, on a real TRY tenant** (Işıl Güzellik & Lazer DEMO):
+Products card `₺300,00`; Product-sale panel line `₺300,00` **and** Total `₺300,00` (agreeing — the
+reason the slice insisted on moving line and total together); Add-product form labelled `FİYAT ₺ *`
+with placeholder `12,99`. The panel was closed with **Cancel**; "Complete Sale" was never pressed and
+the product count stayed 1. Console clean — zero messages across a full page load.
+
+**⚠️ Deployed from an isolated clone of `origin/main`, not the working tree.** While the gates were
+running, a second session (`alish/tr-currency-f`) claimed and began editing `src/pages/Products.tsx`
+**uncommitted** in the shared repo. `firebase.json` attaches `npm run build` as a predeploy hook, and
+it builds from the *current* tree — the exact mechanism `ops/release-guard.sh` documents — so an
+in-place deploy would have published another session's unreviewed work. A clean clone of
+`origin/main` was taken, `npm ci`'d, re-gated and deployed from there; its build was **byte-identical**
+to the earlier one, which also proves the earlier build predated those edits. Nothing in the shared
+tree, no claim and no stash was touched. **Side benefit: REL-1 never fired** — the staff predeploy
+hook ran inside the disposable clone, so the tracked `hosting/staff-bundle/**` stayed clean and
+needed no restore. That is a candidate fix for REL-1 itself.
+
+**Pre-deploy gates** (clean clone at `598237e`): focused D 58/58 · focused E 21/21 · currency
+presentation 167/167 · frontend **2248/2248** (97 files) · `tsc --noEmit` 0 on both configs · eslint 0
+on the released files · `deploy-policy` 28/28 · `release-guard` OK · `git diff --check` clean ·
+`claims.sh validate` clean.
+
+**Still hardcoded `£` — out of scope here, not a regression:** `Products.tsx` page cart `Total: £`
+(TR-CURRENCY-F, in progress) · `SalonSitePage.tsx:498` service-variation price on the public `/s/**`
+page · `BookingDetailPanel.tsx` (51 sites, no `useLocale` at all) · Home stat cards (`£0`, `£1,500`)
+which belong to TR-P1 Phase 2.
 
 ---
 
