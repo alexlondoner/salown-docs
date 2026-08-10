@@ -10,7 +10,7 @@
 > separate `whitecross-site` repo deploy manually**, so code can sit on `origin/main` for days while
 > production runs older behavior. Confusing "merged" with "live" has caused real incidents.
 >
-> **Snapshot date:** 2026-08-10 (latest) — **TR-CURRENCY-D+E+A/C deployed: `hosting:salown` only** (row directly below). Admin `81fe195d535f9c5d` → **`0d42517d7cba104a`**; the Admin panel's Product price surfaces — catalogue card, selector line, cart total, and the price-entry box — now read and write in the tenant's own currency, and an unreadable price is no longer rendered as `£0.00`. Verified by executing the deployed minified formatters and by an authenticated read-only pass on a live TRY tenant. **`hosting:salown-staff`, Functions, rules, indexes and Storage were all untouched, and zero production data was written.** ⚠️ **Deployed from an isolated clone of `origin/main`, not the working tree**: a second session began editing `src/pages/Products.tsx` uncommitted while the gates were running, and the `firebase.json` predeploy hook builds from the *current* tree — so an in-place deploy would have published unreviewed work. The isolated build came out byte-identical, and as a side effect **REL-1 never fired** (the shared `hosting/staff-bundle/**` stayed clean). **Two earlier deploys are not yet written up in this file and are recorded in `salown-app/SYNC.md`:** TR-P1 Admin localization Phase 1 (`hosting:salown` `f35a939ea269aba6` → `81fe195d535f9c5d`, 2026-08-09T22:20:10Z — confirmed live as the pre-deploy anchor here) and SERVICE-IDENTITY-A Stage 1 (5 Functions, europe-west2, last updated 2026-08-10T09:05:55Z — confirmed from Cloud Run). Previous: 2026-08-08 — **TEAM-LIFECYCLE-O1 deployed: two Functions, nothing else**. `createStaffUser` `-00057-doq` → **`-00058-kur`** and `approveApplication` `-00012-kix` → **`-00013-yob`**, both europe-west2 / codebase `salown`. A new staff account now receives its `tenantRole` claim instead of landing role-less and failing every rules gate, and a super-admin approving an application keeps `superAdmin`. **Live-verified by source marker, not by revision inference** — a token-holding caller with no tenant claim gets the new 403 string, and the probed tenant's staff collection was 3 documents before and after. **`provisionTenant` was deliberately NOT deployed and must not be**: the live europe-west2 artifact carries `firebase-functions-codebase: whitecross` (`provisiontenant-00136-taj`), so self-signup still mints role-less, staff-doc-less owners — ROADMAP **T-h**. No hosting target, no rules, no indexes; 106 functions live, exactly 2 updated; REL-1 not triggered (a functions-only deploy runs no hosting predeploy hook). Previous: 2026-08-06 — **ADMIN-SALES-FILTER-1 deployed** (`hosting:salown` ONLY, `73f57ac0dd04b54a` → `274d34604d2894d7`): Admin Sales now fetches the selected period instead of a fixed one-month lookback, so June and July read whole. Served bytes are SHA-256 identical to the local build and the new markers were absent from the previous live chunk. **The live authenticated UI pass is outstanding** — no browser was connected to the releasing session, so the deploy is verified and the running screen is not. S4A `3097521` did **not** enter the bundle (functions-only) and stays NOT LIVE. Staff untouched at `8409e666da7ea223`; Functions, rules and indexes unchanged; zero production writes. Previous: 2026-08-05 — **Admin TR Checkout Unit 8 deployed** (`hosting:salown` `452e75959e3131ea`): Reports now groups money by currency and still never sums across currencies. GBP output verified unchanged against real whitecross/herohairs data AND by artifact comparison; **the TRY rendering is NOT yet proven in production** because production holds zero `checkoutReceipt` documents — the TR payment integrity hold is active — so that check is carried into **Unit 11 controlled E2E after hold-removal approval**. `hosting:salown-staff` untouched at `8409e666da7ea223`. Previous: 2026-08-04 — **REVIEW-CTA-AUDIENCE-1 deployed**: one Function
+> **Snapshot date:** 2026-08-10 (latest) — **TR-CURRENCY-F deployed: `hosting:salown` only** (row directly below). Admin `0d42517d7cba104a` → **`ffbc7898e4a8556e`**; the Products **page cart** — basket button, cart line and total — now reads the tenant's currency, and a price that will not parse is shown verbatim (`TBC` stays `TBC`) rather than collapsing to `£0.00`. Verified by executing the deployed minified formatters and by an authenticated read-only pass on a live TRY tenant (`🛒 Cart (2) · ₺600,00`); **the GBP authenticated pass was not run** — no already-authenticated UK session existed and no credentials were requested. Deployed from a **disposable clone pinned to `b94b8fa`**, chosen before the concurrent MULTI-LOCATION-PRE-B (`afb40fb`) and TR-CURRENCY-G (`d726b1b`) work landed, so neither is in this release; TR-CURRENCY-G's uncommitted edits were in the shared tree at deploy time. MULTI-LOCATION-PRE-A (`72ce9be`) is in the range but is **type-level on the frontend and its Functions half was not deployed** — nothing reads `locationIds` yet. `hosting:salown-staff`, Functions, rules, indexes and Storage all untouched; zero production writes. Previous: 2026-08-10 — **TR-CURRENCY-D+E+A/C deployed: `hosting:salown` only**. Admin `81fe195d535f9c5d` → **`0d42517d7cba104a`**; the Admin panel's Product price surfaces — catalogue card, selector line, cart total, and the price-entry box — now read and write in the tenant's own currency, and an unreadable price is no longer rendered as `£0.00`. Verified by executing the deployed minified formatters and by an authenticated read-only pass on a live TRY tenant. **`hosting:salown-staff`, Functions, rules, indexes and Storage were all untouched, and zero production data was written.** ⚠️ **Deployed from an isolated clone of `origin/main`, not the working tree**: a second session began editing `src/pages/Products.tsx` uncommitted while the gates were running, and the `firebase.json` predeploy hook builds from the *current* tree — so an in-place deploy would have published unreviewed work. The isolated build came out byte-identical, and as a side effect **REL-1 never fired** (the shared `hosting/staff-bundle/**` stayed clean). **Two earlier deploys are not yet written up in this file and are recorded in `salown-app/SYNC.md`:** TR-P1 Admin localization Phase 1 (`hosting:salown` `f35a939ea269aba6` → `81fe195d535f9c5d`, 2026-08-09T22:20:10Z — confirmed live as the pre-deploy anchor here) and SERVICE-IDENTITY-A Stage 1 (5 Functions, europe-west2, last updated 2026-08-10T09:05:55Z — confirmed from Cloud Run). Previous: 2026-08-08 — **TEAM-LIFECYCLE-O1 deployed: two Functions, nothing else**. `createStaffUser` `-00057-doq` → **`-00058-kur`** and `approveApplication` `-00012-kix` → **`-00013-yob`**, both europe-west2 / codebase `salown`. A new staff account now receives its `tenantRole` claim instead of landing role-less and failing every rules gate, and a super-admin approving an application keeps `superAdmin`. **Live-verified by source marker, not by revision inference** — a token-holding caller with no tenant claim gets the new 403 string, and the probed tenant's staff collection was 3 documents before and after. **`provisionTenant` was deliberately NOT deployed and must not be**: the live europe-west2 artifact carries `firebase-functions-codebase: whitecross` (`provisiontenant-00136-taj`), so self-signup still mints role-less, staff-doc-less owners — ROADMAP **T-h**. No hosting target, no rules, no indexes; 106 functions live, exactly 2 updated; REL-1 not triggered (a functions-only deploy runs no hosting predeploy hook). Previous: 2026-08-06 — **ADMIN-SALES-FILTER-1 deployed** (`hosting:salown` ONLY, `73f57ac0dd04b54a` → `274d34604d2894d7`): Admin Sales now fetches the selected period instead of a fixed one-month lookback, so June and July read whole. Served bytes are SHA-256 identical to the local build and the new markers were absent from the previous live chunk. **The live authenticated UI pass is outstanding** — no browser was connected to the releasing session, so the deploy is verified and the running screen is not. S4A `3097521` did **not** enter the bundle (functions-only) and stays NOT LIVE. Staff untouched at `8409e666da7ea223`; Functions, rules and indexes unchanged; zero production writes. Previous: 2026-08-05 — **Admin TR Checkout Unit 8 deployed** (`hosting:salown` `452e75959e3131ea`): Reports now groups money by currency and still never sums across currencies. GBP output verified unchanged against real whitecross/herohairs data AND by artifact comparison; **the TRY rendering is NOT yet proven in production** because production holds zero `checkoutReceipt` documents — the TR payment integrity hold is active — so that check is carried into **Unit 11 controlled E2E after hold-removal approval**. `hosting:salown-staff` untouched at `8409e666da7ea223`. Previous: 2026-08-04 — **REVIEW-CTA-AUDIENCE-1 deployed**: one Function
 > (`salownSendLoyaltyEmail`) updated so a member's checkout receipt no longer carries the
 > points-incentivised Google review CTA. No hosting target, no rules, no other Function; the commit
 > carried `[skip ci]`. Verified at template level against a compiled pre-change build — non-member
@@ -18,6 +18,81 @@
 > revisions: 2026-07-26 19:45 UK; 2026-07-24 16:40 UK after Parser-3C landed on `origin/main`; earlier
 > 16:05 revision during BSP-H1, see the hosting-baseline correction below). Verify against `git log origin/main` + the live system before acting;
 > a row here is a claim about a moment, not a standing guarantee.
+
+---
+
+## 🛒 TR-CURRENCY-F — the Products page cart · **DEPLOYED** 2026-08-10 · **LIVE, authenticated TRY pass done**
+
+**Pinned deploy tree `b94b8fa`**, range `598237e..b94b8fa` (implementation `fca8054` TR-CURRENCY-F,
+`72ce9be` MULTI-LOCATION-PRE-A; everything else in the range is claim/SYNC bookkeeping).
+Admin `0d42517d7cba104a` → **`ffbc7898e4a8556e`** (release `1786357943340000`,
+`2026-08-10T10:32:23.340Z`); `/app` root asset `index-DNCMhu3z.js` → **`index-Dr9fNRee.js`**.
+
+This closes the first item the previous row listed as still-hardcoded. The three remaining `£`
+literals on the Products **page cart** — basket button, cart line, `Total:` — now read the tenant's
+currency. Runtime hardcoded pounds in `Products.tsx`: **3 → 0**; the built `Products-*.js` chunk
+contains **zero** `£` characters.
+
+**The guard is the point, not the symbol.** `formatMoney` coerces a non-finite amount to zero
+(`toMinorUnits`), so routing today's `NaN` through it would have turned a visibly broken `£NaN` into
+a plausible **`£0.00`** — a price a till would charge. `cartLineMoney` therefore checks
+`Number.isFinite` first and returns the stored text verbatim when the price will not parse.
+
+| Stored price | GBP cart line | TRY cart line |
+|---|---|---|
+| `"12.99"` × 2 | `£25.98` | `₺25,98` |
+| `"0"` | `£0.00` | `₺0,00` |
+| `"TBC"` | `TBC` | `TBC` |
+| `null` | *(empty)* | *(empty)* |
+
+A real zero survives as a real price; only the failure is refused a currency. These rows were
+produced by running the **deployed** minified `ve`/`_` bindings lifted out of the live chunk against
+the real presentation resolver — not by re-implementing the source.
+
+**Authenticated live UI pass — read-only, on a real TRY tenant** (Işıl Güzellik & Lazer DEMO):
+basket button **`🛒 Cart (2) · ₺600,00`**, cart line **`×2 ₺600,00`**, **`Total: ₺600,00`** — the
+2 × `₺300,00` arithmetic agrees across all three surfaces, and no `£` appears on any of them.
+Console clean across a full page load. The cart is **local React state** (`setCart`; `Products.tsx`
+issues no Firestore write for the cart at all), so adding and clearing it wrote **nothing** to
+production; the cart was emptied afterwards.
+
+**⚠️ The GBP authenticated pass was NOT run — no PASS is claimed for it.** The browser held an
+already-authenticated session for the TRY tenant only, and no credentials were requested. GBP
+remains proven statically (deployed-bytes execution above, plus 30 focused unit tests), not on a
+live UK screen.
+
+**⚠️ Deployed from a disposable clone pinned to `b94b8fa`, not the working tree** — the same
+mechanism the row below documents, used deliberately this time rather than in reaction. The pin was
+chosen *before* the concurrent sessions landed new implementation: `afb40fb` (MULTI-LOCATION-PRE-B)
+and `d726b1b` (TR-CURRENCY-G) both landed afterwards and are **not** in this release, and
+TR-CURRENCY-G's edits to `src/pages/SalonSitePage.tsx` were sitting **uncommitted** in the shared
+tree at deploy time. The predeploy rebuild inside the clone was **byte-identical** to the gated
+build (119-file `hosting/` manifest; 118 uploaded — the one difference is `schema.html`, which
+`firebase.json` ignores). REL-1 never fired again.
+
+**MULTI-LOCATION-PRE-A rode along harmlessly and is NOT enforced.** Its frontend surface is a single
+optional field on a `packages/shared` **interface** — type-level only, zero runtime emit — and its
+executor half is Functions code that **was not deployed**. Nothing reads `locationIds` yet.
+
+**Pre-deploy gates** (clean clone at `b94b8fa`): productsCartCurrency 30/30 · adminCurrencyDisplay
+36/36 · currency-presentation 173/173 · frontend **2278/2278** (98 files) · `tsc --noEmit` 0 on both
+configs · production build 0 · `deploy-policy` 28/28 · `release-guard` OK · `git diff --check` clean ·
+`claims.sh validate` clean · eslint **0 on the released files**.
+
+> **eslint repo-wide moved 921 → 927, and all +6 are outside this release.** Every one is in
+> `functions/src/packages/snapshotLocation.test.js`, a Functions test file introduced by
+> MULTI-LOCATION-PRE-A. It is not in the Admin bundle and was not deployed. Left for that session
+> rather than fixed here — it is not this release's file to touch.
+
+**Untouched, verified before and after:** `hosting:salown-staff` `d8de0132fd465ef9` · Functions 108
+(identical name/revision fingerprint, newest update `2026-08-10T09:05:56Z`, i.e. before this deploy) ·
+Firestore rules `640c3dae…` · Storage rules `4c00eef7…` · both composite indexes. All 30 served
+assets returned 200 **and** hashed identical to the pinned build. **Zero production writes.**
+Rollback anchor `0d42517d7cba104a` — **not needed, no rollback performed.**
+
+**Still hardcoded `£` — out of scope here, not a regression:** `BookingDetailPanel.tsx` (51 sites, no
+`useLocale` at all) · Home stat cards (`£0`, `£1,500`), which belong to TR-P1 Phase 2. The public
+`/s/**` salon page was closed separately by TR-CURRENCY-G (`d726b1b`, **pushed, not deployed**).
 
 ---
 
