@@ -10,7 +10,7 @@
 > separate `whitecross-site` repo deploy manually**, so code can sit on `origin/main` for days while
 > production runs older behavior. Confusing "merged" with "live" has caused real incidents.
 >
-> **Snapshot date:** 2026-08-10 (latest) — **ADMIN-PENDING-SLICES-RELEASE deployed: `hosting:salown` only** (row directly below). Admin `ffbc7898e4a8556e` → **`3a0fcdea1e1f8434`**; this releases the two slices the previous row deliberately excluded — **TR-CURRENCY-G** (`d726b1b`, public `/s/**` prices in the tenant's own currency) and **MULTI-LOCATION-PRE-B** (`afb40fb`, archive/restore stops nulling `locationIds` + `allowedServiceIds`). Pinned to `25f39c1`, range `b94b8fa..25f39c1`, whose only runtime files are `SalonSitePage.tsx` and `packagesApi.ts`. **GBP is live-verified on two published tenants** (`herohairs` covers all three price surfaces; `Ladies - Permanent Waves` `[220,180]` → `from £180.00` proves a real `Math.min`; `whitecross` additionally proves the no-`presentation` platform-default fallback) and booking navigation still carries ids only, no price. ⚠️ **The TRY live `/s` pass was NOT run and no PASS is claimed:** no TRY tenant has a published `public/profile` (`demo` and `tr-demo` both resolve to "Salon not found" — a pre-existing publish state, not a regression), so TRY rests on the deployed minified formatters executed against both TRY tenants' **real production** presentation and prices (`₺750,00`, `₺1.100,00`, no `£`). Deployed from an **isolated clone**, which again mattered: the shared tree held **7 uncommitted files from 3 peer sessions** at deploy time. `hosting:salown-staff` (`d8de0132fd465ef9`), Functions (97), rules, indexes and Storage all unchanged; zero production writes. Previous: 2026-08-10 — **TR-CURRENCY-F deployed: `hosting:salown` only**. Admin `0d42517d7cba104a` → **`ffbc7898e4a8556e`**; the Products **page cart** — basket button, cart line and total — now reads the tenant's currency, and a price that will not parse is shown verbatim (`TBC` stays `TBC`) rather than collapsing to `£0.00`. Verified by executing the deployed minified formatters and by an authenticated read-only pass on a live TRY tenant (`🛒 Cart (2) · ₺600,00`); **the GBP authenticated pass was not run** — no already-authenticated UK session existed and no credentials were requested. Deployed from a **disposable clone pinned to `b94b8fa`**, chosen before the concurrent MULTI-LOCATION-PRE-B (`afb40fb`) and TR-CURRENCY-G (`d726b1b`) work landed, so neither is in this release; TR-CURRENCY-G's uncommitted edits were in the shared tree at deploy time. MULTI-LOCATION-PRE-A (`72ce9be`) is in the range but is **type-level on the frontend and its Functions half was not deployed** — nothing reads `locationIds` yet. `hosting:salown-staff`, Functions, rules, indexes and Storage all untouched; zero production writes. Previous: 2026-08-10 — **TR-CURRENCY-D+E+A/C deployed: `hosting:salown` only**. Admin `81fe195d535f9c5d` → **`0d42517d7cba104a`**; the Admin panel's Product price surfaces — catalogue card, selector line, cart total, and the price-entry box — now read and write in the tenant's own currency, and an unreadable price is no longer rendered as `£0.00`. Verified by executing the deployed minified formatters and by an authenticated read-only pass on a live TRY tenant. **`hosting:salown-staff`, Functions, rules, indexes and Storage were all untouched, and zero production data was written.** ⚠️ **Deployed from an isolated clone of `origin/main`, not the working tree**: a second session began editing `src/pages/Products.tsx` uncommitted while the gates were running, and the `firebase.json` predeploy hook builds from the *current* tree — so an in-place deploy would have published unreviewed work. The isolated build came out byte-identical, and as a side effect **REL-1 never fired** (the shared `hosting/staff-bundle/**` stayed clean). **Two earlier deploys are not yet written up in this file and are recorded in `salown-app/SYNC.md`:** TR-P1 Admin localization Phase 1 (`hosting:salown` `f35a939ea269aba6` → `81fe195d535f9c5d`, 2026-08-09T22:20:10Z — confirmed live as the pre-deploy anchor here) and SERVICE-IDENTITY-A Stage 1 (5 Functions, europe-west2, last updated 2026-08-10T09:05:55Z — confirmed from Cloud Run). Previous: 2026-08-08 — **TEAM-LIFECYCLE-O1 deployed: two Functions, nothing else**. `createStaffUser` `-00057-doq` → **`-00058-kur`** and `approveApplication` `-00012-kix` → **`-00013-yob`**, both europe-west2 / codebase `salown`. A new staff account now receives its `tenantRole` claim instead of landing role-less and failing every rules gate, and a super-admin approving an application keeps `superAdmin`. **Live-verified by source marker, not by revision inference** — a token-holding caller with no tenant claim gets the new 403 string, and the probed tenant's staff collection was 3 documents before and after. **`provisionTenant` was deliberately NOT deployed and must not be**: the live europe-west2 artifact carries `firebase-functions-codebase: whitecross` (`provisiontenant-00136-taj`), so self-signup still mints role-less, staff-doc-less owners — ROADMAP **T-h**. No hosting target, no rules, no indexes; 106 functions live, exactly 2 updated; REL-1 not triggered (a functions-only deploy runs no hosting predeploy hook). Previous: 2026-08-06 — **ADMIN-SALES-FILTER-1 deployed** (`hosting:salown` ONLY, `73f57ac0dd04b54a` → `274d34604d2894d7`): Admin Sales now fetches the selected period instead of a fixed one-month lookback, so June and July read whole. Served bytes are SHA-256 identical to the local build and the new markers were absent from the previous live chunk. **The live authenticated UI pass is outstanding** — no browser was connected to the releasing session, so the deploy is verified and the running screen is not. S4A `3097521` did **not** enter the bundle (functions-only) and stays NOT LIVE. Staff untouched at `8409e666da7ea223`; Functions, rules and indexes unchanged; zero production writes. Previous: 2026-08-05 — **Admin TR Checkout Unit 8 deployed** (`hosting:salown` `452e75959e3131ea`): Reports now groups money by currency and still never sums across currencies. GBP output verified unchanged against real whitecross/herohairs data AND by artifact comparison; **the TRY rendering is NOT yet proven in production** because production holds zero `checkoutReceipt` documents — the TR payment integrity hold is active — so that check is carried into **Unit 11 controlled E2E after hold-removal approval**. `hosting:salown-staff` untouched at `8409e666da7ea223`. Previous: 2026-08-04 — **REVIEW-CTA-AUDIENCE-1 deployed**: one Function
+> **Snapshot date:** 2026-08-10 (latest) — **two deploys landed within the hour — one Functions, one hosting.** **(1) HOURS-CASING-B: ONE Function, nothing else** (its own row further down). `salownGetBusySlots` `salowngetbusyslots-00063-hab` → **`salowngetbusyslots-00064-foj`**; the public availability boundary now reads BOTH weekday key casings of `settings/hours`, so a Capitalized document no longer collapses to the 09:00–19:00 platform defaults and no longer reports a closed day as open. Proven on production data with zero writes (whitecross Sunday `10:00–16:00`, herohairs Sunday `10:00–17:00`, where both previously returned the defaults); the lowercase-legacy and `closed:true` branches are **NOT** proven live and rest on unit tests, because no live tenant carries either shape. 108 functions before and after, exactly one revision changed, none non-ACTIVE; no hosting target, rules, indexes or Storage touched. **(2)** **ADMIN-PENDING-SLICES-RELEASE deployed: `hosting:salown` only** (row directly below). Admin `ffbc7898e4a8556e` → **`3a0fcdea1e1f8434`**; this releases the two slices the previous row deliberately excluded — **TR-CURRENCY-G** (`d726b1b`, public `/s/**` prices in the tenant's own currency) and **MULTI-LOCATION-PRE-B** (`afb40fb`, archive/restore stops nulling `locationIds` + `allowedServiceIds`). Pinned to `25f39c1`, range `b94b8fa..25f39c1`, whose only runtime files are `SalonSitePage.tsx` and `packagesApi.ts`. **GBP is live-verified on two published tenants** (`herohairs` covers all three price surfaces; `Ladies - Permanent Waves` `[220,180]` → `from £180.00` proves a real `Math.min`; `whitecross` additionally proves the no-`presentation` platform-default fallback) and booking navigation still carries ids only, no price. ⚠️ **The TRY live `/s` pass was NOT run and no PASS is claimed:** no TRY tenant has a published `public/profile` (`demo` and `tr-demo` both resolve to "Salon not found" — a pre-existing publish state, not a regression), so TRY rests on the deployed minified formatters executed against both TRY tenants' **real production** presentation and prices (`₺750,00`, `₺1.100,00`, no `£`). Deployed from an **isolated clone**, which again mattered: the shared tree held **7 uncommitted files from 3 peer sessions** at deploy time. `hosting:salown-staff` (`d8de0132fd465ef9`), Functions (97), rules, indexes and Storage all unchanged; zero production writes. Previous: 2026-08-10 — **TR-CURRENCY-F deployed: `hosting:salown` only**. Admin `0d42517d7cba104a` → **`ffbc7898e4a8556e`**; the Products **page cart** — basket button, cart line and total — now reads the tenant's currency, and a price that will not parse is shown verbatim (`TBC` stays `TBC`) rather than collapsing to `£0.00`. Verified by executing the deployed minified formatters and by an authenticated read-only pass on a live TRY tenant (`🛒 Cart (2) · ₺600,00`); **the GBP authenticated pass was not run** — no already-authenticated UK session existed and no credentials were requested. Deployed from a **disposable clone pinned to `b94b8fa`**, chosen before the concurrent MULTI-LOCATION-PRE-B (`afb40fb`) and TR-CURRENCY-G (`d726b1b`) work landed, so neither is in this release; TR-CURRENCY-G's uncommitted edits were in the shared tree at deploy time. MULTI-LOCATION-PRE-A (`72ce9be`) is in the range but is **type-level on the frontend and its Functions half was not deployed** — nothing reads `locationIds` yet. `hosting:salown-staff`, Functions, rules, indexes and Storage all untouched; zero production writes. Previous: 2026-08-10 — **TR-CURRENCY-D+E+A/C deployed: `hosting:salown` only**. Admin `81fe195d535f9c5d` → **`0d42517d7cba104a`**; the Admin panel's Product price surfaces — catalogue card, selector line, cart total, and the price-entry box — now read and write in the tenant's own currency, and an unreadable price is no longer rendered as `£0.00`. Verified by executing the deployed minified formatters and by an authenticated read-only pass on a live TRY tenant. **`hosting:salown-staff`, Functions, rules, indexes and Storage were all untouched, and zero production data was written.** ⚠️ **Deployed from an isolated clone of `origin/main`, not the working tree**: a second session began editing `src/pages/Products.tsx` uncommitted while the gates were running, and the `firebase.json` predeploy hook builds from the *current* tree — so an in-place deploy would have published unreviewed work. The isolated build came out byte-identical, and as a side effect **REL-1 never fired** (the shared `hosting/staff-bundle/**` stayed clean). **Two earlier deploys are not yet written up in this file and are recorded in `salown-app/SYNC.md`:** TR-P1 Admin localization Phase 1 (`hosting:salown` `f35a939ea269aba6` → `81fe195d535f9c5d`, 2026-08-09T22:20:10Z — confirmed live as the pre-deploy anchor here) and SERVICE-IDENTITY-A Stage 1 (5 Functions, europe-west2, last updated 2026-08-10T09:05:55Z — confirmed from Cloud Run). Previous: 2026-08-08 — **TEAM-LIFECYCLE-O1 deployed: two Functions, nothing else**. `createStaffUser` `-00057-doq` → **`-00058-kur`** and `approveApplication` `-00012-kix` → **`-00013-yob`**, both europe-west2 / codebase `salown`. A new staff account now receives its `tenantRole` claim instead of landing role-less and failing every rules gate, and a super-admin approving an application keeps `superAdmin`. **Live-verified by source marker, not by revision inference** — a token-holding caller with no tenant claim gets the new 403 string, and the probed tenant's staff collection was 3 documents before and after. **`provisionTenant` was deliberately NOT deployed and must not be**: the live europe-west2 artifact carries `firebase-functions-codebase: whitecross` (`provisiontenant-00136-taj`), so self-signup still mints role-less, staff-doc-less owners — ROADMAP **T-h**. No hosting target, no rules, no indexes; 106 functions live, exactly 2 updated; REL-1 not triggered (a functions-only deploy runs no hosting predeploy hook). Previous: 2026-08-06 — **ADMIN-SALES-FILTER-1 deployed** (`hosting:salown` ONLY, `73f57ac0dd04b54a` → `274d34604d2894d7`): Admin Sales now fetches the selected period instead of a fixed one-month lookback, so June and July read whole. Served bytes are SHA-256 identical to the local build and the new markers were absent from the previous live chunk. **The live authenticated UI pass is outstanding** — no browser was connected to the releasing session, so the deploy is verified and the running screen is not. S4A `3097521` did **not** enter the bundle (functions-only) and stays NOT LIVE. Staff untouched at `8409e666da7ea223`; Functions, rules and indexes unchanged; zero production writes. Previous: 2026-08-05 — **Admin TR Checkout Unit 8 deployed** (`hosting:salown` `452e75959e3131ea`): Reports now groups money by currency and still never sums across currencies. GBP output verified unchanged against real whitecross/herohairs data AND by artifact comparison; **the TRY rendering is NOT yet proven in production** because production holds zero `checkoutReceipt` documents — the TR payment integrity hold is active — so that check is carried into **Unit 11 controlled E2E after hold-removal approval**. `hosting:salown-staff` untouched at `8409e666da7ea223`. Previous: 2026-08-04 — **REVIEW-CTA-AUDIENCE-1 deployed**: one Function
 > (`salownSendLoyaltyEmail`) updated so a member's checkout receipt no longer carries the
 > points-incentivised Google review CTA. No hosting target, no rules, no other Function; the commit
 > carried `[skip ci]`. Verified at template level against a compiled pre-change build — non-member
@@ -18,49 +18,6 @@
 > revisions: 2026-07-26 19:45 UK; 2026-07-24 16:40 UK after Parser-3C landed on `origin/main`; earlier
 > 16:05 revision during BSP-H1, see the hosting-baseline correction below). Verify against `git log origin/main` + the live system before acting;
 > a row here is a claim about a moment, not a standing guarantee.
-
----
-
-## 🕐 HOURS-CASING-B — `salownGetBusySlots` reads both weekday key casings · **DEPLOYED** 2026-08-10 · **LIVE, proven on production data**
-
-**One Function, nothing else.** `salownGetBusySlots` (europe-west2, codebase `salown`)
-`salowngetbusyslots-00063-hab` → **`salowngetbusyslots-00064-foj`**, ACTIVE, updated
-`2026-08-10T13:47:08Z`. Commit `10febff`, `[skip ci]`. **108 functions live before and after; a
-full two-region revision diff shows exactly one changed and none non-ACTIVE.** No hosting target,
-no rules, no indexes, no Storage, no data migration. REL-1 did not fire — a functions-only deploy
-runs no hosting predeploy hook, and the working tree was clean afterwards.
-
-`tenants/{tid}/settings/hours` has two writers with different key casing — Opening hours
-(`Settings.tsx`) writes Capitalized `Monday`…, onboarding step 2 writes lowercase `monday`… — and
-this callable was the last server reader still looking up lowercase only. On the canonical
-Capitalized document its lookup missed and the day fell through to the 09:00–19:00 platform
-defaults, which `src/pages/ManageBooking.tsx` draws the whole self-reschedule grid from.
-
-**Live proof, existing data, zero production writes.** Both live tenants hold Capitalized-only
-hours documents with a non-default Sunday, so the deployed callable reproduces the stored hours
-where it previously returned the defaults:
-
-| Tenant | Date | Stored `settings/hours` | Deployed callable returns |
-|---|---|---|---|
-| whitecross | Sun 2026-08-16 | `Sunday 10:00–16:00` | `{open:"10:00", close:"16:00", closed:false}` |
-| herohairs | Sun 2026-08-16 | `Sunday 10:00–17:00` | `{open:"10:00", close:"17:00", closed:false}` |
-| whitecross | Thu 2026-08-13 | `Thursday 09:00–19:00` | `{open:"09:00", close:"19:00", closed:false}` |
-| herohairs | Thu 2026-08-13 | `Thursday 09:00–19:00` | `{open:"09:00", close:"19:00", closed:false}` |
-
-Response shape unchanged (`{slots, shopHours}`; `shopHours` = `open, close, closed[, note]`).
-
-**Two branches are NOT proven live, deliberately.** No live tenant has a lowercase hours
-document and none has a closed day, so the legacy-casing read and the `closed:true` path rest on
-`weekHours.test.js` alone — proving them in production would have meant writing tenant
-configuration as test data. The lowercase branch is also the one that was already working before
-this change.
-
-**Rollback:** redeploy `salownGetBusySlots` from the parent commit `7aac3ec`
-(`firebase deploy --only functions:salown:salownGetBusySlots --project havuz-44f70`), or roll the
-Cloud Run service back to `salowngetbusyslots-00063-hab`. Not needed as of this writing.
-
-**Unblocks HOURS-SSOT-C.** Removing the barber-hours propagation before this landed would have
-turned a masked mismatch into a live availability regression — see `INCIDENTS.md` 2026-08-10.
 
 ---
 
@@ -155,6 +112,49 @@ release-guard **11/11** carry `[skip ci]` · `git diff --check` clean · claims 
 composite · rules behaviour matches the documented contract (tenant root 200, `settings/settings`
 403, `bookings` 403, `clients` 403) · Storage untouched. **Zero production writes** — every check was
 a read. Rollback anchor **`ffbc7898e4a8556e`**.
+
+---
+
+## 🕐 HOURS-CASING-B — `salownGetBusySlots` reads both weekday key casings · **DEPLOYED** 2026-08-10 · **LIVE, proven on production data**
+
+**One Function, nothing else.** `salownGetBusySlots` (europe-west2, codebase `salown`)
+`salowngetbusyslots-00063-hab` → **`salowngetbusyslots-00064-foj`**, ACTIVE, updated
+`2026-08-10T13:47:08Z`. Commit `10febff`, `[skip ci]`. **108 functions live before and after; a
+full two-region revision diff shows exactly one changed and none non-ACTIVE.** No hosting target,
+no rules, no indexes, no Storage, no data migration. REL-1 did not fire — a functions-only deploy
+runs no hosting predeploy hook, and the working tree was clean afterwards.
+
+`tenants/{tid}/settings/hours` has two writers with different key casing — Opening hours
+(`Settings.tsx`) writes Capitalized `Monday`…, onboarding step 2 writes lowercase `monday`… — and
+this callable was the last server reader still looking up lowercase only. On the canonical
+Capitalized document its lookup missed and the day fell through to the 09:00–19:00 platform
+defaults, which `src/pages/ManageBooking.tsx` draws the whole self-reschedule grid from.
+
+**Live proof, existing data, zero production writes.** Both live tenants hold Capitalized-only
+hours documents with a non-default Sunday, so the deployed callable reproduces the stored hours
+where it previously returned the defaults:
+
+| Tenant | Date | Stored `settings/hours` | Deployed callable returns |
+|---|---|---|---|
+| whitecross | Sun 2026-08-16 | `Sunday 10:00–16:00` | `{open:"10:00", close:"16:00", closed:false}` |
+| herohairs | Sun 2026-08-16 | `Sunday 10:00–17:00` | `{open:"10:00", close:"17:00", closed:false}` |
+| whitecross | Thu 2026-08-13 | `Thursday 09:00–19:00` | `{open:"09:00", close:"19:00", closed:false}` |
+| herohairs | Thu 2026-08-13 | `Thursday 09:00–19:00` | `{open:"09:00", close:"19:00", closed:false}` |
+
+Response shape unchanged (`{slots, shopHours}`; `shopHours` = `open, close, closed[, note]`).
+
+**Two branches are NOT proven live, deliberately.** No live tenant has a lowercase hours
+document and none has a closed day, so the legacy-casing read and the `closed:true` path rest on
+`weekHours.test.js` alone — proving them in production would have meant writing tenant
+configuration as test data. The lowercase branch is also the one that was already working before
+this change.
+
+**Rollback:** redeploy `salownGetBusySlots` from the parent commit `7aac3ec`
+(`firebase deploy --only functions:salown:salownGetBusySlots --project havuz-44f70`), or roll the
+Cloud Run service back to `salowngetbusyslots-00063-hab`. Not needed as of this writing.
+
+**Unblocks HOURS-SSOT-C.** Removing the barber-hours propagation before this landed would have
+turned a masked mismatch into a live availability regression — see `INCIDENTS.md` 2026-08-10.
 
 ---
 

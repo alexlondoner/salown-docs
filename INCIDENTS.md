@@ -35,6 +35,37 @@ Every incident opens with `## YYYY-MM-DD — short title`, immediately followed 
 
 **Tag dictionary (CANONICAL — only these; sprawl forbidden):** `#security` `#stripe` `#secrets` `#config` `#deploy` `#normalization` `#permission` `#race` `#timezone` `#parser` `#email` `#data-loss` `#shared-infra`. A new tag is added only if a genuinely new class emerges (e.g. twins like `#payment`+`#payments`+`#stripe-payment` are FORBIDDEN → all `#stripe`). Every entry carries a `**Tags:**` line.
 
+## 2026-08-10 — The self-reschedule page offered Sunday slots outside opening hours: one availability boundary still read lowercase weekday keys
+
+**Severity:** 🟡 Medium · **Owner:** alish/hours-casing-b · **Status:** ✅ Resolved (`10febff`, `salownGetBusySlots` deployed + live-verified 2026-08-10) · **Affected area:** customer self-reschedule (`/manage/**`), public availability callable
+
+**Tags:** `#normalization`
+
+**Discovery:** found by AUDIT, not by a customer or a test — the pre-work trace for removing the legacy barber-hours propagation (HOURS-SSOT-C) asked "what still depends on that propagation?" and found this boundary standing behind it. It had been live and wrong for both real tenants the whole time and nobody had reported it.
+**Impact:** on a day whose hours are not 09:00–19:00, the self-reschedule page offered slots outside the salon's opening hours — for whitecross, Sunday slots from 09:00 and up to 18:30 against real hours of 10:00–16:00. The server's shift guard then refused those bookings, so the customer picked a time and was told it was unavailable.
+**Root Cause:** not "a missing dual-read" — the WHY is that `tenants/{tid}/settings/hours` has two writers with different key casing and nothing made them agree. `src/pages/Settings.tsx` (Opening hours) writes Capitalized `Monday`…; `src/pages/OnboardingWizard.tsx` step 2 writes lowercase `monday`…. Three server readers grew up around that split and only two of them learned the dual-read; `salownGetBusySlots` kept the lowercase-only lookup, so on the canonical Capitalized document its day lookup simply missed and fell through to the 09:00–19:00 platform defaults.
+**Bug Class:** State normalization (SSOT violation) — one document, two key shapes, per-reader compensation instead of one contract.
+**Resolution:** one narrow reader, `functions/src/utils/weekHours.ts`, used at the boundary: Capitalized (canonical) > lowercase (legacy) > platform default, whole entry, never a field merge. `salownGetBusySlots` deployed alone (`-00063-hab` → `-00064-foj`, europe-west2); nothing else in the callable changed.
+**Prevention:** the compat read landed **before** the propagation removal that would have exposed it, which is the transferable part. The propagation was doing two jobs — a real one and an accidental one — and only the accidental one was load-bearing here. `weekHours.test.js` pins both casings, the conflict precedence and the platform default, so a future reader cannot quietly regress to one shape.
+**Regression Tests:** `functions/src/utils/weekHours.test.js` — 21 assertions; the pre-change lowercase-only read fails 8 of them, including `Capitalized CLOSED day is reported closed`.
+**Related:** commits `10febff` · roadmap HOURS-SSOT-C (unblocked by this) · files `functions/src/index.ts`, `functions/src/utils/weekHours.ts`, `src/pages/ManageBooking.tsx`, `src/pages/Settings.tsx`, `src/pages/OnboardingWizard.tsx`
+
+**What happened / Diagnosis / Fix:** The audit for HOURS-SSOT-C — removing the Opening hours screen's bulk propagation of each day onto every barber's `dayHours`/`workingDays` — asked what still depended on that propagation. `src/pages/ManageBooking.tsx` did, twice over: it gates the day on `barberWorksOn(date, myBarber)` (barber data, propagated) **and** on `shopHours.closed` from `salownGetBusySlots` (salon data, read at the boundary). The second gate had been dead for every tenant that had ever opened the Opening hours screen, because the callable looked up `rawHours['sunday']` in a document keyed `'Sunday'`. It found nothing, produced `{open:'09:00', close:'19:00', closed:false}`, and the propagated barber hours quietly covered for it.
+
+Two consequences, one already live and one latent. Live: `buildSlots` draws the reschedule grid straight from `shopHours.open`/`close`, so both real tenants were offering out-of-hours Sunday times that `salownRescheduleByToken`'s shift guard then rejected. Latent and worse: had a tenant ever closed a day, `closed:false` would have said the salon was open, and removing the propagation would have deleted the only remaining gate — a closed-day booking, which this file already records as a "ghost booking" (2026-06-29).
+
+The fix is deliberately *not* a third inline `hoursDoc[Day] || hoursDoc[day]`. Two such expressions already existed (`createBooking.ts` `resolveEffectiveStaffShift`, and the `salownRescheduleByToken` salon-hours fallback), and a third spelling of one rule is how the second reader got missed in the first place. `weekHours.ts` is now the single reader, and it takes plain data with no Firestore handle and no tenant id, so the boundary cannot widen a read.
+
+Live proof used existing production data and wrote nothing: both tenants' hours documents are Capitalized-only with a non-default Sunday, so the deployed callable returning `10:00–16:00` for whitecross and `10:00–17:00` for herohairs on Sunday 2026-08-16 — instead of the defaults — is the fix, observed in production. The lowercase branch could not be proven live, because no live tenant has a lowercase document and manufacturing one would have meant writing production test data.
+
+**Lessons Learned:**
+- **A compatibility read must land before the thing that was masking the incompatibility.** The propagation removal was the "real" task and this was the prerequisite; done in the other order it is a customer-facing availability regression on the day of the refactor.
+- **When a mechanism is doing two jobs, deleting it deletes both.** The barber-hours propagation existed to seed staff shifts; it was *also* the only thing keeping a broken salon-hours read from surfacing. Nothing said so — it had to be traced.
+- **Two writers, one document, different key casing is a bug generator, not a quirk.** The reader-by-reader compensation pattern will keep costing incidents until the writers agree; each new reader is a fresh chance to forget. Fixing the boundary is the stopgap, not the cure.
+- **"Not reported" is not "not broken."** This was wrong in production for both tenants and arrived through an audit, not a complaint. Out-of-hours slots that fail at submit read to a customer as a flaky site, which is exactly the kind of thing nobody files.
+
+---
+
 ## 2026-08-09 — A green test suite shipped a Staff till outage: the UI's product ids and the server's product ids were different collections
 
 **Severity:** 🟠 High · **Owner:** alish/psa2-resume · **Status:** ✅ Resolved (rolled back, then fixed properly — `509e63e`, Staff live + E2E-verified 2026-08-09) · **Affected area:** Staff App walk-in, products-only sale
