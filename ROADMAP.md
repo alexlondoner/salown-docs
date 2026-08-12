@@ -1,135 +1,486 @@
 # ROADMAP.md
 
-> **Labels:** `✅ Done` · `🔄 In Progress` · `🔵 Planned` (stable, not started) · `⏸ Waiting` (external dependency / deliberate hold) · `💡 Future` (post scale/investment) · `⚠️` (caution/conflict).
-> **Format:** active section = theme heading + one-line items; the detail/commit of each ✅ is in the **Completed** section at the bottom. Themes are ordered by **importance**.
-> **Last revision: 2026-08-10 (ROADMAP-TRUTH-RECONCILIATION)** — the FORMAT is still the 2026-07-16 restructure (feature list → company roadmap; completed detail moved to Completed; themes ordered by importance). What changed on 2026-08-10 is the **truth of the top-level status**: the "Where we stand" and "Current focus" sections had not moved since 2026-07-20, while TR localisation, the currency series, team lifecycle, product-sale authority, multi-location preparation and the hours work all landed. Reconciled against `salown-app` `origin/main` (`5d6ac44`), this repo (`7bbd955`), `salown-app/SYNC.md` and [DEPLOYMENT_STATUS.md](DEPLOYMENT_STATUS.md). The superseded 2026-07-20 COMPLETION SPRINT block is archived **verbatim** at the bottom under *Superseded planning blocks*. Documentation only — no code, no deploy, no production access. The previous long version is in git history.
+> **This file is the single source of truth for the STATUS of every piece of work.**
+> Detail documents (SECURITY.md, TESTS.md, INCIDENTS.md, `*_PLAN.md`, `*_ARCHITECTURE.md`) hold the
+> *technical detail* — never the status badge. If a status conflict arises, **ROADMAP wins**.
+> Release evidence lives in [RELEASE_LEDGER.md](RELEASE_LEDGER.md); the narrative push-vs-live
+> record stays in [DEPLOYMENT_STATUS.md](DEPLOYMENT_STATUS.md); path ownership stays in
+> `salown-app/ops/claims/`; the retrospective day log stays in `salown-app/SYNC.md`.
 
 ---
 
-## 🔄 SINGLE SOURCE OF TRUTH — every session should READ this
+## 0. Status vocabulary — MANDATORY
 
-> **Rule: the CURRENT STATUS of a piece of work lives only here, in ROADMAP.md.** Detail documents
-> (SECURITY.md, TESTS.md, INCIDENTS.md, `*_PLAN.md`) hold the *technical detail* — NOT the status badge.
-> If a status conflict arises, **ROADMAP wins**; the detail document links here.
->
-> **When work is done (every session, no exceptions):**
-> 1. Mark the relevant item ✅ under its theme + **commit hash** + write "LIVE"; move the detail to Completed.
-> 2. If deployed, verify it is actually on `origin/main` (`git branch -r --contains <hash>`).
-> 3. Add the code change to the [edit-log-salown]/[edit-log-whitecross] memory.
-> 4. Only a *technical* update to the detail document (if any).
->
-> **⚠️ Audit lesson (2026-07-16):** before marking an item "Done", (a) find the **real feature commit, not the migration commit** (`git log -S --follow`); (b) for a behavior-based item, a **line of code ≠ working** — if it conflicts with the field observation, don't close it without live verification (see G1 in-app notif). Otherwise the document carries "traces of the past journey" and the project appears to be past that point.
+Every active item carries **exactly one** of these. `Done` / `Shipped` / `LIVE` on their own are
+**forbidden**: they hide the only distinction that has ever mattered here.
 
----
+| Status | Means |
+|---|---|
+| `LIVE_VERIFIED` | Production evidence exists **for the exact behaviour/target** — a served byte, a source marker in the deployed artifact, a live revision, a read-only production read. |
+| `PUSHED_NOT_LIVE` | The implementation is on `origin/main`, and production evidence shows it is **not** live, or no authorised deployment occurred. |
+| `IN_PROGRESS` | An active, valid claim/session owns the work right now. |
+| `PLANNED` | Accepted scope, implementation not started. |
+| `BLOCKED` | Cannot proceed until a named dependency, decision, migration, credential, release window or safety correction completes. |
+| `DORMANT` | Deliberately outside the active execution horizon (vision/future). |
+| `STATUS_UNKNOWN` | Documentation and commit evidence are **insufficient**. Never guess. Never infer "live" from a commit existing or from a commit timestamp. |
 
-## 📍 Where we stand — snapshot 2026-08-10
+**Two rules learned the hard way and now permanent:**
 
-**The platform is live and in real use; the project is past the "feature from scratch" phase.** The remaining work is **scaling, operations, commercial maturation and a second market** (Turkey): staff/financial model, taking payments live, localisation, metric/evidence collection, security gate, technical debt.
-
-**Snapshot anchors.** Evidence was taken at `salown-app` `origin/main` = **`5d6ac44`** (this reconciliation's own claim `3a386e0` sits on top of it) · `salown-docs` = **`7bbd955`**. ⚠️ **`origin/main` was moving while this was written** — three sessions held claims and were pushing; anything landing after `5d6ac44` is by definition *not* reflected below.
-Live surfaces at this moment: `hosting:salown` **`ffbc7898e4a8556e`** (2026-08-10) · `hosting:salown-staff` **`d8de0132fd465ef9`** (2026-08-09) · `hosting:salown-admin` **`9f457fc2c8ee4b35`** (2026-07-31) · `whitecrossbarbers-saas` **`c5f243463afdc6df`** (2026-07-31) · `firestore.rules` **`640c3dae…`** (2026-08-05) · Functions **81 europe-west2 + 27 us-central1 legacy orphans**.
-
-- **2 tenants live** (whitecross · herohairs), all Class A. *(eekurt left the platform as of 2026-07-18 — inactive, NOT a current tenant; Firestore data and rules were not deleted.)* `demo` (persistent Turkish sales demo) and `tr-demo` (disposable verification tenant) are **not salons** — per-tenant truth: [TENANTS.md](TENANTS.md). ⚠️ **Two different counts appear in this file and both are correct** — **2 live salons**, but **6 tenant *documents*** in Firestore (`whitecross`, `herohairs`, `demo`, `tr-demo`, `the-hair-lab`, `yusufo`). Verification sweeps in the records below ("all 6 live tenants", "six tenants", "four UK production tenants") count **documents**, because that is what a sweep can enumerate. Never quote a sweep figure as a customer count.
-- **Real signals:** customers are redeeming loyalty points · transactional+loyalty emails going out regularly · bookings coming in regularly from the website · the parser pipeline (H4) is proven end-to-end on organic email.
-- **⚠️ Stripe Connect is still ENTIRELY in TEST mode** — no tenant takes real money. "Go LIVE" awaits an owner decision + live keys (Payments theme).
-- **⚠️ The TR payment integrity hold is still active** — production holds **zero** `checkoutReceipt` documents, so no TRY money has ever been rendered from real data (Unit 11 carries that proof).
-
-**The gates, in order:** ① the **TR payment integrity hold** (blocks Unit 11 and any real Turkish takings) ② the shared Functions namespace (**SHARED-FN-NAMESPACE**; T-h's symptom was cleared 2026-08-11 by redeploying `provisionTenant` from `salown`, but the whitecross export survives and takes the name back on its next deploy) ③ Pre-Scale Hardening Gate — Tier 1 ✅ closed, Tier 2 + follow-up before tenant #4.
+1. **A commit is not a release.** `git log` cannot answer "is this live?". Only a live revision,
+   version id, served byte or source marker can.
+2. **A timestamp is not a release order.** This team has historically deployed *then* committed
+   (two proven instances on 2026-08-11/12, §12.1), so "commit is newer than the deploy ⇒ not live"
+   is invalid reasoning here. The 2026-08-10 "47 commits are not live" conclusion was **disproven**
+   for exactly that reason and must not be repeated. Deploy→commit is now a **process violation**
+   (§15) — but until it stops, timestamp-only inference stays forbidden in both directions.
 
 ---
 
-### ✅ Live and stable (deployed, and verified in production)
+## 1. Last reconciled — evidence snapshot
 
-| Area | State | Evidence |
+**Reconciliation timestamp (snapshot boundary): `2026-08-12T14:26:31Z`** (15:26:31 UK).
+Work ID **`REL-2`** · claim `ROADMAP-MASTER-TRUTH-RECONCILIATION--alish--roadmap-master`.
+**Documentation and governance only — no product code, no deploy, no production write, no rules,
+no Firestore write.** Every production fact below came from read-only Firebase Hosting / Cloud
+Functions / Firebase Rules / Firestore REST metadata and from fetching served bytes.
+
+**Repository anchors at the snapshot** (all four `0/0` against `origin/main`):
+
+| Repo | Path | HEAD at snapshot | Clean | Ahead/Behind |
+|---|---|---|---|---|
+| `salown-app` | `alex/salown-app` | `d66f433` → **`7776d92`** (see §1.1) | yes | 0/0 |
+| `salown-docs` | `alex/docs` | **`d7e1e6f`** | yes | 0/0 |
+| `whitecross-site` | `alex/whitecross-site` | **`a336ddce`** | yes | 0/0 |
+| `super-admin` (`salownadmin`) | `alex/super-admin` | **`51e70a0`** | yes | 0/0 |
+
+Linked worktrees found: `alex/.wt-specialhours-backfill` (detached `de26b0e`, 10 behind — a spent
+PROFILE-SPECIALHOURS-BACKFILL worktree, safe to prune) · `whitecross-site/.claude/worktrees/exciting-easley-bc6e13`
+(`89e102ec`) · a prunable super-admin worktree under a dead session scratchpad. No separate
+deployment/release-infrastructure repository exists; release tooling lives inside
+`salown-app/ops/` and `whitecross-site/scripts/`.
+
+### 1.1 AFTER_SNAPSHOT — what moved while this ran
+
+| Work ID | Commits | Landed | Treatment |
+|---|---|---|---|
+| `FIN-COMP-S3A` | `f1239ba` + claim release `7776d92` | 2026-08-12T14:28:50Z / 14:28:57Z | **Reconciled in this pass.** Its final report arrived before this session closed and was independently verified (§5). Recorded `PUSHED_NOT_LIVE`, **not** LIVE_VERIFIED, **not** complete. |
+| `REL-2` | claim `fbabc0d` | 2026-08-12T14:38:33Z | This reconciliation's own claim. |
+
+Anything landing after `fbabc0d` is **AFTER_SNAPSHOT — requires next reconciliation** and is not
+reflected below.
+
+---
+
+## 2. Current production summary
+
+Every identity here was read from production on 2026-08-12, read-only.
+
+| Surface | Live identity | Released | Status |
+|---|---|---|---|
+| `hosting:salown` — Admin `/app` + landing + public booking `/book/**` + salon pages `/s/**` (one deployable unit, one bundle) | version **`11cc739f548c5e10`** · release `1786493555545000` | 2026-08-12T00:12:35.545Z | LIVE, **NO LEDGER ENTRY** — `REL-2a` |
+| `hosting:salown-staff` — staff.salown.com | version **`b9a396c48836840f`** · release `1786389184539000` | 2026-08-10T19:13:04.539Z | LIVE_VERIFIED, byte-proven |
+| `hosting:salown-admin` — Super Admin | version **`9f457fc2c8ee4b35`** · release `1785493665740000` | 2026-07-31T10:27:45.740Z | LIVE_VERIFIED, marker-proven |
+| `hosting:whitecrossbarbers-saas` — whitecrossbarbers.com | version **`e6be08684d312ce7`** · release `1786401587236000` | 2026-08-10T22:39:47.236Z | LIVE, source **UNKNOWN/HYBRID** — `WCP-1` |
+| Cloud Functions | **108 total** — 81 `europe-west2` + 27 `us-central1`; labels: `salown` 76 · `whitecross` 30 · unlabelled 2 | — | see §10 |
+| `firestore.rules` | ruleset **`640c3dae-a9c8-4cb3-80c4-bc189e72874a`** | updated 2026-08-05T12:52:07Z | LIVE_VERIFIED, unchanged since Unit-9/DPPP |
+| Firestore indexes | **2 composite, both READY** | — | STATUS_UNKNOWN — `TEC-6`, the repo declares **0** |
+| Storage rules | ruleset `4c00eef7-e45c-4b35-856a-b0e911018990` | updated 2026-05-24T19:56:00Z | LIVE, untouched |
+
+**Business reality is unchanged by this reconciliation.** 2 live salons (whitecross · herohairs),
+6 tenant *documents* + `dayi-barbers` provisioned 2026-08-12 (7 documents — never quote a document
+sweep as a customer count; [TENANTS.md](TENANTS.md)). Stripe Connect is entirely in **TEST** mode —
+no tenant takes real money. The **TR payment integrity hold** is active: production holds **zero**
+`checkoutReceipt` documents, so no TRY money has ever been rendered from real data.
+
+---
+
+## 3. Active sessions and claims
+
+At the snapshot: **one** claim, this one.
+
+| Claim | Owner | Work ID | Locked paths | Status |
+|---|---|---|---|---|
+| `ROADMAP-MASTER-TRUTH-RECONCILIATION` | `alish/roadmap-master` | `REL-2` | `docs/ROADMAP.md` · `docs/RELEASE_LEDGER.md` · `docs/CLAUDE.md` · `docs/README.md` · `docs/scripts/daily-reconciliation-check.sh` | working → released on commit |
+
+`STAFF-FINANCE-COMPENSATION-PERIODS-S3A` (`alish/comp-periods-s3a`) held a claim across the
+snapshot and released it at `7776d92`. `claims.sh validate` was clean throughout; no conflict, no
+claim of another session was read, edited or released by this pass.
+
+---
+
+## 4. MASTER ACTIVE TABLE
+
+Every active item has a **stable Work ID**. Existing established ids (`A1`, `B2`, `C8`, `S4`,
+`T-e`, `REL-1`, `TR-*`, `Unit 11`…) are preserved inside the theme bodies below and cross-referenced
+here; commit and release identifiers are never renamed.
+
+| Pri | Work ID | Work item | Status | Repo | Claim | Dependency | Source SHA | Live identity | Next action | Last verified |
+|---|---|---|---|---|---|---|---|---|---|---|
+| P0 | `REL-2a` | The 2026-08-12 Admin release has no ledger entry and no provable source | `STATUS_UNKNOWN` | salown-app | — | — | **UNKNOWN** (deploy→commit) | `11cc739f548c5e10` | Backfill from operator memory or accept UNKNOWN permanently | 2026-08-12 |
+| P0 | `REL-3` | Prohibit deploy→commit; every release needs a clean-tree pinned anchor | `PLANNED` | all | — | `REL-2` | — | — | Adopt §15; add the pre-release tree/anchor gate | 2026-08-12 |
+| P0 | `CAM-2` | `salownPublishPublicCampaign` server-side publisher | `PUSHED_NOT_LIVE` | salown-app | — | owner release window | `c8036f0` | **absent from the 108 live functions** | Deploy the publisher by exact name, then `CAM-3` | 2026-08-12 |
+| P0 | `CAM-3` | Republish `public/campaign` mirrors so they carry `multiplier` | `BLOCKED` | data | — | `CAM-2` | — | whitecross mirror written 2026-06-18, **no `multiplier`** | Server-side backfill after `CAM-2`; **never** "press Save once" | 2026-08-12 |
+| P0 | `CAM-1` | salOWN campaign resolver (frontend half) | `LIVE_VERIFIED` **but not delivering** | salown-app | — | `CAM-3` | `01bfebe` | `11cc739f548c5e10` | Do not close: the guarantee is dark until `CAM-3` | 2026-08-12 |
+| P0 | `WCP-2` | Whitecross homepage campaign parity | `PUSHED_NOT_LIVE` / `BLOCKED` | whitecross-site | — | `CAM-3` | `bc25d257` | **proven absent** from `e6be08684d312ce7` | Hold. Deploying now blanks a live banner | 2026-08-12 |
+| P0 | `WCP-3` | W1 premium cutover — booking created before payment fail-closed (phantom bookings) | `BLOCKED` | whitecross-site | — | O1W F→D→E2E coordinated activation | — | current live artefact still on the legacy path | Coordinated activation, owner-scheduled | 2026-08-12 |
+| P0 | `WCP-1` | Live Whitecross artefact is a hand-composed hybrid matching no Git SHA | `STATUS_UNKNOWN` | whitecross-site | — | `REL-4` | **UNKNOWN/HYBRID** | `e6be08684d312ce7` · `script.js` sha256 `ffa63589…e77637` | Build a reproducible anchor before any further deploy | 2026-08-12 |
+| P0 | `WCP-4` | `firebase.public-site.json` would re-expose the repository | `PLANNED` | whitecross-site | — | — | — | 9 ignore entries vs 25 in `firebase.saas.json` | Delete or hard-fail it; `firebase.saas.json` is the only approved config | 2026-08-12 |
+| P0 | `FIN-COMP-S3B` | Wire all six Finance consumers + legacy-vs-period parity mode, activation OFF | `PLANNED` | salown-app | — | `FIN-COMP-S3A` | — | — | Build; keep `FINANCE_COMP_PERIOD_MODE='legacy'` | 2026-08-12 |
+| P0 | `FIN-COMP-S3C` | Authorised period closure, flag activation, targeted release, authenticated verification | `BLOCKED` | salown-app | — | `FIN-COMP-S3B` + owner authorisation | — | — | Owner-authorised production write, separately scheduled | 2026-08-12 |
+| P0 | `FIN-ARDA-REPAIR` | Arda `workingDays` repair | `BLOCKED` | data | — | `FIN-COMP-S3C` LIVE_VERIFIED | — | — | Do **not** touch `workingDays` yet (§9.3) | 2026-08-12 |
+| P0 | `SEC-FN-NS` | Nothing stops a third repo re-colliding a function name; no guard on the salown side | `PLANNED` | both | — | — | `a336ddce` (wc) | both names now serve codebase `salown` | Mirror `deploy-functions.sh` step 5b into salown-app | 2026-08-12 |
+| P1 | `FIN-COMP-S3A` | Wage resolver can honour a dated employment period | `PUSHED_NOT_LIVE` | salown-app | released | — | `f1239ba` | not deployed; flag `legacy`; no consumer wired | `FIN-COMP-S3B` | 2026-08-12 |
+| P1 | `FIN-S2` | One wage-day rule for all six Finance paths | `PUSHED_NOT_LIVE` | salown-app | released | — | `10e754a` | not deployed | ships with `FIN-COMP-S3C` | 2026-08-12 |
+| P1 | `FIN-S1` | Wage-integrity cause, rejected fixes, S3 scope | `LIVE_VERIFIED` (docs) | salown-docs | released | — | `d7e1e6f` | `origin/main` — docs have no deploy target | — | 2026-08-12 |
+| P1 | `FIN-PERIOD-CLOSE` | Closed-month immutability: closing / snapshot / attributable adjustment | `PLANNED` | salown-app | — | `FIN-COMP-S3C` | — | — | Design. `effectiveFrom/To` does **not** make a closed month immutable | 2026-08-12 |
+| P1 | `BK-7` | `HOURS-SSOT-C` — bind Admin availability to canonical tenant hours | `PLANNED` (**newly unblocked**) | salown-app | — | A ✅ + B ✅ both live | — | — | Start; A and B are both LIVE_VERIFIED (§11) | 2026-08-12 |
+| P1 | `LOC-1` | `MULTI-LOCATION-PHASE-1` — location authority/registry | `PLANNED` | salown-app | — | `BK-7` first | — | — | Phase order is a dependency chain, not a preference | 2026-08-12 |
+| P1 | `STF-2` | S4B staff access callables + UI + rules entry + `PENDING` sweep | `PLANNED` | salown-app | — | `STF-2A` | `3097521` (S4A) | S4A pushed, **no callable, no UI, not deployed** | Build S4B | 2026-08-12 |
+| P1 | `SEC-TE` | `T-e` claim writers — paths 1/3/4/5 | `PLANNED` | salown-app + super-admin | — | `SEC-FN-NS` | — | path 2 LIVE; path 1's blocker cleared | Repoint `Settings.tsx` writers at `setStaffRoleCore`; fix the super-admin caller | 2026-08-12 |
+| P1 | `SEC-VICTIMS` | Repair the two live identity victims (`the-hair-lab`, `yusufo`) | `BLOCKED` | data | — | owner authorisation | — | — | Separately authorised production write | 2026-08-10 |
+| P1 | `ADM-H5` | Super-admin has no working way to open an owner account | `PLANNED` | super-admin | — | — | — | — | One "Create Owner Account" form routed through `approveApplication` | 2026-08-12 |
+| P1 | `TR-P2` | Home stat cards + `BookingDetailPanel` (51 sites) currency/i18n | `PLANNED` | salown-app | — | — | — | — | Largest remaining Admin i18n block | 2026-08-12 |
+| P1 | `TR-U11` | Unit 11 controlled TRY E2E | `BLOCKED` | salown-app | — | owner lifts the TR payment integrity hold | — | zero `checkoutReceipt` docs in production | Cannot be closed by fabricating data | 2026-08-12 |
+| P1 | `RCP-1` | Staff walk-in loyalty/receipt parity | `STATUS_UNKNOWN` | salown-app | — | — | — | — | Audit against the live staff bundle before planning | 2026-08-12 |
+| P1 | `BK-5` | In-app notification (reschedule/cancel) live test | `STATUS_UNKNOWN` | salown-app | — | owner field test | — | — | One real reschedule; bell appears or the trigger is stale | 2026-07-20 |
+| P1 | `TEC-6` | Firestore index drift: 2 live, repo declares 0 | `STATUS_UNKNOWN` | salown-app | — | — | — | 2 composite READY | Export live indexes into `firestore.indexes.json` **before** any index deploy | 2026-08-12 |
+| P2 | `PAY-1` | Stripe Go-LIVE (real money) | `BLOCKED` | salown-app | — | owner live keys | `138e8d7` | TEST mode only | Owner supplies `sk_live_`/live `ca_`/`whsec_` | 2026-07-17 |
+| P2 | `PAY-2` | `A1` stylist cap soft→hard | `BLOCKED` | salown-app | — | `PAY-1` / M4 | — | soft nudge is live | Decision, not code | 2026-08-10 |
+| P2 | `SEC-STRIPE-SPLIT` | salOWN half of the secret namespace split | `PLANNED` | salown-app | — | — | — | whitecross half done | `SALOWN_STRIPE_SECRET_KEY`, then retire the shared name | 2026-07-21 |
+| P2 | `COM-M1` | In-account plan upgrade (request→approve) | `PLANNED` | salown-app | — | — | — | — | Focus-day task | 2026-08-10 |
+| P2 | `LEG-1` | salOWN ToS / Privacy pages | `PLANNED` | salown-app | — | — | — | landing footer `href="#"` | Write before onboarding scales | 2026-07-16 |
+| P2 | `TEC-2` | `I2` Phase 2 — functions modularisation (parsers slice next) | `PLANNED` | salown-app | — | — | — | `index.ts` **4,738** lines | One slice, one targeted deploy | 2026-08-10 |
+| P2 | `TEC-1` | `REL-1` predeploy topology dirties the tracked staff bundle | `PLANNED` | salown-app | — | — | — | — | Isolated-clone deploys sidestep it — candidate fix | 2026-08-10 |
+| DORM | `VIS-*` | Marketplace + Trust Score · Stripe Billing M3–M5 · Capacitor/App Store · cross-tenant AI · subdomain themes · Booksy write-back | `DORMANT` | — | — | — | — | — | Not scheduled | 2026-08-10 |
+
+---
+
+## 5. P0 — Production integrity and financial correctness
+
+### 5.1 The campaign chain is half-live, and that is the most important fact in this file
+
+The 2026-08-10 decision was: **do not release CAMPAIGN-LIFECYCLE-PARITY until a server-side
+`public/campaign` publisher exists.** Half of it shipped anyway, inside the unrecorded 2026-08-12
+Admin release.
+
+Evidence, all read from production on 2026-08-12:
+
+- **`CAM-1` is LIVE.** The served entry chunk `index-CjxIhWAr.js` on `hosting:salown`
+  `11cc739f548c5e10` contains `⚡ Bonus points earned` and **no** `Double Points — Active` /
+  `2× loyalty points`. That is `01bfebe`'s BookingPage: it reads `tenants/{tid}/public/campaign`
+  and resolves through `resolveActiveCampaign`, which is **strict** — a campaign with no configured
+  `multiplier` returns `null`.
+- **`CAM-2` is not live.** `salownPublishPublicCampaign` does not exist among the 108 deployed
+  functions. There is still no server-side writer of `public/campaign`.
+- **`CAM-3` is the gap.** `tenants/whitecross/public/campaign` reads
+  `{active: true, startDate: "2026-05-24", endDate: "2026-08-24"}` — **no `multiplier`** —
+  `updateTime` **2026-06-18T09:38:38Z**. The campaign is inside its window today.
+
+**What this does and does not mean.** It did **not** remove a live banner from the salOWN booking
+page: that banner had never rendered for a customer (it previously read auth-only
+`settings/settings` and swallowed the 403). So the customer-visible state is unchanged — dark
+before, dark now. What changed is that **the repair shipped and did not take effect**, and the item
+must not be recorded as delivered. The premium site is the mirror image: `whitecrossbarbers.com`
+**is** showing the banner right now, from live `script.js` that reads the same mirror but needs only
+`active` + dates — with a hardcoded "2× loyalty points" and the *visitor's* clock. Deploying `WCP-2`
+against today's mirror would blank it. `CAM-3` first, in the coordinated order already recorded
+under the Marketing theme.
+
+### 5.2 Release governance — `REL-2a`, `REL-3`, `REL-4`
+
+- **`REL-2a`** — `hosting:salown` `11cc739f548c5e10` (2026-08-12T00:12:35.545Z) appears in **no**
+  `SYNC.md` entry, **no** `DEPLOYMENT_STATUS.md` row and **no** commit message in any repo. It is
+  the release that took `9af1272`, `01bfebe`, `e1df13a` and `ac5b156` live. Its source tree cannot
+  be proven: `ac5b156` was **committed 46 seconds after** the release finalised, and its content
+  (`wl-spinner`) is served. Ledger row: `SOURCE_SHA = UNKNOWN`.
+- **`REL-3` — deploy→commit is a process violation from now on.** Two proven instances on
+  consecutive minutes: `adminPurgeTenant` deployed `23:59:33Z`, `d316893` committed `00:00:22Z`;
+  `hosting:salown` released `00:12:35Z`, `ac5b156` committed `00:13:21Z`. Both produced correct
+  behaviour and **unprovable provenance**, which is the whole cost. See §15.
+- **`REL-4`** — Whitecross needs a reproducible release anchor before its next deploy (`WCP-1`).
+
+### 5.3 Finance / Employment — where the money model actually stands
+
+`FIN-S1` `d7e1e6f` (docs, pushed) · `FIN-S2` `10e754a` (six consumers centralised, 261
+golden-parity assertions, 2889/2889 frontend, **pushed, not deployed, production unchanged**) ·
+**`FIN-COMP-S3A` `f1239ba` — `PUSHED_NOT_LIVE`, reconciled after the snapshot.**
+
+S3A's final report was received and **independently verified read-only** by this pass:
+`origin/main` = `7776d92`, tree clean, `0/0`, no claim outstanding; `FINANCE_COMP_PERIOD_MODE`
+ships as **`'legacy'`**; the only referrers of the switch are the resolver itself, its tests and a
+read-only analyser script — **no Finance page or consumer imports it**; no Function or hosting
+target moved. Reported gates, carried as reported: frontend **3034/3034** · S2 golden parity
+**261/261** with the parity file byte-untouched · new S3A period tests **108** · read-only analyser
+tests **37** · typecheck/build/scoped lint/diff-check clean · **no deploy, no production write, no
+Arda/staff data change**.
+
+What landed: the canonical resolver *can* gate accrual on `staffComp.effectiveFrom`/`effectiveTo`;
+both boundaries inclusive; multiple periods and gaps supported; missing/malformed period data
+**fails open to legacy**; nothing is wired and no tenant is enabled. **Period closing / month
+immutability was explicitly NOT implemented** — do not describe closed months as immutable.
+
+Whitecross dry-run (read-only): 3 accruing staff · 3 `staffComp` records · 2 complete and valid ·
+**1 inactive staff member with an open compensation period** · no malformed, overlapping, gapped,
+missing or ambiguous record · `readiness = false` · exactly one owner-supplied last-employed date
+required. That record is Arda — resolved by owner decision, §9.3.
+
+---
+
+## 6. P1 — Product completion and TR readiness
+
+**Turkey is not "Future".** TR-A regional settings, TR-B packages + ledger, TR-B2 accounting +
+booking UX, TR-C session lifecycle + follow-ups, TR-D1 checkout Phases 0.5→3B, the Admin TR
+checkout cutover, Units 4–9, TR-P1 Admin localisation Phase 1, TR-CURRENCY A–G and
+TR-STAFF-LOCALIZATION-P0 are all **deployed and production-verified**. Any line still describing
+the TR programme as future work is stale and is corrected in the theme bodies below.
+
+What genuinely remains, in order:
+
+1. **`TR-P2`** — customer-facing i18n and the remaining hardcoded values: Home stat cards,
+   `BookingDetailPanel` (51 sites, no `useLocale` at all), and the **stored-money leak**
+   (`.replace('£','')` readers) which is a *migration*, not a formatting fix.
+2. **`TR-U11`** — the only thing that can prove a real TRY checkout renders. `BLOCKED` on the owner
+   lifting the payment integrity hold.
+3. **Payment/instalment completeness** — the `onlineBooking` Settings tab is still a read-only
+   shell; post-sale plan editing is deliberately absent; a TR-resident PSP is out of scope
+   (Stripe does not onboard TR-resident businesses).
+4. **`LOC-1` multi-location** — preparation only exists today; nothing reads a location.
+5. **KVKK** — gates treatment photographs and automated marketing. Not started.
+
+**Booking / Staff, reclassified against production this pass:**
+
+- Block-time concurrency + mixed-race protection, the service-label resolver, and ANY-BARBER
+  server-side assignment: `LIVE_VERIFIED` (§11).
+- **`O1S-STAFF-CREATE-CUTOVER` (`234441d`) — the "classification owed" gap is CLOSED as
+  `LIVE_VERIFIED`**: the served `staff-BhghYLPT.js` is **byte-identical** (sha256
+  `d7410dee…da35`) to the tracked bundle committed at `eac5a95`, and contains `salownCreateWalkIn`
+  with no bare `createWalkIn`. It has been live since 2026-08-10T19:13:04Z.
+- `O1S` **future-booking core** (`e428124`) remains `PUSHED_NOT_LIVE` — Functions were not deployed.
+- `RCP-1` Staff walk-in loyalty/receipt parity and `RCP-4` booking identity/name parity +
+  receipt-consumer cutover stay `STATUS_UNKNOWN` until someone audits them against the live bundle.
+
+---
+
+## 7. P2 — Scale and commercial maturity
+
+Monetisation `COM-M1`/`M2` · Stripe Go-LIVE `PAY-1` and the `A1` hard gate `PAY-2` · secret
+namespacing `SEC-STRIPE-SPLIT` · pre-scale Tier 2 (`read:true` root-doc lock, `I3` reporting
+pre-aggregation, `I4` audit trail Phase B/C) · inventory `A3-2`/`A3-3` · evidence and metrics
+`EV1`/`EV2`/`EV3`/`C7` · premium themes `F1`/`F2` · technical debt `TEC-1`/`TEC-2`/`G3`/`DOCID-1`
+data residual / 27 us-central1 orphans · legal `LEG-1`. All keep their existing ids and detail
+under their themes; none is started.
+
+---
+
+## 8. DORMANT — vision / future
+
+Marketplace + Trust Score (`J1`, ADR-016) · self-serve Stripe **Billing** (`M3`–`M5`) · Capacitor /
+App Store (`D1`, ready and waiting, owner decision) · cross-tenant AI assistant (`C4`) · subdomain
+themed sites · Booksy write-back robot (`B5` Phase 2). Deliberately outside the execution horizon.
+There is **no** personal/consumer calendar sync anywhere on this roadmap — the only calendar work
+that exists is `salownIcalFeed`, a one-way iCal feed OUT.
+
+---
+
+## 9. Blocked decisions and dependencies
+
+### 9.1 Owner decisions that block code
+
+| # | Decision | Blocks |
 |---|---|---|
-| **Server-authoritative booking** | Hosted booking creates through `salownCreateBooking` (`HOSTED_BOOKING_CREATE_MODE = 'callable'`); rules reject the 7 server-owned keys; ANY-BARBER assignment resolves inside the create transaction; Admin create/reassign cut over; the 4 parsers import transactionally | C1 `cb88af0` · H1 `9480185` · R1(a) `2a6a641` (ruleset `323f1726…`) · ANY-BARBER `f980978` · O1A `8746201` · O1C `63efafc` · O1P `08914a9`/`e803106` |
-| **UK financial parity** | Canonical receipt writer **and** reader live; one fold contract; discount redeemed in the sale's own commit; loyalty policy tenant-resolved; double-points promise snapshot server-owned; ghost £100/day wage removed; Admin Sales period-accurate | P1-RECEIPT-MATH `c5ae035` · Units 4–6 `7c21e18`/`a0d2601`/`bf44146`/`fa8dea2` · DPPP `0a5aa14` · GHOST-WAGE `5746237` · ADMIN-SALES-FILTER-1 `571ab9d` |
-| **Product-sale authority (PSA)** | `tenants/{tid}/products` is the single product authority; **Admin and Staff tills both cut over** to the server writers and E2E-verified on `tr-demo`; `source` cannot be forged from a client | PSA2 `d9e7684` (Admin) → `f2426b6` rolled back `cfe60cf` → `509e63e` (Staff, re-cut) |
-| **Team identity contract (O1)** | Staff doc is the authority, `tenantRole` claim its projection; `createStaffUser` + `approveApplication` fixed and live | `960db19`; `createStaffUser` `-00058-kur`, `approveApplication` `-00013-yob` |
-| **Turkey foundation** | TR-A regional settings · TR-B packages/ledger · TR-B2 accounting + booking UX · TR-C session lifecycle + follow-ups · TR-D1 checkout Phases 0.5→3B · Admin TR checkout cutover · Units 4–9 terminology/currency · TR-P1 Admin localisation Phase 1 | `424747d` · `c3716f7` · `c5bd1dc`/`b0a2051`/`b40e182`/`a5b6f20` · `d9856e5` · `5926c1c`…`ecb6d93` · `a240925` · Unit 9 `943f859` (live in the DPPP release) · TR-P1 `8fa75c6` |
-| **Currency (Admin money surfaces)** | Product/Services/Barbers money reads the tenant's own currency, and an unreadable price is shown verbatim instead of becoming `£0.00` | TR-CURRENCY-A/C `53ffe30` · D `f5a79bf` · E `e850820` · **F `fca8054`** (live `ffbc7898e4a8556e`, authenticated TRY pass done) |
-| **Service identity (read side)** | One resolver per app; no raw `serviceId` on screen; server given one service-label contract | `a55e9bf` · SERVICE-IDENTITY-A `bd5ccab`/`ac36887` (5 Functions, 2026-08-10) |
-| **Ops** | CI hosting deploys name **one** target behind a fail-closed allow-list; the release guard refuses every untagged commit; the emulator gate is version-pinned | `d304541` · `a8c49f5` · EMU-TX-FLAKE-1 `c6a5c79` |
+| 1 | Lift the **TR payment integrity hold** | `TR-U11`, any real Turkish takings |
+| 2 | Supply **Stripe live keys** | `PAY-1`, commission activation, `PAY-2` soft→hard |
+| 3 | Authorise the **`FIN-COMP-S3C`** period-closure production write | `FIN-ARDA-REPAIR`, closed-month correctness |
+| 4 | Authorise repair of the **two live identity victims** | `SEC-VICTIMS` |
+| 5 | Schedule the **`CAM-2` → `CAM-3` → `WCP-2`** coordinated campaign release | the entire campaign chain |
+| 6 | Schedule the **O1W F→D→E2E** coordinated activation | `WCP-3` phantom bookings |
 
-### 🟡 Pushed but not live · deployed but dormant
+### 9.2 Technical dependency chains
 
-*Nothing in this block may be described as working for a salon.*
+- **Campaign:** `CAM-2` publisher deployed by exact name → `CAM-3` republish every tenant's mirror
+  from `settings/settings.doublePointsCampaign` → verify source/version/timestamp + normalised
+  fields → prove disabled / incomplete / expired / not-yet-started each resolve to `null` → *then*
+  `hosting:salown`, and the Whitecross artefact (`WCP-2`) separately.
+- **Finance:** `FIN-COMP-S3A` ✅ → `FIN-COMP-S3B` wiring + parity, activation OFF → `FIN-COMP-S3C`
+  closure + activation + release + authenticated verification → `FIN-ARDA-REPAIR` →
+  `FIN-PERIOD-CLOSE` design.
+- **Hours:** `HOURS-SAFETY-A` ✅ LIVE (superseded by `9af1272`) **and** `HOURS-CASING-B` ✅ LIVE
+  ⇒ **`BK-7` HOURS-SSOT-C is unblocked.** Then location-scoped hours, after `LOC-1`.
+- **Multi-location:** authority/registry → staff/auth → booking/availability → public booking →
+  packages → checkout/finance/reporting. `PRE-A`/`PRE-B` are seams, not a feature.
+- **Booking security:** `WCP-3` (W1) + `E1` payment E2E → `R1` phase (b) deny anonymous create →
+  delete the legacy `addDoc` branch.
+- **Function namespace:** `a336ddce` removed both contested exports from whitecross and
+  `deploy-functions.sh` step 5b hard-fails on their return. Live labels confirm `addToWaitlist`
+  (`-00038-fof`) and `provisionTenant` (`-00137-bij`) both serve codebase **`salown`**.
+  `SEC-FN-NS` remains open: no equivalent guard exists on the salown side, and **five** other
+  `europe-west2` functions still carry codebase `whitecross` (§10). `createStaffUser` /
+  `deleteStaffUser` existing in **both** regions is *not* a same-resource collision — different
+  region, different resource — but the legacy `barber-panel` still calls the us-central1 pair
+  through a region-less `getFunctions()`, which is its own item.
 
-- **TR-CURRENCY-G** (`d726b1b`) — public `/s/**` salon-page prices in the tenant's currency. **On `main`, NOT deployed**: it landed *after* the TR-CURRENCY-F release was pinned to `b94b8fa`. Its SYNC line was owed at snapshot (SYNC.md was claimed by another session); release evidence is the commit plus its claim-release `d557522` ("gates green, no deploy").
-- **MULTI-LOCATION-PRE-A** (`72ce9be`) — sale-time `locationIds` snapshot. **STORAGE ONLY.** Its frontend half is a type-level interface field (zero runtime emit) that rode into the F release harmlessly; **its Functions half was not deployed** and no reader consults `locationIds`.
-- **MULTI-LOCATION-PRE-B** (`afb40fb`) — archive/restore is now genuinely status-only. **Pushed, no deploy.** Client-side only; the server writer was already correct.
-- **`salownCheckoutBooking`** — deployed 2026-08-02 and reachable **only** from the Admin TR till, and only for a TR tenant (today: `demo`). A tenant without `checkoutSettings` fails closed with `CHECKOUT_DISABLED`.
-- **O1W hosted payment routing + PAY-CHANNELS-A** (`eec538c`/`e3ccbca`/`21fdee0`) — **LIVE-BUT-DORMANT**, re-proven from production: no tenant root doc carries `paymentSettings.channels`, all resolve `PAY_AT_VENUE`/`NONE`. PAY-2 hosted bridge deployed (`functions:whitecross:createCheckoutSession`, us-central1).
-- **S4A staff access & revocation foundation** (`3097521`) — source + tests, **no callable, no UI, not deployed**.
-- **O1S staff future-booking core** (`e428124`) — Functions-side; Functions were not deployed on 2026-08-09, so it is **not live**.
-- **A3 inventory cores** (`34ddb12`/`980f6f1`/`98e4bcd`) — NOT WIRED / NOT DEPLOYABLE by design.
-- **⚠️ Classification owed — one honest gap.** The 2026-08-09 `hosting:salown-staff` release built from `509e63e`, a tree that also contains **O1S-STAFF-CREATE-CUTOVER** (`234441d`, a `src/staff/**` change). The release record classified the PSA2 markers but did **not** classify that co-ship, so its live state is **unverified in either direction** — do not call it live, and do not repeat "NOT LIVE" for it either. Resolve by a marker check against the served `staff-BALp7dqM.js` before it is planned around. *(The Admin equivalent of this exercise was done at `a0a1343`; the Staff one was not.)*
+### 9.3 Owner-confirmed decision — Arda employment boundary *(2026-08-12)*
 
-### ⛔ Current blockers and dependency chain
+The whitecross `openPeriodButStaffInactive` record found by the S3A dry-run is **Arda**. Owner
+confirms:
 
-1. **TR payment integrity hold (owner)** → blocks **Unit 11 controlled E2E**, which is the only thing that can prove a real TRY checkout renders. Cannot be closed by fabricating production data or by lifting the hold to manufacture a sale.
-2. **SHARED-FN-NAMESPACE (was T-h)** → `provisionTenant` now runs O1's code in production (`-00137-bij`, 2026-08-11), so self-signup mints a proper owner **today**; but `whitecross-site` still exports that name and three others, and its next Functions deploy silently reverts all four. T-e path 1 is unblocked only for as long as that does not happen.
-3. **Stripe live keys (owner)** → blocks Go-LIVE, commission activation, plan hard-gate and A1's soft→hard flip.
-4. **W1 premium cutover + E1 payment E2E** → block **R1 phase (b)** (deny anonymous create) and the deletion of the hosted legacy `addDoc` branch.
-5. **Hours chain (ordering is load-bearing):** `HOURS-SAFETY-A` **and** `HOURS-CASING-B` must both be green — and the casing function's live-verification/rollback status known — **before** `HOURS-SSOT-C` binds Admin availability to canonical tenant hours and removes Opening Hours → barber-shift propagation.
-6. **Multi-location phase order:** location authority/registry → staff/auth → booking/availability → public booking → packages → checkout/finance/reporting. PRE-A/PRE-B are *seams*, not a feature.
-7. **REL-1** — a single-target Admin deploy still runs the other target's predeploy hook and dirties the tracked staff bundle; the explicit-path cleanup after every `hosting:salown` deploy remains REQUIRED. *(The isolated-clone deploys of 2026-08-10 sidestepped it and are a candidate fix.)*
+- last worked day **2026-08-04 (Tuesday)**; last wage-entitled day **2026-08-04**;
+- canonical `staffComp.effectiveTo` = **2026-08-04, inclusive**;
+- expected wage accrual from **2026-08-05 onward = £0**;
+- wages through 2026-08-04 have **already been entered** by the owner.
 
-### 🇹🇷 Turkey — demo readiness vs commercial readiness
+**Constraints that travel with this decision:** do not create another wage payment or settlement ·
+do not alter historical payment entries · do not change Arda's `workingDays` yet · the `staffComp`
+period closure stays a separately authorised **`FIN-COMP-S3C`** production write, after `S3B`
+wiring and parity proof · the later verification must show **zero accrual from 2026-08-05** without
+duplicating or changing the wages already recorded through 2026-08-04.
 
-| | Demo-ready today | Commercially ready |
+---
+
+## 10. Per-target release truth table
+
+| Unit | Repository | Source SHA | Live identity | Status | Evidence | Next action |
+|---|---|---|---|---|---|---|
+| `hosting:salown` — Admin + landing + `/book/**` + `/s/**` | salown-app | **UNKNOWN** | `11cc739f548c5e10` · rel `1786493555545000` · 2026-08-12T00:12:35Z | `STATUS_UNKNOWN` (source) / LIVE (target) | served `index-CjxIhWAr.js`; `wl-spinner` in served landing; no ledger entry anywhere | `REL-2a` |
+| ↳ `9af1272` barber-hours propagation race | salown-app | `9af1272` | same | **`LIVE_VERIFIED`** | served `Settings-ZjvTQcBn.js` contains ``source:`salon` `` + `` `dayHours.${…}` `` field-scoped update | — |
+| ↳ `01bfebe` campaign resolver (frontend) | salown-app | `01bfebe` | same | **`LIVE_VERIFIED`** | `⚡ Bonus points earned`; old strings absent | `CAM-3` |
+| ↳ `e1df13a` TR-DEMO-ADMIN-LOCALIZATION-P0 | salown-app | `e1df13a` | same | **`LIVE_VERIFIED`** | `🛍 Ürün ekle`, `dk kapatıldı`, `1,5 saat` served | — |
+| ↳ `ac5b156` landing demo-request popup | salown-app | `ac5b156` | same | **`LIVE_VERIFIED`** | `wl-spinner` served; **committed 46 s after the release** | `REL-3` |
+| ↳ `d726b1b` TR-CURRENCY-G public `/s/**` prices | salown-app | `d726b1b` | `3a0fcdea…`, still served | **`LIVE_VERIFIED`** | served `` · from ${…formatMoney(t)}``; old `from £${minPrice}` gone. *Corrects the previous "on main, NOT DEPLOYED".* | — |
+| ↳ `afb40fb` MULTI-LOCATION-PRE-B | salown-app | `afb40fb` | `3a0fcdea…` onward | **`LIVE_VERIFIED`** | DEPLOYMENT_STATUS release row (client-side only). *Corrects "pushed, no deploy".* | — |
+| ↳ `72ce9be` MULTI-LOCATION-PRE-A | salown-app | `72ce9be` | frontend type-level only | **`PUSHED_NOT_LIVE`** | Functions half never deployed; no reader consults `locationIds` | `LOC-1` |
+| `hosting:salown-staff` | salown-app | **`eac5a95`** | `b9a396c48836840f` · rel `1786389184539000` · 2026-08-10T19:13:04Z | **`LIVE_VERIFIED`** | served `staff-BhghYLPT.js` sha256 `d7410dee…da35` **== tracked bundle**; Turkish strings present; `salownCreateWalkIn` present | write the missing ledger row |
+| ↳ `234441d` O1S staff create cutover | salown-app | `234441d` | same | **`LIVE_VERIFIED`** | ancestor of `eac5a95` + byte parity + callable marker | closes the 2026-08-10 "classification owed" |
+| ↳ TR-STAFF-LOCALIZATION-P0 `dde52ab`…`eac5a95` | salown-app | `eac5a95` | same | **`LIVE_VERIFIED`** | as above — **had no SYNC or DEPLOYMENT_STATUS record at all** | ledger row written |
+| `hosting:salown-admin` — Super Admin | super-admin | **`51e70a0`** | `9f457fc2c8ee4b35` · rel `1785493665740000` · 2026-07-31T10:27:45Z | **`LIVE_VERIFIED`** | served `index-DmG8j3Xi.js` contains `no email on this conversation` | — |
+| `hosting:whitecrossbarbers-saas` | whitecross-site | **UNKNOWN / HYBRID** | `e6be08684d312ce7` · rel `1786401587236000` · 2026-08-10T22:39:47Z | **`STATUS_UNKNOWN`** | hours fix present (`public/profile` ×4 in served `script.js`, sha256 `ffa63589…e77637`); campaign block absent (`SALON_TIMEZONE`/`resolveActiveCampaign`/`fmtCampaignDate` = 0); `bc25d257` markup **absent** | `REL-4`, then `WCP-2` |
+| Functions codebase `salown` | salown-app | mixed per function | 76 functions | LIVE, per-revision | `addToWaitlist -00038-fof` · `provisionTenant -00137-bij` · `approveApplication -00014-yup` · `adminPurgeTenant -00012-vav` · `salownGetBusySlots -00064-foj` · `createStaffUser -00058-kur` | keep targeted; never blanket |
+| ↳ `d316893` adminPurgeTenant backup path | salown-app | `d316893` | `adminpurgetenant-00012-vav` (2026-08-11T23:59:33Z) | **`LIVE_VERIFIED`** | deployed source package contains `superAdmin/backups/entries/${backupId}` in **both** `lib/index.js` and `src/index.ts` | — |
+| ↳ `c8036f0` `salownPublishPublicCampaign` | salown-app | `c8036f0` | **absent** | **`PUSHED_NOT_LIVE`** | not among the 108 deployed functions | `CAM-2` |
+| ↳ `e428124` O1S future-booking core | salown-app | `e428124` | not deployed | **`PUSHED_NOT_LIVE`** | no Functions deploy on 2026-08-09 | — |
+| ↳ `3097521` S4A access foundation | salown-app | `3097521` | not deployed | **`PUSHED_NOT_LIVE`** | no callable, no UI | `STF-2` |
+| Functions codebase `whitecross` | whitecross-site | `a336ddce` (source) | 30 functions — **5 in europe-west2** (`salownNotifyNewBooking`, `salownSendTestTelegram`, `salownSyncTreatwellIcal`, `sendProInterest`, `setTenantClaim`, all `2026-07-21T00:06Z`) + 25 in us-central1 | LIVE | read-only label sweep | on the next wc deploy confirm `addToWaitlist`/`provisionTenant` stay codebase `salown` |
+| `firestore.rules` | salown-app | not proven against file | ruleset `640c3dae-a9c8-4cb3-80c4-bc189e72874a`, updated 2026-08-05T12:52:07Z | **`LIVE_VERIFIED`** (identity) | Rules API release read | — |
+| Firestore indexes | salown-app | — | **2 composite, READY** | **`STATUS_UNKNOWN`** | repo `firestore.indexes.json` declares **0 indexes** + 1 fieldOverride ⇒ a `--only firestore:indexes` deploy would propose deleting both | `TEC-6` — export live first |
+| Production data migrations / activations | data | — | none pending-applied | — | `public/campaign` mirrors stale (`CAM-3`); `staffComp` closure not written (`FIN-COMP-S3C`); Arda `workingDays` untouched | see §9 |
+
+---
+
+## 11. Recently completed and LIVE_VERIFIED
+
+Verified against production in this pass (2026-08-12) unless dated otherwise:
+
+- **`9af1272` BARBER-HOURS-PROPAGATION-RACE-P0** — one transaction, seven days, field-scoped dotted
+  paths; supersedes the `HOURS-SAFETY-A` pin. Live on `11cc739f548c5e10`.
+- **`HOURS-CASING-B` `10febff`** — `salowngetbusyslots-00064-foj`, live 2026-08-10.
+- **`d316893` adminPurgeTenant** — corrected `superAdmin/backups/entries/${backupId}`, live in the
+  deployed source package at `-00012-vav`.
+- **`SHARED-FN-NAMESPACE` symptom** — `addToWaitlist` + `provisionTenant` both serve codebase
+  `salown` (`-00038-fof` / `-00137-bij`), and the first owner account since 2026-07-13 was
+  provisioned end-to-end through apply→approve on 2026-08-12 (`dayi-barbers`).
+- **`TR-STAFF-LOCALIZATION-P0` + `O1S-STAFF-CREATE-CUTOVER`** — byte-proven on
+  `b9a396c48836840f`.
+- **`e1df13a` TR-DEMO-ADMIN-LOCALIZATION-P0**, **`d726b1b` TR-CURRENCY-G**, **`afb40fb`
+  MULTI-LOCATION-PRE-B**, **`ac5b156` landing popup** — all served.
+- **Super Admin `51e70a0`** — live-chat visitor contact details.
+- Standing, re-confirmed: server-authoritative booking (`C1`/`H1`/`R1a`/ANY-BARBER/`O1A`/`O1C`/`O1P`),
+  UK financial parity (`P1-RECEIPT-MATH`, Units 4–6, DPPP, ghost-wage, ADMIN-SALES-FILTER-1),
+  product-sale authority (PSA1/PSA2 both tills), team identity contract `O1`, the Turkey foundation
+  (TR-A/B/B2/C/D1 + Units 4–9 + TR-P1), TR-CURRENCY A–G, service identity read side, CI hosting
+  scope + release guard + emulator pin.
+
+**`CAM-1` is LIVE_VERIFIED but is deliberately NOT in this list as "completed"** — see §5.1.
+
+---
+
+## 12. Recently pushed but not live
+
+*Nothing here may be described as working for a salon.*
+
+| Work ID | Commit | Why not live |
 |---|---|---|
-| Show a Turkish salon the product end to end (`demo`) | ✅ | ✅ |
-| Regional settings, i18n, tenant timezone/dates | ✅ TR-A | ✅ |
-| Packages, instalments, open-account ledger, accounting | ✅ TR-B / TR-B2 | ✅ |
-| Session lifecycle, follow-ups, client recovery | ✅ TR-C | ✅ |
-| Configure in-salon checkout | ✅ TR-D1 Phase 3/3B | ✅ |
-| **Take money in a real Turkish salon** | ✅ *(demo only)* | ❌ **payment integrity hold + Unit 11 unproven** |
-| Money on screen in the tenant's currency | ✅ Admin surfaces (A/C/D/E/F) | ❌ public `/s/**` (G undeployed) · `BookingDetailPanel` 51 sites · Home stat cards |
-| Online card payment for a TR tenant | ❌ | ❌ **Stripe does not onboard TR-resident businesses** — needs a TR-resident PSP; out of scope |
-| KVKK | ❌ | ❌ gates treatment photographs + automated marketing |
+| `FIN-COMP-S3A` | `f1239ba` | no deploy; `FINANCE_COMP_PERIOD_MODE='legacy'`; no consumer wired; no tenant enabled |
+| `FIN-S2` | `10e754a` | pushed, no deployment at completion; production unchanged |
+| `CAM-2` | `c8036f0` | publisher absent from the 108 deployed functions |
+| `WCP-2` | `bc25d257` | proven absent from the live Whitecross artefact; deploying blanks a live banner |
+| `LOC-PRE-A` (Functions half) | `72ce9be` | storage-only seam; Functions half never deployed |
+| `STF-2A` S4A | `3097521` | source + tests; no callable, no UI |
+| `O1S` future-booking core | `e428124` | Functions not deployed |
+| `A3` inventory cores | `34ddb12`/`980f6f1`/`98e4bcd` | NOT WIRED / NOT DEPLOYABLE by design |
+| `SEC-FN-NS` source protection | `a336ddce` (+ record `cb710db` in **salown-docs**, not whitecross-site) | on `origin/main`; the guard only proves itself on the next whitecross Functions deploy |
+| `PROFILE-SPECIALHOURS-BACKFILL` | `2cc2a1e` | read-only tool, dry run only, no write |
 
-**Read this as:** Turkey is *demonstrable* and *configurable* today; it is **not commercially operable**. The gap is a hold, a PSP and a compliance workstream — not missing product.
+`salownCheckoutBooking` is **deployed but dormant** — reachable only from the Admin TR till, TR
+tenants only (today `demo`); a tenant without `checkoutSettings` fails closed with
+`CHECKOUT_DISABLED`. `O1W` hosted payment routing + `PAY-CHANNELS-A` are **live but dormant** — no
+tenant root doc carries `paymentSettings.channels`.
 
-### ⏭️ Next 3 waves (agreed order)
+### 12.1 Process violations found in this pass
 
-1. **`HOURS-SSOT-C`** — bind Admin availability to canonical tenant hours; remove **all** Opening Hours → barber-shift propagation. *Gated on A + B green.*
-2. **`MULTI-LOCATION-PHASE-1`** — location authority/registry + the compatibility contract (the first thing that may legitimately *read* `locationIds`).
-3. **`TEAM-LIFECYCLE` remaining server-authoritative cutovers** — S4B callables/UI, T-e paths 3/4/5, plus the owner-authorized repair of the two known live victims.
-4. *(then)* the next **TR localisation / payment surface group**, chosen from this reconciled roadmap — the honest candidates are TR-CURRENCY-G release, `BookingDetailPanel`, and Home stat cards.
-
-### 🌅 Long horizon (unchanged, not scheduled)
-
-Marketplace + Trust Score (J1) · self-serve Stripe **Billing** (M3–M5) · Capacitor / App Store (D1) · cross-tenant AI assistant (C4) · subdomain themed sites · Booksy write-back robot (B5 Phase 2).
-
-### 🔄 In progress at this snapshot — NOT complete, NOT counted as history
-
-Three concurrent sessions held claims when this reconciliation was taken (`claims.sh validate` clean, no conflicts). Their outcomes are **not** recorded here; they will be reconciled from their own commits and ledger entries.
-
-- `alish/hours-safety-a` — **HOURS-SAFETY-A** (`src/pages/Settings.tsx`, `src/utils/openingHoursWrite*.ts`)
-- `alish/pkg-editor-restrictions` — **PACKAGE-EDITOR-RESTRICTION-ROUNDTRIP** (`PackageBuilderModal` — the latent seam MULTI-LOCATION-PRE-B named: the **edit** path still drops `locationIds` + `allowedServiceIds`)
-- `alish/admin-pending-slices-release` — a `hosting:salown` release ledger entry (`SYNC.md`)
+1. **Deploy→commit, twice** (`adminPurgeTenant` −49 s; `hosting:salown` −46 s). Prohibited from now
+   on (§15).
+2. **Three unrecorded release events** — `hosting:salown` `11cc739f548c5e10`, and both
+   `salown-staff` releases of 2026-08-10 (`926999f6f3edddde` 19:07, `b9a396c48836840f` 19:13). The
+   Staff one is named in a claim-release commit message (`1c04e92`) but appears in neither
+   `SYNC.md` nor `DEPLOYMENT_STATUS.md`.
+3. **A whole work item with no roadmap entry** — `TR-STAFF-LOCALIZATION-P0` (four commits, one live
+   release) appeared in no roadmap, ledger or SYNC record before this pass.
 
 ---
 
-## 🎯 Current focus
+## 13. STATUS_UNKNOWN — audit required
 
-> **The 2026-07-20 COMPLETION SPRINT block that stood here is SUPERSEDED and archived verbatim** at the bottom under *Superseded planning blocks*. It was kept as the running index for three weeks while the work that actually shipped (TR-D1 → Units 4–9 → DPPP → O1 series → PSA → TR-P1 → TR-CURRENCY → multi-location seams) was never in it, so it read as the plan while describing a different July. Its items are **not** lost: every one still lives under its theme, which is the SSOT.
->
-> **The current sequence is the "Next 3 waves" list above.** This section holds only what is *actively* being worked or is a standing owner-facing test.
+Never guess these. Each names the cheapest experiment that would settle it.
 
-**🧪 Awaiting owner live verification (does not block the flow):**
-- [ ] **In-app notification (reschedule/cancel) live test** — code review ✅ 2026-07-20, still unverified in the field. Reschedule a real (not walk-in) booking from the panel; the bell + 🔄 diff should appear. If it appears ✅ closes; if not, the live `salownNotifyBookingUpdated` is stale → targeted redeploy. *(Booking theme)*
-- [ ] **ADMIN-SALES-FILTER-1 live UI pass** — deployed 2026-08-06 and verified at the byte level; **no browser was connected**, so the running screen is unverified. *(Tech Debt / Reporting)*
-- [ ] **TR-CURRENCY-F GBP authenticated pass** — the TRY pass was run on a live tenant; the **GBP** one was not (no authenticated UK session). GBP is proven statically only.
-- [ ] **Manual visual passes still open** — TESTS.md §12 (TR-A, incl. the Chrome auto-translate condition) · §14 (Turkish `/app/follow-ups`) · §15 (TR-B2 Stage 4) · §16 (package catalogue under Services, desktop).
-
-**🔄 Actively in flight (see also *In progress at this snapshot* above):** the hours chain (`HOURS-SAFETY-A` → `HOURS-CASING-B` → `HOURS-SSOT-C`) and the package-editor restriction round-trip.
-
-- 🔄 **I2 Phase 2 — functions modularization** (owner choice 2026-07-14). Slice 1 (askAI + auth guard) ✅ LIVE (`bccd828`). **The parsers slice is still open**, and the honest measure moved the wrong way: `functions/src/index.ts` was 3,816 lines at the 2026-07-16 audit and is **4,738** at this snapshot. Domain directories now exist and are real (`parsers/`, `bookings/`, `checkout/`, `packages/`, `sales/`, `staff/`, `receipts/`, `inventory/`, `treatmentSessions/`…) and O1P put the parser *logic* in `functions/src/parsers/`, but the five **exports** (`salownParseEmails`/`salownInboundEmail`/`salownParseInboxDispatch`/`salownManualImport`/`salownIcalFeed`) are still inline in `index.ts` — code-confirmed 2026-08-10. Then notifications → marketing; **stripe/bookings LAST**. Golden rule: export name+config exactly matched, pure move, one commit + targeted deploy per slice. Detail: **Tech Debt** theme.
-- 🔄 **Employment Model Phase C** (theme below) — still the next big module by owner emphasis, now behind the hours + multi-location + team-lifecycle waves.
+| Work ID | Question | Cheapest resolution |
+|---|---|---|
+| `REL-2a` | What tree produced `11cc739f548c5e10`? | Operator recollection, or accept `UNKNOWN` permanently in the ledger |
+| `WCP-1` | What tree produced `e6be08684d312ce7`? | Rebuild candidates and diff against the served manifest; else keep `UNKNOWN/HYBRID` |
+| `TEC-6` | Which 2 composite indexes are live, and why is the repo empty? | `firebase firestore:indexes` export → commit → compare. **Do not deploy indexes until then** |
+| `RCP-1` | Is Staff walk-in loyalty/receipt parity live? | Marker audit against the served `staff-BhghYLPT.js` |
+| `RCP-4` | Booking identity/name parity + receipt-consumer cutover | Same audit, same bundle |
+| `BK-5` | Does the in-app reschedule/cancel notification fire? | One real reschedule from the panel |
+| `FIN-GHOST-PASSIVE` | Does a **passive** barber still accrue a daily wage (`Finance.tsx`), and is a barber on leave still in the occupancy denominator (`OccupancyPanel.tsx`)? | Read the two files. **Not** closed by `5746237`, which removed a different ghost |
+| `TR-CURR-GBP` | TR-CURRENCY-F GBP authenticated pass | One authenticated UK session |
+| `ADMIN-SALES-UI` | ADMIN-SALES-FILTER-1 running screen | One authenticated browser pass |
+| `TESTS §12/§14/§15/§16` | Manual visual passes (TR-A incl. Chrome auto-translate · Turkish follow-ups · TR-B2 Stage 4 · package catalogue desktop) | Owner/browser session |
 
 ---
+
+## 14. Completed archive
+
+The dated detail, commits and narrative for everything closed live in the **Completed (archive)**
+section at the bottom of this file, and in [DEPLOYMENT_STATUS.md](DEPLOYMENT_STATUS.md),
+[RELEASE_LEDGER.md](RELEASE_LEDGER.md), [INCIDENTS.md](INCIDENTS.md) and `salown-app/SYNC.md`.
+Nothing was deleted by this reconciliation: superseded statuses were replaced in place with a short
+audit note saying **what changed and why**.
+
+---
+
+## 15. Daily maintenance protocol
+
+The full **Daily Project Truth** process — session start, session completion, and the end-of-day
+reconciliation pass — is in [CLAUDE.md](CLAUDE.md#daily-project-truth) and is checked by
+`docs/scripts/daily-reconciliation-check.sh`. The three rules that exist because of what §12.1
+found:
+
+1. **Never deploy from an uncommitted or dirty tree, and never deploy then commit.** Pin a commit,
+   build from it, release it, and let the ledger name it.
+2. **A release without a `RELEASE_LEDGER.md` row does not count as done**, however well it went.
+3. **Never mark work live without production verification** of the exact behaviour — and never
+   silently overwrite another session's status.
+
+If a day produces no product status change, record
+`DAILY_RECONCILIATION_COMPLETE — NO STATUS CHANGE` so that *absence of an update* is
+distinguishable from *forgetting*.
+
+---
+
+# Theme detail
+
+> Below this line the themes keep their original structure, ids and technical detail. Where the
+> evidence in §10 contradicted a line, the status was corrected **in place** with a dated audit
+> note. Where an item is genuinely old but genuinely unfinished, it was kept.
 
 ## 👥 Employment Model & Staff Management
 
@@ -140,7 +491,7 @@ Three concurrent sessions held claims when this reconciliation was taken (`claim
 - ✅ **Archive / snapshot safety (hole 1)** — product sale + block snapshot `barberName` (`0db230c`); deletion is super-admin+owner only, strong confirmation modal, `BARBER_DELETED` audit.
 - 🔄 **S4 Staff access & offboarding** — **S4A server foundation ✅ source+tests, PUSHED, NOT LIVE** (`functions/src/staff/`): canonical `staff/{uid}.accessStatus` (`active`/`suspended`/`offboarded`; **absent=active**, unknown **fails closed**, one `ACTOR_OFFBOARDED` code) enforced in-transaction by all 5 Staff-actor mutation cores at **zero extra Firestore reads**; server-only offboard/re-enable cores as a **resumable state machine** (Auth+Firestore+FCM cannot be atomic — ADR-023) with claim clearing, token revocation, per-uid FCM sweep and exactly-once audit at a derived doc id. `barbers.status` still means assignability ONLY (ADR-022) — a passive owner keeps running the salon. **Nothing exposed or deployed: no callable, no UI.** Detail: [STAFF_ACCESS_CONTROL.md](STAFF_ACCESS_CONTROL.md). **S4B remaining:** callable wrappers · Admin Staff/Barbers UI · Staff App revoked state · `staffAccessOps` rules entry · stuck-`PENDING` reconciliation sweep. Still bypassable while O1S Staff direct-writes remain.
 - 🔄 **Team lifecycle & ownership — where it actually stands** *(added 2026-08-10; the detail and the five affected paths stay under Security › T-e, this is the index)*. **LIVE:** the identity contract itself (O1 `960db19`) — the staff doc is the authority, the `tenantRole` claim only its projection, `setCustomUserClaims` **replaces** so every write must be merge-aware; `createStaffUser` (`-00058-kur`) and `approveApplication` (`-00013-yob`) deployed 2026-08-08 and live-verified **by source marker, zero writes**. **DEPLOYED BUT DORMANT / NOT LIVE:** S4A's access-authority foundation (`3097521`) has cores and tests but **no callable and no UI**, and `setStaffRoleCore` exists but is deliberately **not exposed**. **REMAINING CUTOVERS:** O2 must repoint `Settings.tsx`'s `updateStaffRole` + `registerMeAsAdmin` at `setStaffRoleCore` (today they write the staff doc, are blocked by `firestore.rules:203` for non-super-admins, and **report success anyway** — false success is the defect, not the block), fix the `super-admin/` caller that grants tenant access with no role, and land S4B (callable wrappers · Admin Staff/Barbers UI · Staff App revoked state · `staffAccessOps` rules entry · stuck-`PENDING` reconciliation sweep). **OWNER PREREQUISITES, not code:** ① the **T-h** `provisionTenant` repo-ownership fork — until it is decided, every new self-signup still mints a role-less, staff-doc-less owner and path 1 cannot be fixed; ② authorization to **repair the two live victims found 2026-08-08 and deliberately left alone** (`the-hair-lab` owner — `{tenantId}` only, no `tenantRole`, no staff doc; `yusufo` owner — role claim, no staff doc). All 7 other staff docs are consistent. Contract: [TEAM_IDENTITY_CONTRACT.md](TEAM_IDENTITY_CONTRACT.md).
-- 🔄 **S3 Compensation periods — closed months must stop changing** *(added 2026-08-12; the wage-integrity incident)*. **Cause confirmed, S2 landed, the fix is NOT built.** `barbers/{id}.workingDays` is a single **undated** array with no history, so Finance replays *today's* rota over every past month — a closed period is not closed, and one rota edit silently moves every historical Total Wages / Net P&L / partner + staff Wages Earned / G4 ledger. `shiftChanges[date]` stays a correct **single-date** override and is not the cause; **the owner's seven date-specific Off records are correct**. `staffComp.effectiveFrom`/`effectiveTo` already exists (`compUtils.ts`, Phase B, LIVE) and **Finance reads none of it** — that is the gap S3 closes. **✅ S2 done (`10e754a`, pushed, NOT deployed):** all six wage-accrual consumers now decide a day in ONE resolver (`src/utils/financeWages.ts`) with exact parity (261 golden-parity assertions, no total moved, no write, no deploy) + a static test that fails if manual wage logic returns. **Explicitly rejected:** a fake leave-until-2099 record and a `partnerConfig.wageEndDate` field — both are duplicate SSOTs for "when employment ended". **Blocked on S3 going live + verified:** the Arda `workingDays` repair (repairing it today would itself retroactively re-price his settled partner era). Booking-derived workdays are corroborating evidence only, never the permanent SSOT. Detail: [INCIDENTS 2026-08-12](INCIDENTS.md) · [STAFF_SETTINGS_AUDIT.md](STAFF_SETTINGS_AUDIT.md) · [STAFF_MANAGEMENT_DESIGN.md](STAFF_MANAGEMENT_DESIGN.md) §1.1.
+- 🔄 **S3 Compensation periods — closed months must stop changing** *(added 2026-08-12; the wage-integrity incident · updated 2026-08-12 after S3A)*. **Cause confirmed · S1 + S2 + S3A landed, all `PUSHED_NOT_LIVE` · S3B/S3C not built.** `barbers/{id}.workingDays` is a single **undated** array with no history, so Finance replays *today's* rota over every past month — a closed period is not closed, and one rota edit silently moves every historical Total Wages / Net P&L / partner + staff Wages Earned / G4 ledger. `shiftChanges[date]` stays a correct **single-date** override and is not the cause; **the owner's seven date-specific Off records are correct**. `staffComp.effectiveFrom`/`effectiveTo` already exists (`compUtils.ts`, Phase B, LIVE) and **Finance reads none of it** — that is the gap S3 closes. **✅ S2 done (`10e754a`, pushed, NOT deployed):** all six wage-accrual consumers now decide a day in ONE resolver (`src/utils/financeWages.ts`) with exact parity (261 golden-parity assertions, no total moved, no write, no deploy) + a static test that fails if manual wage logic returns. **Explicitly rejected:** a fake leave-until-2099 record and a `partnerConfig.wageEndDate` field — both are duplicate SSOTs for "when employment ended". **`FIN-COMP-S3A` ✅ landed (`f1239ba`, 2026-08-12, `PUSHED_NOT_LIVE`):** the canonical resolver *can* gate accrual on `staffComp.effectiveFrom`/`effectiveTo` — both boundaries **inclusive**, multiple periods and gaps supported, missing/malformed period data **fails open to legacy**. The activation constant `FINANCE_COMP_PERIOD_MODE` ships as **`'legacy'`**, **no Finance consumer is wired**, **no tenant is enabled**, and **period closing / month immutability was explicitly NOT implemented** — `effectiveFrom`/`effectiveTo` does *not* make a closed month immutable, and nobody may describe it as doing so. Gates as reported: frontend **3034/3034** · S2 golden parity **261/261** (parity file byte-untouched) · new period tests **108** · read-only analyser tests **37**; no deploy, no production write, no Arda/staff data change. Whitecross read-only dry run: 3 accruing staff · 3 `staffComp` records · 2 valid · **1 inactive staff member with an open compensation period** · nothing malformed/overlapping/gapped/ambiguous · `readiness = false` · exactly one owner-supplied last-employed date required. **Remaining:** `FIN-COMP-S3B` (wire all six consumers + a legacy-vs-period parity mode, activation still OFF) → `FIN-COMP-S3C` (authorised period closure / data correction, controlled flag activation, targeted Hosting release, authenticated Finance verification) → `FIN-PERIOD-CLOSE` (the separate closed-period / snapshot / attributable-adjustment design). **Blocked on `FIN-COMP-S3C` being LIVE_VERIFIED:** the Arda `workingDays` repair — see the owner-confirmed boundary in **§9.3** (last wage-entitled day **2026-08-04**, `effectiveTo` inclusive, £0 accrual from 2026-08-05, wages through 2026-08-04 already entered: do not re-pay, do not alter historical entries, do not change `workingDays` yet). Booking-derived workdays are corroborating evidence only, never the permanent SSOT. Detail: [INCIDENTS 2026-08-12](INCIDENTS.md) · [STAFF_SETTINGS_AUDIT.md](STAFF_SETTINGS_AUDIT.md) · [STAFF_MANAGEMENT_DESIGN.md](STAFF_MANAGEMENT_DESIGN.md) §1.1.
 - 🔵 **Payroll / accrual engine (Phase C)** — wage worked-time accrual (hour..year day/hour rate) + paid-leave days at normal rate + commission booking-based + chair-rent calendar accrual.
 - 🔵 **Settlement + Finance/Reports integration (Phase C)** — M1 migration (partnerConfig→staffComp, dry-run CSV) · Finance reads from staffComp + remove implicit £100 fallback (with parity proof) · Balance line "Tracked in Finance".
 - 🔵 **S1 hole 2** — the Reports "Barbers" tab builds the list only from LIVE barbers (`Reports.tsx:182`) → a deleted/passive barber's historical statistic row disappears. Fix: include historical booking names as "Archive/former staff". *(code-confirmed open 2026-07-16)*
@@ -182,7 +533,7 @@ Three concurrent sessions held claims when this reconciliation was taken (`claim
   **Beyond rules:** `salownConnectStart`/`salownConnectDisconnect` (`index.ts:3324`, `:3407`) refuse a role-less owner, so Stripe Connect cannot be set up. `ai/askAI.ts:19` documents the drift and deliberately tolerates it.
   **Live drift measured 2026-08-02 (read-only, 15 Auth accounts):** 10 healthy · **3 with `tenantId` and no `tenantRole`** — `cpsuk@yandex.com`/`ee-kurt-barbers`, `cspuk@yandex.com`/`the-test-lab`, and `araserulas@gmail.com`/**`the-hair-lab`, which is `status: trial`, not the dead tenant the G1 rules comment assumed** · 1 super-admin · 2 claimless orphans (see T-g). The drift set has not grown since June only because no self-signup has completed since; the writers are unchanged.
   **Scope: standalone Tier-1 onboarding fix — do NOT fold it into the loyalty fix or the TR Checkout work.**
-- 🟡 **T-h `provisionTenant` repo ownership — RESOLVED IN PRACTICE 2026-08-11, cause still open** *(opened 2026-08-08 by TEAM-LIFECYCLE-O1)*. Both `salown-app/functions/src/index.ts` and `whitecross-site/functions/index.js:3358` export `provisionTenant` to **europe-west2 on `havuz-44f70`**; until 2026-08-11 the live artifact was **whitecross's** (`provisiontenant-00136-taj`), which is why self-signup minted role-less, staff-doc-less owners. During the intake repair (INCIDENTS 2026-08-11) it was redeployed from codebase `salown` → **`provisiontenant-00137-bij`**, artifact verified as the `lib/` TS build carrying `ensureOwnerIdentityCore`, so self-signup now produces a proper `tenantRole:'owner'`. **The ownership question is not closed by that deploy** — the whitecross export still exists, so the next whitecross Functions deploy silently takes the name back and the breakage returns with no warning. Tracked to completion under **SHARED-FN-NAMESPACE** (Tech Debt). ⚠️ Newly live as a side effect: the salown welcome email sends from `hello@salown.com`, a mailbox that does not exist (`index.ts:321,324`) — a self-signup today gets a tenant and no welcome mail.
+- 🟡 **T-h `provisionTenant` repo ownership — RESOLVED IN PRACTICE 2026-08-11, cause still open** *(opened 2026-08-08 by TEAM-LIFECYCLE-O1)*. Both `salown-app/functions/src/index.ts` and `whitecross-site/functions/index.js:3358` export `provisionTenant` to **europe-west2 on `havuz-44f70`**; until 2026-08-11 the live artifact was **whitecross's** (`provisiontenant-00136-taj`), which is why self-signup minted role-less, staff-doc-less owners. During the intake repair (INCIDENTS 2026-08-11) it was redeployed from codebase `salown` → **`provisiontenant-00137-bij`**, artifact verified as the `lib/` TS build carrying `ensureOwnerIdentityCore`, so self-signup now produces a proper `tenantRole:'owner'`. ⚠️ *Updated 2026-08-12: the whitecross export was **deleted** at `a336ddce` (record: salown-docs `cb710db`), so the "next whitecross deploy takes the name back" mechanism is gone from source. Confirmed live: `provisionTenant` = `provisiontenant-00137-bij` and `addToWaitlist` = `addtowaitlist-00038-fof`, both labelled `firebase-functions-codebase: salown`, and the first apply→approve owner account since 2026-07-13 (`dayi-barbers`) was provisioned end to end on 2026-08-12.* **What is still open** is the general defence, tracked as `SEC-FN-NS` under **SHARED-FN-NAMESPACE** (Tech Debt): no equivalent guard exists on the salown side, and **five** other functions in europe-west2 still carry codebase `whitecross` (`salownNotifyNewBooking`, `salownSendTestTelegram`, `salownSyncTreatwellIcal`, `sendProInterest`, `setTenantClaim`). ⚠️ Newly live as a side effect: the salown welcome email sends from `hello@salown.com`, a mailbox that does not exist (`index.ts:321,324`) — a self-signup today gets a tenant and no welcome mail.
 - 🔵 **T-f manual claim scripts replace instead of merge** — `salown-panel/setClaims.js`, `set-admin-claim.js` (repo root, untracked) and `whitecross-site/barber-panel/setClaims.js` all call `setCustomUserClaims` with a literal object. `set-admin-claim.js` writes `{ superAdmin: true }` to `aerulas@`'s uid — running it today would **strip `tenantId` + `tenantRole` from the platform's only super-admin**. The first two also load a `serviceAccountKey.json` (both copies are the same `firebase-adminsdk-fbsvc@` key, `private_key_id 040c0a61…`); both are gitignored and neither is committed, but the key exists twice on disk. Delete the dead scripts, or route them through `setTenantClaim`.
 - 🔵 **T-g signup creates the Auth user before the tenant, with no rollback** — `Signup.tsx:233` calls `createUserWithEmailAndPassword` and only then `provisionTenant`; if provisioning throws, the account survives with `{}` claims and no tenant. Two such orphans exist (`a.riz.u.lik.i75@gmail.com` 2026-06-25, `cole.ttib.ela@gmail.com` 2026-07-02 — neither owns any of the 6 tenant docs, neither has signed in since the day it was created). Fold the cleanup into T-c rather than deleting separately.
 - 🔵 **T-b app-password → Secret Manager** — `tenants/{id}/settings/emailConfig.appPassword` is still plaintext, client-readable (`index.ts:315` IMAP reads from there). ⚠️ **depends on H4** — once the parse-inbox model settles, the app-password is removed entirely → T-b **evaporates**; must wait for the H4 decision. *(code-confirmed: still plaintext 2026-07-16)*
@@ -291,21 +642,23 @@ Three concurrent sessions held claims when this reconciliation was taken (`claim
 *preparation*: two seams so that adding locations later is a backfill rather than a schema change
 mid-flight. Nothing reads a location yet. Market context: [TR_BEAUTY_MARKET_REQUIREMENTS.md §4.7](TR_BEAUTY_MARKET_REQUIREMENTS.md).
 
-- ✅ **MULTI-LOCATION-PRE-A — sale-time eligibility freeze** (`72ce9be`, 2026-08-10, **pushed, no deploy**). `PackageCommercialSnapshot.locationIds` + the executor writer, so a sold package folds against its own frozen snapshot and never re-reads the definition. All four states are distinct and load-bearing: **ABSENT / `null` / `[]` / `[ids…]`**. **STORAGE ONLY** — no reader, no eligibility check. Frontend impact is type-level (a `packages/shared` interface field, zero runtime emit), which is why it rode harmlessly into the TR-CURRENCY-F release; **its Functions half was not deployed**.
-- ✅ **MULTI-LOCATION-PRE-B — archive/restore is status-only** (`afb40fb`, 2026-08-10, **pushed, no deploy**). `setDefinitionStatus` has no callable of its own: it resends the whole definition through `salownSavePackageDefinition`, whose save contract is a **full replace**. `savePackageDefinitionCore` maps `undefined → null` through `optIdList` and then *names* that key in `tx.update` — so **omission from the payload is not neutrality, it is an erase**. The seam sent `allowedBarberIds` but not `locationIds` and not `allowedServiceIds`, so every archive and every restore silently blanked a package's branch eligibility and its redemption service list. Nothing already sold was harmed (PRE-A's frozen snapshot); the damage was forward-looking — the **next** sale off an archived-and-restored definition would have been recorded as valid everywhere with nothing in the document showing a restriction had ever existed. `?? null` is load-bearing, not shorthand: `[]` is not nullish, so an explicitly empty list survives as `[]`. The new suite asserts the **stored document** through a faithful replica of the server writer (asserting the payload would have proven a key was sent while proving nothing about what it does to the document — the entire defect lived in that gap); 7/13 fail against the pre-change seam. No server change was needed.
-- 🔄 **PACKAGE-EDITOR-RESTRICTION-ROUNDTRIP — the latent seam PRE-B named, claimed and in flight at this snapshot.** `PackageBuilderModal`'s **edit** path drops the same two fields, by the same full-replace mechanism. Same class of defect, different door. *(Owner: `alish/pkg-editor-restrictions`; not complete, not counted.)*
+- 🟡 **MULTI-LOCATION-PRE-A — sale-time eligibility freeze** (`72ce9be`, 2026-08-10, **`PUSHED_NOT_LIVE`** — its Functions half was never deployed; the frontend half is type-level with zero runtime emit). `PackageCommercialSnapshot.locationIds` + the executor writer, so a sold package folds against its own frozen snapshot and never re-reads the definition. All four states are distinct and load-bearing: **ABSENT / `null` / `[]` / `[ids…]`**. **STORAGE ONLY** — no reader, no eligibility check. Frontend impact is type-level (a `packages/shared` interface field, zero runtime emit), which is why it rode harmlessly into the TR-CURRENCY-F release; **its Functions half was not deployed**.
+- ✅ **MULTI-LOCATION-PRE-B — archive/restore is status-only** (`afb40fb`, 2026-08-10, **`LIVE_VERIFIED`**). ⚠️ *Status corrected 2026-08-12: this said "pushed, no deploy"; it is client-side only and shipped in ADMIN-PENDING-SLICES-RELEASE (`3a0fcdea1e1f8434`).* `setDefinitionStatus` has no callable of its own: it resends the whole definition through `salownSavePackageDefinition`, whose save contract is a **full replace**. `savePackageDefinitionCore` maps `undefined → null` through `optIdList` and then *names* that key in `tx.update` — so **omission from the payload is not neutrality, it is an erase**. The seam sent `allowedBarberIds` but not `locationIds` and not `allowedServiceIds`, so every archive and every restore silently blanked a package's branch eligibility and its redemption service list. Nothing already sold was harmed (PRE-A's frozen snapshot); the damage was forward-looking — the **next** sale off an archived-and-restored definition would have been recorded as valid everywhere with nothing in the document showing a restriction had ever existed. `?? null` is load-bearing, not shorthand: `[]` is not nullish, so an explicitly empty list survives as `[]`. The new suite asserts the **stored document** through a faithful replica of the server writer (asserting the payload would have proven a key was sent while proving nothing about what it does to the document — the entire defect lived in that gap); 7/13 fail against the pre-change seam. No server change was needed.
+- ✅ **PACKAGE-EDITOR-RESTRICTION-ROUNDTRIP — landed `c942329`, `LIVE_VERIFIED`.** ⚠️ *Status corrected 2026-08-12: this said "claimed and in flight"; it merged on 2026-08-10 (claim release `8ea75f3`) in the same commit as HOURS-SAFETY-A, and rode the `3a0fcdea1e1f8434` release.* `PackageBuilderModal`'s **edit** path had dropped `locationIds` + `allowedServiceIds` by the same full-replace mechanism PRE-B named — same class of defect, different door.
 - 🔵 **MULTI-LOCATION-PHASE-1 — location authority/registry + compatibility contract.** The first work permitted to *read* `locationIds`. **Phase order is a dependency chain, not a preference:** ① authority/registry → ② staff/auth → ③ booking/availability → ④ public booking → ⑤ packages → ⑥ checkout/finance/reporting. Skipping ahead means a surface enforcing a restriction another surface cannot see.
 
 **Opening hours — the corrected sequence.** These were being done out of order, which is how a "safety" fix
 and an "SSOT" fix ended up able to contradict each other.
 
-- 🔄 **HOURS-SAFETY-A** — narrow the Opening Hours settings write to owned fields (`src/pages/Settings.tsx`, `src/utils/openingHoursWrite.ts`). **Claimed and in flight at this snapshot** (`alish/hours-safety-a`); no commit, no SYNC entry, no deploy yet.
-- 🔵 **HOURS-CASING-B** — the day-key casing correction. *(Historical anchor: `c3111e0`, 2026-07-14, "opening-hours warning fired on every booking — day-key casing" — the same class of bug, which is why B is separated out rather than folded into C.)* **Its live-verification and rollback status must be KNOWN before C starts**, not assumed.
-- 🔵 **HOURS-SSOT-C — ⛔ do not start until A *and* B are green.** Bind Admin availability to canonical tenant hours and remove **all** Opening Hours → barber-shift propagation. This is the one that changes behaviour a salon will feel.
+- ✅ **HOURS-SAFETY-A — landed `c942329`, superseded and extended by `9af1272`, `LIVE_VERIFIED`.** ⚠️ *Status corrected 2026-08-12: this said "claimed and in flight, no commit"; it merged 2026-08-10 (claim release `97b0cbe`) and `BARBER-HOURS-PROPAGATION-RACE-P0` (`9af1272`, claim `f7ed82f` explicitly extended to the pin it supersedes) replaced the seven concurrent whole-document `setDoc` writes with ONE `runTransaction` over all barbers and all seven days, `tx.update` on dotted paths only.* Live on `hosting:salown` `11cc739f548c5e10`, proven by the served `Settings-ZjvTQcBn.js` containing ``source:`salon` `` and the `` `dayHours.${dayName}` `` field-scoped update.
+- ✅ **HOURS-CASING-B — `10febff`, DEPLOYED + `LIVE_VERIFIED` 2026-08-10** (`salowngetbusyslots-00063-hab` → **`-00064-foj`**, europe-west2, codebase `salown`; still the live revision at the 2026-08-12 sweep). `settings/hours` has two writers with different key casing, and this callable was the last server reader still lowercase-only, so a Capitalized document fell through to the 09:00–19:00 defaults and reported a **closed day as open**. One narrow reader `functions/src/utils/weekHours.ts`: Capitalized (canonical) > lowercase (legacy) > default, whole entry, never a field merge. Proven on production data with zero writes (whitecross Sunday `10:00–16:00`, herohairs `10:00–17:00`); rollback anchor `-00063-hab`. ⚠️ The lowercase-legacy and `closed:true` branches are **not** proven live — no live tenant carries either shape. *(Historical anchor: `c3111e0`, 2026-07-14, the same class of bug.)*
+- 🔵 **HOURS-SSOT-C — ✅ UNBLOCKED, not started.** ⚠️ *Status corrected 2026-08-12: the gate read "⛔ do not start until A and B are green" and both are now green **and live** — A via `9af1272` on `11cc739f548c5e10`, B via `salowngetbusyslots-00064-foj` with its rollback identity known.* Bind Admin availability to canonical tenant hours and remove **all** Opening Hours → barber-shift propagation. This is the one that changes behaviour a salon will feel — and `9af1272`'s `source: 'salon' | 'staff'` provenance marker is the field it must read: `salon` means "may be re-derived", `staff` and *unmarked* mean **keep**.
 - 🔵 **Location-scoped hours** — after C, and only after C: hours resolve per location. Depends on MULTI-LOCATION-PHASE-1's registry existing.
 
-> **Hours audit result, recorded plainly:** there is **no standalone hours audit document** in either repo,
-> and no SYNC or DEPLOYMENT_STATUS entry for any HOURS-* item at this snapshot. The evidence for this
+> **Hours audit result, recorded plainly** *(updated 2026-08-12)*: there is still **no standalone hours
+> audit document** in either repo. HOURS-CASING-B now has both a `SYNC.md` line (`e9f7d11`) and a
+> [DEPLOYMENT_STATUS.md](DEPLOYMENT_STATUS.md) row; **`9af1272` has neither**, and the release that took
+> it live has no record at all — see ROADMAP §5.2 `REL-2a`. The evidence for this
 > chain is the claim files, the historical casing fix `c3111e0`, and the 2026-07-23 central-availability
 > resolver series (`6121460`/`95ae2aa`/`12b36d8`/`7c2db70`/`96d4ef9`/`e879220`, all live) that made a single
 > resolver possible in the first place. Anyone who needs more than that should generate it, not infer it.
@@ -315,7 +668,7 @@ and an "SSOT" fix ended up able to contradict each other.
 ## 📣 Marketing & Retention
 
 - ✅ **Campaign infrastructure** — C1 redesign (`3e26610`/`2ce03b1`) · discount codes 4 phases (`3c6c81d`..`fe875aa`) · re-engagement attribution (`ef7f751`) · C2/C2b/C2c premium email+preview (`82e86d6`/`1e81915`/`42cd5d4`) · C5 lapsed dedup A+B (`3c4039f`/`5fa051a`/`1bf3416`) · Marketing Performance card (`5218d91`) · email open/click tracking (`c87c883`/`7730e7f`) · C6 Marketing↔Analytics split (Marketing=`TABS=['campaigns']`, `2a2e92d`). *(detail: Completed › Marketing)*
-- 🔄 **CAMPAIGN-LIFECYCLE-PARITY — one campaign resolver across every surface** *(source ON origin/main: salown-app `01bfebe` + claim release `df28087`; whitecross-site `bc25d257`, with its `script.js` half absorbed into `bacfda34`. **NOT deployed** — nothing of this work is in production)*. Campaign **VISIBILITY** and campaign **BENEFIT** are two guarantees and are now proved separately. The benefit half (`loyaltyPromotionSnapshot`, frozen at booking creation, read by the award) was audited and **deliberately not rewritten** — it was already airtight; `campaignId` stays `null` because the persisted window + multiplier + `policyVersion` already identify what was promised, and an id nothing generates would be ceremony. The visibility half is new: `evaluateCampaignWindow` is the **only** place that decides where a campaign's edges are, `resolveActiveCampaign` returns a campaign or exactly `null`, and the twin byte-parity contract is preserved. **Fixed a live defect the audit had marked ✅:** the salOWN booking-page banner read auth-only `settings/settings` and swallowed the 403, so it had never rendered for any customer — it now reads the world-readable `public/campaign` mirror, which now carries `multiplier`. Also closed: the till preview re-derived the campaign with a hardcoded `2` while checkout awarded from the snapshot; the receipt email compared a **UTC** day to tenant-local window ends; the manual and automatic confirmation-email paths disagreed about who gets promised what; and `multiplier` **had no UI at all** (migration-script only), so a salon creating a campaign produced one worth nothing. Half-open `[startAt, endAt)` reconciled **without moving any money** — `endAt` is local midnight *ending* `endDate`, which is exactly the inclusive-day rule in different units; the opposite reading would have silently shortened every live campaign by a day. Gates: frontend **2496/2496** · functions **1290/0 fail** · emulator **419/419** · tsc 0 · eslint 0; campaign tests 37→74 (frontend), 8→15 (functions). **⚠️ Release is BLOCKED on a publisher that does not exist yet — owner decision 2026-08-10.** Existing `public/campaign` mirrors carry no `multiplier` (whitecross's last written 2026-06-18) and the resolver fails CLOSED, so the mirror cannot be released against as-is. **An earlier recommendation to have the owner press "Save campaign" once per tenant was REJECTED, and correctly so:** it would make an incidental production write from a browser the migration strategy, and would treat a stale mirror as release evidence. **There is currently NO server-side writer of `public/campaign` anywhere in `functions/src/`** (verified 2026-08-10) — the only writer is `Marketing.tsx`. The canonical publisher has to be built first; its natural home is the existing `salownRepublishOnSettingsEdit` (`index.ts:100`), already an `onDocumentUpdated` on `settings/settings` that republishes `public/profile` through `buildPublicProfile`. **Coordinated release order, once that exists:** ① deploy the publisher/republisher by exact name → ② republish `public/campaign` from each tenant's existing `settings/settings.doublePointsCampaign` → ③ verify the mirror's source/version/timestamp and normalized fields → ④ prove disabled / incomplete / expired / not-yet-started campaigns each resolve to `null` → ⑤ only then `hosting:salown`, and the Whitecross artifact separately. See INCIDENTS 2026-08-10.
+- 🔄 **CAMPAIGN-LIFECYCLE-PARITY — one campaign resolver across every surface** *(source ON origin/main: salown-app `01bfebe` + claim release `df28087`; whitecross-site `bc25d257`, with its `script.js` half absorbed into `bacfda34`.)* ⚠️ **STATUS CORRECTED 2026-08-12 — this line said "NOT deployed — nothing of this work is in production" and that is no longer true.** The salown-app **frontend half is `LIVE_VERIFIED`** on `hosting:salown` `11cc739f548c5e10` (2026-08-12T00:12:35Z, an **unrecorded** release — §5.2 `REL-2a`): the served entry chunk carries `⚡ Bonus points earned` and no `Double Points — Active` / `2× loyalty points`. The **publisher (`c8036f0`) is still `PUSHED_NOT_LIVE`** — `salownPublishPublicCampaign` is absent from the 108 deployed functions — and `tenants/whitecross/public/campaign` still reads `{active:true, 2026-05-24→2026-08-24}` with **no `multiplier`**, `updateTime` 2026-06-18. So the resolver fails CLOSED and the repair **shipped without taking effect**. Customer-visible state is unchanged (the salOWN banner was already dark behind the 403 this work exists to fix) — but the item is **not delivered** and must not be closed. The whitecross artefact is the mirror image: its banner **is rendering right now** from the multiplier-less mirror, so `bc25d257` still must not be deployed. Campaign **VISIBILITY** and campaign **BENEFIT** are two guarantees and are now proved separately. The benefit half (`loyaltyPromotionSnapshot`, frozen at booking creation, read by the award) was audited and **deliberately not rewritten** — it was already airtight; `campaignId` stays `null` because the persisted window + multiplier + `policyVersion` already identify what was promised, and an id nothing generates would be ceremony. The visibility half is new: `evaluateCampaignWindow` is the **only** place that decides where a campaign's edges are, `resolveActiveCampaign` returns a campaign or exactly `null`, and the twin byte-parity contract is preserved. **Fixed a live defect the audit had marked ✅:** the salOWN booking-page banner read auth-only `settings/settings` and swallowed the 403, so it had never rendered for any customer — it now reads the world-readable `public/campaign` mirror — **which is the half that has not landed: no mirror carries `multiplier` yet** (`CAM-3`). Also closed: the till preview re-derived the campaign with a hardcoded `2` while checkout awarded from the snapshot; the receipt email compared a **UTC** day to tenant-local window ends; the manual and automatic confirmation-email paths disagreed about who gets promised what; and `multiplier` **had no UI at all** (migration-script only), so a salon creating a campaign produced one worth nothing. Half-open `[startAt, endAt)` reconciled **without moving any money** — `endAt` is local midnight *ending* `endDate`, which is exactly the inclusive-day rule in different units; the opposite reading would have silently shortened every live campaign by a day. Gates: frontend **2496/2496** · functions **1290/0 fail** · emulator **419/419** · tsc 0 · eslint 0; campaign tests 37→74 (frontend), 8→15 (functions). **⚠️ Release is BLOCKED on a publisher that does not exist yet — owner decision 2026-08-10.** Existing `public/campaign` mirrors carry no `multiplier` (whitecross's last written 2026-06-18) and the resolver fails CLOSED, so the mirror cannot be released against as-is. **An earlier recommendation to have the owner press "Save campaign" once per tenant was REJECTED, and correctly so:** it would make an incidental production write from a browser the migration strategy, and would treat a stale mirror as release evidence. **There is currently NO server-side writer of `public/campaign` anywhere in `functions/src/`** (verified 2026-08-10) — the only writer is `Marketing.tsx`. The canonical publisher has to be built first; its natural home is the existing `salownRepublishOnSettingsEdit` (`index.ts:100`), already an `onDocumentUpdated` on `settings/settings` that republishes `public/profile` through `buildPublicProfile`. **Coordinated release order, once that exists:** ① deploy the publisher/republisher by exact name → ② republish `public/campaign` from each tenant's existing `settings/settings.doublePointsCampaign` → ③ verify the mirror's source/version/timestamp and normalized fields → ④ prove disabled / incomplete / expired / not-yet-started campaigns each resolve to `null` → ⑤ only then `hosting:salown`, and the Whitecross artifact separately. See INCIDENTS 2026-08-10.
 - 🔵 **ANON-READ-1 · public booking page loses tenant loyalty config** *(follow-up defect, opened by CAMPAIGN-LIFECYCLE-PARITY 2026-08-10)* — `BookingPage.tsx` reads `settings/settings` for `loyalty.{enabled,cashbackPct,earnRate}` behind a silent `.catch()`; the read is auth-only and the page never authenticates, so `loyaltyCfg` is always `null`. **Reachable surface:** `salown.com/book/{tenantId}`, every public booking, every tenant — the points estimate and the post-payment points figure. **Security boundary: none crossed** — the read is DENIED, so this is silent feature loss, not exposure. **Do not fix by weakening rules or enabling anonymous auth:** the shape is a public projection (as `public/profile` already is) plus a LOUD failure.
 - 🔵 **ANON-READ-2 · public booking page cannot see `specialHours`** *(follow-up defect, 2026-08-10)* — same file, same denied read; `normalizeSpecialHours(sData.specialHours)` therefore always receives `undefined`. **Reachable surface:** the public slot grid. **This is the most severe of the three**: a salon that declared a date closed (bank holiday, one-off closure) still has slots offered on it publicly — operationally the same class as the 2026-08-10 self-reschedule Sunday-slots incident. **Security boundary: none crossed.**
 - 🔵 **ANON-READ-3 · public booking page falls back to platform booking policy** *(follow-up defect, 2026-08-10)* — same denied read supplies `bookingSettings`, so `resolveBookingSettings` returns platform defaults (lead time, cancellation window, overrun allowance) instead of the tenant's. **Reachable surface:** the public slot grid and the review screen. **Lowest severity of the three, and deliberately so:** `salownCreateBooking` re-validates server-side and is the authority, so this is advisory/UX drift, not an enforcement hole. **Security boundary: none crossed.**
@@ -353,7 +706,7 @@ and an "SSOT" fix ended up able to contradict each other.
 
 ## 🛠️ Tech Debt & Reliability
 
-- 🟡 **SHARED-FN-NAMESPACE · the two contested names are back with codebase `salown`, and the deploy guard now keeps them there** *(2026-08-12, opened by the incident of 2026-08-11, source fix same day)* — `addToWaitlist` and `provisionTenant` were exported from **both** `salown-app/functions` and `whitecross-site/functions/index.js`, both naming `region: 'europe-west2'`, so the two repos deployed onto the same Cloud Function and the last deploy silently won (22-day intake outage; INCIDENTS 2026-08-11). ✅ Both exports deleted from whitecross (`a336ddce`; no whitecross caller existed) and `scripts/deploy-functions.sh` step **5b** now hard-fails if either name is a deploy target or reappears as an export — negative controls fire, positive control still deploys. **Left open deliberately:** (a) the equivalent guard does not exist on the salown side, so nothing stops a third repo repeating this, and (b) on the next whitecross Functions deploy, confirm once that both functions are still present and unchanged (they carry `firebase-functions-codebase: salown`, so they should be outside that deploy's scope). **Second, smaller finding in the same neighbourhood:** the whitecross `createStaffUser`/`deleteStaffUser` are live in us-central1 and `whitecross-site/barber-panel/src/pages/Settings.js:348` calls them through a region-less `getFunctions()`, so the legacy panel still creates staff via the pre-O1 code — no `tenantRole` on the claim, none of the escalation guards. Retire the panel path or repoint it at europe-west2.
+- 🟡 **SHARED-FN-NAMESPACE · the two contested names are back with codebase `salown`, and the deploy guard now keeps them there** *(2026-08-12, opened by the incident of 2026-08-11, source fix same day)* — `addToWaitlist` and `provisionTenant` were exported from **both** `salown-app/functions` and `whitecross-site/functions/index.js`, both naming `region: 'europe-west2'`, so the two repos deployed onto the same Cloud Function and the last deploy silently won (22-day intake outage; INCIDENTS 2026-08-11). ✅ Both exports deleted from whitecross (`a336ddce`; no whitecross caller existed) and `scripts/deploy-functions.sh` step **5b** now hard-fails if either name is a deploy target or reappears as an export — negative controls fire, positive control still deploys. **Verified live 2026-08-12** (read-only label sweep of all 108 functions): `addToWaitlist` `-00038-fof` and `provisionTenant` `-00137-bij`, both `firebase-functions-codebase: salown`. **Left open deliberately — this is `SEC-FN-NS`:** (a) the equivalent guard does not exist on the salown side, so nothing stops a third repo repeating this; (b) on the next whitecross Functions deploy, confirm once that both functions are still present and unchanged; and (c) **five** europe-west2 functions still carry codebase `whitecross` — `salownNotifyNewBooking`, `salownSendTestTelegram`, `salownSyncTreatwellIcal`, `sendProInterest`, `setTenantClaim`, all last updated `2026-07-21T00:06Z` — so the two repos still share a region and a deploy surface. **Second, smaller finding in the same neighbourhood:** the whitecross `createStaffUser`/`deleteStaffUser` are live in us-central1 and `whitecross-site/barber-panel/src/pages/Settings.js:348` calls them through a region-less `getFunctions()`, so the legacy panel still creates staff via the pre-O1 code — no `tenantRole` on the claim, none of the escalation guards. Retire the panel path or repoint it at europe-west2.
 - ✅ **TypeScript migration — v1.0.0 TAGGED (2026-07-13)** — codebase end-to-end STRICT TS (frontend 1400→0, functions 355→0, byte-proven). Post-1.0 chores (NOT release-blockers): dead-code chore (pending), any-narrowing, I2 split. Patterns: [MIGRATION_PATTERNS.md](MIGRATION_PATTERNS.md), [ARCHITECTURE_V2.md](ARCHITECTURE_V2.md). *(detail: Completed › Reliability)*
 - ✅ **I1 parser silent-breakage canary** — `recordParserRun` in BOTH pipes (`tenants/{id}/parserStats/{source}`, daily counter + 0-import alarm).
 - 🔄 **I2 `functions/src/index.ts` split** — Phase 1 (helpers→domain modules) ✅ effectively done (parity-tested). Phase 2: move the bodies of 55 exports into domain modules (index.ts 3816 lines). Slice 1 (askAI+auth) ✅ `bccd828`; **next is parsers** (see Current focus). 🔴 Golden rule: export name+config exactly matched. Operation: in a single CLEAN window, codebase-prefixed deploy (`--only functions:salown`, NEVER blanket). Plan: [TYPESCRIPT_MIGRATION_PLAN.md](TYPESCRIPT_MIGRATION_PLAN.md).
@@ -405,10 +758,10 @@ and an "SSOT" fix ended up able to contradict each other.
 - 🔄 **TR-CURRENCY — money reads in the tenant's own currency.** The defect this series exists to kill is not cosmetic: the **numbers were never converted, only the symbol lied**, so a ₺13 shampoo read "£13.00" and was sold at that label without anything ever *looking* broken. Two rules came out of it and now apply everywhere: **a real zero is a real price and must survive** (`£0.00`), and **an unreadable price is returned verbatim** (`"TBC"` stays `TBC`) — never coerced into a plausible `£0.00` a till would charge. `Number(price) || 0` and `parseFloat(x) || 0` are forbidden in this area for exactly that reason.
   - ✅ **A + C** (`53ffe30`) Services/Products card price + Barbers revenue chip · ✅ **D** (`f5a79bf`) locale-aware price *entry* (the write side: `type="number"` rejected `12,99` outright, and a comma reaching Firestore would have been read as **1299** — a plausible 100×) · ✅ **E** (`e850820`) ProductSelector line + cart total, moved **together** because a `₺13,00` line under a `£26.00` total looks like a completed FX conversion and is worse than where we started. All three **DEPLOYED + LIVE 2026-08-10**, `hosting:salown` `81fe195d535f9c5d` → **`0d42517d7cba104a`**, authenticated TRY pass done. One accepted UK-visible difference: Intl always gives GBP two fraction digits, so Services cards read `£25.00` and the Barbers chip gained pence.
   - ✅ **F** (`fca8054`) Products page cart — basket button, line, `Total:` — **DEPLOYED + LIVE 2026-08-10**, `0d42517d7cba104a` → **`ffbc7898e4a8556e`**; runtime hardcoded pounds in `Products.tsx` **3 → 0**, and the built chunk contains **zero** `£`. ⚠️ **The GBP authenticated pass was not run** (no authenticated UK session existed); GBP is proven statically only.
-  - 🟡 **G** (`d726b1b`) public `/s/**` salon-page prices — **ON `main`, NOT DEPLOYED.** It landed *after* the F release was pinned to `b94b8fa`; at this snapshot its `SYNC.md` line is still owed (SYNC.md was claimed by another session). Evidence is the commit + claim release `d557522`.
+  - ✅ **G** (`d726b1b`) public `/s/**` salon-page prices — **`LIVE_VERIFIED`.** ⚠️ *Status corrected 2026-08-12: this line read "ON `main`, NOT DEPLOYED", which was already false when written — G shipped in ADMIN-PENDING-SLICES-RELEASE (`3a0fcdea1e1f8434`, 2026-08-10T13:29:31Z), as [DEPLOYMENT_STATUS.md](DEPLOYMENT_STATUS.md) recorded and this file did not.* Proven from production: the served entry chunk renders `` · from ${…formatMoney(t)}`` and contains no `from £${minPrice}`. Evidence chain: commit `d726b1b` + claim release `d557522` + the release row + the served byte.
   - 🔵 **Remaining hardcoded surfaces, grouped honestly** — ① **calculation / persistence**: none known open in the Product path after D (entry now normalises to canonical dot-decimal MAJOR units); the **stored-money leak** (`.replace('£','')` readers of stored data) is a **migration**, not a formatting fix, and is untouched. ② **Finance**: `/app/finance` is gated to `tenantId === 'whitecross'` and `£`-hardcoded — a Turkish salon can never open it; making Finance tenant-generic is a separate platform task. ③ **Reports**: its `£` aggregates are GBP **by construction** (the Unit 7B funnel), so those literals are correct, not defects. ④ **Staff**: `src/staff/**` untouched by this series; Unit 7S is deferred to the Staff Checkout package (`SalesView` ships on `hosting:salown-staff`, a target this programme does not deploy). ⑤ **Public**: closed by G, pending its release. ⑥ **Admin remainder**: `BookingDetailPanel.tsx` — **51 sites, no `useLocale` at all**, the largest single block left — and the Home stat cards (TR-P1 Phase 2). *(Repo-wide there were ~412 non-comment hardcoded `£` at the 2026-08-09 count; that number is a scale indicator, not a work list.)*
 - 🔵 **TR-B/TR-C follow-on** — online-booking settings editor (the `onlineBooking` Settings tab is still a read-only shell). A TR-resident PSP for online card payment remains out of scope; salOWN never shares a Stripe key.
-- 💡 **L1 TR localization (superseded by TR-A for items 1–4)** — gap analysis ✅ 2026-07-23: zero i18n infra; ~1,500–2,000 hardcoded EN strings, 486 `£`, 110 `'en-GB'`, ~45 `Europe/London`, no tenant `language`/`currency`/`timezone` field (the foundational blocker). Sequence: tenant locale triplet → central money/date formatters (incl. `£`-in-stored-data fix) → i18n + string extraction (customer-facing first) → email `lang` → tz/DST → small items. Minimum TR pilot = locale fields + formatters + booking SPA/email translation (panel may stay EN). Parser explicitly out of TR scope (owner 2026-07-23: no parsers in TR; iCal feed instead). Full analysis: [TR_LOCALIZATION_PLAN.md](TR_LOCALIZATION_PLAN.md).
+- 🗄️ **L1 TR localization — SUPERSEDED, kept as the historical gap analysis.** ⚠️ *Reclassified 2026-08-12: it carried a 💡 Future label, which made the delivered TR programme (TR-A/B/B2/C/D1, Units 4–9, TR-P1, TR-CURRENCY A–G, TR-STAFF-L10N — all LIVE) read as unstarted from a skim.* Items 1–4 were delivered by TR-A; what genuinely remains is tracked as `TR-P2`, `TR-U11` and KVKK in ROADMAP §6. Original gap analysis ✅ 2026-07-23: zero i18n infra; ~1,500–2,000 hardcoded EN strings, 486 `£`, 110 `'en-GB'`, ~45 `Europe/London`, no tenant `language`/`currency`/`timezone` field (the foundational blocker). Sequence: tenant locale triplet → central money/date formatters (incl. `£`-in-stored-data fix) → i18n + string extraction (customer-facing first) → email `lang` → tz/DST → small items. Minimum TR pilot = locale fields + formatters + booking SPA/email translation (panel may stay EN). Parser explicitly out of TR scope (owner 2026-07-23: no parsers in TR; iCal feed instead). Full analysis: [TR_LOCALIZATION_PLAN.md](TR_LOCALIZATION_PLAN.md).
 
 ---
 
@@ -429,7 +782,7 @@ Each of these is deployed and verified unless the line says otherwise. Grouped s
 above has something to point at; the narrative record is `salown-app/SYNC.md` and the push-vs-live
 record is [DEPLOYMENT_STATUS.md](DEPLOYMENT_STATUS.md).
 
-- **Server-authoritative write path (the "O1" series).** O1A canonical staff-eligibility validator + walk-in/reassign cores and their callables (`a3f219e`/`8746201`, deployed 2026-08-05) · **O1C Admin cutover LIVE** 2026-08-06 (`63efafc`, `hosting:salown` `838faa77330f8574` → `73f57ac0dd04b54a`) · **O1AB** `salownCreateAdminBooking` deployed (`788f13d`) · **O1P** transactional import-assignment across all 4 parsers + fail-closed empty-roster (`08914a9`/`e803106`), **3 named parser Functions deployed** 2026-08-06 (`cf60dace` → `4f467666`, exactly 3 revisions changed of 106) · **O1S** staff walk-in create cutover `234441d` and future-booking core `e428124` — see the *classification owed* note at the top before quoting a status for either · **PANEL-SOURCE-PARITY-A** canonical Panel source across the Admin UI, LIVE 2026-08-06 (`34a7e4b`).
+- **Server-authoritative write path (the "O1" series).** O1A canonical staff-eligibility validator + walk-in/reassign cores and their callables (`a3f219e`/`8746201`, deployed 2026-08-05) · **O1C Admin cutover LIVE** 2026-08-06 (`63efafc`, `hosting:salown` `838faa77330f8574` → `73f57ac0dd04b54a`) · **O1AB** `salownCreateAdminBooking` deployed (`788f13d`) · **O1P** transactional import-assignment across all 4 parsers + fail-closed empty-roster (`08914a9`/`e803106`), **3 named parser Functions deployed** 2026-08-06 (`cf60dace` → `4f467666`, exactly 3 revisions changed of 106) · **O1S** staff walk-in create cutover `234441d` — **`LIVE_VERIFIED` 2026-08-12** (the 2026-08-10 *classification owed* note is closed: the served `staff-BhghYLPT.js` is byte-identical to the tracked bundle committed at `eac5a95`, of which `234441d` is an ancestor, and carries `salownCreateWalkIn` with no bare `createWalkIn`) — and future-booking core `e428124`, still **`PUSHED_NOT_LIVE`** · **PANEL-SOURCE-PARITY-A** canonical Panel source across the Admin UI, LIVE 2026-08-06 (`34a7e4b`).
 - **Product-sale authority (PSA).** PSA1 server core (`4cbd84d`) → PSA2 reader parity (`f9b7301`/`4d243e2`) → **Admin cutover LIVE + E2E** 2026-08-09 (`d9e7684`) → Staff cutover shipped, **found broken in E2E and rolled back within ~6 minutes** (`f2426b6` → `cfe60cf`) → root cause fixed and **Staff re-cut, LIVE + E2E** 2026-08-09 (`509e63e`, Staff `staff-DPP2bVf5.js` → `staff-BALp7dqM.js`). **The lesson of record:** the Staff cart was building "Products" out of the **services** collection and sending a *service* doc id where the callable resolves `tenants/{tid}/products/{productId}` — every test verified the **call** (payload shape, which callable, no fallback) and none verified that the id space the UI produces is the id space the server resolves. Gates were green and the code was still wrong. Blast radius was provably zero (no tenant has a `Products`-category service), and no migration was needed.
 - **Loyalty / double points (DPPP).** One server-owned promotion snapshot consumed everywhere (`0a5aa14`), released 2026-08-05 with the whitecross campaign `multiplier` migration, a `firestore.rules` release forbidding a client-written `loyaltyPromotionSnapshot` (`80dcda7`), four targeted Functions and `hosting:salown`. **Rules went FIRST, deliberately inverting the house order**, because the change only *forbids* a key no legitimate writer sends. Also: the promotion snapshot no longer depends on the email (`12185e7`), and `REVIEW-CTA-AUDIENCE-1` stopped offering members points for a Google review (`280cdb5`).
 - **Finance.** **STAFF-FINANCE-GHOST-WAGE-P0** removed the invented £100/day wage for barbers missing from `partnerConfig` (`5746237`), LIVE 2026-08-08 and independently re-verified from a second machine as already live (30/30 assets byte-identical, ghost `?100:0 = 0`). **ADMIN-SALES-FILTER-1** made Admin Sales period-accurate and timezone-correct on one dataset (`571ab9d`), LIVE 2026-08-06 — **live UI pass still outstanding**.

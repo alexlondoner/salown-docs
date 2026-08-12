@@ -55,7 +55,8 @@ All tenant data lives under `tenants/{tenantId}/...`.
 | [STAFF_MANAGEMENT_DESIGN.md](docs/STAFF_MANAGEMENT_DESIGN.md) | DESIGN: Staff Management & Compensation (ROADMAP **Employment Model** theme, S1-S3) — staffComp collection, wage/commission/self-employed accounting rules, migration plan, Staff hub UI, 3 phases |
 | [NORMALIZATION.md](docs/NORMALIZATION.md) | All normalize/match/casing rules, helper table, known inconsistencies |
 | [MULTI_TENANT_NOTES.md](docs/MULTI_TENANT_NOTES.md) | Class A/B guards, whitecross migration table |
-| [ROADMAP.md](docs/ROADMAP.md) | **Company roadmap** (restructured 2026-07-16): priority-ordered work themes + 5 tags (✅/🔄/🔵 Planned/⏸ Waiting/💡 Future); active=single-line, completed at the bottom under **Completed**; item IDs (A1/B3/C8/S1…) preserved |
+| [ROADMAP.md](docs/ROADMAP.md) | **Company roadmap — READ FIRST, every session.** Restructured 2026-08-12: mandatory status vocabulary (`LIVE_VERIFIED` / `PUSHED_NOT_LIVE` / `IN_PROGRESS` / `PLANNED` / `BLOCKED` / `DORMANT` / `STATUS_UNKNOWN`), a **Master Active Table** with stable Work IDs at the top, then P0/P1/P2/DORMANT, blockers, the per-target release truth table, and the unknowns. Theme detail and the Completed archive follow below it; item IDs (A1/B3/C8/S1…) preserved |
+| [RELEASE_LEDGER.md](docs/RELEASE_LEDGER.md) | **What is actually running** — one structured row per release per deployable unit: source SHA (or an explicit `UNKNOWN`), previous→new live identity, verification, rollback identity, exclusions. A release not recorded here has not been recorded |
 | [TESTS.md](docs/TESTS.md) | **All test records SINGLE SOURCE**: rules (automated), security gate manual, Stripe live, Staff App, Post-Class-A, busy-slot pointer |
 | [PROMPTS.md](docs/PROMPTS.md) | Claude Code prompt templates |
 | [ops/claims/README.md](salown-app/ops/claims/README.md) | **Parallel-session path ownership** — how concurrent sessions claim/lock the files they edit so two sessions never touch the same path; protocol + `claims.sh` + conflict rule (see Quick Rules coordination block) |
@@ -96,11 +97,75 @@ Never:
 - treat a claim as a substitute for reviewing the working tree
 
 Source roles:
-- `ROADMAP.md` — what is planned
+- `ROADMAP.md` — status of every piece of work (the SSOT for status)
+- `RELEASE_LEDGER.md` — what is actually running, and how to roll it back
 - `ops/claims/` — current path ownership
-- `SYNC.md` — completed sync and deployment history
+- `SYNC.md` — completed sync and deployment history (human day log)
 
 Full protocol: `salown-app/ops/claims/README.md`
+
+---
+
+<a id="daily-project-truth"></a>
+## Daily Project Truth — MANDATORY for every coding/release session
+
+*Added 2026-08-12 by `REL-2`. It exists because a reconciliation found three unrecorded release
+events, one entire work item that had shipped and appeared on no roadmap, and two cases of
+deploying and committing afterwards — which permanently destroyed the provenance of what is
+serving customers today.*
+
+### The five rules
+
+1. **Read [ROADMAP.md](docs/ROADMAP.md)'s Master Active Table first**, and work under a **Work ID**.
+2. **`PUSHED_NOT_LIVE` ≠ `LIVE_VERIFIED`.** Never infer "live" from a commit existing or from a
+   commit timestamp. Only a live revision, version id, served byte or a source marker inside the
+   deployed artifact proves it.
+3. **Never deploy from an uncommitted or dirty tree, and never deploy then commit.** Pin a commit,
+   build from it, release it. Deploy→commit is a **process violation**, not a shortcut.
+4. **Never mark work live without production verification of the exact behaviour**, and never
+   silently overwrite another session's status. Concurrent claims are preserved, never released
+   on someone else's behalf.
+5. **A release without a `RELEASE_LEDGER.md` row does not count as done.**
+
+### At session start
+
+- read the ROADMAP active table;
+- `git fetch --prune`; report `HEAD` / `origin/main` / ahead / behind / working tree, per repo;
+- `./ops/claims/claims.sh check <path>` for every path you intend to touch, then claim exactly
+  those paths (claims protocol rules 1–9, including **rule 7: a competing claim is a hard stop**);
+- mark or register your Work ID as `IN_PROGRESS`.
+
+### At completion
+
+- update your Work ID's status and its **Last verified** date;
+- record the implementation SHA;
+- state **pushed** vs **deployed** explicitly — they are different sentences;
+- record the test gates you actually ran;
+- record the live revision/version **only after production verification**;
+- if you released anything, add the `RELEASE_LEDGER.md` row **including the rollback identity**;
+- release your claim and leave a clean `0/0` tree, or say plainly that you did not.
+
+### End of day — one designated reconciliation pass
+
+Inventory every repo · list active claims · flag dirty/ahead/behind · reconcile the day's commits ·
+reconcile the day's deployments · update the ROADMAP active table · update `RELEASE_LEDGER.md` ·
+update incident/blocker statuses · record unresolved unknowns as `STATUS_UNKNOWN` (never a guess) ·
+stamp the reconciliation timestamp in ROADMAP §1.
+
+If nothing about product status changed, write exactly:
+
+```
+DAILY_RECONCILIATION_COMPLETE — NO STATUS CHANGE
+```
+
+so that *absence of an update* is distinguishable from *forgetting*.
+
+**Run:** `docs/scripts/daily-reconciliation-check.sh` — read-only; it reports repo state, active
+claims, today's commits and deployments, and whether ROADMAP carries today's reconciliation stamp.
+It **never** commits, pushes, deploys or edits anything.
+
+**Deliberately NOT required:** a ROADMAP edit for docs-only commits, test-only commits or claim
+bookkeeping. The rule attaches to *product status changes and releases*, not to every commit.
 
 ---
 
