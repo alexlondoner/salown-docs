@@ -5,6 +5,17 @@
 > **Status:** 🟢 **PHASE B LIVE (2026-07-16)** — UI + staffComp rules deployed (ruleset `1474907b`). Phase A data model + Phase B UI/safety were coded per this document; Phase C (Finance wiring + accrual engine + M1 migration) REMAINS. Line references verified against 2026-07-14 `main` (`79d034a`); post-code sections are in edit_log_salown + ROADMAP S2.
 > **Owner decision 2026-07-15:** wage periods hour|day|week|month|year; accrual is ALWAYS actual worked days/hours (§2.1). paid-leave = owner-only toggle, default OFF ("didn't work → no money"); there is NO mandatory-paid-annual-leave framework (barbers are commission/self-employed). In self_employed, rent depends on `pauseRentOnLeave`.
 > **Out of scope:** tax/VAT calculation, payroll integration, Stripe.
+>
+> **⚠️ 2026-08-12 — decision 2 is the fix for a LIVE money defect, not a nicety.** "Date-effective period history
+> → historical reports never change" is currently FALSE in production: `barbers.workingDays` is a single
+> **undated** array, so Finance replays today's rota over every closed month and one rota edit silently restates
+> already-reported (and, for the partner era, already-settled) periods. `staffComp.effectiveFrom`/`effectiveTo`
+> shipped with Phase B and **Finance reads none of it** — the correct model is in the repo, unwired. Phase C's
+> Finance wiring is therefore the remedy for [INCIDENTS 2026-08-12](INCIDENTS.md), tracked as ROADMAP **S3**.
+> Two shortcuts are explicitly REJECTED as duplicate SSOTs for "when employment ended": a fake leave record
+> running to 2099, and a `partnerConfig.wageEndDate` field. Finance's six wage-accrual paths were centralised
+> into one resolver first (S2, `src/utils/financeWages.ts`, exact parity, no total moved) so Phase C has a single
+> seam to wire periods into.
 
 ---
 

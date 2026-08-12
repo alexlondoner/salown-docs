@@ -3,6 +3,15 @@
 > **Date:** 2026-07-12 (rc3+1 day — ANALYSIS ONLY, no code) · **Trigger:** Muhamed on-leave (14 Jul–19 Aug)
 > was entered but kept showing in the Dashboard grid + owner: "staff settings are a total mess, the settings are all over the place."
 > **Status:** 🔴 Audit done, fixes after TS-freeze (2026-07-14+). Related: INCIDENTS 2026-07-12 (leave deletion), ROADMAP G1.
+>
+> **Follow-on, 2026-08-12 — the same shape, one layer deeper.** §2 found five surfaces giving five answers to
+> *"is X available on day D?"*. Inside Finance alone, **six** paths were giving six answers to *"does X accrue a
+> wage on day D?"* — two shared a helper, four were hand-copied. All six are now centralised with exact parity
+> (`src/utils/financeWages.ts`, S2). The remaining, deeper defect is not duplication at all: `workingDays` is
+> **undated**, so Finance replays today's rota over every closed month. §3 item 3's "the only way to tell Finance
+> about a 36-day leave is 36 shiftChanges" was the visible half of it; the invisible half is that a *single*
+> rota edit re-prices history. The fix is dated compensation periods (`staffComp.effectiveTo`, which already
+> exists and which Finance still does not read) — ROADMAP **S3**, [INCIDENTS 2026-08-12](INCIDENTS.md).
 
 ---
 
