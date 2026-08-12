@@ -37,7 +37,7 @@ Every incident opens with `## YYYY-MM-DD — short title`, immediately followed 
 
 ## 2026-08-12 — Finance wage integrity: an undated `workingDays` array re-prices every closed month, and six copies of the accrual rule decided it
 
-**Severity:** 🟠 High · **Owner:** alish/staff-finance-wage-resolver · **Status:** 🟡 Open — cause understood and characterised, S2 centralisation landed, the DATED fix (S3) is not built · **Affected area:** Finance staff-wage accrual (whitecross), historical and future
+**Severity:** 🔴 Critical *(raised 2026-08-12 — a live figure is materially wrong, see Update 2)* · **Owner:** alish/staff-finance-wage-resolver → alish/controlled-cutover · **Status:** 🟡 Open — S2+S3A+S3B+S3C are now **LIVE_VERIFIED** (release `2620fb29bf2e064e`, source `d9bdbc5`), so accrual outside an employment interval is stopped; but the **rota corruption and closed-month immutability are both unfixed** · **Affected area:** Finance staff-wage accrual (whitecross), historical and future
 
 **Tags:** `#normalization` `#timezone`
 
@@ -48,6 +48,47 @@ Every incident opens with `## YYYY-MM-DD — short title`, immediately followed 
   2. `staffComp.effectiveFrom`/`effectiveTo` — the dated compensation-period model — **already exists** (`src/utils/compUtils.ts`, Phase B, LIVE) and **Finance does not read a single field of it**. The correct data structure is in the repository and is not wired to the money.
   Making this materially worse: the accrual rule existed in **six independent copies** across `Finance.tsx` (daily P&L row · monthly company wages · partner ledger · credited-employee ledger · staff ledger · G4 weekly ledger). Two shared a helper after STAFF-FINANCE-GHOST-WAGE-P0; four were hand-copied `shiftChanges → leave → workingDays` chains. The existing regression test asserted `toBe(2)` on the shared-resolver call count and therefore **locked the split in place** — it certified that exactly two paths were centralised and said nothing about the other four.
 **Bug Class:** SSOT violation — an undated mutable field used as a historical record (a "current state" document read as an event log), compounded by rule duplication across six consumers.
+
+**Update 1 — the dated gate is live (2026-08-12).** `FINANCE_COMP_PERIOD_MODE='periods'` shipped in
+`hosting:salown` **`2620fb29bf2e064e`** from source **`d9bdbc5`** (ledger `R-2026-08-12-B`). The
+three `staffComp.effectiveFrom` values were corrected first — all three said `2026-07-15`, the
+minute the Pay tab was first saved, and activating against them would have zeroed February → 14 July
+by **−£17,289.60**. With them corrected, activation moved February–July by exactly **£0.00** and cut
+the one figure it was built to cut: a departed staffer stopped accruing. Verified live: 2026-08-12
+**£200 → £100**, Arda **£0** on every date after his `effectiveTo` of 2026-08-04. **This does not
+make a closed month immutable** and must never be described as doing so.
+
+**Update 2 — the same mechanism fired again, in the opposite direction, and nobody saw it
+(2026-08-12).** Arda's `workingDays` reads `["Wednesday"]`, which is his **day OFF**: of 147 worked
+days he has 25 Mondays, 25 Tuesdays, **2 Wednesdays**, 23 Thursdays, 25 Fridays, 24 Saturdays and
+23 Sundays. Because Finance replays today's rota over the past, his entire historical labour cost
+collapsed to the Wednesdays — **≈£12,300 of real cost vanished from the books**, and the live
+all-time Net P&L now reads **−£2,740.86** where the reconstructed figure is **−£14,840.86**. The
+owner found it by looking at the screen and saying the loss was too small.
+
+**When it broke is bounded, not guessed.** Eight **Website** bookings exist for Arda on
+non-Wednesdays, the last created **2026-08-03T20:50:43Z** for Tuesday 2026-08-04 — online booking
+gates on `workingDays`, so Tuesday was still in the rota then. His document was last written
+**2026-08-10T19:24:26.175Z**, **unaudited**, 43 seconds after `settings/hours` was saved, carrying
+the `BARBER-HOURS-PROPAGATION-RACE-P0` fingerprint (Tuesday is the only day in his `dayHours`
+missing `closed`, and still holds 09:00 against the salon's new 10:00). The audited Team editor
+*does* diff `workingDays` (`Barbers.tsx:407`) and never recorded a change. Window:
+**2026-08-03 20:50Z → 2026-08-10 19:24Z**. *Not proven:* the exact mutation — with every salon day
+open the pre-fix propagation only **adds** days, so a six-day rota cannot shrink to one by that path
+alone, and **no before-image exists anywhere**.
+
+**Two prevention gaps this exposed.** (a) The rota-writing paths are **unaudited**: 19 `shiftChanges`
+keys exist across three barbers against only 5 `BARBER_SHIFT_OVERRIDE` events, and
+`Settings.saveShiftChange` and the hours propagation write no audit at all — so the previous value
+is unrecoverable. (b) **Nothing detected it.** Two cheap read-only checks would have surfaced it the
+next morning: *booking exists but no wage day* (Arda 120, Alex 6, Muhamed 0) and *passive staff still
+accruing*.
+
+**Repair is BLOCKED, deliberately.** `FIN-ARDA-REPAIR` must not run before the closed periods are
+frozen: under a live gate the repair is correct going forward, but it still **re-prices every closed
+month a second time** (+≈£12,300), and one of those months underpins a **signed** exit settlement.
+Order: `FIN-PERIOD-CLOSE` (with an owner-approved baseline) → `FIN-DATED-ROTA` → rota restoration.
+
 **Resolution:** **Partial.** S1 = this record. S2 = `STAFF-FINANCE-WAGE-RESOLVER`: all six consumers now decide a wage day in one place (`src/utils/financeWages.ts` → `accruesWageOnDay` for the single-day path, `resolveAccrualDays` for the five period paths), with **exact behavioural parity** proven by 261 golden-parity assertions running the pre-S2 engine and the new engine over the same fixture matrix across Feb/Mar/Jun/Jul/Aug/Oct 2026. **No wage total moved, no Firestore write was made, nothing was deployed.** The actual repair — dated compensation periods so a closed month stops recomputing — is **S3 and is not built**. Arda's `workingDays` repair is deliberately **BLOCKED until S3 is live and verified**: repairing it today would itself retroactively re-price his settled partner era, which is precisely the defect.
 **Prevention:** three permanent guards, all in `src/utils/financeWages.test.ts`. (a) the six-consumer count is asserted, so a seventh path cannot be added silently; (b) a **static enforcement test** fails the build if `shiftChanges`, `sc?.closed`, `wdays.includes(`, a hand-rolled `weekday:'long'` derivation or a second `isBarberOnLeaveForDate` call reappears in `Finance.tsx` — negative-controlled against the pre-S2 source, where five of those six guards fire; (c) an S3-absence test asserts Finance still reads no `staffComp`/`effectiveTo`, so S3 has to change it deliberately. The behavioural guard is `financeWages.parity.test.ts`, which keeps a verbatim copy of the pre-S2 engine as the golden reference.
 **Regression Tests:** `src/utils/financeWages.parity.test.ts` (261 — golden parity + characterisation of the defect itself: *"editing the weekly rota TODAY changes what February and June accrued"*) · `src/utils/financeWages.test.ts::23. ALL SIX wage consumers route through the central resolver`, `::S2. static enforcement`, `::S2. no S3 compensation-period behaviour was introduced`.

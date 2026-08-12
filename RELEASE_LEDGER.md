@@ -66,6 +66,37 @@ Newest first. One `###` heading per release event.
 
 ## 2026-08-12
 
+### R-2026-08-12-B — U1 `hosting:salown` — FIN-COMP-S3C compensation-period activation
+
+| Field | Value |
+|---|---|
+| **Date/time (UTC)** | 2026-08-12T22:49:48.937Z |
+| **Environment** | production |
+| **Repository** | `salown-app` |
+| **Source SHA** | **`d9bdbc5797d6255c86c08a3f26181dadedf45757`** |
+| **Clean-tree proof** | `HEAD == origin/main == d9bdbc5`, `git status --porcelain` empty, recorded **before** the build. Built from an **isolated detached worktree** pinned to that SHA, so the shared tree could not contribute an uncommitted byte — and the REL-1 `staff-bundle` predeploy dirt landed in the throwaway worktree instead of the shared one |
+| **Firebase project** | `havuz-44f70` |
+| **Target** | `hosting:salown` (only) |
+| **Previous live identity** | **`11cc739f548c5e10`** · release `1786493555545000` |
+| **New live identity** | **`2620fb29bf2e064e`** · release **`1786574988937000`** · FINALIZED |
+| **Included commits** | `10e754a` FIN-S2 one wage-day rule · `f1239ba` FIN-COMP-S3A period gate · `5e69b63` FIN-COMP-S3B six consumers wired · `d9bdbc5` FIN-COMP-S3C activation. All four were `PUSHED_NOT_LIVE` before this release; they go live together |
+| **Tests** | frontend **3241/3241** · S2 golden parity **261/261** (`financeWages.parity.test.ts`, `financeWages.ts`, `financeCompPeriodIndex.ts` and `Finance.tsx` all byte-untouched by this release) · correction-tool tests **24/24** · deploy-policy **28/28** · typecheck clean · scoped lint clean · `git diff --check` clean · claim validate OK. Re-run in the isolated checkout: identical, minus one `skipIf(!existsSync(LIB))` case that needs a gitignored `functions/lib` build artefact absent from a fresh worktree (explained, unrelated) |
+| **Build/served hash evidence** | entry `index-CruMPhWI.js` sha256 `7b111ce1596da0b4f158de73127d648b78cb958405994ccb5021128685e90ea7` — **served bytes identical to the pinned build**. Activation marker: `Finance-Bxq7CLSn.js` (sha256 `de2149e530994b7d…`, also identical) contains `` =e=>e||`periods` ``, contains no `legacy` literal, and carries the gate (`'outside'`) and `effectiveFrom`. The pre-release chunk `Finance-D1C8pgkU.js` (sha256 `777fca73…`) carried **no** cutover marker at all — S2/S3A/S3B were not live either |
+| **Production data corrections (separate from the release)** | Three audited `staffComp` writes, applied **before** activation via `scripts/correctWhitecrossCompPeriods.cjs` (`edd4e85`), each hash- and `updateTime`-preconditioned. Only `effectiveFrom` moved; `type`, `params`, `changedAt`, `changedBy` and document identity were carried verbatim: Alex `barber-1777257519766` `2026-07-15`→`2026-02-06` (`18db3c65…`→`b08b947c…`, audit `IwVAkK4CxBtlI06tcprB`) · Muhamed `barber-1781007454543` `2026-07-15`→`2026-06-09` (`ff565e2e…`→`b0526718…`, audit `FzXbkSnSthVXkrI4dSHO`) · Arda `barber-1777655430086` `2026-07-15`→`2026-02-06`, `effectiveTo` `2026-08-04` untouched (`dfa912ea…`→`173d91df…`, audit `IPy4dGn3I38uFgRVckCb`). Post-write: analyser `ready = true` (3/3 complete valid periods, 0 malformed/overlapping/gapped), second dry-run proposed **0 updates** (idempotent) |
+| **Verification** | Live, read-only, against the deployed source with **no `periodMode` passed anywhere** so the shipped constant answers: 2026-08-12 Alex £100 · Arda £0 · Muhamed £0 · **total £200 → £100**; Arda accrues **£0 on every date 2026-08-05 → 2026-12-31**; February–July each move by **£0.00**; August £1,400 → £1,200 (**−£200**, his two Wednesdays after the boundary); all-time wages £20,489.60 → **£20,289.60**. Payments/advances (114 rows) byte-identical to the pre-release freeze; `finance_config` unchanged; `settlement` still absent; all three barber documents unchanged |
+| **Rollback identity** | Hosting: version **`11cc739f548c5e10`** (release `1786493555545000`) · Console → Hosting → site `salown` → Release history → ⋮ → Roll back. Source rollback: set `FINANCE_COMP_PERIOD_MODE` back to `'legacy'`, commit, redeploy — **the data correction does not need reverting with it**, because pulling `effectiveFrom` back is a no-op under `'legacy'`, which reads no period at all. Data rollback identities (unused): the three pre-write hashes above |
+| **Operator/device** | `aerulas@gmail.com` · macOS · `alish` |
+| **Result** | **LIVE_VERIFIED.** |
+| **Known exclusions — nothing here was touched** | Arda `workingDays` (still `["Wednesday"]`, `updateTime` 2026-08-10T19:24:26.175Z) · `FIN-PERIOD-CLOSE` (not implemented) · dated rota (not implemented) · payments, advances, settlement, expenses, bookings · accounting baselines and the Arda exit liability · Functions, rules, indexes, Storage · `hosting:salown-staff` (`b9a396c48836840f`, unmoved) · `hosting:salown-admin` (`9f457fc2c8ee4b35`, unmoved) · `whitecrossbarbers-saas` |
+
+> **What this release deliberately does NOT settle.** Activation stops accrual outside an
+> employment interval. It does **not** make a closed month immutable, and nobody may describe it
+> as doing so. Arda's rota is still corrupt (`["Wednesday"]` is his day OFF), so his historical
+> labour cost remains understated by ≈£12,300 and the live all-time Net P&L reads **−£2,740.86**
+> where the reconstructed figure is **−£14,840.86**. Repairing the rota under a live gate is
+> `FIN-ARDA-REPAIR`, and it stays **BLOCKED** pending the accounting-baseline approval — repairing
+> it before the periods are frozen would re-price every closed month a second time.
+
 ### R-2026-08-12-A — U1 `hosting:salown` — ⚠️ RECONSTRUCTED, SOURCE UNPROVABLE
 
 | Field | Value |

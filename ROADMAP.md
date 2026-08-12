@@ -80,7 +80,7 @@ Every identity here was read from production on 2026-08-12, read-only.
 
 | Surface | Live identity | Released | Status |
 |---|---|---|---|
-| `hosting:salown` — Admin `/app` + landing + public booking `/book/**` + salon pages `/s/**` (one deployable unit, one bundle) | version **`11cc739f548c5e10`** · release `1786493555545000` | 2026-08-12T00:12:35.545Z | LIVE, **NO LEDGER ENTRY** — `REL-2a` |
+| `hosting:salown` — Admin `/app` + landing + public booking `/book/**` + salon pages `/s/**` (one deployable unit, one bundle) | version **`2620fb29bf2e064e`** · release `1786574988937000` | 2026-08-12T22:49:48.937Z | **LIVE_VERIFIED** — source `d9bdbc5`, served bytes hash-proven, ledger `R-2026-08-12-B` |
 | `hosting:salown-staff` — staff.salown.com | version **`b9a396c48836840f`** · release `1786389184539000` | 2026-08-10T19:13:04.539Z | LIVE_VERIFIED, byte-proven |
 | `hosting:salown-admin` — Super Admin | version **`9f457fc2c8ee4b35`** · release `1785493665740000` | 2026-07-31T10:27:45.740Z | LIVE_VERIFIED, marker-proven |
 | `hosting:whitecrossbarbers-saas` — whitecrossbarbers.com | version **`e6be08684d312ce7`** · release `1786401587236000` | 2026-08-10T22:39:47.236Z | LIVE, source **UNKNOWN/HYBRID** — `WCP-1` |
@@ -128,16 +128,17 @@ here; commit and release identifiers are never renamed.
 | P0 | `WCP-3` | W1 premium cutover — booking created before payment fail-closed (phantom bookings) | `BLOCKED` | whitecross-site | — | O1W F→D→E2E coordinated activation | — | current live artefact still on the legacy path | Coordinated activation, owner-scheduled | 2026-08-12 |
 | P0 | `WCP-1` | Live Whitecross artefact is a hand-composed hybrid matching no Git SHA | `STATUS_UNKNOWN` | whitecross-site | — | `REL-4` | **UNKNOWN/HYBRID** | `e6be08684d312ce7` · `script.js` sha256 `ffa63589…e77637` | Build a reproducible anchor before any further deploy | 2026-08-12 |
 | P0 | `WCP-4` | `firebase.public-site.json` would re-expose the repository | `PLANNED` | whitecross-site | — | — | — | 9 ignore entries vs 25 in `firebase.saas.json` | Delete or hard-fail it; `firebase.saas.json` is the only approved config | 2026-08-12 |
-| P0 | `FIN-COMP-S3B` | Wire all six Finance consumers + legacy-vs-period parity mode, activation OFF | `PLANNED` | salown-app | — | `FIN-COMP-S3A` | — | — | Build; keep `FINANCE_COMP_PERIOD_MODE='legacy'` | 2026-08-12 |
-| P0 | `FIN-COMP-S3C` | Flag activation + authenticated Finance verification (the `effectiveTo` boundary is **already stored**) | `BLOCKED` | salown-app | — | `FIN-COMP-S3B` + **`FIN-EFFECTIVEFROM-BACKDATE`** + owner authorisation | — | — | 5-assertion proof in §9.3; **3 of 5 fail today** | 2026-08-12 |
-| P0 | `FIN-ARDA-REPAIR` | Arda `workingDays` repair | `BLOCKED` | data | — | `FIN-COMP-S3C` LIVE_VERIFIED | — | — | Do **not** touch `workingDays` yet (§9.3) | 2026-08-12 |
-| P0 | `FIN-EFFECTIVEFROM-BACKDATE` | All 3 whitecross `staffComp.effectiveFrom` say **2026-07-15** (the day the Pay tab was opened) vs legacy wage windows from **2026-02-06** / **2026-06-09** — activating today zeroes Feb→14 Jul, **−£17,531.20** | `BLOCKED` | data | — | owner authorisation | — | live: 3 records, all `2026-07-15` | Backdate to real employment starts **before** any flag activation (§9.3 ⑥) | 2026-08-12 |
-| P0 | `FIN-ARDA-0804` | `2026-08-04` — the one day Arda worked — accrues **£0**: rota is `["Wednesday"]`, no override. The period gate cannot add a day | `BLOCKED` | data | — | owner authorisation | — | verified read-only 2026-08-12 | Needs an **open** date-specific override on 2026-08-04, **not** a `workingDays` edit (§9.3 ②) | 2026-08-12 |
+| P1 | `FIN-COMP-S3B` | Wire all six Finance consumers + legacy-vs-period parity mode | `LIVE_VERIFIED` | salown-app | released | — | `5e69b63` | live in `2620fb29bf2e064e` via source `d9bdbc5` | — | 2026-08-12 |
+| P1 | `FIN-COMP-S3C` | Compensation-period gate ACTIVATED (`FINANCE_COMP_PERIOD_MODE='periods'`) | `LIVE_VERIFIED` | salown-app | released | — | **`d9bdbc5`** | `hosting:salown` **`2620fb29bf2e064e`** · release `1786574988937000` · 2026-08-12T22:49:48.937Z | Ships S2+S3A+S3B too — none were live before | 2026-08-12 |
+| P0 | `FIN-ARDA-REPAIR` | Arda `workingDays` repair — stored `["Wednesday"]` is his day **OFF**; real rota Mon/Tue/Thu/Fri/Sat/Sun | `BLOCKED` | data | — | ~~`FIN-COMP-S3C`~~ (now live) → **accounting-baseline approval** + `FIN-PERIOD-CLOSE` | — | live: `["Wednesday"]`, `updateTime` 2026-08-10T19:24:26.175Z | Owner revoked Phase 6 2026-08-12. Repairing before periods are frozen re-prices every closed month again (§9.4) | 2026-08-12 |
+| P1 | `FIN-EFFECTIVEFROM-BACKDATE` | All 3 whitecross `staffComp.effectiveFrom` said **2026-07-15** (the day the Pay tab was opened) | `LIVE_VERIFIED` | data | applied | — | tool `edd4e85` | Alex→`2026-02-06` · Muhamed→`2026-06-09` · Arda→`2026-02-06`; 3 audited writes, idempotent, analyser `ready=true` | — | 2026-08-12 |
+| — | `FIN-ARDA-0804` | ~~Open override on `2026-08-04`~~ | **`WITHDRAWN`** | data | — | — | — | — | Right answer, wrong question: the rota itself is corrupt. Once repaired, 2026-08-04 is a Tuesday **in** the rota and accrues on its own — no override is needed or authorised | 2026-08-12 |
 | P0 | `SEC-FN-NS` | Nothing stops a third repo re-colliding a function name; no guard on the salown side | `PLANNED` | both | — | — | `a336ddce` (wc) | both names now serve codebase `salown` | Mirror `deploy-functions.sh` step 5b into salown-app | 2026-08-12 |
-| P1 | `FIN-COMP-S3A` | Wage resolver can honour a dated employment period | `PUSHED_NOT_LIVE` | salown-app | released | — | `f1239ba` | not deployed; flag `legacy`; no consumer wired | `FIN-COMP-S3B` | 2026-08-12 |
-| P1 | `FIN-S2` | One wage-day rule for all six Finance paths | `PUSHED_NOT_LIVE` | salown-app | released | — | `10e754a` | not deployed | ships with `FIN-COMP-S3C` | 2026-08-12 |
+| P1 | `FIN-COMP-S3A` | Wage resolver can honour a dated employment period | `LIVE_VERIFIED` | salown-app | released | — | `f1239ba` | live in `2620fb29bf2e064e` via source `d9bdbc5` | — | 2026-08-12 |
+| P1 | `FIN-S2` | One wage-day rule for all six Finance paths | `LIVE_VERIFIED` | salown-app | released | — | `10e754a` | live in `2620fb29bf2e064e` via source `d9bdbc5` | — | 2026-08-12 |
 | P1 | `FIN-S1` | Wage-integrity cause, rejected fixes, S3 scope | `LIVE_VERIFIED` (docs) | salown-docs | released | — | `d7e1e6f` | `origin/main` — docs have no deploy target | — | 2026-08-12 |
-| P1 | `FIN-PERIOD-CLOSE` | Closed-month immutability: closing / snapshot / attributable adjustment | `PLANNED` | salown-app | — | `FIN-COMP-S3C` | — | — | Design. `effectiveFrom/To` does **not** make a closed month immutable | 2026-08-12 |
+| P0 | `FIN-PERIOD-CLOSE` | Closed-month immutability: closing / snapshot / attributable adjustment | `BLOCKED` | salown-app | — | **owner approval of the accounting baseline** (§9.4) | — | — | ⛔ Must **not** freeze today's derived totals — they are computed from the corrupt rota. August 2026 is **open** and must not be frozen | 2026-08-12 |
+| P1 | `FIN-DATED-ROTA` | Effective-dated rota — move `workingDays` into the dated `staffComp` period so a rota edit stops re-pricing history | `PLANNED` | salown-app | — | `FIN-PERIOD-CLOSE` | — | — | Root cause of the wage-integrity incident; `shiftChanges` is single-date and cannot express "the rota changed from here" | 2026-08-12 |
 | P1 | `BK-7` | `HOURS-SSOT-C` — bind Admin availability to canonical tenant hours | `PLANNED` (**newly unblocked**) | salown-app | — | A ✅ + B ✅ both live | — | — | Start; A and B are both LIVE_VERIFIED (§11) | 2026-08-12 |
 | P1 | `LOC-1` | `MULTI-LOCATION-PHASE-1` — location authority/registry | `PLANNED` | salown-app | — | `BK-7` first | — | — | Phase order is a dependency chain, not a preference | 2026-08-12 |
 | P1 | `STF-2` | S4B staff access callables + UI + rules entry + `PENDING` sweep | `PLANNED` | salown-app | — | `STF-2A` | `3097521` (S4A) | S4A pushed, **no callable, no UI, not deployed** | Build S4B | 2026-08-12 |
@@ -420,6 +421,85 @@ changed, payment history was **not** altered, and nothing was written. Two date-
 corrections now need separate authorisation — **(a)** an open override on `2026-08-04` so the day
 Arda actually worked is paid, and **(b)** the `effectiveFrom` backdating for all three records
 before activation.
+
+### 9.4 `FIN-COMP-S3C` — activated, verified live, and what it deliberately did NOT settle (2026-08-12)
+
+**Released.** `hosting:salown` version **`2620fb29bf2e064e`** · release `1786574988937000` ·
+2026-08-12T22:49:48.937Z, built from an isolated clean checkout pinned to
+**`d9bdbc5797d6255c86c08a3f26181dadedf45757`**. Ledger row `R-2026-08-12-B`. S2 (`10e754a`), S3A
+(`f1239ba`) and S3B (`5e69b63`) went live in the same release — **none of them was live before**,
+which is why the pre-release `Finance` chunk carried no cutover marker at all.
+
+**The three `staffComp` corrections landed first, and that ordering was the whole point.** All
+three records said `effectiveFrom: 2026-07-15` — the minute the Pay tab was first saved (three
+`COMP_CHANGED` audit events at 14:49:12 / 14:50:41 / 14:51:31). Activating against those dates
+would have zeroed February → 14 July by **−£17,289.60**. Corrected first (audited, idempotent,
+hash + `updateTime` preconditioned; only `effectiveFrom` moved), so activation moved
+February–July by exactly **£0.00 per month**.
+
+**Verified live, with no `periodMode` passed anywhere:** 2026-08-12 **£200 → £100** (Alex £100 ·
+Arda £0 · Muhamed £0) · Arda **£0 on every date after 2026-08-04** through 2026-12-31 · August
+−£200 · all-time wages £20,489.60 → £20,289.60 · payments/advances/settlement/bookings/barbers all
+byte-unchanged.
+
+#### Arda's rota is corrupt, and it is NOT what this release fixed
+
+`workingDays: ["Wednesday"]` is his **day OFF**. Of 147 worked days: 25 Mondays, 25 Tuesdays,
+**2 Wednesdays**, 23 Thursdays, 25 Fridays, 24 Saturdays, 23 Sundays. Six independent sources
+agree on the real rota (Mon/Tue/Thu/Fri/Sat/Sun): the booking distribution · the employee window
+reconciling exactly (25 days = 25 booking days = £2,500 earned = £2,500 paid = £0 balance) · the
+£400 "Wages" payment on 2026-08-02 clearing July's month-end shortfall · the owner's own
+"−14k" expectation · the signed exit agreement's own clause recording **"off günü Çarşamba"** ·
+and the partner-era total reproducing the workbook exactly (123 days / £12,300) with advances
+matching the signed £6,282 to the penny.
+
+**When it broke is now bounded by hard evidence.** Eight **Website** (online) bookings exist for
+Arda on non-Wednesdays, the last created **2026-08-03T20:50:43Z** for Tuesday 2026-08-04. Online
+booking gates on `workingDays`, so Tuesday was still in the rota then. His document was last
+written **2026-08-10T19:24:26.175Z** — unaudited, 43 seconds after `settings/hours` was saved,
+carrying the documented `BARBER-HOURS-PROPAGATION-RACE-P0` fingerprint (Tuesday is the only day in
+his `dayHours` lacking `closed`, and still holds 09:00 against the salon's new 10:00). The audited
+Team editor **does** diff `workingDays` (`Barbers.tsx:407`) and never recorded a change. So the
+corruption window is **2026-08-03 20:50Z → 2026-08-10 19:24Z** — two days before the owner
+noticed, not months. *Not proven:* the exact mutation step. With every salon day open, the
+pre-fix propagation only ever **adds** days, so a six-day rota cannot shrink to one by that path
+alone, and no before-image is stored anywhere.
+
+**Consequence, unfixed:** live all-time Net P&L reads **−£2,740.86**; reconstructed with the real
+rota it is **−£14,840.86**. Arda's historical labour cost is understated by ≈£12,300.
+
+#### Accounting baseline — read-only reconciliation, owner-blocked
+
+The ≈£9,000 is **a debt owed BY the company TO Arda**, not the reverse, and it is **not in
+Firestore**: `settings/exit_agreement` does not exist (never signed) and no value in the
+7,500–11,000 range exists in any of the tenant's 30 collections. Composition per the signed
+`Arda_Exit_Agreement.md`: capital refund **£5,500** + net wage **£3,500** (122d × £100 = £12,200 −
+£6,282 advances = £5,918 unpaid, less **£2,418** borne loss share) = **£9,000**; the £3,623 capital
+shortfall was cancelled. Arda's ownership share was **25%** — the **40% is the repayment rate**
+from future monthly net profit, not his share. Clause 7.2 has triggered (he left 2026-08-04, before
+2027-02-06), so the goodwill £1,061 is added back and the figure becomes **≈£7,939**.
+
+**No double count.** Partnership-period wage accrual is an operating P&L expense; the unpaid/settled
+amount is a liability/capital item. `netPL`/`companyNetPL`/`rawPL` reference neither `initialPool`,
+`investmentTransactions` nor `settlement` (`Finance.tsx:325/402/442`), and Arda is
+`isPartner:false` so he is excluded from the partner ledger entirely. The only in-system settlement
+ever recorded was a **different** £1,193.36 Plan-A entry, signed 2026-06-25T10:00:16Z and
+**reversed** at 10:55:30Z the same morning.
+
+**Unresolved:** a **≈£569.97** Feb–Jun gap between the reconstructed system P&L (−£13,044.73) and
+the workbook's `HESAP_OZETI` (−£13,780.30) remains open on the revenue/expense/fixed side. The
+wage half reconciles exactly (−£165.60: Alex −3 days, Arda +1 day, Muhamed +1 day and £41.60 vs
+£42). The workbook's own daily sheets also do not reconcile to its own `HESAP_OZETI` by ≈£711 —
+February's sheet uses a column layout that could not be mapped reliably, and two off-book items
+(£600 injection, £60) are known to be absent. **No bridge was invented for it.**
+
+**Therefore `FIN-PERIOD-CLOSE` must NOT freeze today's derived totals** — they are computed from
+the corrupt rota. The baseline it should eventually freeze is: Feb–Jun from the **workbook**
+(−3,037.99 / −3,758.98 / −2,577.86 / −2,255.66 / −2,149.81), July–August from the **system**
+(the owner never entered July in the workbook), and **August 2026 is open and must not be frozen**.
+`£7,939` is **not** recorded here as a production liability — only that the signed external
+agreement supports it, and that its canonical production representation is a separate,
+owner-authorised accounting migration.
 
 ---
 
