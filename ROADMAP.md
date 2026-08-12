@@ -64,10 +64,13 @@ deployment/release-infrastructure repository exists; release tooling lives insid
 | Work ID | Commits | Landed | Treatment |
 |---|---|---|---|
 | `FIN-COMP-S3A` | `f1239ba` + claim release `7776d92` | 2026-08-12T14:28:50Z / 14:28:57Z | **Reconciled in this pass.** Its final report arrived before this session closed and was independently verified (§5). Recorded `PUSHED_NOT_LIVE`, **not** LIVE_VERIFIED, **not** complete. |
-| `REL-2` | claim `fbabc0d` | 2026-08-12T14:38:33Z | This reconciliation's own claim. |
+| `REL-2` | claim `fbabc0d` · reconciliation `e2ae1b5` (salown-docs) · claim release `67e8d25` | 2026-08-12T14:38Z → 17:0xZ | This reconciliation itself. |
+| `FIN-COMP-S3A-ANALYSER-FIX` | claim `cf97c6c` · **`18405c6`** · claim release `abbc6a6` | 2026-08-12T17:11:49Z | **Reconciled in this pass** (§9.3). Two readiness defects in `scripts/analyseCompPeriods.cjs`. `PUSHED_NOT_LIVE` — a read-only analyser script, no deployable target. |
+| `FIN-COMP-S3C-ARDA-BOUNDARY` | claim `9ff…`/`abbc6a6`+1 · addendum `9776789` (salown-docs) | 2026-08-12T17:2xZ | Owner's Arda final-week clarification + the read-only verification it asked for (§9.3). Documentation only. |
+| `ROADMAP-AFTER-SNAPSHOT-CLOSE` | this register | 2026-08-12T17:35Z | Closes §1.1. |
 
-Anything landing after `fbabc0d` is **AFTER_SNAPSHOT — requires next reconciliation** and is not
-reflected below.
+Anything landing after the last row above is **AFTER_SNAPSHOT — requires next reconciliation** and
+is not reflected below. **Nothing in this register was deployed and nothing wrote to production.**
 
 ---
 
