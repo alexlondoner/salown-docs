@@ -126,8 +126,10 @@ here; commit and release identifiers are never renamed.
 | P0 | `WCP-1` | Live Whitecross artefact is a hand-composed hybrid matching no Git SHA | `STATUS_UNKNOWN` | whitecross-site | — | `REL-4` | **UNKNOWN/HYBRID** | `e6be08684d312ce7` · `script.js` sha256 `ffa63589…e77637` | Build a reproducible anchor before any further deploy | 2026-08-12 |
 | P0 | `WCP-4` | `firebase.public-site.json` would re-expose the repository | `PLANNED` | whitecross-site | — | — | — | 9 ignore entries vs 25 in `firebase.saas.json` | Delete or hard-fail it; `firebase.saas.json` is the only approved config | 2026-08-12 |
 | P0 | `FIN-COMP-S3B` | Wire all six Finance consumers + legacy-vs-period parity mode, activation OFF | `PLANNED` | salown-app | — | `FIN-COMP-S3A` | — | — | Build; keep `FINANCE_COMP_PERIOD_MODE='legacy'` | 2026-08-12 |
-| P0 | `FIN-COMP-S3C` | Authorised period closure, flag activation, targeted release, authenticated verification | `BLOCKED` | salown-app | — | `FIN-COMP-S3B` + owner authorisation | — | — | Owner-authorised production write, separately scheduled | 2026-08-12 |
+| P0 | `FIN-COMP-S3C` | Flag activation + authenticated Finance verification (the `effectiveTo` boundary is **already stored**) | `BLOCKED` | salown-app | — | `FIN-COMP-S3B` + **`FIN-EFFECTIVEFROM-BACKDATE`** + owner authorisation | — | — | 5-assertion proof in §9.3; **3 of 5 fail today** | 2026-08-12 |
 | P0 | `FIN-ARDA-REPAIR` | Arda `workingDays` repair | `BLOCKED` | data | — | `FIN-COMP-S3C` LIVE_VERIFIED | — | — | Do **not** touch `workingDays` yet (§9.3) | 2026-08-12 |
+| P0 | `FIN-EFFECTIVEFROM-BACKDATE` | All 3 whitecross `staffComp.effectiveFrom` say **2026-07-15** (the day the Pay tab was opened) vs legacy wage windows from **2026-02-06** / **2026-06-09** — activating today zeroes Feb→14 Jul, **−£17,531.20** | `BLOCKED` | data | — | owner authorisation | — | live: 3 records, all `2026-07-15` | Backdate to real employment starts **before** any flag activation (§9.3 ⑥) | 2026-08-12 |
+| P0 | `FIN-ARDA-0804` | `2026-08-04` — the one day Arda worked — accrues **£0**: rota is `["Wednesday"]`, no override. The period gate cannot add a day | `BLOCKED` | data | — | owner authorisation | — | verified read-only 2026-08-12 | Needs an **open** date-specific override on 2026-08-04, **not** a `workingDays` edit (§9.3 ②) | 2026-08-12 |
 | P0 | `SEC-FN-NS` | Nothing stops a third repo re-colliding a function name; no guard on the salown side | `PLANNED` | both | — | — | `a336ddce` (wc) | both names now serve codebase `salown` | Mirror `deploy-functions.sh` step 5b into salown-app | 2026-08-12 |
 | P1 | `FIN-COMP-S3A` | Wage resolver can honour a dated employment period | `PUSHED_NOT_LIVE` | salown-app | released | — | `f1239ba` | not deployed; flag `legacy`; no consumer wired | `FIN-COMP-S3B` | 2026-08-12 |
 | P1 | `FIN-S2` | One wage-day rule for all six Finance paths | `PUSHED_NOT_LIVE` | salown-app | released | — | `10e754a` | not deployed | ships with `FIN-COMP-S3C` | 2026-08-12 |
@@ -222,7 +224,7 @@ immutability was explicitly NOT implemented** — do not describe closed months 
 Whitecross dry-run (read-only): 3 accruing staff · 3 `staffComp` records · 2 complete and valid ·
 **1 inactive staff member with an open compensation period** · no malformed, overlapping, gapped,
 missing or ambiguous record · `readiness = false` · exactly one owner-supplied last-employed date
-required. That record is Arda — resolved by owner decision, §9.3.
+required. ⚠️ *Corrected the same day by `18405c6`: that flag was an analyser defect (a barber on **leave** also carries `active: false`), so the corrected verdict is **0 open-period anomalies** and **3 subjects whose periods start after their legacy wage window**. Arda's period was already closed at `2026-08-04`. Owner decision and the full read-only verification: §9.3.*
 
 ---
 
@@ -321,19 +323,100 @@ that exists is `salownIcalFeed`, a one-way iCal feed OUT.
 
 ### 9.3 Owner-confirmed decision — Arda employment boundary *(2026-08-12)*
 
-The whitecross `openPeriodButStaffInactive` record found by the S3A dry-run is **Arda**. Owner
-confirms:
+> ⚠️ **Correction of record (2026-08-12, later the same day).** This section originally opened
+> *"the whitecross `openPeriodButStaffInactive` record found by the S3A dry-run is **Arda**"*. **It
+> was not.** That flag was an analyser defect — a barber on **leave** also carries `active: false`,
+> which the readiness heuristic read as "employment ended"; departure is `status: 'passive' |
+> 'deleted'`. Fixed in `18405c6`. **Arda's `staffComp` period was already closed.** The corrected
+> read-only whitecross verdict is **0 open-period anomalies**, 0 complete valid periods, **3
+> subjects whose periods start after their legacy wage window**, readiness `false`. The owner's
+> decision below stands on its own merits and is unaffected; only the sentence that justified
+> raising it was wrong.
+
+Owner confirms Arda's employment/wage boundary:
 
 - last worked day **2026-08-04 (Tuesday)**; last wage-entitled day **2026-08-04**;
 - canonical `staffComp.effectiveTo` = **2026-08-04, inclusive**;
 - expected wage accrual from **2026-08-05 onward = £0**;
 - wages through 2026-08-04 have **already been entered** by the owner.
 
+**Final-week clarification (owner, 2026-08-12):**
+
+- **2026-08-03 Monday** — Arda did not attend/work; expected accrual **£0**;
+- **2026-08-04 Tuesday** — Arda worked; **his only wage-entitled day that week**;
+- expected final-week accrual: **exactly one wage day, 2026-08-04**;
+- `effectiveTo` remains **2026-08-04 inclusive**; **2026-08-05 onward = £0**.
+
 **Constraints that travel with this decision:** do not create another wage payment or settlement ·
 do not alter historical payment entries · do not change Arda's `workingDays` yet · the `staffComp`
 period closure stays a separately authorised **`FIN-COMP-S3C`** production write, after `S3B`
 wiring and parity proof · the later verification must show **zero accrual from 2026-08-05** without
-duplicating or changing the wages already recorded through 2026-08-04.
+duplicating or changing the wages already recorded through 2026-08-04. **This clarification does
+not authorise a production write.**
+
+#### Required `FIN-COMP-S3C` proof
+
+| # | Assertion | State today (read-only, 2026-08-12) |
+|---|---|---|
+| 1 | `2026-08-03` = £0 | ✅ **already true** — see below |
+| 2 | `2026-08-04` = exactly one wage day | ❌ **£0 today, in BOTH modes** |
+| 3 | `2026-08-05` onward = £0 | ❌ **legacy accrues every Wednesday, unbounded**; ✅ under `'periods'` |
+| 4 | no duplicate payment/settlement | not yet exercised |
+| 5 | historical settled totals unchanged | ⛔ **would FAIL today** — see the `effectiveFrom` trap |
+
+#### Read-only verification, 2026-08-12 — run before S3C changes anything
+
+Performed against the **real exported resolver** (`accruesWageOnDay`, bundled unmodified from
+`src/utils/financeWages.ts`) and **real production data** read from Firestore. **No write, no
+deploy, no data change.** Arda = `barbers/barber-1777655430086`, `status: 'passive'`.
+
+**① `2026-08-03` already resolves to £0, and the cause is exactly the one hoped for.** The barber
+document carries a date-specific Off record: `shiftChanges['2026-08-03'] = { closed: true, reason:
+'personal' }` — one of the owner's seven, all `closed: true`. `accruesWageOnDay` returns `false` at
+the `if (sc?.closed)` line, in legacy **and** in `'periods'` mode. **No correction is needed and no
+authorisation is requested for this day.**
+
+**② `2026-08-04` does NOT accrue today, and S3C alone cannot make it.** `workingDays` is
+`["Wednesday"]` — a single day — and `2026-08-04` is a Tuesday with **no** shift override and no
+leave record (`leaves: []`, `leaveFrom: null`). The rota branch therefore answers `!!sc ||
+wdays.includes('Tuesday')` = `false`. **The period gate can only remove a day, never add one**, so
+`effectiveTo = 2026-08-04` cannot produce the expected single wage day. Delivering assertion 2
+requires **adding** an open date-specific override on `2026-08-04` — a date-specific correction,
+which is precisely the case the owner reserved for **separate authorisation**, and which must not
+be done by editing `workingDays`.
+
+**③ `2026-08-05` onward accrues today.** Legacy resolves **YES** on `2026-08-05`, `-08-12`,
+`-08-19`, `-08-26`, `2026-09-02` … every Wednesday, without end — there is no `wageEndDate` and
+none may be invented (INV-PARA-13/14). Under `'periods'` every one of them resolves **£0**, so the
+S3C gate is the correct and sufficient fix for this assertion.
+
+**④ The final week's *count* is right today by accident, and its *day* is wrong.** Mon 2026-08-03 →
+Sun 2026-08-09 currently accrues **exactly one** wage day — but it is **Wednesday 2026-08-05**, a
+day *after* the employment boundary, not Tuesday 2026-08-04. Anyone checking "one wage day that
+week" without checking *which* would pass a broken state.
+
+**⑤ `effectiveTo = 2026-08-04` is ALREADY stored.** `staffComp/barber-1777655430086` holds
+`history[0] = { effectiveFrom: '2026-07-15', effectiveTo: '2026-08-04', type: 'wage', params:
+{ amount: 600, period: 'week' } }`, `updatedAt` **2026-08-04T17:45:12Z**. **S3C therefore needs no
+production write to set the boundary** — only the controlled flag activation. That materially
+shrinks S3C.
+
+**⑥ ⛔ But activation is blocked by `effectiveFrom`, and it breaks assertion 5.** All three
+whitecross `staffComp` records start **2026-07-15** — the day the Phase B Pay tab was first used,
+not the day anyone was hired — while `partnerConfig` pays from **2026-02-06** (Alex, Arda) and
+**2026-06-09** (Muhamed). Flipping `FINANCE_COMP_PERIOD_MODE` to `'periods'` today would zero
+**February → 14 July** for all three and move the salon total from **£24,136.80 → £6,605.60
+(−£17,531.20)**. That is INCIDENTS 2026-08-12 running backwards — the past silently rewritten — and
+it fails the owner's own assertion 5 outright. **Every `effectiveFrom` must be pulled back to the
+real employment start (owner-approved, audited) BEFORE the flag is turned on for any tenant.**
+"Records look clean" is not readiness; `scripts/analyseCompPeriods.cjs` now reports this as
+`periodStartsAfterLegacyWageStart` (`18405c6`).
+
+**Reported cause, per the owner's instruction, with no correction made:** `workingDays` was **not**
+changed, payment history was **not** altered, and nothing was written. Two date-specific
+corrections now need separate authorisation — **(a)** an open override on `2026-08-04` so the day
+Arda actually worked is paid, and **(b)** the `effectiveFrom` backdating for all three records
+before activation.
 
 ---
 
@@ -491,7 +574,7 @@ distinguishable from *forgetting*.
 - ✅ **Archive / snapshot safety (hole 1)** — product sale + block snapshot `barberName` (`0db230c`); deletion is super-admin+owner only, strong confirmation modal, `BARBER_DELETED` audit.
 - 🔄 **S4 Staff access & offboarding** — **S4A server foundation ✅ source+tests, PUSHED, NOT LIVE** (`functions/src/staff/`): canonical `staff/{uid}.accessStatus` (`active`/`suspended`/`offboarded`; **absent=active**, unknown **fails closed**, one `ACTOR_OFFBOARDED` code) enforced in-transaction by all 5 Staff-actor mutation cores at **zero extra Firestore reads**; server-only offboard/re-enable cores as a **resumable state machine** (Auth+Firestore+FCM cannot be atomic — ADR-023) with claim clearing, token revocation, per-uid FCM sweep and exactly-once audit at a derived doc id. `barbers.status` still means assignability ONLY (ADR-022) — a passive owner keeps running the salon. **Nothing exposed or deployed: no callable, no UI.** Detail: [STAFF_ACCESS_CONTROL.md](STAFF_ACCESS_CONTROL.md). **S4B remaining:** callable wrappers · Admin Staff/Barbers UI · Staff App revoked state · `staffAccessOps` rules entry · stuck-`PENDING` reconciliation sweep. Still bypassable while O1S Staff direct-writes remain.
 - 🔄 **Team lifecycle & ownership — where it actually stands** *(added 2026-08-10; the detail and the five affected paths stay under Security › T-e, this is the index)*. **LIVE:** the identity contract itself (O1 `960db19`) — the staff doc is the authority, the `tenantRole` claim only its projection, `setCustomUserClaims` **replaces** so every write must be merge-aware; `createStaffUser` (`-00058-kur`) and `approveApplication` (`-00013-yob`) deployed 2026-08-08 and live-verified **by source marker, zero writes**. **DEPLOYED BUT DORMANT / NOT LIVE:** S4A's access-authority foundation (`3097521`) has cores and tests but **no callable and no UI**, and `setStaffRoleCore` exists but is deliberately **not exposed**. **REMAINING CUTOVERS:** O2 must repoint `Settings.tsx`'s `updateStaffRole` + `registerMeAsAdmin` at `setStaffRoleCore` (today they write the staff doc, are blocked by `firestore.rules:203` for non-super-admins, and **report success anyway** — false success is the defect, not the block), fix the `super-admin/` caller that grants tenant access with no role, and land S4B (callable wrappers · Admin Staff/Barbers UI · Staff App revoked state · `staffAccessOps` rules entry · stuck-`PENDING` reconciliation sweep). **OWNER PREREQUISITES, not code:** ① the **T-h** `provisionTenant` repo-ownership fork — until it is decided, every new self-signup still mints a role-less, staff-doc-less owner and path 1 cannot be fixed; ② authorization to **repair the two live victims found 2026-08-08 and deliberately left alone** (`the-hair-lab` owner — `{tenantId}` only, no `tenantRole`, no staff doc; `yusufo` owner — role claim, no staff doc). All 7 other staff docs are consistent. Contract: [TEAM_IDENTITY_CONTRACT.md](TEAM_IDENTITY_CONTRACT.md).
-- 🔄 **S3 Compensation periods — closed months must stop changing** *(added 2026-08-12; the wage-integrity incident · updated 2026-08-12 after S3A)*. **Cause confirmed · S1 + S2 + S3A landed, all `PUSHED_NOT_LIVE` · S3B/S3C not built.** `barbers/{id}.workingDays` is a single **undated** array with no history, so Finance replays *today's* rota over every past month — a closed period is not closed, and one rota edit silently moves every historical Total Wages / Net P&L / partner + staff Wages Earned / G4 ledger. `shiftChanges[date]` stays a correct **single-date** override and is not the cause; **the owner's seven date-specific Off records are correct**. `staffComp.effectiveFrom`/`effectiveTo` already exists (`compUtils.ts`, Phase B, LIVE) and **Finance reads none of it** — that is the gap S3 closes. **✅ S2 done (`10e754a`, pushed, NOT deployed):** all six wage-accrual consumers now decide a day in ONE resolver (`src/utils/financeWages.ts`) with exact parity (261 golden-parity assertions, no total moved, no write, no deploy) + a static test that fails if manual wage logic returns. **Explicitly rejected:** a fake leave-until-2099 record and a `partnerConfig.wageEndDate` field — both are duplicate SSOTs for "when employment ended". **`FIN-COMP-S3A` ✅ landed (`f1239ba`, 2026-08-12, `PUSHED_NOT_LIVE`):** the canonical resolver *can* gate accrual on `staffComp.effectiveFrom`/`effectiveTo` — both boundaries **inclusive**, multiple periods and gaps supported, missing/malformed period data **fails open to legacy**. The activation constant `FINANCE_COMP_PERIOD_MODE` ships as **`'legacy'`**, **no Finance consumer is wired**, **no tenant is enabled**, and **period closing / month immutability was explicitly NOT implemented** — `effectiveFrom`/`effectiveTo` does *not* make a closed month immutable, and nobody may describe it as doing so. Gates as reported: frontend **3034/3034** · S2 golden parity **261/261** (parity file byte-untouched) · new period tests **108** · read-only analyser tests **37**; no deploy, no production write, no Arda/staff data change. Whitecross read-only dry run: 3 accruing staff · 3 `staffComp` records · 2 valid · **1 inactive staff member with an open compensation period** · nothing malformed/overlapping/gapped/ambiguous · `readiness = false` · exactly one owner-supplied last-employed date required. **Remaining:** `FIN-COMP-S3B` (wire all six consumers + a legacy-vs-period parity mode, activation still OFF) → `FIN-COMP-S3C` (authorised period closure / data correction, controlled flag activation, targeted Hosting release, authenticated Finance verification) → `FIN-PERIOD-CLOSE` (the separate closed-period / snapshot / attributable-adjustment design). **Blocked on `FIN-COMP-S3C` being LIVE_VERIFIED:** the Arda `workingDays` repair — see the owner-confirmed boundary in **§9.3** (last wage-entitled day **2026-08-04**, `effectiveTo` inclusive, £0 accrual from 2026-08-05, wages through 2026-08-04 already entered: do not re-pay, do not alter historical entries, do not change `workingDays` yet). Booking-derived workdays are corroborating evidence only, never the permanent SSOT. Detail: [INCIDENTS 2026-08-12](INCIDENTS.md) · [STAFF_SETTINGS_AUDIT.md](STAFF_SETTINGS_AUDIT.md) · [STAFF_MANAGEMENT_DESIGN.md](STAFF_MANAGEMENT_DESIGN.md) §1.1.
+- 🔄 **S3 Compensation periods — closed months must stop changing** *(added 2026-08-12; the wage-integrity incident · updated 2026-08-12 after S3A)*. **Cause confirmed · S1 + S2 + S3A landed, all `PUSHED_NOT_LIVE` · S3B/S3C not built.** `barbers/{id}.workingDays` is a single **undated** array with no history, so Finance replays *today's* rota over every past month — a closed period is not closed, and one rota edit silently moves every historical Total Wages / Net P&L / partner + staff Wages Earned / G4 ledger. `shiftChanges[date]` stays a correct **single-date** override and is not the cause; **the owner's seven date-specific Off records are correct**. `staffComp.effectiveFrom`/`effectiveTo` already exists (`compUtils.ts`, Phase B, LIVE) and **Finance reads none of it** — that is the gap S3 closes. **✅ S2 done (`10e754a`, pushed, NOT deployed):** all six wage-accrual consumers now decide a day in ONE resolver (`src/utils/financeWages.ts`) with exact parity (261 golden-parity assertions, no total moved, no write, no deploy) + a static test that fails if manual wage logic returns. **Explicitly rejected:** a fake leave-until-2099 record and a `partnerConfig.wageEndDate` field — both are duplicate SSOTs for "when employment ended". **`FIN-COMP-S3A` ✅ landed (`f1239ba`, 2026-08-12, `PUSHED_NOT_LIVE`):** the canonical resolver *can* gate accrual on `staffComp.effectiveFrom`/`effectiveTo` — both boundaries **inclusive**, multiple periods and gaps supported, missing/malformed period data **fails open to legacy**. The activation constant `FINANCE_COMP_PERIOD_MODE` ships as **`'legacy'`**, **no Finance consumer is wired**, **no tenant is enabled**, and **period closing / month immutability was explicitly NOT implemented** — `effectiveFrom`/`effectiveTo` does *not* make a closed month immutable, and nobody may describe it as doing so. Gates as reported: frontend **3034/3034** · S2 golden parity **261/261** (parity file byte-untouched) · new period tests **108** · read-only analyser tests **37**; no deploy, no production write, no Arda/staff data change. Whitecross read-only dry run: 3 accruing staff · 3 `staffComp` records · 2 valid · **1 inactive staff member with an open compensation period** · nothing malformed/overlapping/gapped/ambiguous · `readiness = false` · exactly one owner-supplied last-employed date required. **Remaining:** `FIN-COMP-S3B` (wire all six consumers + a legacy-vs-period parity mode, activation still OFF) → **`FIN-EFFECTIVEFROM-BACKDATE`** (owner-approved, audited: all three whitecross `effectiveFrom` values say `2026-07-15`, the day the Pay tab was first opened, so activating today zeroes February→14 July by **−£17,531.20** — §9.3 ⑥) → `FIN-COMP-S3C` (controlled flag activation, targeted Hosting release, authenticated Finance verification against the 5-assertion proof in §9.3; **Arda's `effectiveTo = 2026-08-04` is already stored, so no write is needed to set the boundary**) → `FIN-PERIOD-CLOSE` (the separate closed-period / snapshot / attributable-adjustment design). **Blocked on `FIN-COMP-S3C` being LIVE_VERIFIED:** the Arda `workingDays` repair — see the owner-confirmed boundary in **§9.3** (last wage-entitled day **2026-08-04**, `effectiveTo` inclusive, £0 accrual from 2026-08-05, wages through 2026-08-04 already entered: do not re-pay, do not alter historical entries, do not change `workingDays` yet). Booking-derived workdays are corroborating evidence only, never the permanent SSOT. Detail: [INCIDENTS 2026-08-12](INCIDENTS.md) · [STAFF_SETTINGS_AUDIT.md](STAFF_SETTINGS_AUDIT.md) · [STAFF_MANAGEMENT_DESIGN.md](STAFF_MANAGEMENT_DESIGN.md) §1.1.
 - 🔵 **Payroll / accrual engine (Phase C)** — wage worked-time accrual (hour..year day/hour rate) + paid-leave days at normal rate + commission booking-based + chair-rent calendar accrual.
 - 🔵 **Settlement + Finance/Reports integration (Phase C)** — M1 migration (partnerConfig→staffComp, dry-run CSV) · Finance reads from staffComp + remove implicit £100 fallback (with parity proof) · Balance line "Tracked in Finance".
 - 🔵 **S1 hole 2** — the Reports "Barbers" tab builds the list only from LIVE barbers (`Reports.tsx:182`) → a deleted/passive barber's historical statistic row disappears. Fix: include historical booking names as "Archive/former staff". *(code-confirmed open 2026-07-16)*
