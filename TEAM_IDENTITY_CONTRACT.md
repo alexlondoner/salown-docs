@@ -104,14 +104,19 @@ and the caller is entitled to know that.
 |---|---|
 | `createStaffUser` (europe-west2, codebase `salown`) | ✅ **LIVE** `createstaffuser-00058-kur` (rollback `-00057-doq`) |
 | `approveApplication` (europe-west2, codebase `salown`) | ✅ **LIVE** `approveapplication-00013-yob` (rollback `-00012-kix`) |
-| `provisionTenant` | 🔴 **fixed in source, NOT deployable from this repo** — ROADMAP **T-h** |
+| `provisionTenant` (europe-west2, codebase `salown`) | ✅ **LIVE since 2026-08-11 22:54Z** `provisiontenant-00137-bij` (rollback `-00136-taj`). The name was taken from codebase `whitecross` during the intake repair (INCIDENTS 2026-08-11); artifact verified as the `lib/` TS build carrying `ensureOwnerIdentityCore`, so self-signup now mints a `tenantRole` owner. ⚠️ Its welcome email still sends from `hello@salown.com`, **a mailbox that does not exist** (`index.ts:321,324`) |
 | `updateStaffRole` / `registerMeAsAdmin` (`Settings.tsx`) | 🔵 **O2** — client-side writes that `firestore.rules:203` already blocks for non-super-admins, so they fail *and* report success |
 | `setTenantClaim` (whitecross-site, super-admin) | 🔵 **O2** — merges correctly, but its only caller never sends a role |
 
-> ⚠️ **`provisionTenant` — do not deploy from `salown-app`.** The live europe-west2 artifact
-> carries `firebase-functions-codebase: whitecross` (`provisiontenant-00136-taj`). Deploying
-> `functions:salown:provisionTenant` would seize the name from the other codebase. Read
-> **T-h** before touching it.
+> ⚠️ **Superseded 2026-08-12 — this warning described the world before `-00137-bij`.** It used to
+> read "do not deploy `provisionTenant` from `salown-app`", because the live artifact carried
+> `firebase-functions-codebase: whitecross` (`provisiontenant-00136-taj`) and a salown deploy would
+> seize the name. **That seizure has now happened**, deliberately, as part of the 2026-08-11 intake
+> repair — and it is the outcome T-h wanted, so it is not being reverted. What remains true is the
+> mechanism, in the other direction: `whitecross-site/functions/index.js:3358` still exports the
+> same name, so **the next whitecross Functions deploy takes it back** and self-signup silently
+> returns to minting role-less owners. Nothing warns when that happens. See ROADMAP
+> **SHARED-FN-NAMESPACE** and INCIDENTS 2026-08-11.
 
 ### Verifying a deploy of this area
 
