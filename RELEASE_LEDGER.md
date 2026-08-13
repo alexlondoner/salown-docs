@@ -23,7 +23,7 @@
 | **U1 salOWN Admin + landing + public booking + salon pages** | `salown-app` | `hosting:salown` | CI on push to `main` touching the Admin allow-list, **or** hand |
 | **U2 Staff App** | `salown-app` | `hosting:salown-staff` | **hand only** (`npm run deploy:staff`) — CI cannot reach it |
 | **U3 Super Admin** | `super-admin` | `hosting:salown-admin` | hand |
-| **U4 Whitecross premium site** | `whitecross-site` | `hosting:whitecrossbarbers-saas` | hand, `firebase.saas.json` only |
+| **U4 Whitecross premium site** | `whitecross-site` | `hosting:whitecrossbarbers-saas` | hand. `firebase.saas.json` for a repository-root deploy — **which `WCP-1` blocks** — or the `ops/rel4/` release anchor for a narrow change onto the live artefact (`R-2026-08-13-Y`). `firebase.public-site.json` is UNSAFE (`WCP-4`) |
 | **U5 Functions — codebase `salown`** | `salown-app` | `functions:salown:<name>` europe-west2 | hand, **always targeted, never blanket** |
 | **U6 Functions — codebase `whitecross`** | `whitecross-site` | `scripts/deploy-functions.sh` | hand |
 | **U7 Firestore rules** | `salown-app` | `firestore:rules` | hand, **always LAST** |
@@ -87,6 +87,38 @@ change is easy to mistake for a policy change later. **None of these were altere
 | Jack's loyalty transaction | **correct — and will not be changed** | earn base `receiptEarnBase_p 4480` (£44.80 = £48.00 service − £3.20 redemption) × 5% = £2.24 → 44.8 → **44 points**, matching `receiptExpectedPoints`, `receiptAwardedPoints` and `loyaltyPointsEarned`. Redemption 64 ÷ 20 = **£3.20**. The split-payment defect is a *tender-breakdown* defect; the loyalty arithmetic on this booking was never wrong |
 | `whitecross2` | **inactive, source-parity only, untracked, never deployed** | not a git repository (`git rev-parse` fails), 0 tracked paths in `whitecross-site`, referenced by no Firebase config. It was not built, opened or deployed by this pass |
 
+### R-2026-08-13-Y — U4 Whitecross premium site — **REL-4 release anchor + the passive gate, SHIPPED**
+
+The release `R-2026-08-13-X` stopped. It is the first U4 release since 2026-08-10 with a
+**reproducible source**, and it is deliberately not a deploy of `main`.
+
+| Field | Value |
+|---|---|
+| **Date/time (UTC)** | 2026-08-13T18:44:19.069Z |
+| **Environment** | production |
+| **Repository** | `whitecross-site` |
+| **Source SHA** | **`36d77f82`** (= `origin/main` at release time) — the *anchor* commit. The released bytes are **not** that tree: they are `ops/rel4/baseline/script.js` + `ops/rel4/script.passive-gate.patch` over the 56 unrelated files of `e6be08684d312ce7`, all six identities recorded in `ops/rel4/{BASELINE,RELEASE}.manifest.tsv` and reproducible with `ops/rel4/assemble.sh`. **This is the first U4 row whose artefact can be rebuilt byte-for-byte** — `WCP-1`'s `UNKNOWN/HYBRID` is closed as a *release* problem |
+| **Clean-tree proof** | `HEAD == origin/main == 36d77f82`, `git status --porcelain` empty, recorded **before** the assembly and again after the deploy |
+| **Firebase project** | `havuz-44f70` |
+| **Target** | `hosting:whitecrossbarbers-saas` — **and no other target**, by explicit `--only` |
+| **Config used** | the REL-4 workspace `firebase.json` (`public: "."` over a directory holding **exactly** the 57 published files), **not** `firebase.saas.json`. See the unit-table note: `firebase.saas.json` publishes the repository root and needs 25 ignore rules to keep the repo out of the upload; the workspace contains no repository for a rule to fail to exclude, and it sets no rewrites/headers/redirects, so the version config stays `{}` as it was |
+| **Previous → new** | **`e6be08684d312ce7`** (release `1786401587236000`) → **`25b14188c8e6e9ed`** (release `1786646659069000`) |
+| **The change** | ONE shared gate, `isBarberPassive()`, called first in `_shouldShowBarber` and `getBarberScheduleForDay`. Precedence: passive (absolute) > dated `shiftChanges` > leave within `[leaveFrom, leaveUntil]` > weekly rota. Removes the superseded `if (b.active === false && barberStatusOf(b) !== 'leave') return null;`, which sat **below** the override read. `script.js` only: `ffa63589…e77637` (123,185 B) → `2abd181e…49575` (125,531 B), +43 / −2 lines in 5 hunks — byte-identical to `8c655389`'s `script.js` diff, which applied cleanly because the three regions it touches were first proven byte-identical between the served artefact and `8c655389^` |
+| **Tests** | `node --check` clean · **REL-4 `scripts/rel4-passive-gate.test.mjs` 24/24** · existing `passive-authority` 17/17 + `hours-public-read` 14/14 + `w1-c1-cutover` 23/23 = **54/54** · `ops/rel4/verify.sh` PASS on the built workspace · `assemble.sh` rebuild byte-identical to the first build |
+| **Negative control** | The same matrix run against the **exact live pre-patch file**: **8 of 24 assertions red**, and the behavioural failures are exactly the three passive-resurrection rows — a passive barber carrying one open future override was `_shouldShowBarber → true` and `getBarberScheduleForDay → {open:'10:00',close:'18:00'}`, i.e. **visible and bookable on production**. The active, leave and closed-override rows are green on **both** artefacts; that is the active-staff byte-equivalence claim expressed as a test |
+| **Verification (post-deploy, read-only)** | The new version's file list is **59 paths, identical set to the previous version, and `/script.js` is the ONLY content-hash difference in the entire version** — including the two CLI auto-generated `/__/firebase/init.*`, which regenerated to the same stored hashes. `firebase deploy` reported `found 57 files` and uploaded **1**. Served bytes re-fetched from **both** `whitecrossbarbers-saas.web.app` and the apex `whitecrossbarbers.com`: `script.js` sha256 **`2abd181e…49575`**, `index.html` sha256 **`9f57419e…dba72` — unchanged from the pre-deploy baseline**. `ops/rel4/verify.sh --live` PASS: 57/57 byte-identical to `RELEASE.manifest.tsv`, no unexpected file, `isBarberPassive` precedes `shiftChanges` in **both** served paths (lines 171 and 1936, declaration line 111) |
+| **Preservation proved, not assumed** | Served `index.html` still carries **`Double Points — Live Now`** and **`2× loyalty points`** — and, being byte-identical to the pre-deploy file, could not have changed in any other respect either. `doublePointsMultiplier` **0** ⇒ `bc25d257` still absent (`WCP-2` still held). `salownCreateBooking` **0**, `expectedPaymentFlow` **0**, `createBookingViaFunction` **0**, `httpsCallable` **3 → 3** ⇒ the W1/C1 cutover is **not** activated (`WCP-3` still held) |
+| **Rollback identity** | **`e6be08684d312ce7`** (release `1786401587236000`). Roll back with `firebase hosting:rollback` or by re-releasing that version; `ops/rel4/baseline/` also holds the exact pre-patch `script.js` should the artefact ever need rebuilding by hand |
+| **Production data written** | **none.** No Firestore read or write of any business document, no booking, no email, no Function, no rule, no index, no Storage object |
+| **Operator/device** | macOS · `alish/rel4-wc-passive-hotfix` |
+| **Result** | Success. `WCP-5` closes: whitecrossbarbers.com no longer shows or books a departed barber carrying a stale open `shiftChanges` override. The asymmetry recorded in `R-2026-08-13-X` — closed on salOWN, open on the premium site — is resolved |
+| **Known exclusions — nothing here was touched** | `main`'s `script.js`/`index.html` and every other repository-root site file (byte-unchanged; the held W1/C1 cutover stays exactly where it was) · `WCP-2` `bc25d257` · `WCP-3` W1/C1 activation · Functions (both codebases) · rules · indexes · Storage · `hosting:salown` (`84eb7dda5e1b2140`) · `hosting:salown-staff` (`585dd333a4a429cf`) · `hosting:salown-admin` (`9f457fc2c8ee4b35`) · the other four `whitecross-site` panel sites · `whitecross2` (not opened, not built, not deployed) · Jack's booking and every other production document |
+
+> **What this release does NOT do.** It does not make `main` deployable to U4. `main` still
+> diverges from the live artefact by the held W1/C1 cutover and `bc25d257`; `WCP-2`, `WCP-3` and
+> the eventual reconciliation of `main` with production remain open. The anchor is the mechanism
+> for the *next* narrow change too — extend `ops/rel4/`, do not deploy the repository root.
+
 ### R-2026-08-13-X — U4 Whitecross premium site — **STOPPED BEFORE DEPLOYMENT, nothing released**
 
 Recorded here because a release unit was authorised, prepared, gated and then **not shipped**. An
@@ -105,13 +137,15 @@ read as if U4 had simply not been considered.
 | **Prior authority for stopping** | `R-2026-08-10-F` already carries ⛔ *"Deploying `origin/main` to U4 is BLOCKED until a reproducible release anchor exists (`REL-4`/`WCP-1`)"*. This pass independently re-derived the same conclusion from live bytes rather than trusting the note |
 | **Rollback identity** | not applicable — nothing was released. `e6be08684d312ce7` remains both the live and the rollback identity |
 | **Production data written** | **none** |
-| **Next action** | `REL-4` — build a reproducible anchor for U4. Until then the passive-authority fix for whitecrossbarbers.com stays `PUSHED_NOT_LIVE` at `8c655389`/`5202cad`, and the departed-staffer exposure the fix closes **remains live on the premium site** |
+| **Next action** | ~~`REL-4`~~ — **done the same day.** The anchor was built and the fix shipped as **`R-2026-08-13-Y`** (`e6be08684d312ce7` → `25b14188c8e6e9ed`, 18:44:19Z), transplanted onto the live bytes rather than deployed from `5202cad`. This row stands as the record of the stop that made that possible |
 
-> **The exposure that stays open, stated plainly.** `_shouldShowBarber` and
-> `getBarberScheduleForDay` in the *served* artefact still read `shiftChanges` before the lifecycle
-> status, so a departed barber carrying one stale open override is still shown and still generates
-> clickable slots on whitecrossbarbers.com. The salOWN-side half of the same defect **is** now closed
-> (`R-2026-08-13-A`/`-C`). This asymmetry is the cost of `WCP-1`, and it is the argument for `REL-4`.
+> ~~**The exposure that stays open, stated plainly.**~~ **CLOSED the same day by `R-2026-08-13-Y`.**
+> When this row was written, `_shouldShowBarber` and `getBarberScheduleForDay` in the *served*
+> artefact still read `shiftChanges` before the lifecycle status, so a departed barber carrying one
+> stale open override was shown and generated clickable slots on whitecrossbarbers.com. The
+> served artefact is now `25b14188c8e6e9ed`, in which the shared passive gate precedes the override
+> read in both paths. The asymmetry with the salOWN half (`R-2026-08-13-A`/`-C`) is resolved.
+> `WCP-1` itself is only closed *as a release problem*: `main` still does not match production.
 
 ### R-2026-08-13-D — U2 `hosting:salown-staff` — SPLIT-PAYMENT-PARITY-B, Staff half
 
@@ -362,11 +396,13 @@ read as if U4 had simply not been considered.
 | **Result** | Repository exposure closed; artefact provenance not reproducible |
 | **Known exclusions** | no functions, rules, indexes; no customer-facing asset changed |
 
-> ⛔ **Deploying `origin/main` to U4 is BLOCKED** until a reproducible release anchor exists
-> (ROADMAP `REL-4`/`WCP-1`) — `main` carries the held W1 C1-cutover *and* `bc25d257`, and
-> `bc25d257` against today's multiplier-less mirror would blank a banner that is live right now.
-> **`firebase.public-site.json` is UNSAFE** (9 ignore entries vs 25) and would re-publish the
-> repository. `firebase.saas.json` is the only approved config.
+> ⛔ **Deploying `origin/main` to U4 is STILL BLOCKED** — `main` carries the held W1 C1-cutover
+> *and* `bc25d257`, and `bc25d257` against today's multiplier-less mirror would blank a banner that
+> is live right now. `REL-4` did **not** lift this: it built an anchor for shipping a narrow change
+> **onto the live artefact** (`ops/rel4/`, first used by `R-2026-08-13-Y`), which is a different
+> thing from making the repository root deployable. **`firebase.public-site.json` is UNSAFE**
+> (9 ignore entries vs 25) and would re-publish the repository. For a repository-root deploy,
+> `firebase.saas.json` remains the only approved config.
 
 ### R-2026-08-10-E — U5 Whitecross-hours 4 Functions
 
