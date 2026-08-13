@@ -459,3 +459,64 @@ revocation is one-way: **re-enable cannot un-revoke**, so every restore result c
 `mustSignInAgain: true` rather than pretending the session survived.
 
 **See:** [STAFF_ACCESS_CONTROL.md](STAFF_ACCESS_CONTROL.md) §4 · ADR-022
+
+---
+
+## ADR-024 — A profit-and-loss statement is never tender-filtered; cash/card is collection analysis
+
+**Status:** 🕓 Decided, not yet implemented · **Date:** 2026-08-13 · **Work ID:** `FIN-PL-SCOPE`
+
+**Context.** Admin Finance has one `paymentFilter` (All / Cash / Card / Monzo) held in page state.
+The control **renders only on the Daily Ledger and Monthly Summary tabs**, but the state is global
+to the page and `monthlyTotals` — which the **Overview tab's P&L Statement** reads — is derived from
+the filtered `dailyData`. So selecting Cash on Daily and switching to Overview produces a
+cash-filtered P&L with **no visible control saying so and no way to clear it from that tab**.
+
+The number it produces is not merely filtered, it is incoherent. `grossRevenue` is restricted to the
+selected tender legs while **all five cost inputs stay whole-period**: `cashExpense`, `bankExpense`,
+`platformFees` (Treatwell commission), `totalWages` and `fixedCost`. Live 2026-08-13:
+
+| View | Gross | Wages | Fixed | Net P&L |
+|---|---|---|---|---|
+| All | £271.60 | £100.00 | £120.00 | **+£51.60** |
+| Cash | £58.00 | £100.00 | £120.00 | **−£162.00** |
+| Card | £213.60 | £100.00 | £120.00 | **−£6.40** |
+
+Cash + Card = −£168.40 against a true +£51.60 — off by exactly £220.00, the whole cost base counted
+twice. Neither filtered figure is the profit of anything: a barber's wage is not a cash cost or a
+card cost, and rent is not settled per tender.
+
+**Decision.**
+
+1. **The Overview P&L is always authoritative whole-period "All".** It is the one surface where the
+   answer must not depend on a control the reader cannot see.
+2. **Entering Overview explicitly neutralises the tender filter** — reset it, or scope the filter
+   state so it cannot reach P&L consumers. Silently ignoring it is not enough: the Daily tab must
+   not appear to retain a selection that Overview is quietly discarding.
+3. **Cash/Card filtering is COLLECTION analysis, not profitability.** It answers "what did this
+   method take, and does the drawer reconcile" — `selectedTender`, Cash in Hand, Bank Balance. It
+   never answers "did we make money".
+4. Therefore **`platformFees` is not scoped per tender** (`FIN-TENDER-SCOPE-P1`). It is a period
+   cost like the other four. Fixing it alone would make the filtered P&L *look* scope-clean while
+   four larger costs are still doubled — a worse failure than the one it fixes, because it removes
+   the visible incoherence without removing the incoherence.
+
+**Rejected — allocating costs per tender.** Splitting wages, rent or commission across cash and card
+by revenue share would make both filtered P&Ls add up. It would also be invented: no wage, lease or
+Treatwell invoice is settled by tender, and the Treatwell fee in particular is a percentage of the
+service price owed regardless of how the customer paid — on a `prepaid` booking it is netted from a
+bank payout and never crosses the counter at all.
+
+**Rejected — labelling the filtered P&L "(whole transactions)".** The scope suffix says *"correct
+for the rows shown, do not add across filters"*. That claim is true of Gross and Loyalty. It is
+false of a filtered Net P&L, which is not correct for the rows shown either — it charges one
+method's revenue with every method's costs. A label that overstates its own guarantee is worse than
+no label.
+
+**Consequences.** The Daily Ledger keeps its filter and keeps its collection figures. The Overview
+P&L Statement, the partnership summary and any future export of profitability are `All` by
+construction. `partnershipByMonth` already satisfies this — it reads `bookings` directly and never
+sees `paymentFilter`, asserted against the source in `financeSummary.test.ts` so it cannot drift.
+
+**See:** [ROADMAP.md](ROADMAP.md) `FIN-PL-SCOPE` · `FIN-TENDER-SCOPE-P1` · ADR-008 (two-ledger
+aggregator accounting, which is why the commission is a cost and not a discount)
