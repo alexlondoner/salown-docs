@@ -37,7 +37,7 @@ Every incident opens with `## YYYY-MM-DD — short title`, immediately followed 
 
 ## 2026-08-12 — Finance wage integrity: an undated `workingDays` array re-prices every closed month, and six copies of the accrual rule decided it
 
-**Severity:** 🔴 Critical *(raised 2026-08-12 — a live figure is materially wrong, see Update 2)* · **Owner:** alish/staff-finance-wage-resolver → alish/controlled-cutover · **Status:** 🟡 Open — S2+S3A+S3B+S3C are now **LIVE_VERIFIED** (release `2620fb29bf2e064e`, source `d9bdbc5`), so accrual outside an employment interval is stopped; but the **rota corruption and closed-month immutability are both unfixed** · **Affected area:** Finance staff-wage accrual (whitecross), historical and future
+**Severity:** 🔴 Critical · **Owner:** alish/staff-finance-wage-resolver → alish/controlled-cutover → alish/rota-restore · **Status:** 🟡 Open — the two *symptoms* are fixed (S2+S3A+S3B+S3C live in `2620fb29bf2e064e`; Arda's rota restored 2026-08-13, all-time Net P&L −£2,740.86 → **−£14,840.86**), but the **cause is untouched**: `workingDays` is still undated, so the restore itself re-priced every closed month a second time. Closes only when `FIN-PERIOD-CLOSE` **and** `FIN-DATED-ROTA` are live · **Affected area:** Finance staff-wage accrual (whitecross), historical and future
 
 **Tags:** `#normalization` `#timezone`
 
@@ -88,6 +88,21 @@ accruing*.
 frozen: under a live gate the repair is correct going forward, but it still **re-prices every closed
 month a second time** (+≈£12,300), and one of those months underpins a **signed** exit settlement.
 Order: `FIN-PERIOD-CLOSE` (with an owner-approved baseline) → `FIN-DATED-ROTA` → rota restoration.
+
+**Update 3 — repaired, and the repair is itself the proof (2026-08-13).** The owner re-authorised
+the restoration rather than deferring it, because the live screen was wrong *today* and the gate was
+already live. `workingDays` → `["Monday","Tuesday","Thursday","Friday","Saturday","Sunday"]`, one
+field, `lastUpdateTime`-preconditioned, audit `oBEsAFyVVNSZ0O9kMqBW`, ledger `D-2026-08-13-A`. All
+20 post-write assertions passed: employee period **25 days / £2,500 / £2,500 / £0**, 2026-08-04 pays
+the day he actually worked, nothing accrues after it, and **all-time Net P&L −£2,740.86 →
+−£14,840.86** — the reconstruction to the penny, and the figure the owner independently remembered.
+
+**But the incident does not close here.** Restoring one undated array moved **every closed month at
+once**, by ≈£12,300 — correctly this time, and by exactly the mechanism that caused the damage. One
+of those months underpins a **signed** exit settlement. So the ordering that made this safe (gate
+first, then data) is a workaround, not a fix: until a closed month is *stored* rather than *derived*,
+the next legitimate rota edit will do this again. `FIN-PERIOD-CLOSE` and `FIN-DATED-ROTA` are raised
+to **P0**, and the audit/drift-detection gaps in Update 2 remain open.
 
 **Resolution:** **Partial.** S1 = this record. S2 = `STAFF-FINANCE-WAGE-RESOLVER`: all six consumers now decide a wage day in one place (`src/utils/financeWages.ts` → `accruesWageOnDay` for the single-day path, `resolveAccrualDays` for the five period paths), with **exact behavioural parity** proven by 261 golden-parity assertions running the pre-S2 engine and the new engine over the same fixture matrix across Feb/Mar/Jun/Jul/Aug/Oct 2026. **No wage total moved, no Firestore write was made, nothing was deployed.** The actual repair — dated compensation periods so a closed month stops recomputing — is **S3 and is not built**. Arda's `workingDays` repair is deliberately **BLOCKED until S3 is live and verified**: repairing it today would itself retroactively re-price his settled partner era, which is precisely the defect.
 **Prevention:** three permanent guards, all in `src/utils/financeWages.test.ts`. (a) the six-consumer count is asserted, so a seventh path cannot be added silently; (b) a **static enforcement test** fails the build if `shiftChanges`, `sc?.closed`, `wdays.includes(`, a hand-rolled `weekday:'long'` derivation or a second `isBarberOnLeaveForDate` call reappears in `Finance.tsx` — negative-controlled against the pre-S2 source, where five of those six guards fire; (c) an S3-absence test asserts Finance still reads no `staffComp`/`effectiveTo`, so S3 has to change it deliberately. The behavioural guard is `financeWages.parity.test.ts`, which keeps a verbatim copy of the pre-S2 engine as the golden reference.

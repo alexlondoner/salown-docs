@@ -64,6 +64,35 @@
 
 Newest first. One `###` heading per release event.
 
+## 2026-08-13
+
+### D-2026-08-13-A — production DATA correction, **no deploy** — Arda rota restored
+
+| Field | Value |
+|---|---|
+| **Date/time (UTC)** | 2026-08-13T00:07:46.874Z |
+| **Type** | Production data correction. **No Hosting, Functions, rules, indexes or Storage release of any kind.** |
+| **Live identity (unchanged)** | `hosting:salown` **`2620fb29bf2e064e`** · release `1786574988937000` — confirmed still live before and after, with the `` =e=>e||`periods` `` marker served |
+| **Target** | `tenants/whitecross/barbers/barber-1777655430086` — field `workingDays` **only** |
+| **Change** | `["Wednesday"]` → `["Monday","Tuesday","Thursday","Friday","Saturday","Sunday"]` |
+| **Tool** | `scripts/correctWhitecrossCompPeriods.cjs --op=rota` at `9a90202`; a `lastUpdateTime` precondition, and the tool refuses to run at all without `--phase5-verified` |
+| **Identities** | sha256 `c64453d4833f9f4a` → `c02bc7a6a61c8454` · updateTime 2026-08-10T19:24:26.175Z → 2026-08-13T00:07:46.874Z |
+| **Audit** | `oBEsAFyVVNSZ0O9kMqBW` · `BARBER_ROTA_CORRECTED` · before/after + both hashes + both updateTimes + rollback identity + owner authorisation + a reason naming the 2026-08-10T19:24:26Z unaudited write |
+| **Pre-write gate** | 16/16 — live release + served marker confirmed · `workingDays` still exactly `["Wednesday"]` · hash and updateTime matched the frozen identity · `shiftChanges`/`dayHours` unchanged · rollback snapshot captured · payments/advances/settlement reconfirmed · after-state simulated through the live resolver first |
+| **Post-write verification** | Employee period **25 days / £2,500 earned / £2,500 paid / £0 balance** · 2026-08-03 £0 · 2026-08-04 one wage day · 2026-08-05→12-31 £0 · 2026-08-12 Alex £100 / Arda £0 / Muhamed £0 / total £100 · all-time wages £20,289.60 → **£32,589.60** · **all-time Net P&L −£2,740.86 → −£14,840.86** (`£40,308.74 − £32,589.60 − £22,560.00`, exact) · second dry-run 0 updates |
+| **Rollback identity** | `phase6-rollback-arda-barber.json` (full pre-write document, sha256 `c64453d4833f9f4a`); restore = write `workingDays: ["Wednesday"]` back. **No Hosting rollback is involved — nothing was released.** |
+| **Operator/device** | `aerulas@gmail.com` · macOS · `alish` |
+| **Result** | **LIVE_VERIFIED.** |
+| **Known exclusions** | `shiftChanges` · `dayHours` · `status` · `active` · `leaves` · all three `staffComp` documents · payments · advances · settlement · expenses · bookings · Alex and Muhamed · every Firebase deploy target · `FIN-PERIOD-CLOSE` · dated rota · the ≈£569.97 workbook gap · the £7,939 exit liability |
+
+> **Why this was safe now and would not have been on 2026-08-10.** The gate had to go live first.
+> Under `'legacy'` this same write turns a one-day-a-week ghost accrual into a six-day one (measured:
+> 9 → 48 days to 2026-09-30). With `effectiveTo = 2026-08-04` honoured, the restored rota adds the
+> day Arda actually worked and adds nothing after he left.
+>
+> **And it proves the incident is not closed.** Restoring one undated array moved every closed month
+> by ≈£12,300 — correctly this time. `FIN-PERIOD-CLOSE` and `FIN-DATED-ROTA` are now P0.
+
 ## 2026-08-12
 
 ### R-2026-08-12-B — U1 `hosting:salown` — FIN-COMP-S3C compensation-period activation

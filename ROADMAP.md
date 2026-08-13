@@ -130,15 +130,15 @@ here; commit and release identifiers are never renamed.
 | P0 | `WCP-4` | `firebase.public-site.json` would re-expose the repository | `PLANNED` | whitecross-site | — | — | — | 9 ignore entries vs 25 in `firebase.saas.json` | Delete or hard-fail it; `firebase.saas.json` is the only approved config | 2026-08-12 |
 | P1 | `FIN-COMP-S3B` | Wire all six Finance consumers + legacy-vs-period parity mode | `LIVE_VERIFIED` | salown-app | released | — | `5e69b63` | live in `2620fb29bf2e064e` via source `d9bdbc5` | — | 2026-08-12 |
 | P1 | `FIN-COMP-S3C` | Compensation-period gate ACTIVATED (`FINANCE_COMP_PERIOD_MODE='periods'`) | `LIVE_VERIFIED` | salown-app | released | — | **`d9bdbc5`** | `hosting:salown` **`2620fb29bf2e064e`** · release `1786574988937000` · 2026-08-12T22:49:48.937Z | Ships S2+S3A+S3B too — none were live before | 2026-08-12 |
-| P0 | `FIN-ARDA-REPAIR` | Arda `workingDays` repair — stored `["Wednesday"]` is his day **OFF**; real rota Mon/Tue/Thu/Fri/Sat/Sun | `BLOCKED` | data | — | ~~`FIN-COMP-S3C`~~ (now live) → **accounting-baseline approval** + `FIN-PERIOD-CLOSE` | — | live: `["Wednesday"]`, `updateTime` 2026-08-10T19:24:26.175Z | Owner revoked Phase 6 2026-08-12. Repairing before periods are frozen re-prices every closed month again (§9.4) | 2026-08-12 |
+| P1 | `FIN-ARDA-REPAIR` | Arda `workingDays` restored — `["Wednesday"]` was his day **OFF**; real rota Mon/Tue/Thu/Fri/Sat/Sun | **`LIVE_VERIFIED`** | data | applied | — | tool `9a90202` | one field, one document, audit `oBEsAFyVVNSZ0O9kMqBW`; `c64453d4…`→`c02bc7a6…`, 2026-08-13T00:07:46.874Z | Owner re-authorised 2026-08-13, declining to defer behind `FIN-PERIOD-CLOSE`. All-time Net P&L −£2,740.86 → **−£14,840.86** (§9.5) | 2026-08-13 |
 | P1 | `FIN-EFFECTIVEFROM-BACKDATE` | All 3 whitecross `staffComp.effectiveFrom` said **2026-07-15** (the day the Pay tab was opened) | `LIVE_VERIFIED` | data | applied | — | tool `edd4e85` | Alex→`2026-02-06` · Muhamed→`2026-06-09` · Arda→`2026-02-06`; 3 audited writes, idempotent, analyser `ready=true` | — | 2026-08-12 |
 | — | `FIN-ARDA-0804` | ~~Open override on `2026-08-04`~~ | **`WITHDRAWN`** | data | — | — | — | — | Right answer, wrong question: the rota itself is corrupt. Once repaired, 2026-08-04 is a Tuesday **in** the rota and accrues on its own — no override is needed or authorised | 2026-08-12 |
 | P0 | `SEC-FN-NS` | Nothing stops a third repo re-colliding a function name; no guard on the salown side | `PLANNED` | both | — | — | `a336ddce` (wc) | both names now serve codebase `salown` | Mirror `deploy-functions.sh` step 5b into salown-app | 2026-08-12 |
 | P1 | `FIN-COMP-S3A` | Wage resolver can honour a dated employment period | `LIVE_VERIFIED` | salown-app | released | — | `f1239ba` | live in `2620fb29bf2e064e` via source `d9bdbc5` | — | 2026-08-12 |
 | P1 | `FIN-S2` | One wage-day rule for all six Finance paths | `LIVE_VERIFIED` | salown-app | released | — | `10e754a` | live in `2620fb29bf2e064e` via source `d9bdbc5` | — | 2026-08-12 |
 | P1 | `FIN-S1` | Wage-integrity cause, rejected fixes, S3 scope | `LIVE_VERIFIED` (docs) | salown-docs | released | — | `d7e1e6f` | `origin/main` — docs have no deploy target | — | 2026-08-12 |
-| P0 | `FIN-PERIOD-CLOSE` | Closed-month immutability: closing / snapshot / attributable adjustment | `BLOCKED` | salown-app | — | **owner approval of the accounting baseline** (§9.4) | — | — | ⛔ Must **not** freeze today's derived totals — they are computed from the corrupt rota. August 2026 is **open** and must not be frozen | 2026-08-12 |
-| P1 | `FIN-DATED-ROTA` | Effective-dated rota — move `workingDays` into the dated `staffComp` period so a rota edit stops re-pricing history | `PLANNED` | salown-app | — | `FIN-PERIOD-CLOSE` | — | — | Root cause of the wage-integrity incident; `shiftChanges` is single-date and cannot express "the rota changed from here" | 2026-08-12 |
+| P0 | `FIN-PERIOD-CLOSE` | Closed-month immutability: closing / snapshot / attributable adjustment | `PLANNED` | salown-app | — | owner approval of the baseline (§9.4) | — | — | **URGENT.** The rota is repaired, so today's derived totals are now sound — but they are still *derived*, so the next rota edit re-prices history again. August 2026 is **open** and must not be frozen | 2026-08-13 |
+| P0 | `FIN-DATED-ROTA` | Effective-dated rota — move `workingDays` into the dated `staffComp` period so a rota edit stops re-pricing history | `PLANNED` | salown-app | — | `FIN-PERIOD-CLOSE` | — | — | **URGENT.** Root cause of the wage-integrity incident. The 2026-08-13 restore was correct **and** re-priced every closed month a second time — proof the mechanism is still armed | 2026-08-13 |
 | P1 | `BK-7` | `HOURS-SSOT-C` — bind Admin availability to canonical tenant hours | `PLANNED` (**newly unblocked**) | salown-app | — | A ✅ + B ✅ both live | — | — | Start; A and B are both LIVE_VERIFIED (§11) | 2026-08-12 |
 | P1 | `LOC-1` | `MULTI-LOCATION-PHASE-1` — location authority/registry | `PLANNED` | salown-app | — | `BK-7` first | — | — | Phase order is a dependency chain, not a preference | 2026-08-12 |
 | P1 | `STF-2` | S4B staff access callables + UI + rules entry + `PENDING` sweep | `PLANNED` | salown-app | — | `STF-2A` | `3097521` (S4A) | S4A pushed, **no callable, no UI, not deployed** | Build S4B | 2026-08-12 |
@@ -500,6 +500,53 @@ the corrupt rota. The baseline it should eventually freeze is: Feb–Jun from th
 `£7,939` is **not** recorded here as a production liability — only that the signed external
 agreement supports it, and that its canonical production representation is a separate,
 owner-authorised accounting migration.
+
+### 9.5 `FIN-ARDA-REPAIR` — the rota is restored, and the books now say what happened (2026-08-13)
+
+**Owner re-authorised Phase 6 on 2026-08-13**, explicitly declining to defer the restoration behind
+`FIN-PERIOD-CLOSE`: the live Finance screen was materially wrong *today*, and with
+`FINANCE_COMP_PERIOD_MODE='periods'` LIVE_VERIFIED the repair can no longer re-open accrual past
+`effectiveTo`. That ordering is the entire reason it was safe — under `'legacy'` the same write
+would have turned a one-day-a-week ghost accrual into a six-day one.
+
+**One field, one document.** `tenants/whitecross/barbers/barber-1777655430086` ·
+`workingDays: ["Wednesday"]` → `["Monday","Tuesday","Thursday","Friday","Saturday","Sunday"]`.
+Written with a `lastUpdateTime` precondition, `c64453d4833f9f4a` → `c02bc7a6a61c8454`,
+2026-08-10T19:24:26.175Z → **2026-08-13T00:07:46.874Z**, audit **`oBEsAFyVVNSZ0O9kMqBW`**
+(`BARBER_ROTA_CORRECTED`, before/after + both hashes + both updateTimes + rollback identity + owner
+authorisation + a reason that names the 2026-08-10 unaudited write). A second dry-run proposes
+**0 updates**. Nothing else on the document moved: `shiftChanges` (7 keys), `dayHours`, `status`,
+`active`, `leaves` all byte-identical.
+
+**Pre-write gate: 16/16.** Live hosting still `2620fb29bf2e064e` with the `` periods `` marker
+served · `workingDays` still exactly `["Wednesday"]` · document hash and `updateTime` matched the
+frozen identity · full rollback snapshot captured · payments/advances/settlement identities
+reconfirmed · the exact after-state simulated through the live resolver first.
+
+**Post-write, verified live across the six consumers (no `periodMode` passed anywhere):**
+
+| Assertion | Result |
+|---|---|
+| Employee period 2026-06-29 → 2026-08-04 | **25 wage days** |
+| Earned / paid / balance | **£2,500 / £2,500 / £0.00** |
+| 2026-08-03 · 2026-08-04 · 2026-08-05→12-31 | **£0** (existing Off) · **1 wage day** · **£0** |
+| 2026-08-12 | Alex £100 · Arda **£0** · Muhamed £0 · **total £100** |
+| All-time wages | £20,489.60 → £20,289.60 (activation) → **£32,589.60** (repair) |
+| **All-time Net P&L** | −£2,740.86 → **−£14,840.86** — the predicted figure, to the penny |
+| Payments · advances · settlement · bookings · Alex · Muhamed · all three `staffComp` | **byte-unchanged** |
+| Deployment | **none in this phase** |
+
+**No difference to explain.** `£40,308.74 − £32,589.60 − £22,560.00 = −£14,840.86` reproduces the
+reconstruction exactly, and matches the owner's independent "over −14k" recollection.
+
+**What this does NOT close.** The repair itself re-priced every closed month a second time
+(+≈£12,300) — correctly this time, but by the same undated mechanism that caused the incident. So
+`FIN-PERIOD-CLOSE` and `FIN-DATED-ROTA` are **raised to P0/urgent**, not satisfied: until a closed
+month is stored rather than derived, the next legitimate rota edit will move history again. The
+**≈£569.97** Feb–Jun workbook reconciliation gap stays open as a separate accounting item (the wage
+half reconciles exactly at −£165.60; the workbook's own daily sheets also disagree with its own
+`HESAP_OZETI` by ≈£711). **August 2026 remains open and must not be frozen.** `£7,939` is still
+**not** recorded as a production liability.
 
 ---
 
