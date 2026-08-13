@@ -30,6 +30,10 @@
 | **U8 Firestore indexes** | `salown-app` | `firestore:indexes` | hand |
 | **U9 Production data migration / feature activation** | — | Firestore | hand, owner-authorised, dry-run first |
 
+> **U9 rows use a `D-` prefix**, not `R-`: no artefact is released, only production data changes.
+> `D-2026-08-13-A` is the first. Calling a data change a "release" is the category error that loses
+> provenance — the live identity column on a `D-` row records what stayed live, not what shipped.
+
 ## Required fields — a row is incomplete without all of them
 
 `date/time UTC` · `environment` · `repository` · `exact source SHA` (or an explicit `UNKNOWN`) ·
@@ -41,11 +45,11 @@
 
 ---
 
-## Live state at the last reconciliation — `2026-08-12T14:26:31Z`
+## Live state at the last reconciliation — `2026-08-13T00:15:00Z`
 
 | Unit | Live identity | Released (UTC) | Source | Provenance |
 |---|---|---|---|---|
-| U1 | version `11cc739f548c5e10` · release `1786493555545000` | 2026-08-12T00:12:35.545Z | **UNKNOWN** | R-2026-08-12-A |
+| U1 | version **`2620fb29bf2e064e`** · release `1786574988937000` | 2026-08-12T22:49:48.937Z | **`d9bdbc5`** | R-2026-08-12-B — served bytes hash-proven |
 | U2 | version `b9a396c48836840f` · release `1786389184539000` | 2026-08-10T19:13:04.539Z | `eac5a95` | R-2026-08-10-D |
 | U3 | version `9f457fc2c8ee4b35` · release `1785493665740000` | 2026-07-31T10:27:45.740Z | `51e70a0` | R-2026-07-31-A |
 | U4 | version `e6be08684d312ce7` · release `1786401587236000` | 2026-08-10T22:39:47.236Z | **UNKNOWN / HYBRID** | R-2026-08-10-F |
