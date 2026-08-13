@@ -35,6 +35,40 @@ Every incident opens with `## YYYY-MM-DD — short title`, immediately followed 
 
 **Tag dictionary (CANONICAL — only these; sprawl forbidden):** `#security` `#stripe` `#secrets` `#config` `#deploy` `#normalization` `#permission` `#race` `#timezone` `#parser` `#email` `#data-loss` `#shared-infra`. A new tag is added only if a genuinely new class emerges (e.g. twins like `#payment`+`#payments`+`#stripe-payment` are FORBIDDEN → all `#stripe`). Every entry carries a `**Tags:**` line.
 
+## 2026-08-13 — Cash + Card reported £12.40 of a £9.20 loyalty redemption: a transaction-level figure presented inside a tender view
+
+**Severity:** 🟡 Medium · **Owner:** alish/finance-split-loyalty-filter · **Status:** ✅ Resolved — live `422bcb40aab7df89` · **Affected area:** Finance daily ledger + Reports → Breakdown, payment (cash/card) filter
+
+**Tags:** `#normalization`
+
+**Discovery:** authenticated owner-facing smoke of the `SPLIT-B`/`B1` release, on the same day it shipped. Not a customer report, not a test — a human read the three filter states in a row and noticed that two of them could not both be true.
+**Impact:** with the payment filter on **Cash** the day showed `⭐ Loyalty −£3.20`; on **Card**, `−£9.20`; on **All**, the correct `−£9.20`. Anyone reconciling the day by reading the two method views and adding them saw **£12.40** of redemption against £9.20 actually granted. Display only — nothing stored was wrong, the All view was right, and no P&L, wage or payout figure was affected.
+**Root Cause:** `SPLIT-B1` established that a split sale legitimately belongs to **both** filtered views (`rowMatchesTenderFilter` matches on leg presence) and that what such a row *contributes* must be restricted to the selected legs (`selectTender`). That reasoning was applied to the tender figures and to nothing else. Both pages then kept summing a **transaction-level** quantity over rows the filter had already narrowed —
+
+```
+Finance.tsx   loyaltyDiscount += parsePrice(b.loyaltyRedeemedValue)
+Reports.tsx   loyalty         += pp(b.loyaltyRedeemedValue)
+```
+
+— so the one live split sale's whole £3.20 redemption was added in full on each side. The WHY is that "filter the rows" and "restrict what a row contributes" are two different corrections, and only the second one had a name. Once a row can appear in two views, **every** figure summed over those rows needs an explicit scope, not just the ones that look like money-in-a-drawer.
+**Bug Class:** SSOT violation — one quantity presented under two incompatible scopes (transaction vs tender) on one screen, with no label distinguishing them.
+**Resolution:** new pure `src/utils/financeSummary.ts`. `summariseTransactions` returns the transaction-level facts for the rows in view **plus** `additiveAcrossFilters` (false for every tender view, deliberately, even on a day with no split), `splitRowCount` and `splitLoyaltyRedeemed_p`. Presentation change only, tender views only: the Finance chip gains ` (whole transactions)` and a scope line naming the overlapping sales; the Reports totals bar extends the `(whole transactions)` suffix Net already carried to Gross / Discount / Loyalty / Tips, and the booking count reads `N bookings IN THIS VIEW … 1 SPLIT SALE ALSO IN THE OTHER VIEW`. Deployed `hosting:salown` only, source `562148d`, previous `84eb7dda5e1b2140`. **No cash/card share of a redemption was invented**, and no production document was written.
+**Prevention:** the arithmetic left both pages. A page can no longer sum a transaction figure over filtered rows without receiving `additiveAcrossFilters: false` alongside it, and `summariseSelectedTenders` still refuses to return a revenue figure at all — the two halves cannot be confused because neither will hand you the other's number. The suite additionally asserts on the **component source** that both screens call the helper and that neither contains a `loyaltyCash`/`cardLoyalty`-shaped identifier, so a future inline re-derivation fails a test instead of reaching the owner.
+**Regression Tests:** `src/utils/financeSummary.test.ts` — 30 tests, including `THE DEFECT — the arithmetic the pages used before this change::reproduces the exact live figures` (asserts 320 / 920 / **1240** pence against the pre-change line) and `both screens are actually wired to it`.
+**Related:** commits `562148d` · roadmap `SPLIT-B2` (`SPLIT-B`/`SPLIT-B-JACK` context) · ledger `R-2026-08-13-Z` · files `src/utils/financeSummary.ts`, `src/pages/Finance.tsx`, `src/pages/Reports.tsx`
+
+**What happened / Diagnosis / Fix:** The fix that produced this bug was itself correct and is still in place. `SPLIT-PAYMENT-PARITY-B1` had closed a genuinely worse defect — a cash-only view reporting £29.80 of card money — by separating three quantities by name: transaction revenue, selected-method tender, and the full breakdown. The header of `tenderSelection.ts` even states that filtered revenue must never be added across filters. What it did not do was reach the other transaction-level figures on the same screens, and loyalty was one of them. The diagnosis needed no instrumentation: the three filter states were read, `320 + 920 ≠ 920` was arithmetic, and the sanitised fixture day (one split sale + two card-only redemptions) reproduced 320 / 920 / 1240 exactly on the first run against the pages' own pre-change line.
+
+The interesting decision was what to *do* with the figure. Splitting the redemption pro-rata across the legs was rejected outright: a redemption reduces the sale **before** any tender exists — that is precisely why the customer then pays less — so a "cash share" and a "card share" would be two numbers with no referent. Invented money is much harder to catch later than absent money. Hiding the badge under a filter was also rejected: the owner uses it to see which sales in a view carried a redemption. So the figure stays and the scope is stated. `additiveAcrossFilters` is hardcoded false for any tender view rather than computed from whether today happens to contain a split sale — a figure that is safe to add on Tuesday and unsafe on Wednesday teaches the wrong habit, and the day it changes is the day nobody is looking.
+
+Jack's booking was **not** repaired as part of this and remains the unrepaired legacy row (`SPLIT-B-JACK`). That it is still legacy is visible in production: Reports renders `⚠ 1 SPLIT ROW CLAMPED`, which only appears when the reader returns `malformed: true`.
+
+**Lessons Learned:**
+- A filter that can place one row in two views changes the meaning of **every** figure summed over those rows — not only the ones that look like tender. Enumerate them when the filter changes, not when a reader notices.
+- When a fix names three quantities to keep them apart, check what *else* on the screen is one of those quantities. `B1` wrote the rule down correctly and applied it to two figures out of six.
+- A number that is correct in isolation can still be wrong on a screen. Both filtered views were internally honest; only reading them together showed the defect — which is exactly what the owner does.
+- The owner-facing smoke found this hours after a green release. Gates prove a change does what it says; only someone reading the screen proves the screen adds up.
+
 ## 2026-08-13 — A dated `shiftChanges` override outranked lifecycle: a departed barber stayed visible and bookable on the public site
 
 **Severity:** 🟠 High · **Owner:** alish/passive-r3-split-release (salOWN half) → alish/rel4-wc-passive-hotfix (premium half) · **Status:** ✅ Resolved — both halves live · **Affected area:** barber availability — public booking (whitecrossbarbers.com) + every salOWN display surface

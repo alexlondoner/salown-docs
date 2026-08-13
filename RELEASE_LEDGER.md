@@ -45,11 +45,11 @@
 
 ---
 
-## Live state after the `2026-08-13T17:2x` release pass — verified `2026-08-13T17:25:00Z`
+## Live state after the `2026-08-13T20:00` release pass — verified `2026-08-13T20:05:00Z`
 
 | Unit | Live identity | Released (UTC) | Source | Provenance |
 |---|---|---|---|---|
-| U1 | version **`84eb7dda5e1b2140`** · release `1786641531101000` | 2026-08-13T17:18:51.101Z | **`a72f409`** | R-2026-08-13-C — served bytes hash-proven (4 chunks) |
+| U1 | version **`422bcb40aab7df89`** · release `1786651199938000` | 2026-08-13T19:59:59.938Z | **`562148d`** | R-2026-08-13-Z — served bytes hash-proven (4 chunks) |
 | U2 | version **`585dd333a4a429cf`** · release `1786641658556000` | 2026-08-13T17:20:58.556Z | **`a72f409`** | R-2026-08-13-D — served bytes hash-proven |
 | U3 | version `9f457fc2c8ee4b35` · release `1785493665740000` | 2026-07-31T10:27:45.740Z | `51e70a0` | R-2026-07-31-A |
 | U4 | version `e6be08684d312ce7` · release `1786401587236000` | 2026-08-10T22:39:47.236Z | **UNKNOWN / HYBRID** | R-2026-08-10-F — ⛔ still blocked, see `R-2026-08-13-X` |
@@ -57,10 +57,11 @@
 | U7 | ruleset `640c3dae-a9c8-4cb3-80c4-bc189e72874a` | updated 2026-08-05T12:52:07Z | not proven against the file | R-2026-08-05-R |
 | U8 | 2 composite indexes, both `READY` | UNKNOWN | **UNKNOWN** — the repo declares 0 | ⚠️ see U8 warning |
 
-> U1 passed through an intermediate identity in the same pass: `2620fb29bf2e064e` →
-> `2eff0455ed404c15` (passive-only, `R-2026-08-13-A`) → `84eb7dda5e1b2140`. The intermediate was a
-> deliberate isolation step, not a mistake, and it is a valid rollback target that keeps the passive
-> correction while dropping the split work.
+> U1 passed through three intermediate identities during the day: `2620fb29bf2e064e` →
+> `2eff0455ed404c15` (passive-only, `R-2026-08-13-A`) → `84eb7dda5e1b2140` (`R-2026-08-13-C`) →
+> `422bcb40aab7df89` (`R-2026-08-13-Z`). Each is a valid rollback target and each drops strictly
+> more work than the next; `84eb7dda5e1b2140` is the anchor for the loyalty-filter release and
+> keeps everything except it.
 
 > ⚠️ **U8 warning.** `salown-app/firestore.indexes.json` declares **0 indexes** and 1 field
 > override, while production runs **2 composite indexes**. A `firebase deploy --only
@@ -86,6 +87,41 @@ change is easy to mistake for a policy change later. **None of these were altere
 | Point conversion | **20 points = £1** | same document → `loyalty.rewardThreshold: 20`; Jack's `loyaltyPointsRedeemed: 64` ↔ `loyaltyRedeemedValue: 3.2` agrees exactly |
 | Jack's loyalty transaction | **correct — and will not be changed** | earn base `receiptEarnBase_p 4480` (£44.80 = £48.00 service − £3.20 redemption) × 5% = £2.24 → 44.8 → **44 points**, matching `receiptExpectedPoints`, `receiptAwardedPoints` and `loyaltyPointsEarned`. Redemption 64 ÷ 20 = **£3.20**. The split-payment defect is a *tender-breakdown* defect; the loyalty arithmetic on this booking was never wrong |
 | `whitecross2` | **inactive, source-parity only, untracked, never deployed** | not a git repository (`git rev-parse` fails), 0 tracked paths in `whitecross-site`, referenced by no Firebase config. It was not built, opened or deployed by this pass |
+
+### R-2026-08-13-Z — U1 salOWN Admin — **a tender filter no longer presents transaction loyalty as additive**
+
+| Field | Value |
+|---|---|
+| **Date/time (UTC)** | 2026-08-13T19:59:59.938Z |
+| **Environment** | production |
+| **Repository** | `salown-app` |
+| **Source SHA** | **`562148d`** (`562148d635d20fd2502b6d12c0d933b786d1b6ec`) |
+| **Clean-tree proof** | `HEAD == origin/main == 562148d`, `git status --porcelain` empty — recorded immediately **before** the deploy command and again after it (the REL-1 staff-bundle rebuild produced byte-identical output this time, so no restore was needed and the tree never left `0/0`) |
+| **Firebase project** | `havuz-44f70` |
+| **Target** | `hosting:salown` — **and no other target**, by explicit `--only`. Deployed by hand; the commit carries `[skip ci]` so CI released nothing |
+| **Previous → new** | **`84eb7dda5e1b2140`** (release `1786641531101000`) → **`422bcb40aab7df89`** (release `1786651199938000`) |
+| **The defect** | Live Admin Finance, day 2026-08-13: **All ⭐ Loyalty −£9.20 (correct) · Cash −£3.20 · Card −£9.20** — the two filtered views jointly claimed **£12.40** of a **£9.20** redemption. `SPLIT-B`/`B1` correctly placed a split sale in BOTH filtered views and correctly restricted what it contributes **in tender**; it did not touch the figures that are not tender at all. `Finance.tsx` (`loyaltyDiscount += parsePrice(b.loyaltyRedeemedValue)`) and `Reports.tsx` (`loyalty += pp(b.loyaltyRedeemedValue)`) each summed the WHOLE sale's redemption over rows the filter had already selected, so Jack's £3.20 was counted in full on each side |
+| **The change** | New pure helper `src/utils/financeSummary.ts` — `summariseTransactions` returns the TRANSACTION-level facts (gross / discount / loyalty / net / count) for the rows in view **plus** `additiveAcrossFilters`, `splitRowCount` and `splitLoyaltyRedeemed_p`. **No cash/card share of a redemption is invented**: a redemption reduces the sale before a tender exists, so it has no method to belong to. Presentation only — labels and one new scope line. Finance's loyalty figure is display-only (`netRevenue`/`netPL` never read it), so **no P&L number moves**, and no stored value or All view changes |
+| **Visible, tender views only** | Finance chip `⭐ Loyalty −£3.20 (whole transactions)` + a scope line *"Tender view — cash collected only. Loyalty is a whole-transaction figure; do not add it across Cash and Card (1 split sale worth £3.20 appears in both views)."* · Reports/Breakdown totals bar: Gross / Discount / Loyalty / Tips / **Net all carry the `(whole transactions)` suffix Net already used** · count reads `N bookings IN THIS VIEW · CASH ONLY · 1 SPLIT SALE ALSO IN THE OTHER VIEW (£3.20 LOYALTY)` |
+| **Tests** | frontend **3763/3763** (125 files; **30 new**, incl. a reproduction asserting the exact live 320/920/1240 pence figures against the page's own pre-change arithmetic, and a source-parity block proving both screens are wired to the helper) · functions **1348 pass / 31 skipped / 0 fail** · app typecheck 0 · functions typecheck 0 · scoped ESLint clean · `ops/deploy-policy.test.js` 28/28 · `ops/release-guard.sh` OK · `git diff --check` clean · `claims.sh validate` OK · Admin build 0 errors |
+| **Verification (post-deploy, served bytes)** | URL proven before hashing (`/app` → `/public-bundle/assets/index-BH7-7g09.js`), each chunk `HTTP/2 200`, then sha256 compared: `index-BH7-7g09.js` `3582b71d…1237b` · `Finance-8jkKBgqZ.js` `ca11a1df…9aa07` · `Reports-BT1YKQ7v.js` `14d4fa72…dfb9b` · **`financeSummary-DWr0Bqk0.js` `226b2c1a…60330`** — all four **byte-identical** to the local build. The new helper ships as its own chunk carrying the source markers `(whole transactions)`, `must not be added`, `additiveAcrossFilters`, `splitLoyaltyRedeemed`, and both page chunks reference it by name |
+| **Verification (authenticated, read-only)** | Signed in as the Whitecross owner. **Finance → Day 13/08/2026:** All `⭐ Loyalty −£9.20` (unchanged, no suffix) · Cash `⭐ Loyalty −£3.20 (whole transactions)` · Card `⭐ Loyalty −£9.20 (whole transactions)`, both filtered views carrying the scope line naming the 1 split sale worth £3.20. Cash collected £58.00 + Card collected £213.60 = £271.60 = the All-view gross — **tenders still reconstruct the day exactly once**. **Reports → Breakdown, August:** All unchanged; Cash `TOTAL — 18 bookings IN THIS VIEW · CASH ONLY · 1 SPLIT SALE ALSO IN THE OTHER VIEW (£3.20 LOYALTY)`, `LOYALTY (WHOLE TRANSACTIONS) −£3.20`, `CASH COLLECTED £668.00`; Card the same shape, `−£91.30`, `CARD COLLECTED £2720.73` (£668.00 + £2720.73 = £3388.73, the All-view total collected). No console error on either page |
+| **Rollback identity** | **`84eb7dda5e1b2140`** (release `1786641531101000`). Console → Hosting → site `salown` → Release history → that version → ⋮ → Roll back. It keeps `PASSIVE-R3` and all of `SPLIT-B`/`B1` and drops only this presentation change |
+| **Production data written** | **none.** No Firestore write of any kind, no checkout, no email or receipt resend, no loyalty mutation, no Function, no rule, no index, no Storage object. The smoke was navigation, view-mode buttons and payment-filter buttons only — all local React state |
+| **Jack's booking** | **NOT repaired** and byte-unchanged: still `paymentMethod 'SPLIT'`, `splitAmount "15"` (string), `splitSecond ""`, no `paymentAllocation`. Confirmed live by behaviour rather than by a document read — Reports still renders **`⚠ 1 SPLIT ROW CLAMPED`**, which only appears when `resolveTenderFacts` returns `malformed: true`, i.e. the legacy malformed reading. A repaired canonical row would not be clamped. `SPLIT-B-JACK` stays open |
+| **Cashback policy** | untouched — **5%, 20 points = £1**. Not read, not written, not referenced by the change |
+| **Operator/device** | macOS · `alish/finance-split-loyalty-filter` |
+| **Result** | Success. The Cash and Card views no longer imply an additive £12.40 loyalty, and every transaction-level figure on a tender view now says which scope it belongs to |
+| **Known exclusions — nothing here was touched** | Jack's booking and every other production document · Functions (both codebases, `salownSendLoyaltyEmail` stays `-00065-hej`) · `firestore.rules` · `firestore.indexes.json` · Storage · `hosting:salown-staff` (**`585dd333a4a429cf`**) · `hosting:salown-admin` (`9f457fc2c8ee4b35`) · `hosting:whitecrossbarbers-saas` (`25b14188c8e6e9ed`) · `whitecross-site` · `super-admin` · the dated-rota work (`FIN-DATED-ROTA`, `FIN-PERIOD-CLOSE`) · every Finance P&L, wage, expense, settlement and receivable figure |
+
+> **Why the loyalty figure was labelled rather than removed or split.** Three options were on the
+> table. *Splitting* it pro-rata across the legs was rejected outright: a redemption is a commercial
+> reduction of the sale, applied before any tender exists, so a cash share and a card share would be
+> two invented numbers — and invented money is harder to catch later than absent money. *Removing*
+> the badge from filtered views was rejected because the owner uses it to see which sales in a view
+> carried a redemption. So it stays, scoped: the figure is honest for the rows shown, and the label
+> and the scope line say the one thing the reader could not otherwise know — that the Cash and the
+> Card view overlap, by exactly the named amount.
 
 ### R-2026-08-13-Y — U4 Whitecross premium site — **REL-4 release anchor + the passive gate, SHIPPED**
 
