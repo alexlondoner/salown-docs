@@ -131,6 +131,7 @@ here; commit and release identifiers are never renamed.
 | P1 | `FIN-COMP-S3B` | Wire all six Finance consumers + legacy-vs-period parity mode | `LIVE_VERIFIED` | salown-app | released | — | `5e69b63` | live in `2620fb29bf2e064e` via source `d9bdbc5` | — | 2026-08-12 |
 | P1 | `FIN-COMP-S3C` | Compensation-period gate ACTIVATED (`FINANCE_COMP_PERIOD_MODE='periods'`) | `LIVE_VERIFIED` | salown-app | released | — | **`d9bdbc5`** | `hosting:salown` **`2620fb29bf2e064e`** · release `1786574988937000` · 2026-08-12T22:49:48.937Z | Ships S2+S3A+S3B too — none were live before | 2026-08-12 |
 | P1 | `FIN-ARDA-REPAIR` | Arda `workingDays` restored — `["Wednesday"]` was his day **OFF**; real rota Mon/Tue/Thu/Fri/Sat/Sun | **`LIVE_VERIFIED`** | data | applied | — | tool `9a90202` | one field, one document, audit `oBEsAFyVVNSZ0O9kMqBW`; `c64453d4…`→`c02bc7a6…`, 2026-08-13T00:07:46.874Z | Owner re-authorised 2026-08-13, declining to defer behind `FIN-PERIOD-CLOSE`. All-time Net P&L −£2,740.86 → **−£14,840.86** (§9.5) | 2026-08-13 |
+| — | `FIN-MUHAMED-GHOST-WAGE-P0` | ~~Muhamed accrues rota wages through his 2026-07-14→2026-08-19 leave (≈£1,123.20)~~ | **`WITHDRAWN` — not a defect** | data | **no write** | — | — | leave record **intact and audited**; live resolver accrues **£0 on all 37 leave days**, proven against the exact source live in `2620fb29bf2e064e` | The £1,123.20 was the *leave-blind counterfactual* (27 rota days × £41.60), not a live figure. Reconciled in full (§9.6). No production write, no deploy | 2026-08-13 |
 | P1 | `FIN-EFFECTIVEFROM-BACKDATE` | All 3 whitecross `staffComp.effectiveFrom` said **2026-07-15** (the day the Pay tab was opened) | `LIVE_VERIFIED` | data | applied | — | tool `edd4e85` | Alex→`2026-02-06` · Muhamed→`2026-06-09` · Arda→`2026-02-06`; 3 audited writes, idempotent, analyser `ready=true` | — | 2026-08-12 |
 | — | `FIN-ARDA-0804` | ~~Open override on `2026-08-04`~~ | **`WITHDRAWN`** | data | — | — | — | — | Right answer, wrong question: the rota itself is corrupt. Once repaired, 2026-08-04 is a Tuesday **in** the rota and accrues on its own — no override is needed or authorised | 2026-08-12 |
 | P0 | `SEC-FN-NS` | Nothing stops a third repo re-colliding a function name; no guard on the salown side | `PLANNED` | both | — | — | `a336ddce` (wc) | both names now serve codebase `salown` | Mirror `deploy-functions.sh` step 5b into salown-app | 2026-08-12 |
@@ -547,6 +548,62 @@ month is stored rather than derived, the next legitimate rota edit will move his
 half reconciles exactly at −£165.60; the workbook's own daily sheets also disagree with its own
 `HESAP_OZETI` by ≈£711). **August 2026 remains open and must not be frozen.** `£7,939` is still
 **not** recorded as a production liability.
+
+### 9.6 `FIN-MUHAMED-GHOST-WAGE-P0` — the ghost was in the measurement, not in production (2026-08-13)
+
+A P0 was raised on the report that Muhamed accrues rota wages straight through his
+2026-07-14 → 2026-08-19 leave, ≈**£1,123.20**. Investigated read-only under a pre-write gate.
+**No such accrual exists.** Nothing was written, nothing was deployed.
+
+**The leave record is intact, and it is the one the owner entered.** `tenants/whitecross/barbers/barber-1781007454543`
+holds `status: 'leave'` · `leaveFrom: '2026-07-14'` · `leaveUntil: '2026-08-19'` · `leaves: []`,
+hash `9a037865ee683089`, `updateTime` **2026-08-10T19:24:26.211Z**. Audit `PJw1MYQGQRlIQOxIMSGu`
+(2026-07-14T20:39:33Z, `BARBER_UPDATED`) records `status: active→leave` and
+`leave: null → "2026-07-14->2026-08-19"` — the live document still matches that event **field for
+field, 30 days later**. So the 2026-08-10 propagation write touched his document in the same
+unaudited cluster as Alex (…25.900Z) and Arda (…26.175Z), but it did **not** erase or corrupt the
+leave fields. There was nothing to restore, and the Phase-2 authorisation — which covers *restoration
+of an erased leave record only* — never opened.
+
+**The resolver honours it, on every one of the 37 days.** Proven twice over: through
+`scripts/wageDriftAudit.cjs`'s parity-pinned twin, and by running the **real**
+`accruesWageOnDay` / `resolveAccrualDays` / `isBarberOnLeaveForDate` over the live document with
+each leave date asserted individually. `src/utils/financeWages.ts`, `bookingUtils.ts`, `Finance.tsx`,
+`compUtils.ts` and `financeCompPeriodCutover.ts` are **byte-identical** between the working tree and
+`d9bdbc5`, the source of the live release `2620fb29bf2e064e` — so this is the live behaviour, not a
+local build. All six consumers agree:
+
+| Consumer | Muhamed, leave window |
+|---|---|
+| 1/6 daily P&L row | **£0.00** (0 of 37 days) |
+| 2/6 monthly company wages | Jul **12 d / £499.20** (all ≤ 07-13) · Aug **10 d / £416.00** (all ≥ 08-20) |
+| 3/6 partner ledger · 4/6 credited-employee | not applicable (`isPartner: false`, `creditTo: null`, 0 rows credit to him) |
+| 5/6 non-partner staff ledger | leave window **0 d**; to-date **31 d / £1,289.60** |
+| 6/6 G4 weekly ledger | w/c 07-20, 07-27, 08-03, 08-10 = **0 d** each |
+
+**Where £1,123.20 came from, exactly.** It is 27 × £41.60 — the rota days between 2026-07-14 and
+2026-08-13 **with the leave gate not applied**. The companion "58 days" is 31 + 27: the true 31
+pre-leave days plus the same 27 phantom ones. Both figures are reproducible as a *counterfactual*
+and neither is a live total. The genuine numbers: **31 wage days / £1,289.60** for
+2026-06-09 → 2026-07-13 (26 rota days to 07-12, plus 07-13 — a Monday, off-rota, accruing on an
+explicit **open** `shiftChanges` override, his last day before the leave), then **£0.00** through
+2026-08-19. Booking evidence agrees independently: 30 distinct booking days, first 2026-06-09, last
+**2026-07-13**, none after. `ACCRUAL_WITHOUT_WORK` reports **0 findings** for him, and
+`ROTA_CONTRADICTS_WORK_EVIDENCE` does not fire on him at all.
+
+**One real forward-looking question, for the owner — not a repair.** The leave is dated and *ends*.
+From **2026-08-20** Muhamed resumes accruing £41.60/day automatically (10 days = **£416.00** in
+August alone), because `staffComp.effectiveTo` is `null` and `status: 'leave'` is a *temporary*
+state. Every stored fact says "away until 19 August, then back". `active: false` and the absence of
+bookings since 13 July are **not** evidence of termination and were deliberately not read as such.
+If he is not returning, the correct instrument is `staffComp.effectiveTo` — **not** a leave edit, and
+explicitly not the 2099-leave or `wageEndDate` shapes already rejected in the 2026-08-12 incident.
+
+**Transferable lesson.** Every previous finding in this thread was a *production* defect found by
+looking at a screen. This one was a *measurement* defect: a wage figure computed without the leave
+gate looks exactly like a ghost wage, reconciles to a plausible penny amount, and names a real
+person. `FIN-WAGE-DRIFT-A` already encodes the rule that catches it — a drift claim must be
+reproduced through the parity-pinned resolver before it is treated as money.
 
 ---
 
