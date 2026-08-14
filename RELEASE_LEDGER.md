@@ -45,11 +45,11 @@
 
 ---
 
-## Live state after the `2026-08-13T20:00` release pass — verified `2026-08-13T20:05:00Z`
+## Live state after the `2026-08-14T09:16` release pass — verified `2026-08-14T09:25:00Z`
 
 | Unit | Live identity | Released (UTC) | Source | Provenance |
 |---|---|---|---|---|
-| U1 | version **`422bcb40aab7df89`** · release `1786651199938000` | 2026-08-13T19:59:59.938Z | **`562148d`** | R-2026-08-13-Z — served bytes hash-proven (4 chunks) |
+| U1 | version **`6cc0254d73227a96`** · release `1786699000997000` | 2026-08-14T09:16:40.997Z | **`b34d984`** | R-2026-08-14-A — served bytes hash-proven (4 chunks); **authenticated Finance UI smoke NOT RUN** |
 | U2 | version **`585dd333a4a429cf`** · release `1786641658556000` | 2026-08-13T17:20:58.556Z | **`a72f409`** | R-2026-08-13-D — served bytes hash-proven |
 | U3 | version `9f457fc2c8ee4b35` · release `1785493665740000` | 2026-07-31T10:27:45.740Z | `51e70a0` | R-2026-07-31-A |
 | U4 | version `e6be08684d312ce7` · release `1786401587236000` | 2026-08-10T22:39:47.236Z | **UNKNOWN / HYBRID** | R-2026-08-10-F — ⛔ still blocked, see `R-2026-08-13-X` |
@@ -73,6 +73,36 @@
 # Releases
 
 Newest first. One `###` heading per release event.
+
+## 2026-08-14
+
+### R-2026-08-14-A — U1 salOWN Admin — **P&L scope: profit is never a property of a tender**
+
+| Field | Value |
+|---|---|
+| **Date/time (UTC)** | 2026-08-14T09:16:40.997Z |
+| **Environment** | production |
+| **Repository** | `salown-app` |
+| **Source SHA** | **`b34d984`** (`b34d984d2a201a7595217dc667cc1b237783002c`) |
+| **Clean-tree proof** | `HEAD == origin/main == b34d984`, `git status --porcelain` empty, recorded before the deploy command and again after. All seven release commits verified ancestors of HEAD beforehand: `562148d`, `0fe662a`, `6f4d335`, `6148dd7`, `29a7016`, `5bd2b8d`, `b34d984` |
+| **Firebase project** | `havuz-44f70` |
+| **Target** | `hosting:salown` — **and no other**, by explicit `--only`. Hand-deployed; every commit carries `[skip ci]` so CI released nothing |
+| **Previous → new** | **`422bcb40aab7df89`** (release `1786651199938000`) → **`6cc0254d73227a96`** (release `1786699000997000`) |
+| **What shipped** | Three work items. **`FIN-TENDER-SCOPE-P1`** — `productRev` is transaction-level with no recoverable tender attribution (no writer stores a method on a product line; the canonical allocation folds products into "collected for goods"), so it is reported whole and marked non-additive, and `Service = Gross − Product` is **withheld** under a filter instead of clamped to £0.00. **`FIN-TENDER-SCOPE-P1.1`** — the nine Reports/Breakdown measures carry three distinct scopes rather than one blanket suffix: Service/Add-ons `not-derivable` (value withheld), Products/Gross/Discount/Loyalty `transaction` (shown, suffixed), Tips/Cash/Card `tender-leg` (additive, unmarked). Tips is the ONE measure the schema attributes to a tender — `tipPaymentMethod` plus its own `paymentAllocation.tip` bucket — so a card-only view no longer shows a cash tip. **`FIN-PL-SCOPE-P0`** — ADR-024 implemented: the entire P&L waterfall and the Daily Ledger's Net Rev./Wages/Net P&L columns read the authoritative whole-period roll-up, and the tender filter can be non-All only on the two tabs whose control is on screen |
+| **Why the whole waterfall, not just Overview** | A waterfall is a bridge — every arrow subtracts from the line above. A filtered Gross above whole-period costs does not reconcile and no label rescues it. `plTotals = monthlyTotalsAll` with **no tab or filter test in the binding**; a source test isolates the card and asserts **0** filtered reads and **0** filter branches inside it. `buildDailyRows` and `rollUpMonthly` are each defined once and called twice, so the wage accrual rule is not duplicated (the `FIN-S2` lesson) |
+| **Nothing is apportioned** | No cost and no transaction figure is split across cash and card anywhere. Tests assert the tempting 40/60 revenue-share apportionment of wages is produced nowhere |
+| **Tests** | frontend **3844/3844** (127 files) · functions **1348 pass / 31 skipped / 0 fail** · app + functions typecheck 0 · scoped ESLint clean · `ops/deploy-policy.test.js` 28/28 · `ops/release-guard.sh` OK · `git diff --check` clean · focused P1/P&L suite re-run with full output retained immediately pre-deploy: **142/142** across `financeSummary`, `financePlScope`, `financeTender`, `tenderSelection`, `tenderFacts` |
+| **⚠️ Unreproduced test observation — recorded, not explained** | On the FIRST full-suite run after the final edits, one test failed (`1 failed | 3843 passed`). That run's output was piped to `tail`, so **the test name was not captured** — an evidence-handling error, not a finding. The identical tree then passed **11 consecutive full runs**, including two under deliberate CPU load (6× and 10×) and one with the vite/vitest caches deleted. Working hypothesis, unproven: a stale `?raw` transform-cache read on the first run after the source file changed, since several source-parity tests import `Finance.tsx?raw`. Carried forward deliberately rather than dismissed |
+| **Verification — served bytes** | URL proven before hashing (`/app` → `/public-bundle/assets/index-jgFucvA0.js`), each chunk `HTTP/2 200`, then sha256 compared against the pinned build: `index-jgFucvA0.js` `3e5bee60…ee20` · `Finance-DxZe9b8J.js` `070e6f90…0025` · `Reports-D7Mannvt.js` `c69e583b…fe70` · `financeSummary-BN6rPWMn.js` `9fe6b332…4b10` — **all four byte-identical** |
+| **Verification — owner-confirmed shell availability** | The owner confirmed independently, in their own browser, that **salown.com/app loads normally and shows the correct Whitecross panel**. This is a statement about app-shell availability after the release and **nothing more** — it is not a check of any figure on the Finance or Reports screens |
+| **⛔ NOT VERIFIED — authenticated Finance/Reports UI smoke** | **All ten planned checks are UNRUN and no PASS is claimed.** The controlled browser profile was authenticated against tenant **salOWN**, not Whitecross; it rendered no tenant switcher, and reaching Whitecross would have required credentials, so the session was stopped under the owner's explicit instruction not to authenticate. The profile was independently degraded (app-shell stalls at the `AppRouter` tenant-doc gate, sidebar icons unrendered, the extension console bridge captured nothing on any load). Unverified on screen: All-view parity · Cash/Card collection additivity · "not derivable per tender" on Service/Add-ons · whole-transaction scopes · method-specific Tips · waterfall reconciliation · Daily P&L column labels · the Overview reset · the return-to-Daily state · console cleanliness. **This release is byte-proven and test-proven; it is not screen-proven** |
+| **The stall was NOT attributable to this release** | The stall sat at `AppRouter.tsx:140` (`tenantStatus === 'loading'`), a `getDoc(tenants/{tenantId})` that never settled, with zero console errors, and reproduced on `/app/home` which loads neither changed page chunk. Between the previously deployed `562148d` and `b34d984` exactly five files changed — `Finance.tsx`, `Reports.tsx`, `financeSummary.ts` and two test files. `AppRouter.tsx`, `AuthContext.tsx`, `firebase.ts`, `main.tsx` and `App.tsx` are byte-identical across the range, so a rollback could not have cleared it. Classified by the owner as local to the automated browser profile. `tenants/salown` was **not** investigated or modified, per instruction |
+| **Rollback identity** | **`422bcb40aab7df89`** (release `1786651199938000`). Console → Hosting → site `salown` → Release history → that version → ⋮ → Roll back. It drops all three work items and keeps `SPLIT-B2` |
+| **Jack — read-only verification, this pass** | `tenants/whitecross/bookings/3ori9n79QSj09Xyu96fQ` re-read with the repair tool's **DRY RUN (read-only)** mode — no `--apply`, no `--confirm`. `updateTime` `2026-08-13T20:32:53.769Z`, doc sha256 **`7696c2752224d39851b1cd8edfb586b0281154f307faa7dcbebdac47f30415fd`** (the post-repair hash), repair audit record `repair-split-b-jack-…` **PRESENT**, all four authorised paths already at target, **PROPOSED UPDATES: 0**. Canonical, and untouched by this session |
+| **Production data written** | **none.** No Firestore write, no checkout, no email or receipt resend, no loyalty mutation, no Function, no rule, no index, no Storage object |
+| **Operator/device** | macOS · `alish/finance-pl-scope` |
+| **Result** | Deployed and byte-verified. Screen verification outstanding — see the ⛔ row |
+| **Known exclusions — verified unchanged after the deploy** | `hosting:salown-staff` **`585dd333a4a429cf`** · `hosting:salown-admin` **`9f457fc2c8ee4b35`** (both re-read post-deploy) · `hosting:whitecrossbarbers-saas` `25b14188c8e6e9ed` · Functions (both codebases) · `firestore.rules` · `firestore.indexes.json` · Storage · `tenants/salown` (not read, not touched) · Jack's booking and every other production document · REL-1 staff-bundle drift: none, tree stayed `0/0` throughout |
 
 ## 2026-08-13
 
