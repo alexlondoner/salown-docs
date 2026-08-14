@@ -1,66 +1,61 @@
-# STAFF-START-AUTHORITY-A1 / A1.1 / A1.2 — coordinated release manifest
+# STAFF-START-AUTHORITY-A1 — coordinated release manifest
 
-> **Status: NOTHING IN THIS DOCUMENT HAS BEEN DEPLOYED.** Every "live identity" was read
-> from production on **2026-08-14**; every "pinned artefact" was built from a detached
-> worktree at the pinned commit and hashed. This is the plan and its evidence, not a record
-> of a release. A release gets a `RELEASE_LEDGER.md` row; this file does not replace one.
+> **NOTHING IN THIS DOCUMENT HAS BEEN DEPLOYED.** Every live identity was read from
+> production on **2026-08-14**; every pinned artefact was built from a detached worktree at
+> the pinned commit and hashed. This is the plan and its evidence. A release gets a
+> `RELEASE_LEDGER.md` row; this file does not replace one.
+>
+> Consistency is machine-checked: `node scripts/verifyReleaseManifest.mjs` (salown-app),
+> which also runs inside `npm test`. It exists because a manifest accretes contradictions
+> across packages, and every contradiction is a chance to deploy the wrong thing.
 
-**Work ID** `STAFF-START-A1` · **Source** `51171e8` (salown-app) · `f046aa14` (whitecross-site)
+**Work ID** `STAFF-START-A1` · **Source** `d64f098` (salown-app) · `f046aa14` (whitecross-site)
 
 ---
 
-## 0. Read this first
+## 0. Four kinds of unit, and why conflating them is dangerous
 
 `barbers/{id}.availabilityFrom` is a tenant-local inclusive `YYYY-MM-DD` scheduling key.
-Four different kinds of thing enforce it, and conflating them is how a release like this goes
-wrong:
 
 | Kind | Unit(s) | What it means |
 |---|---|---|
-| **AUTHORITY — Functions** | 7 exports | Runs in-process on a callable. Cannot be bypassed by a client. |
-| **AUTHORITY — Firestore rules** | `firestore.rules` | The **only** server-side gate on the premium site's direct writes. Cannot be bypassed by a client. |
-| **CLIENT GUARD** | `hosting:whitecrossbarbers-saas` (REL-5) | Withholds the button and the slots. Not an authority: it is code the browser runs. |
-| **UI CONSUMER** | `hosting:salown`, `hosting:salown-staff` | Presentation only — columns, pickers, badges, occupancy denominators. Every submit behind them is already covered by an authority. |
-| **WRITER** | `approveApplication`, `provisionTenant`, Team Members drawer | Produces the field. Nothing enforces anything here; they stop *creating* legacy documents. |
+| **AUTHORITY — Firestore rules** | `firestore:rules` | The only server-side gate on the premium site's direct writes. A client cannot bypass it. |
+| **AUTHORITY — Functions** | 7 exports | Runs in-process on a callable. A client cannot bypass it. |
+| **UI CONSUMER** | `hosting:salown`, `hosting:salown-staff` | Presentation — columns, pickers, badges, occupancy. Every submit behind them is covered by an authority. |
+| **CLIENT GUARD** | `hosting:whitecrossbarbers-saas` (REL-5) | Withholds the button and the slots. Code the browser runs, not an authority. |
+| **WRITER** | `approveApplication`, `provisionTenant`, Team Members drawer | Produces the field. Stops *creating* legacy documents. |
 
-**The single most important fact:** whitecrossbarbers.com does **not** submit through
-`salownCreateBooking` — the W1/C1 cutover that would change that is HELD (`WCP-3`) — so it
-writes bookings **straight to Firestore** (`setDoc(doc(db,'tenants/whitecross/bookings',id))`,
-`ops/rel5/baseline/script.js:1794` group and `:1558` single). A1.2 therefore adds the rules
-gate, so that channel has a real authority instead of only a client guard.
+whitecrossbarbers.com does **not** submit through `salownCreateBooking` — the W1/C1 cutover
+that would change that is HELD (`WCP-3`) — so it writes bookings **straight to Firestore**
+(`setDoc(doc(db,'tenants/whitecross/bookings',id))`, `ops/rel5/baseline/script.js:1794` group,
+`:1558` single). That is why phase 1 exists.
 
 ---
 
 ## 1. Deployable units
 
-### Phase 1 — Firestore rules (AUTHORITY for direct writes)
+### Phase 1 — `firestore:rules` (AUTHORITY, direct writes)
 
-| Unit | Live identity (= rollback) | Pinned artefact |
-|---|---|---|
-| `firestore:rules` | ruleset **`640c3dae-a9c8-4cb3-80c4-bc189e72874a`**, released `2026-08-05T12:52:07.274488Z`, 23,547 bytes, sha256 `ded4a970…244d` | `firestore.rules` @ `51171e8` — 29,068 bytes, sha256 `eba9f378cf79f52f8283ba813458e7f505655d33085cf9fdc46bc597c34dbab1` |
+| Live identity (= rollback) | Pinned artefact |
+|---|---|
+| ruleset **`640c3dae-a9c8-4cb3-80c4-bc189e72874a`**, released `2026-08-05T12:52:07.274488Z`, 23,547 bytes, sha256 `ded4a970…244d` | `firestore.rules` @ `d64f098` — `30,132` bytes, sha256 `2d2097a0cd9262dc6db819097ba9c6c6f08977b3b488c5b41c6e3b55b93c6c8e` |
 
-**Live parity was proven before the file was touched**, as required: `node
-scripts/availabilityRulesParity.cjs` fetched the live release and its ruleset and found it
-**byte-identical** to the repository file at `145b5c2`. Re-run it immediately before deploying;
-a red result means STOP, not rebase. A rules deploy replaces the whole ruleset — there is no
-partial apply — so a drifted repo file would silently revert every rule it does not know about.
+Live parity was proven **byte-identical before the file was touched**
+(`node scripts/availabilityRulesParity.cjs`). Re-run it immediately before deploying: a rules
+deploy replaces the whole ruleset — there is no partial apply — so a drifted repo file would
+silently revert every rule it does not know about. A red result means STOP, not rebase.
 
-The edit is additive: **88 lines added, 2 real lines removed** (the two `allow create:` /
-`allow update:` headers, re-emitted with the gate prefixed).
+Rules go **first**, which inverts this project's usual "rules LAST" order (`DEPLOY.md`). That
+order protects against a rules tightening outrunning the code that satisfies it; it does not
+apply here, because this gate constrains *data* and every barber document is currently a
+legacy record that fails open. Going first closes the direct-write channel before any start
+date exists to enforce.
 
-Rollback: re-deploy the previous ruleset, or Console → Firestore → Rules → history →
-`640c3dae-a9c8-4cb3-80c4-bc189e72874a`.
+Rollback: Console → Firestore → Rules → history → the ruleset id above.
 
-⚠️ **Rules go FIRST here, which inverts this project's usual "rules LAST" order** (`DEPLOY.md`).
-That order exists so a rules tightening cannot outrun the code that satisfies it. It does not
-apply: this gate constrains *data*, not app capability, and every existing barber document is a
-legacy record that fails open — so on the day it lands it changes nothing for anyone. Going
-first is what closes the direct-write channel before any start date exists to enforce.
+### Phase 2 — Functions (AUTHORITY for callables, plus both writers)
 
-### Phase 2 — Functions (AUTHORITY for every callable path) + writers
-
-Seven exports, `europe-west2`, codebase `salown`. **Never a blanket `--only functions`** — that
-deletes the 27 legacy us-central1 functions (CLAUDE.md).
+Seven exports, `europe-west2`, codebase `salown`.
 
 | # | Export | Kind | Changed behaviour | Live revision (= rollback) |
 |---|---|---|---|---|
@@ -70,16 +65,7 @@ deletes the 27 legacy us-central1 functions (CLAUDE.md).
 | 4 | `salownReassignBooking` | authority | `assertAssignableStaff` → `STAFF_NOT_STARTED` | `salownreassignbooking-00001-hog` |
 | 5 | `salownRescheduleByToken` | authority | `rescheduleStaffGate` → `NOT_STARTED`; customer text identical to the passive case | `salownreschedulebytoken-00074-zab` |
 | 6 | `approveApplication` | writer | stamps `availabilityFrom` — supplied valid date, else tenant-local approval date | `approveapplication-00014-yup` |
-| 7 | `provisionTenant` | writer | stamps the tenant-local provisioning date (see §4) | `provisiontenant-00137-bij` |
-
-Pinned archive contents, compiled from `51171e8`:
-
-```
-lib/index.js                      11fb423368b76d512e103e279ae8fec4b89098810c1344bac333b2a78ed51203
-lib/utils/availabilityWindow.js   5d2b76a5fcbff42a9371c957f8e5b8b42da60e10b11d144e7514dc56d262fc8e
-lib/bookings/staffEligibility.js  d0fe48427bca7d5bd20eaa04ad3f5b7550eeb6b70af4b5eee2a26198d9b199e9
-lib/bookings/createBooking.js     f6921aa8cdc614b6701458761ccc58e53d8d294bbf00c9bb083dc9a6e64977a2
-```
+| 7 | `provisionTenant` | writer | stamps the tenant-local provisioning date (§4) | `provisiontenant-00137-bij` |
 
 ```
 firebase deploy --project havuz-44f70 --only \
@@ -92,9 +78,28 @@ functions:salown:approveApplication,\
 functions:salown:provisionTenant
 ```
 
-The affected-export set is **derived** from `index.ts` by
-`functions/src/utils/deployableExports.test.js` and compared against this list; it also asserts
-that no affected export can be *silently* omitted.
+Never a blanket `--only functions` — that deletes the 27 legacy us-central1 functions. The
+affected-export set is **derived** from `index.ts` by
+`functions/src/utils/deployableExports.test.js`, which also forbids silent omission.
+
+**Deploy archive** (A1.3). The archive is built from the working directory, not from git.
+`node scripts/functionsArchiveManifest.cjs` enumerates it using the pinned CLI's own file
+walker and gates on it:
+
+```
+files            150   (was 238 under the pre-A1.3 policy)
+size             3.28 MiB
+manifest digest  763521f6ff6c5e3b09230830cce3115d9ae44f6e2f706f7dbaa5846a98abd079
+```
+
+Compiled `lib/` hashes at `d64f098`:
+
+```
+lib/index.js                      11fb423368b76d512e103e279ae8fec4b89098810c1344bac333b2a78ed51203
+lib/utils/availabilityWindow.js   5d2b76a5fcbff42a9371c957f8e5b8b42da60e10b11d144e7514dc56d262fc8e
+lib/bookings/staffEligibility.js  d0fe48427bca7d5bd20eaa04ad3f5b7550eeb6b70af4b5eee2a26198d9b199e9
+lib/bookings/createBooking.js     f6921aa8cdc614b6701458761ccc58e53d8d294bbf00c9bb083dc9a6e64977a2
+```
 
 ### Phase 3 — `hosting:salown` (UI CONSUMER)
 
@@ -103,8 +108,8 @@ that no affected export can be *silently* omitted.
 | **`6cc0254d73227a96`** (release `1786699000997000`) | `index-Bj5ICA9p.js` `75468839832898ed…9e3e` · `Barbers-CDtne5iw.js` `d7d6d1ba75a0a9b6…b317` |
 
 Admin Calendar/TimeGrid + `record-only` lane, all pickers, public BookingPage slots, customer
-self-reschedule calendar, Occupancy denominators, Team Members creation gate + `Starts …` badges
-+ migration warning.
+self-reschedule calendar, Occupancy denominators, Team Members creation gate + `Starts …`
+badges + migration warning.
 
 ### Phase 4 — `hosting:salown-staff` (UI CONSUMER)
 
@@ -112,9 +117,8 @@ self-reschedule calendar, Occupancy denominators, Team Members creation gate + `
 |---|---|
 | **`585dd333a4a429cf`** (release `1786641658556000`) | `staff-CQ2TzIGv.js` `c36e12774f70c667…ab20` |
 
-Staff app new-booking and walk-in pickers exclude a pre-start member. **Hand-only**
-(`npm run deploy:staff`); CI cannot reach it. The REL-1 cleanup after any `hosting:salown`
-deploy is still mandatory.
+Staff app new-booking and walk-in pickers exclude a pre-start member. Hand-only
+(`npm run deploy:staff`). The REL-1 cleanup after any `hosting:salown` deploy still applies.
 
 ### Phase 5 — `hosting:whitecrossbarbers-saas` (CLIENT GUARD, via REL-5)
 
@@ -122,14 +126,13 @@ deploy is still mandatory.
 |---|---|
 | **`25b14188c8e6e9ed`** (release `1786646659069000`) | `ops/rel5/release/script.js` `f7332e13cebbc9667558f5be5fc1795ef6124e20f8e98a444d20be7a269d28a9`, 129,479 bytes |
 
-Built and checked by `ops/rel5/assemble.sh` + `ops/rel5/verify.sh` (57/57, PASS). **Not** a
-deploy of `main` — that would activate the held W1/C1 cutover and blank the live Double Points
-promotion.
+Built and checked by `ops/rel5/assemble.sh` + `ops/rel5/verify.sh` (57/57). Not a deploy of
+`main`: that would activate the held W1/C1 cutover and blank the live Double Points promotion.
 
-**Live negative control, measured today.** `index-jgFucvA0.js` (sha256 `3e5bee60…ee20`) → **0**
+**Live negative control, measured today.** `index-jgFucvA0.js` (`3e5bee60…ee20`) → **0**
 occurrences of `availabilityFrom`; live `staff-39ZjehjJ.js` (`07d623cb…99a2`) → **0**; the live
-`provisionTenant` archive → **0**. The boundary is provably absent from production right now, so
-"did it land" has an unambiguous marker answer afterwards.
+`provisionTenant` archive → **0**. The boundary is provably absent from production, so "did it
+land" has an unambiguous marker answer afterwards.
 
 ### Deliberately excluded
 
@@ -138,137 +141,137 @@ occurrences of `availabilityFrom`; live `staff-39ZjehjJ.js` (`07d623cb…99a2`) 
 | `salownCreateBlock` / `salownDeleteBlock` | `blocks.ts` applies neither gate, **by decision**: a block withholds time, it does not sell any. Pinned by a test. |
 | `salownGetBusySlots` | Returns PII-free busy ranges + shop hours; never enumerates `barbers`. Pinned by a test. |
 | `whitecross2` | Not version-controlled, **non-deployable**. Source parity tracked in `whitecross-site/ops/rel5/whitecross2/`. |
-| Firestore **indexes**, Storage | Untouched. |
+| Firestore **indexes**, Storage | Not part of this work. |
 
 ---
 
-## 2. Required order, and what breaks at each boundary
+## 2. Release order, and what breaks at each boundary
 
 ```
-1. Firestore rules            (authority — direct writes)   ← only if parity re-proven
-2. Functions exports x7       (authority — callables; writers)
-3. hosting:salown             (UI consumer)
-4. hosting:salown-staff       (UI consumer)
+1. firestore:rules                             (authority — direct writes)
+2. seven Functions exports                     (authority — callables; writers)
+3. hosting:salown                              (UI consumer)
+4. hosting:salown-staff                        (UI consumer)
 5. hosting:whitecrossbarbers-saas via ops/rel5 (client guard)
-6. authenticated read-only parity smoke
+6. read-only parity smoke
 ```
 
-**The invariant:** *no interval may allow a client to show or submit a pre-start slot that the
-server accepts.* Authorities first, clients second. Server-stricter-than-client yields a visible
+**The invariant:** no interval may allow a client to show or submit a pre-start slot that the
+server accepts. Authorities first, clients second. Server-stricter-than-client yields a visible
 refusal and no bad data; the reverse yields a booking.
 
-### Boundary A — after rules, before Functions
-Rules deny a pre-start direct write; callables do not yet. Both are servers, so nothing is
-*shown* that was not shown before. **No reachable behaviour change on any current tenant:** every
-barber document is a legacy record with no `availabilityFrom`, so both paths fail open.
-Rollback: previous ruleset.
+**Boundary A — after rules, before Functions.** Both are servers; nothing shown changes. No
+reachable behaviour change on any current tenant, because every barber document is a legacy
+record with no `availabilityFrom` and both paths fail open.
 
-### Boundary B — after Functions, before clients
-Servers enforce; Admin/Staff/public clients do not yet know the rule. A client could display a
-pre-start member and submit; the server refuses with `failed-precondition`
-(`STAFF_UNAVAILABLE` / `STAFF_NOT_STARTED`, or the "not available on that date" sentence).
-**Visible error, no bad data.** Again empirically empty until a start date exists — and the only
-surface that can create one ships in phase 3.
+**Boundary B — after Functions, before clients.** Servers enforce; clients do not yet know the
+rule. A client could display a pre-start member and submit; the server refuses with
+`failed-precondition`. Visible error, no bad data.
 
-### Boundary C — between `hosting:salown` and `hosting:salown-staff`
-Both are UI consumers behind authorities that are already live, so **either order is safe**.
-`salown` first is recommended only so the surface that creates team members — and the warning
-explaining why — lands before the Staff app starts hiding people.
+**Boundary C — between the two hosting UI consumers.** Both sit behind live authorities, so
+either order is safe. `hosting:salown` first is recommended only so the surface that creates
+team members, and the warning explaining why, lands before the Staff app starts hiding people.
 
-### Boundary D — before phase 5 (materially smaller than it was)
-Before A1.2 this was the real exposure: the premium site had no server gate at all. **Phase 1
-closes it.** With rules live, a pre-start direct write is refused whether or not REL-5 has
-shipped; what remains without phase 5 is a poor experience — the site would offer a slot and the
-write would fail — not an accepted booking. Ship phase 5 promptly, but it is no longer the sole
-protection.
-Rollback: Hosting → roll back to `25b14188c8e6e9ed`.
+**Boundary D — before phase 5.** Phase 1 already refuses a pre-start direct write, so what
+remains without phase 5 is a poor experience — the site offers a slot and the write fails — not
+an accepted booking.
 
-### Data rule that spans every boundary
-**No `availabilityFrom` may be written to any production document until every unit above is
-live.** The field is inert while absent; the first one written is what activates every gate at
-once. That applies to the backfill, to the Team Members screen, and to any manual edit.
+**Spanning every boundary:** no `availabilityFrom` may be written to any production document
+until every unit above is live. The field is inert while absent; the first value written
+activates every gate at once.
 
 ---
 
-## 3. Phase 6 — the parity smoke (read-only, authenticated)
+## 3. Phase 6 — the parity smoke (genuinely read-only)
 
-No credential to be typed, revealed or accepted; the owner's own session only.
+This section creates nothing. It navigates, reads and compares. Form validation may be
+*exercised* without submitting — open the drawer, observe the required-field error, close it.
+No member creation, no booking, no reschedule, no write of any kind.
 
-1. **Served-byte markers.** `salown.com/app` and `staff.salown.com` chunks contain
-   `availabilityFrom` (they contain **0** today); `whitecrossbarbers.com/script.js` sha256
-   `f7332e13…9d28a9`; `ops/rel5/verify.sh --live` 57/57; live ruleset sha256 `eba9f378…dbab1`.
-2. **Team Members.** Creating a member with no start date is refused in **all three** statuses;
-   with a valid date it saves. The migration warning's count matches the roster.
-3. **A future-start member** is listed with `Starts DD MMM YYYY`, absent from the Admin day grid,
-   every picker, the Staff app and the public booking page for pre-start dates — present from the
-   start date onward.
-4. **Legacy parity.** An existing barber with no start date behaves exactly as before, everywhere.
-5. **Finance unmoved.** Whitecross Net P&L, wages and Daily Ledger identical to pre-release.
-6. **Console clean** on every screen visited.
+1. **Served-byte and revision markers.** `salown.com/app` and `staff.salown.com` chunks contain
+   `availabilityFrom` (they contain 0 today); `whitecrossbarbers.com/script.js` sha256
+   `f7332e13…9d28a9`; `ops/rel5/verify.sh --live` 57/57; live ruleset sha256 matches the
+   pinned artefact; the seven function revisions have advanced from the identities in §1.
+2. **Legacy fail-open parity.** An existing barber with no start date behaves exactly as before
+   on the Admin grid, every picker, the Staff app and the public booking page.
+3. **Finance unchanged.** Whitecross Net P&L, wages and the Daily Ledger read identical to the
+   pre-release figures.
+4. **Validation, exercised not submitted.** The Team Members drawer shows the required-date
+   error for a new member in all three statuses; the drawer is then closed unsaved.
+5. **Console clean** on every screen visited.
+
+### The first real future-start member is a separate, authorised action
+
+Verifying the before/start/after surfaces needs a record that has a start date, and no such
+record exists until the owner makes one. That is a **business action, not a test step**, and it
+is not part of this release:
+
+- the **owner** picks the real person's real start date and saves **once**;
+- no synthetic or demo staff member is created in Whitecross;
+- the write is monitored and separately authorised;
+- **afterwards**, the before / start / after surface checks are performed read-only around that
+  real record.
+
+**A1.3 does not execute that write.**
 
 ---
 
 ## 4. `provisionTenant` — `T-h` reconciled and CLOSED
 
-A1.1 excluded it pending ROADMAP `T-h`. A1.2 checked every part of `T-h`'s premise against
-production and none of it survived:
+Every part of `T-h`'s premise was checked against production and none survived:
 
-- live revision **`provisiontenant-00137-bij`** carries `firebase-functions-codebase=salown`
-  — `T-h` cites `provisiontenant-00136-taj` / `whitecross`;
+- the live revision carries `firebase-functions-codebase=salown` — `T-h` cites
+  `provisiontenant-00136-taj` / `whitecross`;
 - the **deployed source archive** was downloaded from
   `gs://gcf-v2-sources-1050766582653-europe-west2/provisionTenant/function-source.zip#1786488838028611`
-  (sha256 `e15527cd…9bd3`) and its `src/index.ts` is **byte-identical** (sha256
-  `65021917405f9ccb7ddfae663aa7404832775ecf01750ec2d23939220569a8a7`) to commit **`c8036f0`**,
-  which `git merge-base --is-ancestor` confirms is an ancestor of HEAD. The live function is this
-  repository's code, not a foreign build sharing a name;
-- **inside `provisionTenant`'s own body the only change since that archive is the A1
-  `availabilityFrom` stamp.** Every other `index.ts` diff belongs to a different export
-  (`salownSendLoyaltyEmail` — already live as `-00065-hej`; `adminPurgeTenant` /
-  `adminGetOwnerActivity` from the approved `d316893`; `salownRescheduleByToken` from A1), and
-  each export runs its own revision, so an unnamed export cannot move;
-- `whitecross-site/functions/index.js` no longer exports it, and
-  `whitecross-site/scripts/deploy-functions.sh` step 5b hard-fails the name in two ways.
+  and its `src/index.ts` is **byte-identical** (sha256 `65021917…a8a7`) to commit **`c8036f0`**,
+  which `git merge-base --is-ancestor` confirms is an ancestor of HEAD;
+- inside `provisionTenant`'s own body the only change since that archive is the A1
+  `availabilityFrom` stamp. Every other `index.ts` diff belongs to a different export, and each
+  export runs its own revision, so an unnamed export cannot move;
+- `whitecross-site/functions/index.js` no longer exports it, and its `deploy-functions.sh`
+  step 5b hard-fails the name in two independent ways.
 
-**Conclusion: salown-app is conclusively the deployment authority.** `provisionTenant` is in
-phase 2, rollback `provisiontenant-00137-bij`. **`T-h` should be closed in ROADMAP** against this
-evidence; it is currently stale in a way that would mislead the next reader.
-
-### Incidental finding (not fixed here)
-`firebase.json`'s functions `ignore` is `["node_modules", ".git"]`, so the deploy archive is built
-from the **working directory**, not from git. The live archive contains a 26,947-byte
-`firestore-debug.log` — emulator startup output, checked: no PII, no secrets, and gitignored in
-the repo, which is exactly why nobody noticed it shipping. Harmless here; worth tightening
-separately, since any untracked local file in `functions/` rides along to GCP.
+salown-app is conclusively the deployment authority. `T-h` is **CLOSED**; it should be marked so
+in ROADMAP, where it is currently stale in a way that would mislead the next reader.
 
 ---
 
-## 5. What this release does *not* do
+## 5. Known exception — the platform-wide super-admin catch-all
+
+The root rule `match /{document=**} { allow read, write: if isSuperAdmin(); }` ORs across every
+match, so **no clause inside `/bookings/{docId}` can take it away**: a super-admin browser
+session can still create a pre-start booking.
+
+This is a **known exception, tracked as ROADMAP `SEC-CATCHALL-1`** — it is NOT enforcement, and
+this release does not claim otherwise. It is asserted rather than described, by the last case in
+`test/rules/availabilityFrom.emulator.test.js`, so if the catch-all is ever scoped that test
+goes red and this section must be updated. The same residue is already disclosed by
+`scripts/testPromotionSnapshotRules.py`, from the same rule.
+
+Closing it means editing a platform-wide grant with real blast radius, which is its own package.
+
+---
+
+## 6. What this release does not do
 
 - **No backfill, no inventory run.** `scripts/availabilityFromInventory.cjs` needs credentials
   and has not been executed; the migration is unsized.
 - **No Finance change.** `partnerConfig.startDate` / `staffComp.effectiveFrom` remain the sole
   wage authorities, asserted by `availabilityFinanceIsolation.test.ts`.
 - **No W1/C1 activation, no promotion change** on the premium site.
-- **No index or Storage change.**
-
-### Disclosed residue
-The root rule `match /{document=**} { allow read, write: if isSuperAdmin(); }` ORs across every
-match, so **a super-admin browser session can still create a pre-start booking.** No clause
-inside `/bookings/{docId}` can take that away. This is the same residue
-`testPromotionSnapshotRules.py` already discloses, from the same catch-all; closing it means
-editing a platform-wide rule with real blast radius, which is not this package.
+- **No production business-data write of any kind.**
 
 ---
 
-## 6. Gates at the pinned commit
+## 7. Gates at the pinned commit
 
-frontend **3945/3945** (131 files) · functions **1426 pass / 31 skip / 0 fail** ·
-rules **33/33** (`scripts/testAvailabilityRules.py`) + **17/17** (promotion snapshot) +
-**170/170** (`docs/test-firestore-rules.py`, green against the live ruleset *and* the edited one)
-· whitecross-site **92/92** · REL-5 assemble + verify **57/57 PASS** · both typechecks 0 ·
-build 0 · deploy-policy **28/28** · release-guard OK.
+frontend `**3960/3960** (133 files)` · functions `**1426 pass / 31 skip / 0 fail**` · rules Test API **38/38** (incl. an exhaustive
+1583–2400 Gregorian corpus) · rules **real emulator 15/15** with two mutation controls ·
+promotion-snapshot rules **17/17** · `docs/test-firestore-rules.py` **170/170** (green against
+the live ruleset *and* the edited one) · whitecross-site **92/92** · REL-5 assemble + verify
+**57/57** · archive policy **12/12** · manifest consistency ****31/31**** · both
+typechecks 0 · build 0 · deploy-policy **28/28** · release-guard OK.
 
-**Lint, stated accurately:** the changed files carry only the pre-existing `no-undef` class that
-already affects every `functions/**/*.test.js` under the browser-globals ESLint block
-(`weekHours.test.js` has 3 today). Project-wide `eslint .` reports **2,957 pre-existing errors**
-and is not a usable gate in this repository; scoped lint on changed files is.
+**Scoped lint:** every file introduced or modified by A1.2/A1.3 reports **0 errors, 0 warnings**.
+Repo-wide `eslint .` baseline delta vs `145b5c2`: **0 errors, 0 warnings**.
