@@ -30,10 +30,30 @@ HERO={"uid":"h1","token":{"tenantId":"herohairs","tenantRole":"admin"}}
 SUP={"uid":"s1","token":{"superAdmin":True,"tenantId":"whitecross"}}
 WXOWNER={"uid":"wo1","token":{"tenantId":"whitecross","tenantRole":"owner"}}
 HEROOWNER={"uid":"ho1","token":{"tenantId":"herohairs","tenantRole":"owner"}}
-def case(n,e,r,res=None):
+def case(n,e,r,res=None,mocks=None):
     tc={"expectation":e,"request":r,"_name":n}
     if res is not None: tc["resource"]={"data":res}
+    if mocks is not None: tc["functionMocks"]=mocks
     return tc
+# [A1] STAFF-START-AUTHORITY (2026-08-14) — the booking create/update rules now call
+#   exists()/get() on the referenced barber document (the availabilityFrom gate).
+#   The Rules Test API does NOT auto-resolve those: with no functionMocks it raises
+#   "Function not found error: Name: [exists]" and the whole rule evaluates to DENY.
+#   That is a HARNESS gap, not a rules defect — production always resolves exists().
+#   Cases that send a real barberId + date must therefore say which barber document
+#   the gate should see. `barberDoc(...)` supplies exactly one path and nothing else,
+#   which also keeps the cross-tenant guarantee honest: a rule reaching for another
+#   tenant's barber would find no mock and fail loudly instead of silently passing.
+def barberDoc(tenant,doc_id,data):
+    """functionMocks for ONE barber path. data=None means the document is absent."""
+    path=BASE+f"/tenants/{tenant}/barbers/{doc_id}"
+    m=[{"function":"exists","args":[{"exactValue":path}],"result":{"value":data is not None}}]
+    if data is not None:
+        m.append({"function":"get","args":[{"exactValue":path}],"result":{"value":{"data":data}}})
+    return m
+# The live shape these compat payloads describe: a real, LEGACY barber document —
+# no availabilityFrom at all, which is every barber document in production today.
+LEGACY_BARBER={"name":"Alex","status":"active"}
 cases=[
  case("WX→HERO clients read","DENY",req("get","/tenants/herohairs/clients/c1",WX)),
  case("WX→HERO clients write","DENY",req("update","/tenants/herohairs/clients/c1",WX,{"x":1}),{"x":0}),
@@ -166,7 +186,8 @@ cases=[
           "duration":30,"price":25,"barber":"Alex","barberId":"barber-1777257519766",
           "barberName":"Alex","barberSelection":"customer","barberAutoAssigned":False,
           "startTime":"2026-07-25T14:30:00Z","endTime":"2026-07-25T15:00:00Z",
-          "source":"Salown","status":s,"expiresAt":None,"createdAt":"2026-07-24T17:00:00Z"}))
+          "source":"Salown","status":s,"expiresAt":None,"createdAt":"2026-07-24T17:00:00Z"}),
+        mocks=barberDoc("whitecross","barber-1777257519766",LEGACY_BARBER))
    for s in ["CONFIRMED","PENDING"]],
  # Whitecross premium single create — whitecross-site/script.js:1462 writeBookingStatus().
  case("R1-A compat: Whitecross premium single create (script.js:1462 payload) → ALLOW","ALLOW",
@@ -179,7 +200,8 @@ cases=[
         "paymentType":"DEPOSIT","paymentState":"PENDING","source":"Website",
         "updatedAt":"2026-07-24T17:00:00Z",
         "soldAddOns":[{"serviceId":"svc-2","name":"Beard","price":10,"qty":1,"duration":15}],
-        "pendingCreatedAt":"2026-07-24T17:00:00Z","expiresAt":"2026-07-24T17:15:00Z"})),
+        "pendingCreatedAt":"2026-07-24T17:00:00Z","expiresAt":"2026-07-24T17:15:00Z"}),
+      mocks=barberDoc("whitecross","barber-1",LEGACY_BARBER)),
  # Whitecross premium GROUP create — whitecross-site/script.js:1695 (group payload).
  case("R1-A compat: Whitecross premium GROUP create (script.js:1695 payload) → ALLOW","ALLOW",
       req("create","/tenants/whitecross/bookings/WCB-1753370002",None,{
@@ -192,7 +214,8 @@ cases=[
         "endTime":"2026-07-25T15:00:00Z","status":"PENDING","paymentType":"DEPOSIT",
         "paymentState":"PENDING","source":"Website","groupId":"grp-1","groupSize":2,
         "groupLead":True,"groupIndex":0,"pendingCreatedAt":"2026-07-24T17:00:00Z",
-        "expiresAt":"2026-07-24T17:15:00Z","updatedAt":"2026-07-24T17:00:00Z"})),
+        "expiresAt":"2026-07-24T17:15:00Z","updatedAt":"2026-07-24T17:00:00Z"}),
+      mocks=barberDoc("whitecross","barber-1",LEGACY_BARBER)),
  # Each forbidden key, individually, on an otherwise-legitimate anonymous payload.
  *[case(f"R1-A: UNAUTH create + {k} → DENY","DENY",
         req("create","/tenants/whitecross/bookings/fb1",None,
