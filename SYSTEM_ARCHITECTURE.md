@@ -19,6 +19,28 @@
 - All tenant data lives under `tenants/{tenantId}/...`
 - Admin panel hosting target: `whitecross-admin` → `admin.whitecrossbarbers.com`
 
+### Deploy ownership — which repo owns which Firebase product
+
+`FIRESTORE-RULES-SSOT-P0`, 2026-08-16. Several repos hold a `firebase.json`; **owning a config is
+not owning a product.** Only the config listed here may deploy the product beside it.
+
+| Product | Sole authority | Config → target | Enforced by |
+|---|---|---|---|
+| **Firestore rules** | **`salown-app/`** | `firebase.json` → `firestore.rules` | `salown-app/ops/rules-authority.test.js`; every other `firebase.json` has **no** `firestore` block, so a rules deploy there fails at config parse |
+| **Firestore indexes** | **`salown-app/`** | `firebase.json` → `firestore.indexes.json` | same test. ⚠️ Do not deploy indexes at all yet — ROADMAP `TEC-6` |
+| **Storage rules** | `whitecross-site/` | `firebase.json` → `storage.rules` | sole declaration in the workspace (unreviewed by this package — it is the only copy, not a verified one) |
+| Hosting `salown`, `salown-staff` | `salown-app/` | CI (`hosting:salown`) / `npm run deploy:staff` | `ops/deploy-policy.test.js` |
+| Hosting `whitecrossbarbers-*` | `whitecross-site/` | `firebase.admin.json` (CI) · `firebase.json` (`./deploy.sh`) · `firebase.saas.json` (public site) | `scripts/check-rules-authority.sh` (rules only) |
+| Hosting `salown-admin` | `super-admin/` | `firebase.json` | — |
+| Functions `salown` | `salown-app/` | `firebase.json` codebase `salown` | targeted `--only functions:salown:FN` |
+| Functions `whitecross` | `whitecross-site/` | `firebase.json` codebase `whitecross` | `scripts/deploy-functions.sh` (no blanket deploys) |
+
+Dead configs kept for reference are renamed `*.LEGACY-DO-NOT-DEPLOY.txt` and are referenced by no
+config: `salown-panel/firestore.rules.LEGACY-DO-NOT-DEPLOY.txt`,
+`whitecross-site/barber-panel/firestore.rules.LEGACY-DO-NOT-DEPLOY.txt`,
+`whitecross-site/firestore.indexes.json.LEGACY-DO-NOT-DEPLOY.txt`. Per-repo detail lives in each
+repo's `FIRESTORE_RULES_AUTHORITY.md`. Full command + rollback procedure: [DEPLOY.md](DEPLOY.md).
+
 ## Tech Stack
 
 - **salown-app**: Vite + React (.jsx), Firebase Auth + Firestore + Functions

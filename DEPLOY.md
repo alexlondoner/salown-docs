@@ -21,19 +21,61 @@ and deploy, the live site reverts to the OLD version and our work is wiped out.
 commit/push first — because push to `main` = CI auto deploy, and uncommitted files
 do NOT go live → risk of partial/old state.
 
-### Firestore Rules — SINGLE SOURCE = `salown-app/firestore.rules` (2026-06-21)
-Multiple repos (salown-panel, whitecross-site, eekurt…) could deploy rules to `havuz-44f70` →
-**last one to deploy wins** → an old copy can overwrite the secure rule (the cross-tenant hole reopens).
-**From now on rules are deployed ONLY from `salown-app/firestore.rules`.**
+### Firestore Rules — SINGLE SOURCE = `salown-app/firestore.rules` (2026-06-21, ENFORCED 2026-08-16)
+
+**The one canonical directory, and the one canonical command:**
+
 ```bash
-cd ~/Desktop/alex/salown-app
-firebase deploy --only firestore:rules --project havuz-44f70
+cd ~/Desktop/alex/salown-app                                   # the ONLY directory
+firebase deploy --only firestore:rules --project havuz-44f70   # the ONLY command
 ```
-- The `firestore.rules` copies in other repos are DEAD — don't deploy `firestore:rules` from them.
+
+Multiple repos could deploy rules to `havuz-44f70` → **last one to deploy wins** → an old copy
+overwrites the secure ruleset and the cross-tenant hole reopens.
+
+> ⚠️ **This rule was written here on 2026-06-21 and enforced by nothing until 2026-08-16.**
+> `FIRESTORE-RULES-SSOT-P0` audited the workspace and found **five** other directories that could
+> still publish a ruleset — `salown-panel/`, `whitecross-site/` (root), `whitecross-site/barber-panel/`,
+> and **two git worktrees**. Three of the stale copies ended in
+> `match /{document=**} { allow read, write: if isAuth(); }` — every logged-in user of every tenant,
+> read and write, across all tenants — and a worktree held one where every tenant subcollection was
+> `allow read: if true`. Nothing about the command would have looked wrong. **A documented rule that
+> no machine checks is not a control.**
+
+**What now enforces it**
+
+| Layer | Where | Fails when |
+|---|---|---|
+| Config removal | the `firestore` block is gone from every non-canonical `firebase.json` | `--only firestore:rules` there fails **locally at config parse**, before any network call or credential: `Cannot understand what targets to deploy/serve.` |
+| Renaming | stale copies are `*.LEGACY-DO-NOT-DEPLOY.txt`, never `firestore.rules` | a re-added block cannot silently find a rules file by its default name |
+| Workspace scan | `salown-app/ops/rules-authority.test.js` (in `npm test` **and** the deploy workflow) | a second config declares `firestore`; a script outside `salown-app` runs a rules deploy; a stray `firestore.rules` appears; a git worktree carries a deployable config; the canonical ruleset grows a **global write grant** |
+| Repo-local | `whitecross-site/scripts/check-rules-authority.sh`, called at the top of `deploy.sh` and `scripts/deploy-functions.sh` | that repo regains a Firestore target, or a caller forwards a `firestore:*` selector |
+
+- The `firestore.rules` copies in other repos are DEAD, renamed, and now unreachable by any config.
+- **Git worktrees are time machines.** Their `firebase.json` is whatever the checked-out commit said,
+  so fixing `main` cannot fix them. A stale worktree carrying a rules config is **removed**, never
+  allowlisted (`git worktree remove`, then `git worktree prune`).
 - CI never touches rules; rules deploy is always manual + approved. Since 2026-08-08 a
   `firestore.rules` change does not even start the hosting workflow (see the matrix below).
 - Pull live rule + test (no Java/emulator needed): `python3 docs/test-firestore-rules.py salown-app/firestore.rules`.
-- Rollback: `docs/firestore.rules.ROLLBACK.txt` (old ruleset name). Snapshot: `docs/firestore.rules.LIVE` (before the change).
+
+**Rollback identity — capture it BEFORE you deploy, never after**
+
+A ruleset is rolled back by **ID**, not by re-deploying a file (re-deploying makes a third ruleset
+and loses the identity of what was live). The pre-change ID must be fetched first:
+
+```bash
+# 1) BEFORE deploying — the current live ruleset name IS the rollback target
+firebase firestore:rules:list --project havuz-44f70 | head -3   # or the Rules REST API
+# 2) record it in docs/RELEASE_LEDGER.md as "previous → new", and in
+#    docs/firestore.rules.ROLLBACK.txt; snapshot the live bytes to docs/firestore.rules.LIVE
+# 3) deploy, then verify the new ruleset is byte-identical to the local file
+# 4) to roll back: re-publish the recorded PREVIOUS ruleset id (Console → Firestore → Rules →
+#    history → that version → Restore), from salown-app and nowhere else
+```
+
+⚠️ `ROADMAP.md` currently records the pre-`SEC-CATCHALL-1` live ruleset id as **`STATUS_UNKNOWN`**
+(two rows disagree: `640c3dae-…` vs `10914cef-…`). It must be fetched at deploy time and not guessed.
 
 ### Hub.salown.com lesson (2026-06-21)
 `hub.salown.com` is NOT a separate hosting site — it's a custom domain attached to the `salown` site.
