@@ -13,9 +13,54 @@
 
 ---
 
-## 🔓 SECURITY-SUPERADMIN-WRITE-SCOPE — accepted trusted-role residual (opened 2026-08-05)
+## ✅ SECURITY-SUPERADMIN-WRITE-SCOPE / `SEC-CATCHALL-1` — closed in source 2026-08-16
 
-**Status: OPEN DEBT. Accepted as a trusted-role residual pending audit — NOT claimed as eliminated.**
+**Status: `PUSHED_NOT_LIVE` (salown-app `750c99f`). The WRITE grant is removed in source and proven
+by tests; the live ruleset is UNCHANGED, because deploying it still waits on `FIN-DATED-ROTA-R2c`.**
+
+> The section below is preserved as written on 2026-08-05 — it is the record of the debt and of the
+> four conditions set for closing it. **How each was met:**
+>
+> 1. **Inventory of every legitimate super-admin browser write** — done from SOURCE, not from
+>    production (this package took zero production reads). Every browser write on the platform was
+>    enumerated across `salown-app/src` (panel + staff bundle), `super-admin/src`, `whitecross-site`
+>    and `salown-panel`. **Only two top-level roots are ever written: `superAdmin/**` and
+>    `tenants/**`.** A super-admin is redirected to the separate console at login
+>    (`src/pages/Login.tsx:193`), so the console's own operations are the entire surface.
+> 2. **Explicit replacement permissions per collection** — **none were needed, and that is the
+>    finding.** Every operation in the inventory already lands on a rule carrying its own
+>    `isSuperAdmin()` branch (`superAdmin/**`; the tenant root doc incl. the `[P1-D]` publication
+>    fields; `clients`, `bookings`, `settings`, `staff`, `staffComp`, `parserTombstones`,
+>    `discountCodes/**` and the `[G4]` list). No replacement grant was added — a scoped global write
+>    would have been the same defect with a shorter list, since it would still OR past whatever
+>    clause it overlapped.
+> 3. **Emulator coverage** — `test/rules/superAdminCatchall.emulator.test.js` (21 tests) proves each
+>    legitimate write still passes and each protected field now fails, in BOTH super-admin claim
+>    shapes (with and without a `tenantId`). Corpus: rules emulator 34 → **58**, Rules Test API
+>    118 → **273** gated cases. MUTATION controls restore the root `write` and show every denial
+>    re-open while owner/admin/staff/anonymous stay blocked, so the denials are attributable to this
+>    change and not to another clause.
+> 4. **Rollback plan and pre-change ruleset id** — **NOT YET APPLICABLE, and deliberately not
+>    guessed.** Nothing is deployed, so there is nothing to roll back; the rollback identity and the
+>    pre-change ruleset id must be captured at deploy time. ⚠️ **Unresolved:** `ROADMAP.md` records
+>    the live ruleset for this row as `640c3dae-…` while the newer `STAFF-START-A1` row records the
+>    released ruleset as `10914cef-…`. That contradiction was NOT resolved here — resolving it needs
+>    a live read, which this package did not take. Treat the pre-change ruleset id as
+>    `STATUS_UNKNOWN` until it is fetched at deploy time.
+>
+> **The standing guard changed too.** The three Rules Test API scripts used to *print* this residual
+> on every run rather than assert it. Those prints are gone; the cases are now **gates**, and two
+> structural checks fail the run if a `write` ever reappears in a global `match` block. Both strip
+> comments first — `firestore.rules` documents the old grant verbatim, and a raw-text check cannot
+> tell a description of the bypass from the bypass (it did exactly that on its first run).
+>
+> **Read was deliberately RETAINED** — see the rationale block at the foot of `firestore.rules` and
+> the read-parity control (`superAdminCatchall` §4b), which removes the root read and shows every
+> in-tenant read unchanged. It is read-equivalent to the explicit blocks today; what it still buys is
+> the `[P1-A]` property that an unlisted path is readable by super-admin and by no one else.
+
+<details>
+<summary>Original 2026-08-05 record — <b>OPEN DEBT. Accepted as a trusted-role residual pending audit — NOT claimed as eliminated.</b></summary>
 
 ```
 match /{document=**} { allow read, write: if isSuperAdmin(); }
@@ -49,6 +94,8 @@ The super-admin claim is held by a single operator identity and is never granted
 **Guard in the meantime:** `scripts/testPromotionSnapshotRules.py` reports this residual on every run
 (`RESIDUE  super-admin create WITH snapshot: STILL ALLOWED`) rather than asserting a contract we do
 not hold, so it cannot quietly be forgotten or mistaken for closed.
+
+</details>
 
 ## 0. Quick status table
 
