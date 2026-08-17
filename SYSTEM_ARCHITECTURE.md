@@ -57,6 +57,13 @@ Migration order: ~~Dashboard~~ ✅ → Bookings → Calendar → Finance → Rep
 
 **Don't add new features to salown-panel — for a page that will be migrated, write the .jsx first.**
 
+> ⚠️ **`~/Desktop/alex/salown-panel/` is NOT A GIT REPOSITORY**, is in no claim registry, and its
+> `firebase.json` deploys to hosting target `salown-admin`. It holds a byte-identical copy of the
+> whitecross `barber-panel` Team Members page — so it writes the three rota cache fields directly and
+> still carries the 2026-08-10 lost-update propagation fan-out — and it has a populated `build/`.
+> **Whether `salown-admin` is live is `STATUS_UNKNOWN`.** ROADMAP `SALOWN-PANEL-1`; decide before
+> any Firestore rules deploy, because if it IS live it is on the blast radius.
+
 ## salown-app — Key Files
 
 **Brand:** Purple `#534AB7` / `#7B72E8`, Inter font. Gold `#d4af37` checkout/loyalty UI only.
@@ -73,7 +80,8 @@ Migration order: ~~Dashboard~~ ✅ → Bookings → Calendar → Finance → Rep
 
 **Pages (salown-app/src/pages/):**
 - `Dashboard.jsx` — 15-min slot grid, FAB with Walk-in/Booking/Block Time/Product Sale
-- `Settings.jsx` — 6-tab layout (General, Opening Hours, Integrations, Notifications, Staff, Danger Zone)
+- `Settings.jsx` — 6-tab layout (General, Opening Hours, Integrations, Notifications, Staff, Danger Zone).
+  Opening Hours writes the salon's own hours ONLY — it has written no barber document since R2c.
 - `Finance.jsx` — Whitecross-only (NOT multi-tenant). Never mix Finance logic into Reports.
 - `Reports.jsx` — platform-wide, multi-tenant. Never hardcode tenant-specific names here.
 - `Login.jsx` — uses `window.location.replace('/app')` (not href) to avoid back-button
@@ -84,6 +92,48 @@ Migration order: ~~Dashboard~~ ✅ → Bookings → Calendar → Finance → Rep
 - `AppRouter.jsx` — lazy loads all pages, checks onboarding status
 - `src/utils/timeUtils.js` — `toDateKey()` for UK dates (never use `.toISOString().split('T')[0]`)
 - `conflictUtils.js` — `hasTimeConflict()`, `getExistingRangeMinutes()`
+
+## Staff rota — who may write it (FIN-DATED-ROTA, R2/R2b/R2c · `PUSHED_NOT_LIVE`)
+
+A staff rota is a **HISTORY**, not a setting. `barbers/{id}.workingDays` / `.dayHours` / `.hours`
+are the **published projection** of an append-only dated log, and after R2c they have exactly one
+writer.
+
+```
+tenants/{tid}/staffRota/{barberId}                   header  — revision, entriesHash, cacheState
+tenants/{tid}/staffRota/{barberId}/rotaEntries/{id}  the LOG — append-only, client-unwritable
+tenants/{tid}/rotaPolicy/rollout                     the rollout DECLARATION — server-owned
+```
+
+**The engine** — `functions/src/staff/rotaWriter.ts`. Four actions, one Firestore transaction each,
+optimistic concurrency on `(revision, entriesHash)`. Every rule in it is a CALL into the accepted
+fold (`utils/rotaFold.ts`), never a second opinion. It is the ONLY writer of the three cache fields.
+
+**The three server doors, and nothing else:**
+
+| Callable | Who | What |
+|---|---|---|
+| `salownRotaTransaction` | owner \| admin \| super-admin | change one person's rota |
+| `salownProvisionTeamMember` | owner \| admin \| super-admin | bring a member into existence — profile + first `ROTA_START` in ONE transaction |
+| `salownRotaBootstrapTenant` | **super-admin only** | the guarded legacy → canonical tenant cutover; `dryRun` defaults TRUE |
+
+`convergeRotaCache` exists, is proven, and is reached by **nothing** — the activator is
+`FIN-DATED-ROTA-R2d`.
+
+**The rollout boundary is TWO conditions.** A direct client write to a cache field is permitted only
+when the tenant is not `canonical` **AND** the subject has no `staffRota` header. The per-subject
+half is not a flag — it becomes true when the engine commits that person's first transaction — which
+is what makes "a canonical barber cannot fall back to a direct cache write" a property rather than a
+policy. Absence of the rollout document resolves to LEGACY (the fail-safe direction).
+
+**Browser surfaces compose, they do not write.** `src/utils/rotaIntent.ts` is the app's ONLY importer
+of the fold; every page reaches it through that module. The whitecross `barber-panel` holds no copy
+of the fold at all — it reads the header and lets the server decide.
+
+**Salon opening hours no longer touch any rota** (owner decision 2026-08-17). `barberHoursPropagation.ts`
+is deleted on both panels. Staff working days and shift times are managed in Team Members only.
+
+Full record: [`FIN_DATED_ROTA_R2C_DESIGN.md`](FIN_DATED_ROTA_R2C_DESIGN.md).
 
 ## Loyalty System (per-tenant)
 
@@ -106,3 +156,10 @@ Migration order: ~~Dashboard~~ ✅ → Bookings → Calendar → Finance → Rep
 - Do NOT add inline add-client forms — always use `AddClientModal`
 - Do NOT push `serviceAccountKey.json` to GitHub (exposed once, revoked)
 - Do NOT bulk-delete Firestore data. Full export first → dry-run CSV → write.
+- Do NOT write `barbers/{id}.workingDays`, `.dayHours` or `.hours` from any client, or from any
+  server path other than the R2 engine. They are the published projection of a dated log; an undated
+  weekly array re-prices every closed month (INCIDENTS 2026-08-12). Use the callables above.
+- Do NOT copy `src/utils/rotaFold.ts` into another repo. The whitecross `barber-panel` deliberately
+  has no copy: one calculation, one implementation, and the server answers the rest.
+- Do NOT make salon opening hours write a staff rota again. That was withdrawn deliberately — a
+  salon being open and a stylist being rostered are different facts.
