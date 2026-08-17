@@ -15,8 +15,10 @@ was published; the live ruleset is unchanged and was not read.
 
 | | |
 |---|---|
-| CURRENT-date canonical rota | ✅ supported — start, change, end and supersede, all taking effect today |
-| FUTURE-dated rota | ⛔ **disabled until `FIN-DATED-ROTA-R2d`** — refused server-side with `FUTURE_ACTIVATION_NOT_READY`; see §3.1 |
+| `ROTA_START` / `ROTA_CHANGE` effective **today** | ✅ **supported** — they publish today and need nothing to happen afterwards |
+| `ROTA_SUPERSEDE` | ✅ **supported** — it withdraws an already-recorded entry and creates no effective state |
+| `ROTA_END`, **any date** | ⛔ **disabled until `FIN-DATED-ROTA-R2d`** (`R2c-EV.2`). An end is an operation *about the days after it*, so even one dated today needs tomorrow's convergence — and nothing runs. A **backdated** end keeps its existing, sharper `BACKDATED` refusal |
+| Every **future-effective** mutation | ⛔ **disabled until `FIN-DATED-ROTA-R2d`** — refused server-side with `FUTURE_ACTIVATION_NOT_READY`; see §3.1 |
 | Whitecross | canonical after the §9 cutover |
 | HeroHairs | **bounded legacy**, until its barber's start date is a business fact (`STAFF-START-A2`) |
 | `ROTA-B1B2` | named follow-up — owner-barber bootstrap still mints a cache-without-log record |
@@ -225,11 +227,42 @@ that says what happened, why, and what to do instead — never "try again".
 `rotaWriter.emulator.test.js` pass `futureActivationEnabled: true` explicitly, so they read as what
 they are: proofs of a capability production currently disables, ready for the day R2d turns it on.
 
-**Known residue, stated rather than quietly excluded.** `ROTA_END` with `effectiveTo == today` is
-not future-dated and is allowed; from tomorrow the subject is UNCOVERED and, with no activator,
-nothing re-converges. That is R2's accepted `rotaLegacyWriteGate` behaviour (`UNCOVERED` blocks the
-publish unless the subject is proven passive), it predates this gate, and it is not what EV.1 was
-asked to change.
+### 3.2 `ROTA_END` fails closed at ANY date (`R2c-EV.2`)
+
+EV.1 gated `effectiveTo > today` and disclosed the rest as residue. **The residue was the defect.**
+
+An end dated **today** is not future-dated, and today it is harmless: the period still covers today,
+so convergence publishes today's pattern and the calendar is right. **Tomorrow** is when it means
+something — the subject becomes `UNCOVERED`, `rotaLegacyWriteGate` blocks the publish (uncovered is
+only safe for a proven-passive subject), and the barber document keeps the weekly array it was
+already carrying, **indefinitely**, while the log says the rota ended. Nothing re-converges, because
+nothing runs.
+
+That is the same shape as a future-dated change and it fails the same way: a committed, irreversible
+entry recording an intention the product cannot carry out. *"It is correct today"* is not a defence
+for an operation whose entire purpose is to change what happens after today.
+
+So while the capability is off, **every new `ROTA_END` append is refused** — today's, tomorrow's,
+next month's — with one thing that is not an exception:
+
+> **A backdated end keeps its EXISTING, STRICTER refusal.** `effectiveTo < today` is refused by
+> `buildAppend` as `BACKDATED`, a sharper statement about a worse request (it would restate days
+> already worked and already priced). The gate deliberately does not reach it, so the more specific
+> diagnosis survives.
+
+The whole of EV.2 is one character in the predicate — `>=` rather than `>` — selected by the ACTION,
+because a start and an end mean opposite things about the days after their date.
+
+**Consequence, stated plainly: ending a rota is UNAVAILABLE in production until R2d.** No
+user-facing capability is lost today — **neither admin UI composes a `ROTA_END`**, and a departure is
+recorded as `status: 'passive'`, a different contract with its own authority (PASSIVE-AUTHORITY-R3).
+Source guards in both repos pin that absence, so it stays true rather than merely being true now: no
+client names the action, and none builds a payload carrying `effectiveTo` (reading
+`p.effectiveTo === null` to find the open period is fine — that is the fold, not a payload).
+
+**The capability key is refused BY NAME.** `futureActivationEnabled` joins `passiveAuthorityLive` and
+`provisioningSubject` in both callables' forbidden-key lists, so a body asserting the deployment's
+own facts gets `FORBIDDEN_FIELD` naming the field rather than the generic unknown-key path.
 
 ## 4. Migration — prepared, guarded, and NOT run
 
@@ -315,18 +348,18 @@ production read this session did not take.
 
 | Gate | Result |
 |---|---|
-| Functions unit suite | **1657 tests, 1623 pass, 0 fail** |
+| Functions unit suite | **1669 tests, 1635 pass, 0 fail** |
 | Functions emulator gate (both phases, pinned toolchain) | **466/466**, `firebase-tools 15.26.0` / `cloud-firestore-emulator-v1.22.0.jar` |
-| Frontend suite (vitest) | **4047/4047**, 136 files |
+| Frontend suite (vitest) | **4049/4049**, 136 files |
 | Rules emulator gate — 4 suites | **80/80** (`availabilityFrom` 17 · `staffRota` 21 · `rotaRollout` **21** · `superAdminCatchall` 21) |
 | Rules Test API corpus | **104/104** (was 72/72 at R2b) |
-| barber-panel suite | **31/31** |
+| barber-panel suite | **33/33** |
 | Typechecks | frontend ✔ · functions ✔ |
 | Scoped lint (26 changed files) | **0 errors, 0 warnings**, proven non-vacuous |
 | Repo lint delta | **0/0** on every changed file; 3245/6 pre-existing on untouched files |
 | Builds | salown-app admin ✔ · barber-panel ✔ |
-| Archive manifest ×2 from a clean tree | identical — **162 files**, `75bcfdc79bc40221…`, `ok: true` (160 → 162 = `rotaActivation.ts` + its compiled `lib/` output) |
-| Callable export diff | **74 → 76** at R2c, exactly `salownProvisionTeamMember` + `salownRotaBootstrapTenant`. **EV.1 adds NO export** — 76 → 76, byte-identical |
+| Archive manifest ×2 from a clean tree | identical — **162 files**, `7bef3fed98d42cd9…`, `ok: true` |
+| Callable export diff | **74 → 76** at R2c, exactly `salownProvisionTeamMember` + `salownRotaBootstrapTenant`. **EV.1 and EV.2 add NO export** — 76 → 76; EV.2 does not touch `index.ts` at all |
 | rules-authority | **30/30** · deploy-policy ✔ · functions-ownership ✔ · release-guard 19/19 · whitecross rules-authority ✔ |
 | Hosting target parity | `firebase.json` byte-identical; both whitecross targets preserved |
 | `git diff --check` | clean · no NUL byte · all changed files valid UTF-8 |
@@ -347,6 +380,8 @@ production read this session did not take.
 | **EV.1** NC-C — the client constant disagrees with the server's | the parity test fails |
 | **EV.1** NC-1 — capability ENABLED | the unsafe future write succeeds, which is what the gate holds back |
 | **EV.1** NC-3 — the capability sent in the request body | ignored; the gate still refuses |
+| **EV.2** NC-D — revert the END boundary from `>=` to `>` | 4 tests fail |
+| **EV.2** NC-E — drop `futureActivationEnabled` from the callable's forbidden keys | 2 tests fail |
 
 ### 7.2 Two findings the gates produced
 
@@ -379,6 +414,7 @@ has to reconstruct.
 | **EV.1** `provisionTeamMember §4b` / `.emulator §3c` "a future-start member commits and publishes nothing" | same trap: they arrive on day one with no `workingDays`, which reads as *available every day* | **inverted** — refused before Firebase Auth, no document and no orphan login |
 | **EV.1** `rotaBootstrap §2b` "a later cutover date is allowed" | allowed | **inverted** — pinned to the tenant's current day |
 | **EV.1** engine suites (`rotaWriter.test.js`, `.emulator`) | future-dating implicit | now pass `futureActivationEnabled: true` **explicitly**, so they read as proofs of a capability production disables |
+| **EV.2** `rotaCallable §5e2` / `.emulator §3e` "an END dated today is accepted" | accepted, and disclosed as residue | **inverted** — every new END is refused; a BACKDATED one keeps its sharper `BACKDATED` diagnosis |
 
 ---
 
@@ -447,7 +483,7 @@ changing nothing across a wholly-legacy platform.
 
 | Id | What |
 |---|---|
-| `FIN-DATED-ROTA-R2d` | **the activator, and the only thing that unlocks future-dated rotas.** Until it ships, every future-dated `ROTA_START`/`ROTA_CHANGE`/`ROTA_END` is refused server-side with `FUTURE_ACTIVATION_NOT_READY` and neither admin UI offers a date (§3.1). Shipping it means: build the activator, prove it, and flip `ROTA_FUTURE_ACTIVATION_ENABLED` in `functions/src/staff/rotaActivation.ts` **together with** the thing that makes it true — plus the client constants in `src/utils/rotaIntent.ts` and `barber-panel/src/rota/rotaClient.js`, which a test pins to the server's value |
+| `FIN-DATED-ROTA-R2d` | **the activator, and the only thing that unlocks future-dated rotas AND `ROTA_END`.** It may be shipped only with real activation evidence — a scheduler or trigger that is proven to call `convergeRotaCache` on an effective date — never by flipping the constant alone. Until it ships, every future-dated `ROTA_START`/`ROTA_CHANGE`/`ROTA_END` is refused server-side with `FUTURE_ACTIVATION_NOT_READY` and neither admin UI offers a date (§3.1). Shipping it means: build the activator, prove it, and flip `ROTA_FUTURE_ACTIVATION_ENABLED` in `functions/src/staff/rotaActivation.ts` **together with** the thing that makes it true — plus the client constants in `src/utils/rotaIntent.ts` and `barber-panel/src/rota/rotaClient.js`, which a test pins to the server's value |
 | `ROTA-B1B2` | route `provisionTenant` / `approveApplication` owner-barber creation through `ROTA_START`. They currently mint a bootstrap cache-without-log record — now **attributed** by an explicit `rotaPolicy/rollout` stamp rather than left as an absence |
 | `STAFF-START-A2` | unchanged: HeroHairs' sole barber needs a real start date before that tenant can be cut over |
 | `SALOWN-PANEL-1` | **RELEASE BLOCKER** — see §11. `STATUS_UNKNOWN` blocks step 8 of the release order |

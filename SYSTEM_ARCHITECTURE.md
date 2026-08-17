@@ -120,7 +120,7 @@ fold (`utils/rotaFold.ts`), never a second opinion. It is the ONLY writer of the
 `convergeRotaCache` exists, is proven, and is reached by **nothing** — the activator is
 `FIN-DATED-ROTA-R2d`.
 
-**⛔ FUTURE-DATED ROTAS ARE DISABLED (`R2c-EV.1`).** Because nothing runs on an effective date, a
+**⛔ FUTURE-DATED ROTAS AND `ROTA_END` ARE DISABLED (`R2c-EV.1` / `R2c-EV.2`).** Because nothing runs on an effective date, a
 future-dated `ROTA_START` / `ROTA_CHANGE` / `ROTA_END` would record an intention the product cannot
 carry out — the log advances, nothing publishes today (correctly), and nothing publishes on the
 chosen day either. Every production boundary therefore refuses one with `FUTURE_ACTIVATION_NOT_READY`.
@@ -136,7 +136,12 @@ chosen day either. Every production boundary therefore refuses one with `FUTURE_
   no effective state; gating it would strand an already-recorded future change in the one state with
   no way out;
 * both admin UIs remove the date picker rather than offering it with a caveat. Their constants are
-  **affordances**; the server is the authority, and a test pins them to it.
+  **affordances**; the server is the authority, and a test pins them to it;
+* **`ROTA_END` is refused at ANY date** (`R2c-EV.2`), not merely a future one: an end dated today is
+  correct today and wrong from tomorrow, and tomorrow is what an end is for. A **backdated** end
+  keeps its sharper `BACKDATED` refusal. Ending a rota is therefore unavailable in production until
+  R2d — no capability is lost today, because neither admin UI composes one and a departure is
+  `status: 'passive'`, a different contract.
 
 Turning it on is `FIN-DATED-ROTA-R2d`, and the flag may only be flipped together with the activator
 that makes it true. It lives in `functions/src/staff/rotaActivation.ts`.
