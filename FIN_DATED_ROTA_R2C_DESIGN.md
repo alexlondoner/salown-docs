@@ -7,9 +7,20 @@ was published; the live ruleset is unchanged and was not read.
 
 | Repo | SHA | Contents |
 |---|---|---|
-| `salown-app` | **`af8f89a`** (bulk) + **`919e9a2`** (corrections) | engine seam, three server modules, two callables, rules, Team Members cutover, salon-hours withdrawal, suites |
-| `whitecross-site` | **`6a53ec44`** | premium `barber-panel` cutover + document-integrity fixes |
-| `salown-docs` | this file + `ROADMAP.md` | — |
+| `salown-app` | **`af8f89a`** (bulk) + **`919e9a2`** (corrections) + **`__EV1_SALOWN__`** (EV.1) | engine seam, four server modules, two callables, rules, Team Members cutover, salon-hours withdrawal, the future-activation gate, suites |
+| `whitecross-site` | **`6a53ec44`** + **`__EV1_WC__`** (EV.1) | premium `barber-panel` cutover + document-integrity fixes + the future affordance |
+| `salown-docs` | this file + `ROADMAP.md` + `SYSTEM_ARCHITECTURE.md` | — |
+
+**What R2c supports, precisely:**
+
+| | |
+|---|---|
+| CURRENT-date canonical rota | ✅ supported — start, change, end and supersede, all taking effect today |
+| FUTURE-dated rota | ⛔ **disabled until `FIN-DATED-ROTA-R2d`** — refused server-side with `FUTURE_ACTIVATION_NOT_READY`; see §3.1 |
+| Whitecross | canonical after the §9 cutover |
+| HeroHairs | **bounded legacy**, until its barber's start date is a business fact (`STAFF-START-A2`) |
+| `ROTA-B1B2` | named follow-up — owner-barber bootstrap still mints a cache-without-log record |
+| `SALOWN-PANEL-1` | **RELEASE BLOCKER** — see §11 |
 
 > ⚠️ **Two commits are misattributed, and neither is being rewritten.** `af8f89a` carries the bulk
 > of this implementation under a `claim:` message, because `git commit` without pathspecs commits
@@ -161,25 +172,64 @@ The one state a retry may **not** absorb is a barber document that exists but wa
 this flow: refused by name (`BARBER_EXISTS`). Its own prior commit is distinguished from a stranger's
 document by the presence of the deterministic provisioning audit record — an exact test, not a guess.
 
-### 3.1 The future-start gap — real, bounded, and not engineered around
+### 3.1 Future-dated changes are REFUSED until R2d (`R2c-EV.1`)
 
-A member whose rota starts in the **future** commits a canonical log and **no cache**:
-`computeCacheConvergence` materialises the period covering *today* and no other. They are not
-bookable before `availabilityFrom` (A1, an absolute stop evaluated before the weekly pattern), so
-the specified contract holds exactly.
+R2c's first pass accepted a future-dated `ROTA_START` / `ROTA_CHANGE` / `ROTA_END` and told the
+owner *"a future date is recorded now and nothing changes on the calendar until that day"*. Only the
+first half of that sentence was ever true. **Nothing changes on that day either**, because
+`computeCacheConvergence` publishes the period covering TODAY and the thing that looks again on the
+effective date — `convergeRotaCache` — is reached by no scheduler and no trigger.
 
-What does **not** hold without an activator is the day *after*: an absent `workingDays` reads as
-"available every day" to `staffAvailability.worksOnDay`. Writing the cache at provisioning time
-would "fix" it by making the caller a second publisher of the three fields — which is the entire
-defect R2c removes — so it is **not** done.
+So the product would have recorded an intention it cannot carry out, on an append-only log, behind a
+screen that promised otherwise. The honest answer is not a better sentence:
 
-**The gap is inherited from R2** (`convergeRotaCache` is still reached by nothing), the brief
-explicitly excludes an activator from R2c, and it **cannot bite until a canonical tenant hires
-somebody with a future start date**. Whitecross — the first canonical tenant — has three past-dated
-staff and no pending hire. That same event is the one `STAFF-START-A1` has been waiting on to prove
-its hidden-then-appears path. Tracked as `FIN-DATED-ROTA-R2d` (activation).
+> **Future-dated mutations fail closed until `FIN-DATED-ROTA-R2d` is live.**
 
----
+**The capability, not a bug fix.** The engine is right — future-dating is the whole point of a dated
+rota and the fold models it correctly. What is missing is a DEPLOYMENT fact: whether anything runs
+on the effective date. So it is modelled exactly as R2b modelled `passiveAuthorityLive` — a proof
+the deployment supplies, `RotaWriterDeps.futureActivationEnabled`, **defaulting to `false`**.
+
+| Property | How |
+|---|---|
+| one stable reason | `FUTURE_ACTIVATION_NOT_READY` |
+| server-owned | a **dep**, not an input. Absent from `RotaWriteInput`, absent from both request allowlists, and asserted absent from both |
+| impossible to override | a body carrying it reaches the envelope validator, which does not know the name — negative control 3 proves the bypass fails |
+| tenant-local today | the ENGINE's own `resolveTodayKey`, inside its transaction, via the TR-A precedence and `tenantTodayKey`. Never the browser, the device or the runtime's UTC day |
+| one answer | the gate runs where the day is already resolved, so no second resolver can disagree across a midnight boundary |
+| fail-closed default | a new caller that forgets the dep gets the safe behaviour, not the capable one |
+
+**`provisionTeamMember` pre-checks as well**, and that is not a duplicate authority. It is the only
+boundary with a side effect no transaction can roll back — creating a Firebase Auth account — so the
+refusal must land before Phase A. A refused future-start member leaves **no Firestore document and
+no orphan login**, proven on the emulator.
+
+**The cutover is pinned to the tenant's current day.** A cutover is a controlled *current* act: dry
+run, read the plan, apply, verify the salon, in one sitting. Dating it for next week would freeze
+every member's schedule into an append-only log and wait for an activator that does not exist.
+
+**`ROTA_SUPERSEDE` was reviewed separately and is deliberately NOT gated.** It withdraws; it carries
+no `effectiveFrom` and no `effectiveTo` (asserted against the shared entry shape), the fold gives it
+no lane, and it creates no effective state — so it cannot schedule anything. Gating it would be
+actively harmful: a future change recorded before this shipped could then be neither activated (no
+scheduler) nor withdrawn, **the one state with no way out**.
+
+**Both admin UIs stop offering a date.** The picker is removed rather than offered with a caveat — a
+control that must be remembered is a control that will be forgotten — and a new member's start date
+is capped at today, because their rota starts on it. The client constants are **affordances, not
+gates**: `rotaSurfaceGuard.test.ts` asserts the client and server constants agree, and a stale
+cached bundle that still submits a date gets `FUTURE_ACTIVATION_NOT_READY` rendered as a sentence
+that says what happened, why, and what to do instead — never "try again".
+
+**Engine contracts still prove the capability.** `rotaWriter.test.js` and
+`rotaWriter.emulator.test.js` pass `futureActivationEnabled: true` explicitly, so they read as what
+they are: proofs of a capability production currently disables, ready for the day R2d turns it on.
+
+**Known residue, stated rather than quietly excluded.** `ROTA_END` with `effectiveTo == today` is
+not future-dated and is allowed; from tomorrow the subject is UNCOVERED and, with no activator,
+nothing re-converges. That is R2's accepted `rotaLegacyWriteGate` behaviour (`UNCOVERED` blocks the
+publish unless the subject is proven passive), it predates this gate, and it is not what EV.1 was
+asked to change.
 
 ## 4. Migration — prepared, guarded, and NOT run
 
@@ -265,18 +315,18 @@ production read this session did not take.
 
 | Gate | Result |
 |---|---|
-| Functions unit suite | **1638 tests, 1604 pass, 0 fail** |
+| Functions unit suite | **1657 tests, 1623 pass, 0 fail** |
 | Functions emulator gate (both phases, pinned toolchain) | **466/466**, `firebase-tools 15.26.0` / `cloud-firestore-emulator-v1.22.0.jar` |
-| Frontend suite (vitest) | **4043/4043**, 136 files |
-| Rules emulator gate — 4 suites | **78/78** (`availabilityFrom` 17 · `staffRota` 21 · `rotaRollout` **19** · `superAdminCatchall` 21) |
+| Frontend suite (vitest) | **4047/4047**, 136 files |
+| Rules emulator gate — 4 suites | **80/80** (`availabilityFrom` 17 · `staffRota` 21 · `rotaRollout` **21** · `superAdminCatchall` 21) |
 | Rules Test API corpus | **104/104** (was 72/72 at R2b) |
-| barber-panel suite | **25/25** |
+| barber-panel suite | **31/31** |
 | Typechecks | frontend ✔ · functions ✔ |
 | Scoped lint (26 changed files) | **0 errors, 0 warnings**, proven non-vacuous |
 | Repo lint delta | **0/0** on every changed file; 3245/6 pre-existing on untouched files |
 | Builds | salown-app admin ✔ · barber-panel ✔ |
-| Archive manifest ×2 from a clean tree | identical — **160 files**, `a3a622a5701224f2…`, `ok: true` (154 → 160 = 3 modules + their 3 compiled `lib/` outputs) |
-| Callable export diff | **74 → 76**, exactly `salownProvisionTeamMember` + `salownRotaBootstrapTenant` |
+| Archive manifest ×2 from a clean tree | identical — **162 files**, `75bcfdc79bc40221…`, `ok: true` (160 → 162 = `rotaActivation.ts` + its compiled `lib/` output) |
+| Callable export diff | **74 → 76** at R2c, exactly `salownProvisionTeamMember` + `salownRotaBootstrapTenant`. **EV.1 adds NO export** — 76 → 76, byte-identical |
 | rules-authority | **30/30** · deploy-policy ✔ · functions-ownership ✔ · release-guard 19/19 · whitecross rules-authority ✔ |
 | Hosting target parity | `firebase.json` byte-identical; both whitecross targets preserved |
 | `git diff --check` | clean · no NUL byte · all changed files valid UTF-8 |
@@ -292,6 +342,11 @@ production read this session did not take.
 | panel NC1 — restore the half-write toggle | 1 test fails |
 | panel NC2 — restore the non-merge `setDoc` | 4 tests fail |
 | lint NC — inject an unused const | reported in both a functions module and a frontend module |
+| **EV.1** NC-A — remove the engine's future gate | 4 tests fail across three suites |
+| **EV.1** NC-B — a boundary passes `futureActivationEnabled: true` | 3 tests fail |
+| **EV.1** NC-C — the client constant disagrees with the server's | the parity test fails |
+| **EV.1** NC-1 — capability ENABLED | the unsafe future write succeeds, which is what the gate holds back |
+| **EV.1** NC-3 — the capability sent in the request body | ignored; the gate still refuses |
 
 ### 7.2 Two findings the gates produced
 
@@ -308,7 +363,9 @@ production read this session did not take.
 
 ## 8. Assertions that CHANGED, and why
 
-Recorded explicitly, because each was a deliberate R2b property that R2c supersedes.
+Recorded explicitly, because each was a deliberate property that this work supersedes. **An
+inverted assertion is a decision, and a decision belongs in the record** — not in a diff somebody
+has to reconstruct.
 
 | Assertion | R2b | R2c |
 |---|---|---|
@@ -318,32 +375,71 @@ Recorded explicitly, because each was a deliberate R2b property that R2c superse
 | `rotaCallable §9c` / `rotaWriter §13c` "no UI importer" | app names none of it | app names the **callables**; the engine, `appendRotaChange` and `convergeRotaCache` stay absent from every browser bundle |
 | `rotaFold §11b` / `§23` "nothing in the product imports this core" | none | **exactly one** — `src/utils/rotaIntent.ts`. A page that imported the fold directly would be a second opinion about what a log means |
 | `openingHoursWrite §7` "propagation must still happen" | required | **inverted** — required absent |
+| **EV.1** `rotaCallable §5e` / `.emulator §3c` "a future change advances the log and publishes nothing" | true, and a trap — nothing published on the effective date either | **inverted** — the boundary REFUSES it, with zero writes |
+| **EV.1** `provisionTeamMember §4b` / `.emulator §3c` "a future-start member commits and publishes nothing" | same trap: they arrive on day one with no `workingDays`, which reads as *available every day* | **inverted** — refused before Firebase Auth, no document and no orphan login |
+| **EV.1** `rotaBootstrap §2b` "a later cutover date is allowed" | allowed | **inverted** — pinned to the tenant's current day |
+| **EV.1** engine suites (`rotaWriter.test.js`, `.emulator`) | future-dating implicit | now pass `futureActivationEnabled: true` **explicitly**, so they read as proofs of a capability production disables |
 
 ---
 
-## 9. Release order — recorded, NOT executed
+## 9. Release order — CORRECTED, and NOT executed
 
-**Prerequisites:** none outstanding. `SEC-CATCHALL-1` ✅ landed. `STAFF-START-A2` is **no longer a
-blocker** — it blocks only HeroHairs' own cutover, which the rollout boundary defers by design. The
-§3 propagation decision ✅ taken (withdrawn).
+**Prerequisites:** none outstanding except §11. `SEC-CATCHALL-1` ✅. `STAFF-START-A2` is **not** a
+blocker — it blocks only HeroHairs' own cutover, which the rollout boundary defers by design. The
+§5 propagation decision ✅ taken.
+
+### 9.1 Why the rules move EARLIER, not last
+
+R2c's first release order put `firestore.rules` last, on the general principle that the rules are
+the strictest unit and therefore go last. That principle is right in general and **wrong here**, and
+the reason is a property of the staged boundary rather than a preference:
+
+> The staged rules are **behaviour-preserving while a tenant is legacy.** The exception is
+> `!canonicalTenant && !subjectHasHeader`, and before a cutover **both halves hold for every
+> subject**. So publishing them over a wholly-legacy platform changes nothing at all.
+
+And publishing them last would open a window that does not otherwise exist. The bootstrap
+transaction creates canonical headers; until the rules are published, a canonical barber is still
+directly writable by any browser. That window is exactly the state R2c exists to make
+unrepresentable, and the old order created it deliberately.
+
+**This is executed evidence, not an argument.** `test/rules/rotaRollout.emulator.test.js` §8a loads
+the ruleset **once** and never swaps it again: it exercises the legacy path (allowed), performs the
+flip the way the cutover does — a canonical header, then the `rotaPolicy/rollout` write — and shows
+the same ruleset now denying, with no redeploy between the two states. §8b shows the staged rules
+changing nothing across a wholly-legacy platform.
+
+### 9.2 The order
 
 | # | Unit | Command | Why this position |
 |---|---|---|---|
-| 1 | capture live identities | Functions revisions, Hosting version ids, **the live ruleset id** | the rollback identities. The pre-change ruleset id is currently `STATUS_UNKNOWN` — fetch it here |
-| 2 | Functions | `./scripts/deploy-functions.sh salownRotaTransaction salownProvisionTeamMember salownRotaBootstrapTenant` | server first, always. All three together: a UI that can edit but not create is not a shippable state. **Never blanket** — the wrapper refuses it offline |
-| 3 | `hosting:salown` | CI on push, or `--only hosting:salown` | must not precede 2 (the UI would call a function that is not there); must not follow 6 (the old UI would be denied) |
-| 4 | whitecross `barber-panel` | anchored release, **both** targets: `whitecrossbarbers-admin` **and** `whitecrossbarbers-owner` | independent repo; blocks 6, because the new rules deny its old `setDoc` |
-| 5 | **dry run** `salownRotaBootstrapTenant { tenantId: 'whitecross' }` | — | **re-read and PROVE all three `availabilityFrom` values first.** Review the plan and the fingerprints |
-| 6 | apply the cutover with the exact fingerprints | — | flips `whitecross` to `canonical`. **One-way:** the log is append-only and client-unwritable; a rollback restores code, never history |
-| 7 | verify callable + UI behaviour | — | before the rules make the old path impossible |
-| 8 | `firestore.rules` | `--only firestore:rules` | **LAST, always.** Only now is every writer either behind the server or gone |
-| 9 | verify rules + rollback readiness | — | — |
-| — | HeroHairs | — | **NOT in this release.** Stays bounded-legacy until its barber's real start date is a business fact |
-| — | `provisionTenant` / `approveApplication` routing through `ROTA_START` | — | **NOT in this release.** Tracked as `ROTA-B1B2` |
-| — | activation / `convergeRotaCache` | — | **NOT in this release.** Tracked as `FIN-DATED-ROTA-R2d` |
+| 1 | capture live identities | Functions revisions, Hosting version ids, **the live ruleset id** | the rollback identities. The pre-change ruleset id is `STATUS_UNKNOWN` — fetch it here |
+| 2 | Functions — all three rota callables | `./scripts/deploy-functions.sh salownRotaTransaction salownProvisionTeamMember salownRotaBootstrapTenant` | server first, always. All three together: a UI that can edit but not create is not a shippable state. The wrapper refuses a blanket target offline |
+| 3 | `hosting:salown` | CI on push, or `--only hosting:salown` | must not precede 2 — the UI would call a function that is not there |
+| 4 | whitecross `barber-panel` — **both** targets | anchored release: `whitecrossbarbers-admin` **and** `whitecrossbarbers-owner` | independent repo. Both serve `barber-panel/build`; releasing one leaves the other writing the old way |
+| 5 | **verify every updated UI while Whitecross is still LEGACY** | — | the safest possible state to find a UI defect in: nothing is canonical, the legacy exception still applies, and a mistake is recoverable by a hosting rollback alone |
+| 6 | **`firestore.rules`** | `--only firestore:rules` | **behaviour-preserving here** (§9.1), and it removes the post-bootstrap window. Rules are now in place BEFORE any canonical header exists |
+| 7 | prove legacy Whitecross **and HeroHairs** editing still behaves | — | the staged rules' whole claim, verified on production before anything becomes canonical |
+| 8 | **dry run** `salownRotaBootstrapTenant { tenantId: 'whitecross' }` | — | **re-read and PROVE all three `availabilityFrom` values.** Review the plan and the fingerprints |
+| 9 | apply with the exact fingerprints | — | — |
+| 10 | — | — | **the canonical rules become effective the instant the rollout transaction flips.** No redeploy, no direct-cache-write window (§8a) |
+| 11 | verify canonical callable / UI / rules behaviour | — | — |
+| — | HeroHairs | — | **NOT in this release.** Bounded-legacy until its barber's start date is a business fact |
+| — | `provisionTenant` / `approveApplication` | — | **NOT in this release.** `ROTA-B1B2` |
+| — | activation / `convergeRotaCache` | — | **NOT in this release.** `FIN-DATED-ROTA-R2d` |
 
-**Rollback order reverses:** rules first, then hosting, then functions — the rules are the strictest
-unit, so they are the first thing loosened and the last thing tightened.
+### 9.3 Rollback
+
+* **Before step 9 (the bootstrap):** ordinary per-unit rollback — Hosting by version id, Functions
+  by revision, rules by the ruleset id captured at step 1. Nothing canonical exists yet, so every
+  unit is independently reversible.
+* **After step 9:** **history is append-only and cannot be rolled back by code.** The log is written
+  with `tx.create` and is client-unwritable by rule; a rollback restores code, never history.
+  Nothing between steps 6 and 11 may be treated as a trial.
+* **The rules must NEVER be rolled back to a version that allows canonical direct cache writes while
+  canonical headers exist.** That would leave a person whose rota is a history editable by a write
+  that never appears in it — the exact defect, reintroduced by the recovery. If the rules must be
+  reverted after a cutover, the cutover has to be reasoned about first.
 
 ---
 
@@ -351,8 +447,31 @@ unit, so they are the first thing loosened and the last thing tightened.
 
 | Id | What |
 |---|---|
-| `FIN-DATED-ROTA-R2d` | the activator. Until it ships, a future-start member on a canonical tenant has no published cache on their start date (§3.1) |
+| `FIN-DATED-ROTA-R2d` | **the activator, and the only thing that unlocks future-dated rotas.** Until it ships, every future-dated `ROTA_START`/`ROTA_CHANGE`/`ROTA_END` is refused server-side with `FUTURE_ACTIVATION_NOT_READY` and neither admin UI offers a date (§3.1). Shipping it means: build the activator, prove it, and flip `ROTA_FUTURE_ACTIVATION_ENABLED` in `functions/src/staff/rotaActivation.ts` **together with** the thing that makes it true — plus the client constants in `src/utils/rotaIntent.ts` and `barber-panel/src/rota/rotaClient.js`, which a test pins to the server's value |
 | `ROTA-B1B2` | route `provisionTenant` / `approveApplication` owner-barber creation through `ROTA_START`. They currently mint a bootstrap cache-without-log record — now **attributed** by an explicit `rotaPolicy/rollout` stamp rather than left as an absence |
 | `STAFF-START-A2` | unchanged: HeroHairs' sole barber needs a real start date before that tenant can be cut over |
-| `SALOWN-PANEL-1` | `~/Desktop/alex/salown-panel/` — an untracked, unclaimed, deployable copy of the old panel. Is `salown-admin` live? `STATUS_UNKNOWN` |
+| `SALOWN-PANEL-1` | **RELEASE BLOCKER** — see §11. `STATUS_UNKNOWN` blocks step 8 of the release order |
 | `FIN-GHOST-PASSIVE` residual | (a) passive-wage comp-close reliability and (b) the occupancy denominator remain open — **out of R2c's scope**, and `Barbers.tsx` was claimed by this session while it ran |
+## 11. `SALOWN-PANEL-1` — a RELEASE BLOCKER, not an observation
+
+`~/Desktop/alex/salown-panel/` is **not a git repository**, is in no claim registry, and its
+`firebase.json` deploys to hosting target **`salown-admin`**. It holds a **byte-identical copy** of
+`whitecross-site/barber-panel/src/pages/Barbers.js` and a near-identical `Settings.js`, so it writes
+all three rota cache fields directly and still carries the unfixed 2026-08-10 propagation fan-out —
+and it has a populated `build/`.
+
+**EV.1 did not modify it, deliberately.** It has no release discipline and no owner, and editing a
+deployable surface nobody owns is how a second unreviewed panel gets shipped.
+
+**It is a blocker, and `STATUS_UNKNOWN` is not a pass:**
+
+1. its live/retired status must be resolved by **read-only** Hosting target/artifact inspection —
+   `firebase hosting:channel:list --site salown-admin --project havuz-44f70 --json`, and comparing
+   the served bundle against `salown-panel/build` — **before step 8** of the release order;
+2. **if it can edit Whitecross barbers, it must be retired or cut over before the canonical flip.**
+   After step 9 a Whitecross barber has a canonical header, and this panel's saves would be denied
+   mid-edit in front of whoever is using it;
+3. `STATUS_UNKNOWN` blocks step 8. It is not an optional observation, and "probably retired" is not
+   an answer — the whole point of a release blocker is that the unknown is resolved, not weighed.
+
+---

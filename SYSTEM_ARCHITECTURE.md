@@ -120,6 +120,27 @@ fold (`utils/rotaFold.ts`), never a second opinion. It is the ONLY writer of the
 `convergeRotaCache` exists, is proven, and is reached by **nothing** — the activator is
 `FIN-DATED-ROTA-R2d`.
 
+**⛔ FUTURE-DATED ROTAS ARE DISABLED (`R2c-EV.1`).** Because nothing runs on an effective date, a
+future-dated `ROTA_START` / `ROTA_CHANGE` / `ROTA_END` would record an intention the product cannot
+carry out — the log advances, nothing publishes today (correctly), and nothing publishes on the
+chosen day either. Every production boundary therefore refuses one with `FUTURE_ACTIVATION_NOT_READY`.
+
+* the capability is `RotaWriterDeps.futureActivationEnabled`, a DEPLOYMENT fact defaulting to the
+  fail-closed `false`, exactly like `passiveAuthorityLive`. It is a **dep, never an input** — absent
+  from `RotaWriteInput` and from both request allowlists;
+* the ENGINE enforces it, against the TENANT's calendar day resolved inside its own transaction.
+  Never the browser, the device or the runtime's UTC day;
+* `salownProvisionTeamMember` additionally PRE-checks, before Firebase Auth — the one side effect no
+  transaction can roll back;
+* **`ROTA_SUPERSEDE` is deliberately NOT gated.** It withdraws, carries no effective date and creates
+  no effective state; gating it would strand an already-recorded future change in the one state with
+  no way out;
+* both admin UIs remove the date picker rather than offering it with a caveat. Their constants are
+  **affordances**; the server is the authority, and a test pins them to it.
+
+Turning it on is `FIN-DATED-ROTA-R2d`, and the flag may only be flipped together with the activator
+that makes it true. It lives in `functions/src/staff/rotaActivation.ts`.
+
 **The rollout boundary is TWO conditions.** A direct client write to a cache field is permitted only
 when the tenant is not `canonical` **AND** the subject has no `staffRota` header. The per-subject
 half is not a flag — it becomes true when the engine commits that person's first transaction — which
