@@ -7,8 +7,8 @@ was published; the live ruleset is unchanged and was not read.
 
 | Repo | SHA | Contents |
 |---|---|---|
-| `salown-app` | **`af8f89a`** (bulk) + **`919e9a2`** (corrections) + **`__EV1_SALOWN__`** (EV.1) | engine seam, four server modules, two callables, rules, Team Members cutover, salon-hours withdrawal, the future-activation gate, suites |
-| `whitecross-site` | **`6a53ec44`** + **`__EV1_WC__`** (EV.1) | premium `barber-panel` cutover + document-integrity fixes + the future affordance |
+| `salown-app` | **`af8f89a`** (bulk) + **`919e9a2`** (corrections) + **`cf52f7a`** (EV.1) | engine seam, four server modules, two callables, rules, Team Members cutover, salon-hours withdrawal, the future-activation gate, suites |
+| `whitecross-site` | **`6a53ec44`** + **`83d5b83a`** (EV.1) | premium `barber-panel` cutover + document-integrity fixes + the future affordance |
 | `salown-docs` | this file + `ROADMAP.md` + `SYSTEM_ARCHITECTURE.md` | — |
 
 **What R2c supports, precisely:**
