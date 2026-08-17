@@ -61,8 +61,15 @@ Migration order: ~~Dashboard~~ ✅ → Bookings → Calendar → Finance → Rep
 > `firebase.json` deploys to hosting target `salown-admin`. It holds a byte-identical copy of the
 > whitecross `barber-panel` Team Members page — so it writes the three rota cache fields directly and
 > still carries the 2026-08-10 lost-update propagation fan-out — and it has a populated `build/`.
-> **Whether `salown-admin` is live is `STATUS_UNKNOWN`.** ROADMAP `SALOWN-PANEL-1`; decide before
-> any Firestore rules deploy, because if it IS live it is on the blast radius.
+> **✅ RESOLVED 2026-08-17 (`R2c-EV.3`, read-only): this panel is served by NOTHING**, so it is *not*
+> on any rules-deploy blast radius. `salown-admin` **is** a live site — but it serves the
+> **super-admin console** from `alex/super-admin/dist` (`versions/9f457fc2c8ee4b35`, released
+> `2026-07-31T10:27:45Z`, 7 files / 318 KB, `<title>super-admin</title>`, Vite). `salown-panel/build`
+> is CRA, base-pathed `/app-bundle/`, and that path 404s everywhere.
+> ⚠️ **The hazard that remains is the deploy AIM, not the panel:** a bare `firebase deploy --only
+> hosting` in `salown-panel` would replace the live super-admin console with a June CRA build, from a
+> directory with no git history to roll back to. **Do not run a deploy from this directory.**
+> ROADMAP `SALOWN-PANEL-1` (resolved) → `SALOWN-PANEL-2` (fix the aim; blocks nothing).
 
 ## salown-app — Key Files
 

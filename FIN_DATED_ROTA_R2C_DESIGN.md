@@ -22,7 +22,7 @@ was published; the live ruleset is unchanged and was not read.
 | Whitecross | canonical after the §9 cutover |
 | HeroHairs | **bounded legacy**, until its barber's start date is a business fact (`STAFF-START-A2`) |
 | `ROTA-B1B2` | named follow-up — owner-barber bootstrap still mints a cache-without-log record |
-| `SALOWN-PANEL-1` | **RELEASE BLOCKER** — see §11 |
+| `SALOWN-PANEL-1` | ✅ **CLEARED 2026-08-17 by `EV.3`** — the panel is served by nothing; see §11 |
 
 > ⚠️ **Two commits are misattributed, and neither is being rewritten.** `af8f89a` carries the bulk
 > of this implementation under a `claim:` message, because `git commit` without pathspecs commits
@@ -486,7 +486,7 @@ changing nothing across a wholly-legacy platform.
 | `FIN-DATED-ROTA-R2d` | **the activator, and the only thing that unlocks future-dated rotas AND `ROTA_END`.** It may be shipped only with real activation evidence — a scheduler or trigger that is proven to call `convergeRotaCache` on an effective date — never by flipping the constant alone. Until it ships, every future-dated `ROTA_START`/`ROTA_CHANGE`/`ROTA_END` is refused server-side with `FUTURE_ACTIVATION_NOT_READY` and neither admin UI offers a date (§3.1). Shipping it means: build the activator, prove it, and flip `ROTA_FUTURE_ACTIVATION_ENABLED` in `functions/src/staff/rotaActivation.ts` **together with** the thing that makes it true — plus the client constants in `src/utils/rotaIntent.ts` and `barber-panel/src/rota/rotaClient.js`, which a test pins to the server's value |
 | `ROTA-B1B2` | route `provisionTenant` / `approveApplication` owner-barber creation through `ROTA_START`. They currently mint a bootstrap cache-without-log record — now **attributed** by an explicit `rotaPolicy/rollout` stamp rather than left as an absence |
 | `STAFF-START-A2` | unchanged: HeroHairs' sole barber needs a real start date before that tenant can be cut over |
-| `SALOWN-PANEL-1` | **RELEASE BLOCKER** — see §11. `STATUS_UNKNOWN` blocks step 8 of the release order |
+| `SALOWN-PANEL-1` | ✅ **CLEARED 2026-08-17 by `EV.3`** (see §11) — step 8 is unblocked; the successor `SALOWN-PANEL-2` blocks nothing |
 | `FIN-GHOST-PASSIVE` residual | (a) passive-wage comp-close reliability and (b) the occupancy denominator remain open — **out of R2c's scope**, and `Barbers.tsx` was claimed by this session while it ran |
 ## 11. `SALOWN-PANEL-1` — a RELEASE BLOCKER, not an observation
 
@@ -499,7 +499,7 @@ and it has a populated `build/`.
 **EV.1 did not modify it, deliberately.** It has no release discipline and no owner, and editing a
 deployable surface nobody owns is how a second unreviewed panel gets shipped.
 
-**It is a blocker, and `STATUS_UNKNOWN` is not a pass:**
+**It was a blocker, and `STATUS_UNKNOWN` was not a pass:**
 
 1. its live/retired status must be resolved by **read-only** Hosting target/artifact inspection —
    `firebase hosting:channel:list --site salown-admin --project havuz-44f70 --json`, and comparing
@@ -509,5 +509,72 @@ deployable surface nobody owns is how a second unreviewed panel gets shipped.
    mid-edit in front of whoever is using it;
 3. `STATUS_UNKNOWN` blocks step 8. It is not an optional observation, and "probably retired" is not
    an answer — the whole point of a release blocker is that the unknown is resolved, not weighed.
+
+### 11.1 ✅ CLEARED — `EV.3`, 2026-08-17 (read-only: no deploy, no Firestore read or write)
+
+Step 1 was performed as written. **`salown-panel` is served by nothing**, so **step 2 is vacuous**
+and **step 3 is discharged**. Step 8 is unblocked and `R2c` has no open blockers.
+
+| Question | Answer | Evidence |
+|---|---|---|
+| Is `salown-admin` a live site? | **Yes** — a real `DEPLOY` release | `versions/9f457fc2c8ee4b35`, released `2026-07-31T10:27:45.740Z`, **7 files / 318,078 B** |
+| Does it serve *this panel*? | **No** | served `index.html` is 461 B with `<title>super-admin</title>` and a **Vite** `type="module"` entry `/assets/index-DmG8j3Xi.js` |
+| Then who owns it? | **`alex/super-admin`** | its `firebase.json` → site `salown-admin`, public `dist`; local `dist/` built `2026-07-31 11:27` UK = the release minute |
+| Is `salown-panel/build` served anywhere? | **No** | CRA (`/static/js/*.chunk.js`), 36 files / 8,555,251 B, `index.html` base-pathed `/app-bundle/` with `<title>salown — Own your salon.</title>`. `salown.web.app/app-bundle/…` → **404**; `salown-admin.web.app/app-bundle/…` → the super-admin SPA rewrite (461 B) |
+| Can it deploy to `whitecrossbarbers-admin`? | **No** | its `.firebaserc` lists a `whitecross-admin` target, but `firebase.json` configures only `salown-admin`, so `deploy --only hosting:whitecross-admin` has no matching config |
+
+**Why the size check alone was not enough, and why the fetch was.** 7 files / 318 KB is already
+irreconcilable with a build whose `logo.png` is 1.67 MB, and a size mismatch would have been a fair
+inference. It is still only an inference: local builds drift, and this repo's `build/` (2026-06-06)
+is *newer* than its own last deploy cache (`.firebase/hosting.YnVpbGQ.cache`, 2026-06-02), so
+"the sizes don't match" could equally have meant "it was deployed from an older tree". The served
+`<title>` and the Vite-vs-CRA entry shape settle authorship instead of estimating it.
+
+**What replaces the blocker — narrower, real, and NOT a release gate.** `salown-panel/firebase.json`
+declares `"target": "salown-admin"`, and that target is the **live super-admin console**. A bare
+`firebase deploy --only hosting` run in that directory replaces the platform's own admin surface
+with a stale June CRA panel — from a directory with no git history to roll back to and no claim
+registry to warn anyone. That is the `SEC-FN-NS` / `provisionTenant` contested-name family one layer
+down: two repos, one deployable target, last deploy wins. Tracked as ROADMAP **`SALOWN-PANEL-2`**;
+deliberately not fixed inside `R2c`, on this section's own reasoning — editing an unowned deployable
+surface mid-release is how a second unreviewed panel ships.
+
+### 11.2 What the same inspection found next door — `whitecrossbarbers-admin`
+
+Reading the *other* target in that `.firebaserc` produced the first **production** evidence that the
+defects `R2c` fixes are live. It changed no plan and no code; it changes the priority.
+
+- **The panel half of the release order has TWO live targets, not one.** `whitecrossbarbers-admin`
+  `versions/d6b075dced96fe33` and **`whitecrossbarbers-owner`** carry the **same release, the same
+  second, byte-identical** (`2026-07-21T14:57:43Z`, 38 files / 3,340,328 B). §9's "both whitecross
+  targets" is now a verified count rather than a phrase.
+- **The live save is a two-argument, no-merge `setDoc`** on `tenants/{tid}/barbers/{id}` carrying
+  `workingDays`, `hours:{open,close}` and `dayHours` together — both the direct-publisher defect
+  `R2c` removes *and* the `FIN-GHOST-PASSIVE` destructive save (no merge ⇒ `status`,
+  `availabilityFrom`, `leaves`, `leaveFrom`, `leaveUntil`, `role`, `services`, `shiftChanges` are
+  dropped on **every** save).
+- **The live Active toggle is `updateDoc(barbers/{id}, {active})` with no `status`** — the ghost
+  minter, serving.
+- Aliases were **resolved, not guessed**: the minifier renames the SDK helpers, so `setDoc` and
+  `updateDoc` do not appear as text in the chunk. `BN:()=>gu` in `main.621116d2.js` leads to `gu`'s
+  body, which contains the literal `"setDoc"` with a `kr.none()` precondition; likewise
+  `o.mZ → yu → "updateDoc"`, `o.kd → vu → deleteDoc`, `o.H9 → tl → doc`.
+- The Barbers page is `928.9d6cf2f5.chunk.js` (Team Members marker strings; six `workingDays:` key
+  literals against fifteen dotted reads). Four of the fourteen live JS chunks touch the cache fields.
+  **`main.621116d2.js` has zero `workingDays` hits** — a single-file grep would have returned a
+  confident false negative.
+
+⚠️ **The distinction R2c already drew is preserved.** The **mechanism** is now `LIVE_VERIFIED`;
+**whether a divergent document exists in production remains `STATUS_UNKNOWN`**. This pass took no
+Firestore read, and a served bundle proves what the code would do — never what anyone did with it.
+
+Two adjacent checks are recorded as **cleared**, so they are not re-litigated: the `deleteDoc` path
+is gated on the component's `isSuperAdmin` prop (matches standing delete policy), and both on-disk
+`serviceAccountKey.json` admin-SDK keys (`salown-panel/`, `whitecross-site/barber-panel/`) are
+untracked or gitignored, absent from every `build/`, and **not served** — `GET
+/serviceAccountKey.json` on `whitecrossbarbers-admin` returns 200 with the 657-byte SPA rewrite.
+
+Written up as an incident: `docs/INCIDENTS.md`, 2026-08-17, filed **🟡 Open** — the fix is pushed,
+and pushed is not live.
 
 ---
