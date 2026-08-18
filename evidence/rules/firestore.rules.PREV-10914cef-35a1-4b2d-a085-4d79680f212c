@@ -1,0 +1,414 @@
+rules_version = '2';
+// ╔══════════════════════════════════════════════════════════════════════════╗
+// ║  Canonical kaynak (firebase.json buna bağlı).                             ║
+// ║  PHASE 1: cross-tenant deliği kapatıldı. [P1-A/B/C/D] etiketli.           ║
+// ║  G2 (bookings read auth-only) + G3 (create financial forge) CANLIDA.       ║
+// ║  [G1]+[G4] (2026-06-27) CANLIDA: tenantRole==null fallback KALDIRILDI +    ║
+// ║     catch-all write→false + 14 koleksiyon explicit. staff self-escalate    ║
+// ║     KAPANDI, P1-D + booking-delete admin-gate BAĞLADI.                     ║
+// ║  [R1-A] (2026-07-24) Anonymous booking create REJECTS 7 server-owned     ║
+// ║     identity/linkage keys. Anonymous create ITSELF STAYS ALLOWED (locked ║
+// ║     decision 18); phase (b) is gated on H1 + W1 + E1. AUTHORED, NOT      ║
+// ║     DEPLOYED. Tests 131/131 (prev baseline 95/95; the stale 49/49 marker ║
+// ║     that sat on the [G1]+[G4] line above is corrected in this package).  ║
+// ║  ⚠️ HÂLÂ AÇIK: G5 (tek ruleset blast radius — yapısal).                    ║
+// ║  Rollback: docs/firestore.rules.ROLLBACK.txt                              ║
+// ╚══════════════════════════════════════════════════════════════════════════╝
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Helper functions (LIVE ile aynı) ──────────────────────────────────────
+    function isAuth()        { return request.auth != null; }
+    function isSuperAdmin()  { return isAuth() && request.auth.token.superAdmin == true; }
+    function isTenant(tid)   { return isAuth() && request.auth.token.tenantId == tid; }
+    // [G1] (2026-06-27) `tenantRole == null → admin` backwards-compat fallback KALDIRILDI.
+    //   Önce: claim'i olmayan herkes admin sayılıyordu (permission sistemi rules düzeyinde ölüydü).
+    //   Audit (scripts/backfillTenantRoles.cjs dry-run + auth.listUsers): tüm canlı tenant
+    //   kullanıcıları (whitecross+herohairs, 6 kişi) doğru tenantRole claim'ine SAHİP.
+    //   tenantId claim'i olup tenantRole'ü olmayan 3 user yalnız ölü/test tenant'larında
+    //   (ee-kurt-barbers / the-hair-lab / the-test-lab) → canlıyı etkilemez.
+    function isAdmin(tid)    { return isTenant(tid) && request.auth.token.tenantRole in ['owner', 'admin']; }
+    // [E1b] (2026-07-11) tenant-scoped owner: kendi salonunun VERİSİNİ silebilir (staff/barbers/finance/settings HARİÇ)
+    function isOwner(tid)    { return isTenant(tid) && request.auth.token.tenantRole == 'owner'; }
+    function isStaff(tid)    { return isTenant(tid) && request.auth.token.tenantRole in ['owner', 'admin', 'staff']; }
+    function isTenantAny(tid){ return isTenant(tid); }
+
+    // ── [A1] STAFF-START-AUTHORITY — the availabilityFrom DIRECT-WRITE gate ───
+    // WHY RULES AT ALL. whitecrossbarbers.com does NOT submit through
+    //   salownCreateBooking — the W1/C1 cutover that would change that is HELD
+    //   (ROADMAP WCP-3) — so it writes bookings straight to Firestore
+    //   (`setDoc(doc(db,'tenants/whitecross/bookings',id))`). For that channel the
+    //   Functions gates do not exist and the site's own script is a CLIENT guard,
+    //   not an authority. These rules are the only server-side authority there.
+    // WHY ABOVE THE BRANCH, not inside the anonymous clause. Same lesson as
+    //   [P0-PROMO-2] directly below: `isSuperAdmin()/isTenantAny()` short-circuit,
+    //   so a guard placed inside the anonymous branch is bypassed by every
+    //   authenticated client. It is hoisted, and the exemptions are expressed as
+    //   "this write is not gated" rather than "this writer is trusted".
+    // ADMIN SDK bypasses rules entirely and is deliberately NOT addressed here:
+    //   salownCreateBooking / CreateAdminBooking / CreateWalkIn / ReassignBooking
+    //   / RescheduleByToken already apply the same rule in-process.
+
+    // A tenant-local 'YYYY-MM-DD' key that is a REAL Gregorian calendar day.
+    //
+    //   A1.2 shipped an approximation here: month lengths were enforced but 02-29
+    //   was accepted unconditionally, because leap-year arithmetic "is not
+    //   expressible in Rules". That was wrong, and the divergence it created was
+    //   not acceptable either — the product predicate rejects '2027-02-29'
+    //   outright while these rules would have let a booking through from 1 March
+    //   onward, so the same stored value meant two different things depending on
+    //   which authority you asked. "Malformed fails closed" has to mean the same
+    //   thing everywhere or it is not a contract.
+    //
+    //   It IS expressible, in the regex rather than in arithmetic. A four-digit
+    //   year CCYY is a leap year iff
+    //       (YY is a non-zero multiple of 4)  OR  (YY == 00 and CC is a multiple of 4)
+    //   and each of those is a plain character-class alternation:
+    //       multiples of 4 in 01..99 :  [02468][48] | [13579][26] | [2468]0
+    //       multiples of 4 in 00..99 :  [02468][048] | [13579][26]
+    //   So 02-29 is admitted only for a year matching the leap alternation, which
+    //   makes 1900 invalid, 2000 valid, 2027 invalid and 2028 valid — the real
+    //   Gregorian rule, centuries included.
+    //
+    //   VERIFIED EXHAUSTIVELY, not by example: every (year, month, day) triple
+    //   from 1583-01-01 to 2400-12-31 — 818 years x 12 x 31 — was compared against
+    //   the platform calendar, with ZERO mismatches. The same corpus runs in
+    //   scripts/testAvailabilityRules.py so a future edit to this pattern cannot
+    //   quietly re-approximate it.
+    function a1IsDateKey(m, k) {
+      return k in m && m[k] is string && m[k].matches(
+        '^([0-9]{4}-((0[13578]|1[02])-(0[1-9]|[12][0-9]|3[01])|(0[469]|11)-(0[1-9]|[12][0-9]|30)|02-(0[1-9]|1[0-9]|2[0-8]))|([0-9]{2}([02468][48]|[13579][26]|[2468]0)|([02468][048]|[13579][26])00)-02-29)$');
+    }
+    function a1BarberRef(tid, bid) {
+      return /databases/$(database)/documents/tenants/$(tid)/barbers/$(bid);
+    }
+    // Is this write one the gate can decide about at all?
+    //   NO for: a missing/blank barberId; the 'no-preference' sentinel; a
+    //   server-assignment placeholder; a NAME-keyed reference (walk-ins and the
+    //   parsers store a lower-cased name, which resolves to no document); an
+    //   absent or unparseable booking date; and any barber document that does not
+    //   exist. Every one of those means "we cannot tell", and the contract is to
+    //   preserve existing Any-Barber/server-assignment semantics rather than guess.
+    function a1Decidable(tid, d) {
+      return 'barberId' in d && d.barberId is string
+        && d.barberId != '' && d.barberId != 'no-preference' && d.barberId != 'any'
+        && a1IsDateKey(d, 'date')
+        && exists(a1BarberRef(tid, d.barberId));
+    }
+    // The stored boundary, read from the barber document.
+    //   absent/null/''  → ALLOW (temporary legacy policy: on the day A1 ships every
+    //                     barber document is a legacy record, and failing closed
+    //                     would refuse every booking on every tenant at once);
+    //   malformed       → DENY (a present-but-unusable value is a corrupted claim,
+    //                     not an absent one);
+    //   otherwise       → inclusive: the booking date must be >= it.
+    //   The barber map is passed INTO this helper rather than fetched inside it,
+    //   so the whole gate costs exactly one exists() + one get(). Written the
+    //   obvious way — repeating `get(...)` for each branch — a Rules Test API
+    //   trace showed the same document being fetched FOUR times per create.
+    //   Document accesses are capped at 10 per single-document request, and a
+    //   booking create is not the place to spend four of them on one answer.
+    function a1StartOk(b, dateKey) {
+      return !('availabilityFrom' in b)
+        || b.availabilityFrom == null
+        || b.availabilityFrom == ''
+        || (a1IsDateKey(b, 'availabilityFrom') && dateKey >= b.availabilityFrom);
+    }
+    function a1WithinWindow(tid, d) {
+      return !a1Decidable(tid, d)
+        || a1StartOk(get(a1BarberRef(tid, d.barberId)).data, d.date);
+    }
+    // An UPDATE re-runs the gate only when it moves the appointment onto a
+    //   different barber or a different day. Everything else — cancelling, checking
+    //   out, marking no-show, editing a note — is untouched, which is what keeps a
+    //   pre-start ANOMALY cancellable instead of trapped. That is a contract, not a
+    //   performance shortcut: a booking nobody can cancel is worse than the
+    //   anomaly it was protecting against.
+    function a1UpdateWithinWindow(tid) {
+      return !request.resource.data.diff(resource.data).affectedKeys().hasAny(['barberId', 'date'])
+        || a1WithinWindow(tid, request.resource.data);
+    }
+
+    // ── Tenant root doc (LIVE ile aynı) ───────────────────────────────────────
+    match /tenants/{tenantId} {
+      allow read:  if true;                                  // public booking siteleri okuyor
+      // [DEL] (2026-07-02) delete = super-admin only sistem geneli (feedback_delete_superadmin_only).
+      allow create: if isSuperAdmin() || isAdmin(tenantId);
+      allow delete: if isSuperAdmin();
+      // [P1-D] Publication-control fields (profileStatus / profileSelfManaged / …)
+      // gate whether the public site is live. Only super-admin — or the
+      // salownPublishProfile / salownReviewProfile callables, which use the Admin
+      // SDK and bypass rules — may change them. Tenant admins edit everything else.
+      // [TR-A] `presentation` also appears here as a PUBLIC-SAFE MIRROR of
+      // settings/settings.presentation — the hosted booking page cannot read the
+      // settings subdoc (auth-only) but must still show the salon's own language
+      // and currency. Same owner/super-admin gate as the canonical copy, so an
+      // admin cannot make the public page disagree with the panel. (Presentation
+      // holds no secrets, so mirroring it onto the world-readable root is safe.)
+      allow update: if isSuperAdmin() || (isAdmin(tenantId)
+        && !request.resource.data.diff(resource.data).affectedKeys()
+             .hasAny(['profileStatus','profileSelfManaged','profilePublishedAt','profileSubmittedAt','profileReviewNotes','profileCheckIssues'])
+        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['presentation']) || isOwner(tenantId)));
+
+      // ── Bookings (public CREATE + callable update; read artık auth-only) ─────
+      match /bookings/{docId} {
+        // [G2] (2026-06-24) ÖNCE: read: if true → giriş yapmamış herkes TÜM müşteri
+        //   booking'lerini (ad/telefon/email/saat) okuyabiliyordu (GDPR PII dump).
+        //   ŞİMDİ: yalnız super-admin veya o tenant'ın authenticated üyesi.
+        //   Doğrulandı: salown-app/herohairs public hiçbir yer bookings okumuyor (busy slot
+        //   salownGetBusySlots callable=Admin SDK); panel/staff authenticated → çalışır.
+        //   whitecross-site 3 unauth read DENY olur ama: dup-check fails-open, grup-confirm
+        //   zaten webhook'ta, Stripe-back iptal salownCleanupExpiredPending'e (15dk) düşer.
+        allow read: if isSuperAdmin() || isTenantAny(tenantId);
+        // [G3] Public (unauth) create kısıtı (2026-06-24). Money-received alanları forge edilemez.
+        //   Doğrulandı: ne BookingPage.jsx (salown.com/book, herohairs) ne whitecross-site/script.js
+        //   create'te paidAmount/discount/tip YAZMIYOR — bunları yalnız authenticated panel checkout
+        //   yazar (üstteki isTenantAny dalı, kısıttan muaf). status zaten PENDING/CONFIRMED ile sınırlı.
+        //   paymentState/paymentType BİLEREK serbest: whitecross-site create'te bunları yazıyor.
+        // [R1-A] (2026-07-24) Server-owned identity/linkage fields cannot be forged on an
+        //   ANONYMOUS create. These seven are written ONLY by salownCreateBooking (Admin SDK,
+        //   rules bypassed) or by authenticated staff surfaces — both of which take the
+        //   isSuperAdmin()/isTenantAny() branches above and are unaffected by this clause.
+        //   Verified: neither BookingPage's legacy direct-create (src/pages/BookingPage.tsx:739)
+        //   nor whitecross-site's public create (script.js:1462 single + :1695 group) sends any
+        //   of them; `note` in whitecross-site is opening-hours copy, never a booking field.
+        //   `note` is forbidden publicly because it carries reserved block-time semantics
+        //   ('Busy'/'Quick block' in BookingDetailPanel) — a public note could masquerade a
+        //   booking as a staff block.
+        //   ⚠️ This is R1 phase (a) ONLY. Anonymous direct create REMAINS ALLOWED (locked
+        //   decision 18) for H1/W1 coexistence; phase (b) is gated on H1 + W1 + E1.
+        // [P0-PROMO-2 2026-08-05] The snapshot ban sits ABOVE the branch on purpose.
+        //   The first version of this rule put it INSIDE the anonymous clause, where
+        //   isSuperAdmin()/isTenantAny() short-circuit past it — so any authenticated
+        //   panel/staff/admin client could still create a booking carrying a forged
+        //   `{eligible:true, multiplier:10}`, which the confirmation email would have
+        //   announced and the till would have paid. Caught in release verification.
+        //   NO rules-evaluated writer may carry this field. The only legitimate
+        //   writer is ensureDirectBookingPromotionSnapshot through the Admin SDK,
+        //   which bypasses rules entirely and therefore needs no allow path here —
+        //   granting one is precisely what made it forgeable.
+        // [A1] The availability boundary is evaluated for EVERY rules-evaluated
+        //   writer, above the branch, for the same reason [P0-PROMO-2] is.
+        allow create: if a1WithinWindow(tenantId, request.resource.data)
+          && !request.resource.data.keys().hasAny(['loyaltyPromotionSnapshot']) && (
+          isSuperAdmin() || isTenantAny(tenantId) || (
+          request.resource.data.status in ['PENDING', 'CONFIRMED'] &&
+          // Money-received fields stay forgeable-proof on the anonymous branch.
+          //   `loyaltyPromotionSnapshot` is kept here too as defence in depth; the
+          //   guard hoisted above the branch is what actually binds every writer.
+          !request.resource.data.keys().hasAny(['paidAmount', 'discount', 'tip', 'loyaltyPromotionSnapshot']) &&
+          !request.resource.data.keys().hasAny([
+            'clientManualId', 'matchedBy', 'identityLinkedBy', 'identityLinkedAt',
+            'clientPhoneCanonical', 'emailCanonical', 'note'
+          ])
+        ));
+        // [P0-PROMO-2] A client may not add, change or delete the promise. affectedKeys()
+        //   covers all three at once, and leaves an unrelated field update that does not
+        //   touch the snapshot fully allowed — so cancel/reschedule/checkout keep working
+        //   on a booking that already carries one.
+        // [A1] Re-run the boundary only when the appointment moves to another
+        //   barber or another day; cancellation and unrelated edits stay open.
+        allow update: if a1UpdateWithinWindow(tenantId)
+          && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['loyaltyPromotionSnapshot']) && (
+          isSuperAdmin() || isTenantAny(tenantId) || (
+          resource.data.clientEmail != null &&
+          resource.data.clientEmail != '' &&
+          request.resource.data.clientEmail == resource.data.clientEmail &&
+          request.resource.data.bookingId == resource.data.bookingId &&
+          request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['status', 'rescheduledTo', 'cancelledAt', 'cancelReason',
+                      'date', 'time', 'startTime', 'endTime', 'rescheduledAt',
+                      'barberName', 'barberId', 'updatedAt'])
+          // `loyaltyPromotionSnapshot` is absent from this allow-list as well; the
+          // affectedKeys() guard above the branch is the primary lock.
+        ));
+        allow delete: if isSuperAdmin() || isOwner(tenantId);   // [DEL→E1b 2026-07-11] owner kendi tenant'ında silebilir
+      }
+
+      // ── Public-readable collections (LIVE ile aynı) ─────────────────────────
+      match /services/{docId} {
+        allow read:  if true;
+        allow create, update: if isSuperAdmin() || isTenantAny(tenantId);
+        allow delete: if isSuperAdmin() || isOwner(tenantId);   // [DEL→E1b 2026-07-11]
+      }
+      match /serviceCategories/{docId} {
+        allow read:  if true;
+        allow create, update: if isSuperAdmin() || isTenantAny(tenantId);
+        allow delete: if isSuperAdmin() || isOwner(tenantId);   // [DEL→E1b 2026-07-11]
+      }
+      match /barbers/{docId} {
+        allow read:  if true;
+        allow create, update: if isSuperAdmin() || isTenantAny(tenantId);
+        allow delete: if isSuperAdmin() || isOwner(tenantId);   // [E1b+ 2026-07-11] owner kendi ekibini silebilir (UI'da güçlü onay ŞART)
+      }
+      // [S1 2026-07-15] Staff comp (STAFF_MANAGEMENT_DESIGN §1.3): finansal veri —
+      //   owner + super-admin DIŞINDA kimse okuyamaz/yazamaz (Finance gate ile tutarlı).
+      //   Doc id = barber doc id. Comp verisi world-readable barbers'a ASLA yazılmaz.
+      //   ⚠️ OR-semantiği: bu blok tek başına yetmez — aşağıdaki [G4] catch-all READ'i
+      //   staffComp'u DIŞLAYACAK şekilde daraltıldı; ikisi birlikte deploy edilmeli.
+      match /staffComp/{barberId} {
+        allow read, write: if isSuperAdmin() || isOwner(tenantId);
+      }
+      match /gallery/{docId} {
+        allow read:  if true;
+        allow create, update: if isSuperAdmin() || isTenantAny(tenantId);
+        allow delete: if isSuperAdmin() || isOwner(tenantId);   // [DEL→E1b 2026-07-11]
+      }
+      match /announcements/{docId} {
+        allow read:  if true;
+        allow create, update: if isSuperAdmin() || isTenantAny(tenantId);
+        allow delete: if isSuperAdmin() || isOwner(tenantId);   // [DEL→E1b 2026-07-11]
+      }
+      match /public/{doc} {
+        allow read:  if true;
+        allow write: if false;
+      }
+      // Email engagement (opened/clicked/blocked/unsub) — written only by the Brevo
+      // webhook (Admin SDK, bypasses rules). Staff read for the marketing funnel.
+      match /emailEvents/{emailKey} {
+        allow read:  if isSuperAdmin() || isTenantAny(tenantId);
+        allow write: if false;
+      }
+      // Explicit opt-out list — written only by salownEmailOptOut (Admin SDK) for contacts
+      // with no matching client doc (e.g. walk-ins who click unsubscribe). Staff READ so the
+      // campaign audience list can suppress them too (list must match the server send guard).
+      match /emailOptOuts/{email} {
+        allow read:  if isSuperAdmin() || isTenantAny(tenantId);
+        allow write: if false;
+      }
+      // Discount codes — NOT world-readable (codes stay semi-private; online checkout
+      // validates server-side via Admin SDK). Staff read+update (in-salon validate +
+      // usedCount increment); manage/create = tenant; delete = super-admin.
+      match /discountCodes/{codeId} {
+        allow read:  if isSuperAdmin() || isTenantAny(tenantId);
+        allow create, update: if isSuperAdmin() || isTenantAny(tenantId);
+        allow delete: if isSuperAdmin() || isOwner(tenantId);   // [E1b 2026-07-11]
+        match /redemptions/{rid} {
+          allow read:   if isSuperAdmin() || isTenantAny(tenantId);
+          allow create: if isSuperAdmin() || isTenantAny(tenantId);   // in-salon staff + server (Admin SDK)
+          allow update, delete: if isSuperAdmin();
+        }
+      }
+
+      // ── Staff doc (LIVE ile aynı) ───────────────────────────────────────────
+      match /staff/{uid} {
+        allow read: if isAuth() && (
+          request.auth.uid == uid ||
+          isSuperAdmin() ||
+          isTenantAny(tenantId)
+        );
+        // [DEL] (2026-07-02) staff EKLEME/ROL/İZİN ataması + silme = yalnız super-admin.
+        //   Önce admin de yazabiliyordu (kendi staff'ını yönetir). Kullanıcı kararı: atama da
+        //   super-admin only. Staff-doc'a yalnız Settings UI yazıyor (login/onboarding otomatik yazmaz).
+        //   ⚠️ Sonuç: super-admin OLMAYAN owner'lar (herohairs durvezek@/alex2@) kendi staff'ını
+        //   yönetemez — pilot kararı (Seçenek a); scale'de owner'a tenant-scoped yetki gerekir.
+        allow create, update, delete: if isSuperAdmin();
+      }
+
+      // ── Parser tombstones (LIVE ile aynı) ───────────────────────────────────
+      match /parserTombstones/{docId} {
+        allow create: if isSuperAdmin() || isTenantAny(tenantId);
+        allow read:   if isSuperAdmin() || isTenantAny(tenantId);
+        allow update, delete: if isSuperAdmin();
+      }
+
+      // [G4] (2026-06-27) Tenant üyesinin YAZDIĞI koleksiyonlar — explicit, recursive.
+      //   ÖNCE: tek catch-all {document=**} write: isTenantAny → daha spesifik TÜM kuralları
+      //     eziyordu (Firestore OR'lar, en geniş kazanır): staff kendi permissions'ını yazıp
+      //     self-escalate edebiliyordu, P1-D profil koruması + bookings delete admin-gate ölüydü.
+      //   ŞİMDİ: yazılan her koleksiyon tek tek listelendi (isTenantAny), catch-all WRITE kapatıldı.
+      //     Böylece staff/{uid} (admin-only) + tenant-root (P1-D) + bookings delete gerçekten bağlar.
+      //   Liste 3 kod tabanı taranarak çıkarıldı (salown-app/src + whitecross-site + barber-panel,
+      //     template + ${TENANT} + virgül path stilleri). functions/ Admin SDK = rules bypass (dahil değil).
+      //   Storage (logo/cover/barbers/*/photo) Firestore değil → hariç. emailOptOuts/config = functions/read.
+      //   ⚠️ YENİ bir client-yazma koleksiyonu eklenince buraya da satır eklenmeli (yoksa write DENY).
+      match /clients/{document=**}                { allow read, create, update: if isSuperAdmin() || isTenantAny(tenantId); allow delete: if isSuperAdmin() || isOwner(tenantId); } // + clients/{id}/campaignsSent
+      // [TR-A] (2026-07-31) `presentation` (language/locale/currency/timezone/
+      //   timeFormat/countryCode) is OWNER-or-super-admin only. Everything else on
+      //   the settings docs keeps its existing isTenantAny() write, so no current
+      //   behaviour changes — the clause only bites when the diff TOUCHES
+      //   `presentation`. Rationale: regional settings decide the salon's CURRENCY
+      //   and its calendar day; a stylist flipping GBP→TRY is a commercial
+      //   accident, not a preference. The Settings tab is hidden for non-owners,
+      //   but hiding a control is not a control — this is.
+      //   Note the create branch is deliberately looser than update: on create
+      //   there is no `resource.data` to diff against, so it checks the incoming
+      //   keys instead.
+      // [TR-B] (2026-07-31) `packageSettings` joins `presentation` as OWNER-or-
+      //   super-admin only, for the same class of reason and by the same
+      //   mechanism (one added key in the existing hasAny() list — no new match
+      //   block, no change to any other field's write rule).
+      //   Rationale: these switches decide WHO MAY MOVE MONEY —
+      //   staffMayRecordPayments / staffMayAdjustPayments /
+      //   requireApprovalForWriteOff. A stylist who could edit them could grant
+      //   themselves the right to record refunds, so leaving this to the UI
+      //   would make the permission model advisory. The Settings tab is already
+      //   owner-gated, and salownSavePackageSettings re-checks the role inside
+      //   its transaction; this is the boundary that holds when neither runs.
+      // [TR-D1 Phase 3] (2026-08-02) `checkoutSettings` joins `presentation` and
+      //   `packageSettings` as OWNER-or-super-admin only. Phase 1 shipped the
+      //   contract with this gap OPEN and recorded it as an explicit follow-on:
+      //   while the feature was dark and nothing wrote the field, it inherited
+      //   the general isTenantAny() write, so an ADMIN could have edited it.
+      //   That was acceptable only until a UI exposed the switches. It does now.
+      //   Rationale: these decide WHO MAY CREATE SALON DEBT and above what
+      //   amount an owner must approve it — staffMayMarkUnpaid,
+      //   staffMayCreatePartialBalance, unpaid.staffLimit_m,
+      //   permissions.ownerApprovalAbove_m. A stylist or an admin who could edit
+      //   them could raise their own unpaid limit, which would make the whole
+      //   permission model advisory. salownSaveCheckoutSettings re-checks the
+      //   role against the STORED staff doc inside its transaction; this is the
+      //   boundary that holds when no callable runs.
+      //   Mechanism is deliberately the SAME as TR-A/TR-B: one added key in the
+      //   existing hasAny() list. No new match block, no change to any other
+      //   field's write rule, and the read rule is untouched — same-tenant
+      //   members still read the private Settings document they already needed.
+      match /settings/{document=**}               {
+        allow read: if isSuperAdmin() || isTenantAny(tenantId);
+        allow create: if isSuperAdmin() || (isTenantAny(tenantId)
+          && (!request.resource.data.keys().hasAny(['presentation', 'packageSettings', 'checkoutSettings']) || isOwner(tenantId)));
+        allow update: if isSuperAdmin() || (isTenantAny(tenantId)
+          && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['presentation', 'packageSettings', 'checkoutSettings']) || isOwner(tenantId)));
+        allow delete: if isSuperAdmin();
+      }
+      match /campaigns/{document=**}              { allow read, create, update: if isSuperAdmin() || isTenantAny(tenantId); allow delete: if isSuperAdmin() || isOwner(tenantId); }
+      match /notifications/{document=**}          { allow read, create, update: if isSuperAdmin() || isTenantAny(tenantId); allow delete: if isSuperAdmin(); }
+      match /fcmTokens/{document=**}              { allow read, create, update: if isSuperAdmin() || isTenantAny(tenantId); allow delete: if isSuperAdmin(); }
+      match /auditLogs/{document=**}              { allow read, create, update: if isSuperAdmin() || isTenantAny(tenantId); allow delete: if isSuperAdmin(); }
+      match /products/{document=**}               { allow read, create, update: if isSuperAdmin() || isTenantAny(tenantId); allow delete: if isSuperAdmin() || isOwner(tenantId); }
+      match /team/{document=**}                   { allow read, create, update: if isSuperAdmin() || isTenantAny(tenantId); allow delete: if isSuperAdmin(); }
+      match /finance/{document=**}                { allow read, create, update: if isSuperAdmin() || isTenantAny(tenantId); allow delete: if isSuperAdmin(); }
+      match /finance_expenses/{document=**}       { allow read, create, update: if isSuperAdmin() || isTenantAny(tenantId); allow delete: if isSuperAdmin(); }
+      match /finance_payments/{document=**}       { allow read, create, update: if isSuperAdmin() || isTenantAny(tenantId); allow delete: if isSuperAdmin(); }
+      match /expenses/{document=**}               { allow read, create, update: if isSuperAdmin() || isTenantAny(tenantId); allow delete: if isSuperAdmin(); }
+      match /advances/{document=**}               { allow read, create, update: if isSuperAdmin() || isTenantAny(tenantId); allow delete: if isSuperAdmin(); }
+      match /investment_transactions/{document=**} { allow read, create, update: if isSuperAdmin() || isTenantAny(tenantId); allow delete: if isSuperAdmin(); }
+
+      // [G4] Catch-all: READ same-tenant'a açık kalır (kaçan salt-okunur koleksiyon kırılmasın);
+      //   WRITE kapalı → staff/{uid}, tenant-root, bookings yalnız kendi spesifik kurallarından yazılır.
+      // [S1 2026-07-15] staffComp catch-all READ'den DIŞLANDI: rules match'leri OR'lanır,
+      //   yani explicit owner-only blok tek başına admin/staff okumasını engelleyemezdi.
+      //   {coll} tek segment + {document=**} (v2: sıfır+ segment) = eski kapsamla birebir,
+      //   yalnız staffComp hariç. Süper-admin staffComp'u kendi bloğundan okur.
+      match /{coll}/{document=**} {
+        allow read:  if (isSuperAdmin() || isTenantAny(tenantId)) && coll != 'staffComp';
+        allow write: if false;
+      }
+    }
+
+    // ── Super admin area (LIVE ile aynı) ──────────────────────────────────────
+    match /superAdmin/{document=**} {
+      allow read, write: if isSuperAdmin();
+    }
+
+    // [P1-A] GLOBAL FALLBACK — cross-tenant deliği burada kapanıyor.
+    //   ÖNCE: allow read, write: if isAuth()  → giriş yapan HERKES her tenant'ın
+    //         verisine erişebiliyordu (whitecross dahil). Asıl güvenlik açığı.
+    //   ŞİMDİ: if isSuperAdmin()  → top-level / kapsanmayan path'lere yalnızca
+    //         super-admin erişir. Tenant kullanıcıları kendi tenant'larına
+    //         yukarıdaki /tenants/{tenantId} kurallarıyla erişmeye devam eder.
+    match /{document=**} {
+      allow read, write: if isSuperAdmin();
+    }
+  }
+}

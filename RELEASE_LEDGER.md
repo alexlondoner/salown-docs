@@ -1,6 +1,41 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
 
+## R-2026-08-17-A — FIN-DATED-ROTA-R2c · coordinated 6-target release (Phase A + Phase B)
+
+> **Recorded 2026-08-18** by `R2C-RELEASE-EVIDENCE-DURABILITY-P0`, one day after the release.
+> **The delay is itself a finding and is not hidden:** Phases A and B were run under prompts that
+> put docs edits out of scope, so both releases were live and unrecorded overnight, and the entire
+> evidence set existed only under `/private/tmp`. Under this file's own rule — *a release that
+> appears in prose but not here has not been recorded* — R2c did not count as released until this
+> row existed. Every identity below was re-read from surviving capture artefacts and git objects
+> before being written; none was recalled.
+
+| Field | Value |
+|---|---|
+| **Work ID / source** | `FIN-DATED-ROTA-R2c` (+ `EV.1`, `EV.2`, `EV.3`) · salown-app **`ef5c0ed`** (release anchor; tree `b062feed600ae091cb0c08283660b53f01cf9d15`) · whitecross-site **`18946538`** · salown-docs `871153e`. Full design record: [`FIN_DATED_ROTA_R2C_DESIGN.md`](FIN_DATED_ROTA_R2C_DESIGN.md) |
+| **Clean-tree proof** | All three repos `0/0` against `origin/main`, `git status --porcelain` empty, **zero active claims**, verified immediately before each of the six mutations. salown-app HEAD advanced only by `[skip ci]` claim bookkeeping during the release: `git diff --name-only ef5c0ed HEAD -- . ':(exclude)ops/claims'` was **empty at every step**, and the tree object never left `b062feed…` |
+| **Phase A ①–③ — 3 Functions, one guarded invocation** | `./scripts/deploy-functions.sh salownRotaTransaction salownProvisionTeamMember salownRotaBootstrapTenant`. All three were **ABSENT before** — every one a CREATE, not an update. New: **`salownRotaTransaction`** `salownrotatransaction-00001-biy` (updateTime 2026-08-17T16:39:04.712157529Z) · **`salownProvisionTeamMember`** `salownprovisionteammember-00001-log` (16:39:07.876599305Z) · **`salownRotaBootstrapTenant`** `salownrotabootstraptenant-00001-bup` (16:39:09.689347328Z). All `europe-west2`, GEN_2, `nodejs22`, state `ACTIVE`, **one shared build `6f6da55a-1371-4e2d-a029-ac84745ccc3a`**, sources `gs://gcf-v2-sources-1050766582653-europe-west2/<fn>/function-source.zip` generations `1786984680860632` / `1786984738359542` / `1786984738344162`. Count **81 → 84** in `europe-west2`; **`us-central1` remained exactly 27** |
+| **Phase A ④ — `hosting:salown`** | `ffdb95bce7a3fc9b` → **`fa3c670ddfbdc34a`** · release **`1786984855256000`** · 2026-08-17T16:40:55.256Z · 122 files / 5,390,791 B. URL proven before hashing (`src="/public-bundle/assets/index-C0xE6nEB.js"`, `HTTP/2 200`), then served sha256 `32c6c0fb316ce603559b4d4aae372232faad56b88d814cb74959cadda6811475` **== local build**; marker chunk `Barbers-CXGC-3du.js` served sha256 `0b38719b6120aa9ae6a393e032ee314b37e056aa704108ddda6a5523aeb7b8ee` **== local**, carrying `FUTURE_ACTIVATION_NOT_READY`, `salownRotaTransaction`, `salownProvisionTeamMember`. Old entry chunk `index-Bj5ICA9p.js` now **404**, proving the release moved |
+| **Phase A ⑤ — `hosting:whitecrossbarbers-admin`** | `d6b075dced96fe33` → **`982fcf79b4add1f1`** · release **`1786985288681000`** · 2026-08-17T16:48:08.681Z · 38 files / 3,358,563 B. Built **fresh from `18946538`** immediately before deploy (`npm --prefix barber-panel run build`) because this repo has **no Hosting predeploy hook** and `barber-panel/build` is gitignored — without the rebuild the deploy would have shipped a working-directory artefact pinned to no commit. The rebuild reproduced the same content hashes, so the artefact is now *proven* faithful rather than assumed |
+| **Phase A ⑥ — `hosting:whitecrossbarbers-owner`** | `36650c5110490b6d` → **`0b46e7a98bfca1f8`** · release **`1786985403713000`** · 2026-08-17T16:50:03.713Z · 38 files. **No rebuild between ⑤ and ⑥** — same bytes deployed twice |
+| **Whitecross same-build parity** | Sorted `path + hash` manifests of the two new versions are **byte-identical**: both sha256 **`b71ddcf90f2994bd8ee7c74a7262625e2ca1e1e65b73be3d93a6c8507547486c`**, `diff` empty across all 38 lines. Served `174.17a2afe3.chunk.js` sha256 `defa54373837e507a17bcbbc2973ef22e6e846bca6ab41f5109eb4f5e565f693` on **both** sites and **== local**. ⚠️ Their **version ids differ and always will** — a Hosting version is scoped to one site, so the two rollback identities are **not interchangeable** |
+| **Candidate behaviour proven in the panel bytes** | The destructive two-argument no-merge `setDoc` is **gone** — both barber writes are three-argument with `{merge:!0}`. status/active parity present in both paths (`{active:r,status:r?"active":"passive"}` on save; `{status:a,active:"active"===a}` on toggle) with the on-leave refusal. **Zero** `ROTA_END` action literals. `serviceAccountKey.json` sits outside the publish root, is absent from all 36 build files, and no credential-shaped content appears anywhere in the bundle |
+| **Phase B — `firestore:rules` (U7)** | `firebase deploy --only firestore:rules --project havuz-44f70`. Ruleset `10914cef-35a1-4b2d-a085-4d79680f212c` (30,132 B, sha256 `2d2097a0cd9262dc6db819097ba9c6c6f08977b3b488c5b41c6e3b55b93c6c8e`) → **`60abf8e4-e6ca-43e0-8bb7-26ef72ae58ba`** (48,130 B, sha256 **`b04f7745c5b420db3aaeeefdc7355e085f9115a28b573e7ed80ff1ba1b9809a4`**). Ruleset `createTime` **2026-08-17T17:06:05.495119Z**; release `updateTime` **2026-08-17T17:06:06.400701Z**. The live source was **fetched back out of production** and hashed; `diff` against `salown-app/firestore.rules` is **empty**. Two compile warnings (`Unused function: isStaff`, `Invalid variable name: request`) are **pre-existing** — the old ruleset emits them identically |
+| **Phase B — payload scope, stated plainly** | This one artefact carries **R2c's rota rules AND `SEC-CATCHALL-1`**, and they are **coupled, not merely co-resident**: R2c's hoisted `barbers` guard only binds a browser super-admin *because* the global write grant is gone. The owner approved both together. Diff vs the previous live ruleset: **+270 / −3** lines |
+| **Phase B — authorization matrix** (Firestore Rules Test API, **synthetic fixtures and synthetic auth claims only — evaluates rules, reads and writes no data**; no real ID token, barber, client or booking used) | **old-live 9/15 · candidate 15/15 · new-live 15/15**, candidate and new-live rows `diff`-identical. **Retained (all three sources identical):** legacy tenant owner rota update ALLOW · legacy barber create ALLOW · cross-tenant write DENY · canonical non-protected edits (name, colour+order) ALLOW · super-admin reads of unlisted collection and unlisted top-level path ALLOW, in **both** claim shapes. **Newly denied (old-live allowed → new-live DENY):** canonical direct `workingDays` / `hours` / `dayHours` mutation ×3 · super-admin arbitrary write to an unlisted collection and to an unlisted top-level path ×3, in both claim shapes. `staffRota` header direct client write DENY on both |
+| **Phase B — repo suites, three-way** | `testStaffRotaRules` old **structural FAIL** (*"barbers has no explicit `allow update:` clause"*) → **107/0** candidate and new-live · `testSuperAdminCatchallRules` old **structural FAIL** (*"the root catch-all grants WRITE again — SEC-CATCHALL-1 is undone"*) → **148/0** · `testAvailabilityRules` 41/1 → **42/0** · `testPromotionSnapshotRules` 19/1 → **20/0**. The four old-live failures are exactly the protections this release adds; **nothing was weakened to make a test pass** |
+| **Pre-release gates (Phase A)** | deploy-policy + functions-ownership + rules-authority **119/119** · release-guard (all 8 accepted commits `[skip ci]`-tagged) · app and functions `tsc --noEmit` **0 errors** · scoped lint clean **with a proven-live negative control** (a stdin probe fails, so the pass is not vacuous) · functions R2c/EV suites **265/265** · frontend R2c/EV **234/234** · barber-panel `rotaClient` **33/33** · whitecross rules-authority guard PASS |
+| **Rollback identities** | Functions ①②③ — **no prior revision exists; each is a CREATE, so rollback is deleting that one function by exact name in `europe-west2`** (never a blanket `--only functions`: that proposes deleting the 27 `us-central1` legacy functions) · `hosting:salown` **`ffdb95bce7a3fc9b`** (release `1786747080006000`) · `whitecrossbarbers-admin` **`d6b075dced96fe33`** · `whitecrossbarbers-owner` **`36650c5110490b6d`** (**not** `d6b075…`) · rules **`10914cef-35a1-4b2d-a085-4d79680f212c`**, whose byte-exact source is stored at [`evidence/rules/firestore.rules.PREV-10914cef-35a1-4b2d-a085-4d79680f212c`](evidence/rules/firestore.rules.PREV-10914cef-35a1-4b2d-a085-4d79680f212c) (30,132 B, sha256 verified on copy) |
+| **REL-1 — the known side effect, and its cleanup** | The `hosting:salown` deploy fired the **`salown-staff`** predeploy hook, dirtying three tracked paths: `D hosting/staff-bundle/assets/staff-39ZjehjJ.js`, `M hosting/staff-bundle/index.html`, `?? …/staff-CQ2TzIGv.js`. All three were inside the pre-declared claim; **no other tracked path moved**. Reversed with explicit pathspecs only (`rm -f` the new artifact, `git restore --source=HEAD --` the two tracked paths) — never `git restore .`. The 25 tracked staff-bundle files hash-match their pre-deploy state exactly. Note the salown site's `/staff-bundle/**` **bytes did not change**: the previous version already carried the identical `staff-CQ2TzIGv.js` / `staff-h5sE0F85.css` hashes, so the regeneration is byte-reproducible |
+| **Operator/device** | `whitecrossbarbers@gmail.com` · macOS · `alish/r2c-phase-a-release`, `alish/r2c-phase-b-rules`; recorded by `alish/r2c-evidence-durability` |
+| **Result** | **LIVE_VERIFIED** — for the six deployed artefacts only. Owner coordination accepted `LIVE_VERIFIED` on the basis of the independently recovered ruleset identity, live-source hash and authorization matrix. ⚠️ **The original textual Phase B marker was never persisted to any file or git object and is NOT claimed as recovered**; that is a *recording* gap, not a live-evidence gap — every condition the marker depended on is provable from the surviving artefacts named above |
+| **Known exclusions — nothing here was touched** | `hosting:salown-staff` (**unmoved at `9cd83c70960e062f`**, re-verified after every step) · `hosting:salown-admin` (**unmoved at `9f457fc2c8ee4b35`**) · `whitecrossbarbers-app`, `whitecrossbarbers-clientapp`, `whitecrossbarbers-saas` · Firestore **indexes** · Storage · `salownPublishPublicCampaign` (source-present, live-absent, deliberately excluded — `CAM-2`) · every other Function (exactly **3** created; `us-central1` still 27) · `~/Desktop/alex/salown-panel`, which is never a deployment source |
+| **⛔ NOT DONE — the canonical rollout was NOT applied** | **No `salownRotaBootstrapTenant` invocation of any kind occurred — not apply, not even `dryRun`.** No tenant is canonical; `tenants/*/rotaPolicy/rollout` was neither read nor written. Consequence, stated plainly: **every rota guard deployed in this release is currently inert by design** — the strict half engages only once a bootstrap declares a tenant canonical, and the legacy half is what serves every salon today |
+| **Zero production business-data write** | **No Firestore document read or written. No Auth read or written. No callable invoked. No migration, no backfill.** Authorization evidence came entirely from the Rules Test API against synthetic fixtures |
+
+---
+
 ## R-2026-08-14-B — STAFF-START-AUTHORITY-A1 · coordinated 5-phase release
 
 | Field | Value |
@@ -50,6 +85,12 @@
 | **U7 Firestore rules** | `salown-app` | `firestore:rules` | hand, **always LAST** |
 | **U8 Firestore indexes** | `salown-app` | `firestore:indexes` | hand |
 | **U9 Production data migration / feature activation** | — | Firestore | hand, owner-authorised, dry-run first |
+| **U10 Whitecross barber panel — admin** | `whitecross-site` | `hosting:whitecrossbarbers-admin` | hand. Public dir `barber-panel/build`, **gitignored, and this repo has NO Hosting predeploy hook** — so the deploy ships the working directory. **Rebuild from the pinned tip immediately before deploying** or you release an artefact pinned to no commit |
+| **U11 Whitecross barber panel — owner** | `whitecross-site` | `hosting:whitecrossbarbers-owner` | hand. **Same `barber-panel/build` directory as U10** — one build, two targets. Deploy them back to back without rebuilding between, then prove manifest parity. Their version ids are always different (a version belongs to one site), so **their rollback identities are never interchangeable** |
+
+> **U10/U11 added 2026-08-18** by `R2C-RELEASE-EVIDENCE-DURABILITY-P0`. They had been serving
+> production since long before, on two live targets, and appeared in no unit list — which is how
+> `R-2026-08-17-A` came to be the first row that could name them.
 
 > **U9 rows use a `D-` prefix**, not `R-`: no artefact is released, only production data changes.
 > `D-2026-08-13-A` is the first. Calling a data change a "release" is the category error that loses
@@ -66,17 +107,28 @@
 
 ---
 
-## Live state after the `2026-08-14T09:16` release pass — verified `2026-08-14T09:25:00Z`
+## Live state after the `2026-08-17` R2c release pass — verified `2026-08-17T17:0x`–`17:5x`
 
 | Unit | Live identity | Released (UTC) | Source | Provenance |
 |---|---|---|---|---|
-| U1 | version **`6cc0254d73227a96`** · release `1786699000997000` | 2026-08-14T09:16:40.997Z | **`b34d984`** | R-2026-08-14-A — served bytes hash-proven (4 chunks) **and authenticated read-only UI smoke 10/10 PASS** |
-| U2 | version **`585dd333a4a429cf`** · release `1786641658556000` | 2026-08-13T17:20:58.556Z | **`a72f409`** | R-2026-08-13-D — served bytes hash-proven |
-| U3 | version `9f457fc2c8ee4b35` · release `1785493665740000` | 2026-07-31T10:27:45.740Z | `51e70a0` | R-2026-07-31-A |
-| U4 | version `e6be08684d312ce7` · release `1786401587236000` | 2026-08-10T22:39:47.236Z | **UNKNOWN / HYBRID** | R-2026-08-10-F — ⛔ still blocked, see `R-2026-08-13-X` |
-| U5+U6 | 108 functions; `salownSendLoyaltyEmail` now **`-00065-hej`** | 2026-08-13T17:16:00.012Z | `a72f409` | R-2026-08-13-B — deployed archive byte-proven |
-| U7 | ruleset `640c3dae-a9c8-4cb3-80c4-bc189e72874a` | updated 2026-08-05T12:52:07Z | not proven against the file | R-2026-08-05-R |
+| U1 | version **`fa3c670ddfbdc34a`** · release `1786984855256000` | **2026-08-17T16:40:55.256Z** | **`ef5c0ed`** | R-2026-08-17-A — served bytes hash-proven (entry + marker chunk) |
+| U2 | version `9cd83c70960e062f` · release `1786747190806000` | 2026-08-14T22:39:50.806Z | `d64f098` | R-2026-08-14-B — **deliberately excluded** from R2c and re-verified unmoved after it |
+| U3 | version `9f457fc2c8ee4b35` · release `1785493665740000` | 2026-07-31T10:27:45.740Z | `51e70a0` | R-2026-07-31-A — **excluded** from R2c and re-verified unmoved |
+| U4 | version `d7d72c6755a35044` · release `1786747286869000` | 2026-08-14T22:41:26.869Z | REL-5 assembled workspace | R-2026-08-14-B — ⛔ `main` still not deployable here (`WCP-1`/`WCP-2`/`WCP-3`) |
+| U5+U6 | **111 functions — 84 `europe-west2` + 27 `us-central1`**; the 3 rota callables at `-00001-biy` / `-00001-log` / `-00001-bup` | 2026-08-17T16:39:04–09Z | **`ef5c0ed`** | R-2026-08-17-A — three CREATEs, `us-central1` unchanged at 27 |
+| U7 | ruleset **`60abf8e4-e6ca-43e0-8bb7-26ef72ae58ba`** · sha256 `b04f7745…9809a4` | **2026-08-17T17:06:06.400701Z** | **`ef5c0ed`** | R-2026-08-17-A — **live source fetched back out of production and hash-matched to the candidate**; carries R2c rules **and** `SEC-CATCHALL-1` |
 | U8 | 2 composite indexes, both `READY` | UNKNOWN | **UNKNOWN** — the repo declares 0 | ⚠️ see U8 warning |
+| U10 | version **`982fcf79b4add1f1`** · release `1786985288681000` | **2026-08-17T16:48:08.681Z** | **`18946538`** (fresh build) | R-2026-08-17-A — served bytes hash-proven |
+| U11 | version **`0b46e7a98bfca1f8`** · release `1786985403713000` | **2026-08-17T16:50:03.713Z** | **`18946538`** (same build as U10) | R-2026-08-17-A — manifest byte-identical to U10 (`b71ddcf9…486c`) |
+
+> **Superseded identities from the 2026-08-14 pass**, each still a valid rollback target:
+> U1 `ffdb95bce7a3fc9b` (release `1786747080006000`, `d64f098`) · U7 `10914cef-35a1-4b2d-a085-4d79680f212c`
+> (source preserved in `evidence/rules/`) · U10 `d6b075dced96fe33` · U11 `36650c5110490b6d`.
+> Earlier U1 identities `6cc0254d73227a96` (`b34d984`, R-2026-08-14-A) and `640c3dae-…` for U7
+> (R-2026-08-05-R) remain in the history below.
+>
+> ⚠️ **The R2c guards in U5 and U7 are live but INERT.** No tenant is canonical — no bootstrap has
+> been invoked, not even a dry run — so the strict half of the rota contract engages for nobody yet.
 
 > U1 passed through three intermediate identities during the day: `2620fb29bf2e064e` →
 > `2eff0455ed404c15` (passive-only, `R-2026-08-13-A`) → `84eb7dda5e1b2140` (`R-2026-08-13-C`) →
