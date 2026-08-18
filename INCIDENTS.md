@@ -224,6 +224,21 @@ first, then data) is a workaround, not a fix: until a closed month is *stored* r
 the next legitimate rota edit will do this again. `FIN-PERIOD-CLOSE` and `FIN-DATED-ROTA` are raised
 to **P0**, and the audit/drift-detection gaps in Update 2 remain open.
 
+**Update 4 — the instrument now exists in source, and the incident is still OPEN (2026-08-18).**
+`FIN-PERIOD-CLOSE` Phase B landed as SOURCE ONLY (`ec8fbe7`): a super-admin-only
+`salownCloseFinancePeriod` that freezes one tenant-local month into a write-once
+`financePeriods/{YYYY-MM}` snapshot with bounded provenance, an in-transaction re-read of every
+source, append-only attributable adjustments, and a reader behind
+`FINANCE_PERIOD_CLOSE_MODE = 'legacy'`. **Nothing is deployed, no tenant has closed a month, no
+production document was read or written, and August 2026 is open.** So the cause is still armed:
+`workingDays` is still undated, `FINANCE_ROTA_HISTORY_MODE` is still `'legacy'`, and the next
+legitimate rota edit will still re-price every closed month. **This update changes no status.** The
+incident closes only when `FIN-PERIOD-CLOSE` **and** `FIN-DATED-ROTA` are `LIVE_VERIFIED` and at
+least one historical month is actually stored — see
+[FIN_PERIOD_CLOSE_DESIGN.md](FIN_PERIOD_CLOSE_DESIGN.md) §14 for the forced order, and §14.1 for the
+release blockers this package does **not** close (chief among them the divergent live premium-panel
+Finance engine, which means period close cannot yet be called platform-wide authoritative).
+
 **Resolution:** **Partial.** S1 = this record. S2 = `STAFF-FINANCE-WAGE-RESOLVER`: all six consumers now decide a wage day in one place (`src/utils/financeWages.ts` → `accruesWageOnDay` for the single-day path, `resolveAccrualDays` for the five period paths), with **exact behavioural parity** proven by 261 golden-parity assertions running the pre-S2 engine and the new engine over the same fixture matrix across Feb/Mar/Jun/Jul/Aug/Oct 2026. **No wage total moved, no Firestore write was made, nothing was deployed.** The actual repair — dated compensation periods so a closed month stops recomputing — is **S3 and is not built**. Arda's `workingDays` repair is deliberately **BLOCKED until S3 is live and verified**: repairing it today would itself retroactively re-price his settled partner era, which is precisely the defect.
 **Prevention:** three permanent guards, all in `src/utils/financeWages.test.ts`. (a) the six-consumer count is asserted, so a seventh path cannot be added silently; (b) a **static enforcement test** fails the build if `shiftChanges`, `sc?.closed`, `wdays.includes(`, a hand-rolled `weekday:'long'` derivation or a second `isBarberOnLeaveForDate` call reappears in `Finance.tsx` — negative-controlled against the pre-S2 source, where five of those six guards fire; (c) an S3-absence test asserts Finance still reads no `staffComp`/`effectiveTo`, so S3 has to change it deliberately. The behavioural guard is `financeWages.parity.test.ts`, which keeps a verbatim copy of the pre-S2 engine as the golden reference.
 **Regression Tests:** `src/utils/financeWages.parity.test.ts` (261 — golden parity + characterisation of the defect itself: *"editing the weekly rota TODAY changes what February and June accrued"*) · `src/utils/financeWages.test.ts::23. ALL SIX wage consumers route through the central resolver`, `::S2. static enforcement`, `::S2. no S3 compensation-period behaviour was introduced`.
