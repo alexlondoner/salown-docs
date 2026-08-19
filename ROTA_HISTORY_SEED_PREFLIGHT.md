@@ -523,7 +523,7 @@ core saw the plan: total 24 · bases 12 · single-day Tuesdays 11 (list-equal to
 open-ended 1 from `2026-08-16` · four off-Tuesdays inside the base period · `2026-07-21` partial
 exact · **contiguous with zero gaps**.
 
-### ⛔ BLOCKER — Alex's document changed mid-session, and an apply would revert the owner's edit
+### ⛔ BLOCKER — **CLEARED 2026-08-19, see §14.** Alex's document changed mid-session, and an apply would have reverted the owner's edit
 
 `barbers/barber-1777257519766.updateTime` moved from `2026-08-16T19:31:22.625534Z` to
 **`2026-08-19T19:57:09.584434Z`**. Exactly one field changed:
@@ -578,3 +578,109 @@ Alex's barber document did change — at 19:57, by something outside this sessio
 seed suite **62/62** · rotaWriter + fold parity **142/142** · financeWages + financeRotaHistory +
 rotaIntent **128/128** · ops guards **119/119** · claims selftest + **45/45** · release-guard ·
 export count **78** · `git diff --check` clean.
+
+---
+
+## 14 · The blocker cleared — the effective-dated amendment, 2026-08-19
+
+**Ruling.** Thursday **20:00 is intentional and current**. The open-ended segment from
+`2026-08-16` must therefore carry Thursday **09:00–20:00**; every completed historical period keeps
+Thursday **09:00–19:00**. This is an **effective-dated change, not a retroactive correction** —
+earlier periods are not rewritten. Alex worked `2026-07-13`; the erroneous `{closed:true}` needs no
+mutation. The bootstrap must never run for Alex.
+
+### The amendment, and the one line that carries it
+
+Only the final segment's pattern moved. `dayHours` is built by two different resolvers:
+
+```
+histH(d) → Sunday 10:00–16:00 · everything else 09:00–19:00     ← the 23 bounded segments
+nowH(d)  → Sunday 10:00–16:00 · Thursday 09:00–20:00 · rest 19:00 ← the open-ended segment ONLY
+```
+
+Verified locally before the core saw the plan: **12** bounded segments carry a Thursday and
+**every one of them closes at 19:00** (`historicalThursdaysAll19: true`); the final segment's
+Thursday is `{"open":"09:00","close":"20:00"}`.
+
+### Structural validity and the entry count — from the module, not assumed
+
+The module returned **`entryCount: 24`** for 24 supplied segments; the count is reported as the core
+derived it, not carried over. Invariants, all machine-checked before the call: supplied **24** ·
+bounded base **12** · single-day Tuesdays **11**, list-equal to the accepted eleven · open-ended
+**1** from `2026-08-16` · the four off-Tuesdays inside base `2026-05-27 → 2026-06-29` ·
+`2026-07-21` partial exactly `17:00–19:00` · **contiguous, zero gaps** · `declaredGaps: []` ·
+validation issues **none** · state **`PLANNED`**.
+
+### Recomputed identifiers — the previous set is STALE and must not be applied
+
+| | STALE — do not apply | **CURRENT** |
+|---|---|---|
+| Seed plan digest | ~~`f1cac381…37c6`~~ | **`bfad3779b0ff47031c84d4976d571f907193d86fef3a83cfd33c4621822b8abb`** |
+| Change ID | ~~`rota-seed-f1cac381bd140db4daf38cf175051874`~~ | **`rota-seed-bfad3779b0ff47031c84d4976d571f90`** |
+| Audit ID | ~~`…-6c289aeb1ae60e30`~~ | **`rota-seed-barber-1777257519766-2189926c0f9baed4`** |
+| Predicted entries hash | ~~`fbd79cc8…e65d`~~ | **`d2be374dd8565dc8de110d98457a58175f846e44337d62811103935fbb90d40f`** |
+| Source rota fingerprint | — | **`93e4bbd45ad9b851e2e65cad2e05ec2eaaf672f947f79bf8925d623907fdcdb8`** |
+| Expected revision | — | **0 → 1**, genesis `17516577…c2b3` |
+| Audit path | — | `tenants/whitecross/auditLogs/rota-seed-barber-1777257519766-2189926c0f9baed4` |
+| Write set if applied | — | **27** — 24 entry creates + header create + audit create + 1 barber publish update |
+
+Both stale audit id and current audit id return **404** in production: neither has ever been written.
+
+### The blocker is cleared, and here is the proof
+
+`predictedPublish.dayHours.Thursday` is now **`{"open":"09:00","close":"20:00"}`** — the value the
+owner set at 19:57. An apply would therefore **preserve** that edit rather than revert it, which is
+exactly what §13 said had to change. `workingDays` (all seven) and top-level `hours`
+(`09:00–19:00`) already match the live document, so the publish moves nothing else.
+
+> ⚠️ **One publish side effect, named rather than discovered later.** `predictedPublish` emits
+> `dayHours` entries as `{open, close}` only, while the live document also carries `source:'staff'`
+> and `closed:false` on each day. An apply would drop those two keys. No rota or Finance reader
+> consults `dayHours[].source`, and an absent `closed` is falsy exactly as `closed:false` is, so no
+> behaviour depends on it — but the document would visibly lose the metadata.
+
+### Ruling 5 verified — a later 20:00 → 19:00 edit cannot rewrite this seed
+
+Read-only, from source **and** a passing test.
+
+* `ROTA_CHANGE` (`rotaWriter.ts`) emits **two NEW entries**: a `ROTA_CLOSE` carrying
+  `targetEntryId: current.entryId` and `effectiveTo` = the day before the change, then a fresh
+  `ROTA_OPEN` from the change date with the new pattern. The prior entry is **referenced, never
+  mutated**.
+* `if (from < todayKey) return reject(BACKDATED, 'a rota change may not take effect in the past')` —
+  a change cannot be dated into the past at all.
+* Persistence is `tx.create(entryRefs[i], record)`. Across `rotaWriter.ts`, `rotaSeedImport.ts` and
+  `rotaBootstrap.ts` the only `tx.update`/`tx.delete` calls target **`barberRef`** — the projection.
+  **No entry document is ever updated or deleted.**
+* Test **`12d. the log is append-only in the code, not only in the prose`** asserts the engine
+  contains no `.delete(`, no `FieldValue.delete`, uses `tx.create(entryRefs[i], record)` and
+  **not** `tx.set(entryRefs…)`, and pins the exact set of barber writes. It **passes** (rotaWriter
+  suite 72/72).
+
+**The guarantee exists and is proven.** Nothing to report as missing.
+
+### Reconciliation under the CURRENT precedence
+
+`financeWages.ts`: `const sc = answer ? undefined : barber?.shiftChanges?.[dk]` — in `'dated'` mode
+the map is not read for any day the log covers. The seed covers `2026-02-06 →` open-ended, so **all
+twelve** overlapping keys become unreachable for the wage decision once the mode flips; in
+`'legacy'` mode (live now) every one of them still decides, exactly as today. Reconciliation is
+unchanged from §13: the four off-Tuesdays are represented by the base excluding Tuesday, five worked
+Tuesdays corroborate the plan, `2026-07-21` matches the partial exactly, `2026-07-13` is the
+erroneous entry that needs no mutation, `2026-07-23` is wage-neutral, `2026-08-18` is redundant.
+**No new discrepancy.**
+
+### Production state — stable and unmutated
+
+Alex's `updateTime` read **`2026-08-19T19:57:09.584434Z`** before, during and after all three runs —
+the harness records every value it saw and observed exactly one. `dayHours.Thursday.close` is
+`20:00`. Header **404** · `rotaEntries` **0 docs** · new seed audit **404** · old seed audit
+**404** · bootstrap audit **404** · `rotaPolicy/rollout` **absent, unflipped**. Five reads per run;
+the adapter exposes only `.doc().get()`, so a write was unrepresentable.
+
+### Checks
+
+seed **62/62** · rotaWriter + fold twins **142/142** · rotaBootstrap **25/25** · full Functions
+**1891** (1854 pass · 0 fail · 37 emulator self-skips) · frontend rota/finance readers **140/140** ·
+ops guards **119/119** · claims selftest + **45/45** · release-guard · exports **78** ·
+`git diff --check` clean.
