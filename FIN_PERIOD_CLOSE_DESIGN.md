@@ -51,6 +51,36 @@ from it.
 | 6 | The ≈**£7,939** exit liability is **excluded**. Not in a snapshot, not invented into `settings/exit_agreement`, not described as an existing production liability. Its representation is a separate owner-authorised accounting migration. |
 | 7 | No close/reopen/adjust **UI control** in Phase B. A read-only closed-period badge/panel is separate work. |
 
+### 2.1 · Amendment of 2026-08-19 — the tenant selector
+
+The 2026-08-18 baseline also required the target tenant to be **server-derived and forbidden in the
+request body**. `FIN-PERIOD-CLOSE-B-CONFORMANCE` returned that clause **BLOCKED** rather than
+softening it, because no code change can satisfy it: a super-admin token carries `tenantId: ''` and
+`tenantRole` unset, `superAdmin/**` holds no operator→tenant binding, and every accepted super-admin
+migration callable in this codebase takes its target the same way. The owner amended the contract
+on **2026-08-19**, and this is that amendment:
+
+| # | Amended decision |
+|---|---|
+| A1 | A **single top-level** request field named `tenantId` is accepted **solely as a target selector**. |
+| A2 | `tenantId` is **never authority evidence**. No branch reads it to decide what a caller may do. |
+| A3 | Authority comes from: the authenticated Firebase identity · the `superAdmin` custom claim for apply/adjust · server-side staff/account state · the **server-side role re-read inside the transaction** · the **exact tenant/period release allowlist** (§6.1) · the approved plan digest · source-drift validation · the transactional preconditions. |
+| A4 | A **super-admin** may select any target tenant through it — that is the point of a break-glass boundary whose token names no tenant. |
+| A5 | A **non-super-admin owner** may preview/dry-run only when `request.tenantId === auth.token.tenantId`. |
+| A6 | Owner / admin / staff / reception / public users may **not** use `tenantId` to acquire authority. |
+| A7 | **Only** the exact top-level field is a selector. |
+| A8 | A **nested** `tenantId`, a duplicate selector, a renamed equivalent, and every caller-supplied role, actor, `superAdmin`, audit, hash, tenant-authority or approval field remain **forbidden**. |
+| A9 | Apply/close and adjustment remain **super-admin only**. |
+| A10 | The amendment authorises **no production access and no production operation**. |
+
+**One behaviour changed to meet A8.** A nested `tenantId` (in `adjustment`, in `differences`, at any
+depth) used to be silently ignored on a `CLOSE`. The top-level field is now lifted out of the
+forbidden sweep and `tenantId` joined `PERIOD_CLOSE_FORBIDDEN_KEYS`, so exactly one occurrence is a
+selector and every other one is `FORBIDDEN_FIELD`. A renamed equivalent (`tenant`, `tenantID`,
+`tid`, `targetTenant`, `salonId`, …) is `INVALID_INPUT` — the request allowlist is exact.
+
+This is a **selector**, not an operator-session registry. It was deliberately not redesigned into one.
+
 ---
 
 ## 3 · The three concepts, kept apart
@@ -204,11 +234,11 @@ through by a role still written in their document; super-admin is checked after 
 break-glass answers *"may this session act without a staff record"*, never *"may a revoked account
 act"*. The decision is re-taken **inside the transaction**, as its first read.
 
-**`tenantId` is in the request body, and that is deliberate.** A super-admin token carries
-`tenantId: ''` — there is nothing to derive — and `SEED_REQUEST_KEYS` names it for the same reason.
-It is never an authority input: a non-super-admin caller must present a token whose `tenantId`
-**equals** the body's, so the body can select a tenant it already has a claim for and can never
-select somebody else's.
+**`tenantId` is the top-level TARGET SELECTOR** (§2.1, amendment A1–A10). A super-admin token
+carries `tenantId: ''` — there is nothing to derive — and `SEED_REQUEST_KEYS` names it for the same
+reason. It is never an authority input: a non-super-admin caller must present a token whose
+`tenantId` **equals** the body's, so the body can select a tenant it already has a claim for and can
+never select somebody else's. A nested or renamed selector is refused.
 
 **Refused by name, at any depth:** `actor` `actorRef` `actorRole` `uid` `email` `superAdmin` `role`
 `closedAt` `closedBy` `readCeiling` `cutoff` `sourceSha` `provenance` `contentHash` `documentHash`
@@ -216,6 +246,52 @@ select somebody else's.
 `acceptedDifferences` `audit` `schemaVersion` `status` `timezone` `currency` `rollback`
 `adjustments` **`wagesTotal_m`** **`netPL_m`** `operating` `cash` `capital` `liabilities`
 `appendedAt` `before_m` `delta_m` `nowMs` `nowInstant` `serverTimestamp` `attachExtraWrite`.
+
+### 6.1 · The server-owned release allowlist
+
+**Authorization answers *who*. This answers *what may be touched at all*, and it is a separate
+question with a separate failure mode.**
+
+`PRODUCTION_PERIOD_RELEASE_POLICY` in `functions/src/finance/periodClose.ts` is a **frozen module
+constant** naming the exact (tenant, period) pairs a production call may name:
+
+| Tenant | Released periods |
+|---|---|
+| `whitecross` | `2026-02` `2026-03` `2026-04` `2026-05` `2026-06` `2026-07` |
+
+Everything else is refused with the stable reason **`PERIOD_NOT_RELEASE_AUTHORISED`**: `2026-08`,
+every later period, every earlier unlisted period, **HeroHairs**, every other tenant, and a
+malformed or caller-extended policy (a policy whose entry is not an array of strings decides
+`false`, so a substitution cannot widen anything by being malformed).
+
+**Why it is not `CURRENT_PERIOD_OPEN`.** `periodGate` answers a CALENDAR question — is this month
+over in the tenant's own timezone — and that answer **moves by itself**. August 2026 becomes
+historically eligible the moment September begins in Europe/London, and on that day a
+calendar-only gate would start accepting an August close that nobody released. The allowlist
+answers a **rollout** question and does not move with the clock.
+
+**Where it sits.** FIRST — after the pre-authorization staff read, and **above** the tenant document
+read, above the `op` branch and above the `dryRun` branch. So it guards **preview, apply and adjust
+alike**: an unauthorised production dry run cannot be used to stage an August close, because a dry
+run is what produces the `planDigest` an apply must carry back. An unreleased target therefore costs
+exactly one staff-document read and nothing else.
+
+**Where it may not come from:** the request body (naming it is `INVALID_INPUT` — it is not in
+`PERIOD_CLOSE_REQUEST_KEYS`), the UI, tenant settings, `settings/settings`, a public Firestore
+document, an environment variable, or any other caller-supplied value.
+
+**How tests reach it, without a production override.** Two ways, neither of which is one:
+`decidePeriodRelease` is **pure** and takes the policy as its first argument, so the unit suite
+hands it any policy it likes; and the emulator suite registers the throwaway tenants it creates
+through `__setPeriodCloseTestReleasePolicy`, which **throws unless `FIRESTORE_EMULATOR_HOST` is
+set** and is re-checked at the read — the `__setPeriodCloseTestBarrier` treatment exactly. The plain
+unit suite fires that negative control under exactly the production condition and asserts the
+callable shell neither imports nor mentions it; emulator `R27` drops the override and shows the
+production policy is what refuses.
+
+**Both gates run, and neither hides the other.** The calendar gate is asserted separately — on the
+domain (`periodGate`), through the core for a **released** month viewed from inside itself (§6a in
+the unit suite), and against the real backend (emulator `R16`).
 
 ---
 
@@ -426,7 +502,8 @@ reason is recorded at the clause so it does not recur.
 
 ```
 1  FIN-ROTA-SEED-S1 / S1-EV1 / FIN-ROTA-HISTORY-READ-S2      source-complete, PUSHED_NOT_LIVE
-2  FIN-PERIOD-CLOSE Phase A + B                              source-complete, PUSHED_NOT_LIVE  ← here
+2  FIN-PERIOD-CLOSE Phase A + B + B-conformance + C          source-complete, PUSHED_NOT_LIVE
+2b SALOWN-FIN-ROTA-INTEGRATION-GATE (amendment + allowlist)  source-complete, PUSHED_NOT_LIVE  ← here
 3  coordinated release: functions (targeted) → hosting:salown → rules
 4  FRESH salownRotaBootstrapTenant dryRun (every earlier sourceFingerprint is void)
 5  blocking[] EMPTY — Muhamed and every remaining subject settled BY that dry run
@@ -437,7 +514,18 @@ reason is recorded at the clause so it does not recur.
 10 FINANCE_PERIOD_CLOSE_MODE 'legacy' → 'closed'  (zero snapshots ⇒ zero change)
 11 FIRST close: OLDEST eligible month only, dry-run → owner approval → apply
    ⛔ August 2026 is structurally ineligible and stays OPEN
+   ⛔ AND August is absent from the §6.1 release allowlist, so it refuses
+      PERIOD_NOT_RELEASE_AUTHORISED even after September makes it eligible
 ```
+
+**The oldest eligible month is `2026-02`, and steps 11's candidate set is exactly the six periods in
+§6.1.** Adding a seventh is a source change to a server-owned constant plus a new release — it is
+deliberately not a configuration change, a settings edit or a request field.
+
+⚠️ **Nothing in this document authorises any of steps 3–11.** As of 2026-08-19 every one of them is
+outstanding: no deploy, no production dry run, no seed, no bootstrap, no mode flip, no close, no
+adjustment, no `financePeriods` document in any tenant.
+
 
 **Rollback.** Code: set the constant back to `'legacy'`, commit, deploy hosting — complete, not
 partial, because an unread snapshot changes no figure. Data: delete the one document by exact path,
@@ -447,19 +535,91 @@ for the rota log.
 
 ### 14.1 Release blockers that are NOT closed by this package
 
-1. **The divergent live premium-panel Finance.** `whitecross-site/barber-panel/src/pages/Finance.js`
-   is a **second, live** historical Finance engine — booking-derived worked days, hardcoded partner
-   defaults, `localStorage`, and the `£100` ghost-wage fallback (`Finance.js:464-475`) — reached
-   through `Reports.js:5/485` on `whitecrossbarbers-admin` and `-owner`.
-   **Period close cannot be described as platform-wide authoritative while it remains available and
-   divergent.** Out of scope for source mutation here; `whitecross-site/**` is untouched.
-2. **`ROTA-SSOT-2`** — `shiftChanges` is still an undated, unaudited, browser-writable map that
-   outranks everything Finance knows about a day, including the dated log.
-3. **`FIN-PERIOD-CLOSE-C`** — the P&L waterfall (ADR-024 pin) and the read-only closed-period badge.
-4. **The reader's day bucketing is the browser's timezone.** `toDateKey()` uses
-   `getFullYear/getMonth/getDate`, while a snapshot's boundary is the tenant's. Exact today for a
-   London reader of a London tenant; wrong for a TR tenant. Separately scoped.
+> ⚠️ **Corrected 2026-08-19 by `SALOWN-FIN-ROTA-INTEGRATION-GATE`.** Items 1–4 below were written on
+> 2026-08-18 and **four of the six are now closed in source**. They are rewritten rather than
+> annotated, because a blocker list that names a file which no longer exists is worse than no list.
+> **None of the closures is deployed**, so every one of them is `PUSHED_NOT_LIVE`.
+
+1. ~~**The divergent live premium-panel Finance.**~~ **CLOSED IN SOURCE — `PUSHED_NOT_LIVE`.**
+   `whitecross-site/barber-panel/src/pages/Finance.js` was **removed** at `58587c22`
+   (`LEGACY-PREMIUM-FINANCE-CLOSURE`, whitecross-site `f2577871`) and **must no longer be described
+   as reachable**. Verified against the merged tree and a fresh build: the file is absent, no
+   `Reports.js` route reaches it, the Marketing AI context no longer carries its duplicate engine,
+   the `£100` ghost fallback and the hardcoded/`localStorage` partner calculator are unreachable, no
+   alternative P&L or settlement surface remains, the unrelated Reports/CSV exports survive, and a
+   bundle **and source-map** scan finds the deleted engine only inside comments in the files that
+   replaced it. ⚠️ **The currently SERVED premium artefact still predates the removal**, so the
+   divergent engine is live until `whitecrossbarbers-admin` / `-owner` are redeployed.
+   ⚠️ **Canonical-link limitation, recorded exactly:** the replacement panel links to salOWN through
+   `REACT_APP_SALOWN_APP_ORIGIN`, which is **currently unconfigured** (no `.env` in the repository);
+   without it the safe deprecation notice stands. No origin is invented or hardcoded, no
+   authentication token is passed in a URL, and the lack of cross-origin SSO may require a fresh
+   sign-in. None of that restores the legacy Finance engine.
+2. ~~**`ROTA-SSOT-2`**~~ **CLOSED IN SOURCE — `PUSHED_NOT_LIVE`** (`fe57640`). One authoritative
+   `ROTA_OVERRIDE` server action, every browser `shiftChanges` writer removed, the rules
+   affected-field guard present with no role exception, dated-override precedence, legacy parity,
+   deterministic event/audit identity, and the backdated reason/evidence/attribution gate.
+   **Not deployed:** the live `salownRotaTransaction` predates `ROTA_OVERRIDE` and the production
+   ruleset is unchanged, so the browser-writable map is still live.
+3. ~~**`FIN-PERIOD-CLOSE-C`**~~ **CLOSED IN SOURCE — `PUSHED_NOT_LIVE`** (`2e285e3`). The P&L
+   waterfall reads the closed record through `plTotals` built FROM `plTotalsReconstructed =
+   monthlyTotalsAll` (the ADR-024 pin moved, not weakened), and the read-only closed-period panel
+   ships with six deterministic states. `FINANCE_PERIOD_CLOSE_MODE` is still `'legacy'`, so **zero
+   `financePeriods` reads are issued**.
+4. ~~**The reader's day bucketing is the browser's timezone.**~~ **CLOSED IN SOURCE for Finance —
+   `PUSHED_NOT_LIVE`** (`2e285e3`). Finance now buckets an instant through `useLocale().dateKey`, the
+   same TR-A presentation contract the timezone already came from, so a reader in any device
+   timezone receives the **tenant's** boundaries — Europe/London for Whitecross.
+   ⚠️ **State it exactly:** this is a correctness fix and it **can change which month a boundary
+   booking falls in** for a reader outside the tenant zone. **Exact parity** is claimed only where
+   the browser and tenant boundaries already agreed; where they differed the answer is an
+   **authoritative tenant-timezone correction**. **Universal byte-for-byte legacy parity across
+   different browser timezones is NOT claimed and must not be.** There is one timezone source and no
+   second one. **App-wide `toDateKey` is deliberately outside this change** — its blast radius is
+   every screen — so a non-Finance surface may still bucket in the browser zone; that remains
+   separately scoped. Tests: `financePeriodCloseReader.test.ts` §C5 and §C5b (London read from UTC,
+   Istanbul, New York, Tokyo and Auckland, across both UK DST transitions and month boundaries).
 5. **≈£569.97** Feb–Jun workbook-vs-system difference and the workbook's ≈**£711** internal
    inconsistency — documented, unbridged, and not to be bridged with an invented figure.
 6. **≈£7,939** exit liability — excluded by the baseline; its representation is a separate
    owner-authorised accounting migration.
+
+7. **Neither Finance mode has moved.** `FINANCE_ROTA_HISTORY_MODE` and `FINANCE_PERIOD_CLOSE_MODE`
+   both read `'legacy'` in source, and no tenant period has been closed. **August 2026 is OPEN.**
+8. **No production release has happened.** `salownCloseFinancePeriod` is absent from the live
+   function surface, `firestore.rules` and `firestore.indexes.json` are unchanged, and the export
+   count stays **78**.
+
+---
+
+## 15 · Integration record — 2026-08-19 (`SALOWN-FIN-ROTA-INTEGRATION-GATE`)
+
+Source only. **No deploy, no production access, no seed, no bootstrap, no close, no adjustment, no
+migration, no mode flip.**
+
+**Merged from four completed parallel tracks**, each verified against the combined tree rather than
+its own report: `ROTA-SSOT-2` (`fe57640`, settled `687936a`) · `LEGACY-PREMIUM-FINANCE-CLOSURE`
+(whitecross-site `f2577871`) · `FIN-PERIOD-CLOSE-C` (`2e285e3`, settled `8cdaa83`) ·
+`FIN-PERIOD-CLOSE-B-CONFORMANCE` (`9b0277e`, settled `2258701`). Every implementation commit was
+proven an ancestor of its repository's final HEAD before anything was edited.
+
+**Landed here:** the §2.1 owner tenant-selector amendment and the §6.1 server-owned release
+allowlist, at `4f7aa65`.
+
+**Gates on the exact combined committed tree:** period-close unit **51 → 73** · functions
+`node:test` **1891** (1854 pass, 37 emulator self-skips, 0 fail) · frontend **4376/4376** across 145
+files · Firestore emulator gate **523/523** (general 496 · packages 27) · rules emulator **123/123**
+across 6 suites · fold twin parity **70/70** · period-close twin parity **20/20** · both typechecks ·
+salown production + staff builds · whitecross admin/owner build (one `barber-panel/build` serves
+both hosting sites) + bundle/source-map reachability scan · legacy Finance closure **37/37** ·
+scoped lint clean with a **firing** negative control · `deploy-policy` **28** · `rules-authority`
+**30** · `functions-ownership` **61** · release-guard OK · claims selftest + **45/45** ·
+export-count **78** · `git diff --check` clean.
+
+**Baseline recorded separately, not dismissed:** `whitecross-site/barber-panel/src/App.test.js` is
+the untouched CRA scaffold test (`renders learn react link`) and it FAILS — reproduced as the
+pre-change baseline at **1 failed / 70 passed / 71 total**, and identical after, because
+`whitecross-site` was not modified by this package.
+
+**Still blocking a production release:** every item in §14.1, plus owner authorisation of the §14
+rollout order itself.
