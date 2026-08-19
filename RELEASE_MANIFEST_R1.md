@@ -1,5 +1,28 @@
 # REL-R1-2026-08-20-A — SALOWN coordinated release manifest
 
+> # ⛔ SUPERSEDED — DO NOT DEPLOY FROM THIS FILE
+>
+> **Superseded 2026-08-19 by [`RELEASE_MANIFEST_R1A.md`](RELEASE_MANIFEST_R1A.md), release ID
+> `REL-R1-2026-08-19-A`.** This file is retained unaltered below as the audit trail. Its
+> identity is **not** rewritten: `REL-R1-2026-08-20-A` was a real prepared manifest and pointing
+> a second set of contents at the same ID would destroy the ability to tell which plan a future
+> reader is looking at.
+>
+> **Two reasons it was superseded.**
+>
+> 1. **The date in the ID was wrong.** `2026-08-20` came from my own inference that UK local
+>    time had crossed midnight during the session. The intended deployment date is
+>    **2026-08-19**, and a release ID that disagrees with its deployment date is exactly the
+>    kind of quiet contradiction a manifest exists to prevent.
+> 2. **Its contents are now stale.** The owner decided to INCLUDE both exit callables, and
+>    `functions/src/finance/exit.ts` was subsequently brought under real lint coverage
+>    (`670cb81`), which moved the source HEAD and the Functions deploy-archive digest. Every
+>    hash, command, rollback identity and stopping condition in the successor is rebuilt from
+>    the new HEAD.
+>
+> Nothing in this file was ever deployed.
+
+
 > **NOTHING IN THIS DOCUMENT HAS BEEN DEPLOYED.** No production Firestore or Auth access
 > occurred, no callable was invoked, and no live authenticated check was run while preparing
 > it. A prepared manifest is not a deployment; a release gets a `RELEASE_LEDGER.md` row and
