@@ -7,9 +7,14 @@
 >
 > **Where the "live" identities come from.** Every live identity below is read from
 > `RELEASE_LEDGER.md` row `R-2026-08-17-A` and its predecessors — the recorded evidence —
-> **not** from a fresh production read, because this task did not authorise one. Where the
-> ledger does not record an identity, this manifest says **UNPROVEN** and names what must be
-> read at deploy time. It does not guess.
+> **except** the two identities named below, which the owner authorised as a bounded
+> production **metadata read** (`APPROVE PROD RELEASE METADATA READ REL-R1-PREP`,
+> 2026-08-20). That read covered **name, region, generation, state, `updateTime` and live
+> revision identity only**, for `salownEmailExitAgreement` and `salownSendExitSignLink` and no
+> other function. It was executed with explicit `--format` field projections, so no
+> environment variable, secret, log line, source, Firestore document or Auth record was
+> requested or returned. **Runtime (`nodejs22`) was NOT in the approved field set and remains a
+> source-derived claim** (`functions/package.json` `engines.node`), not a live-verified one.
 
 **Release ID** `REL-R1-2026-08-20-A`
 **Prepared** 2026-08-20 (UK) · `alish/release-prep-r1` · macOS
@@ -63,14 +68,56 @@ codebase `salown` · project `havuz-44f70`.
 | 3 | `salownRotaBootstrapTenant` | `salownrotabootstraptenant-00001-bup` | **Dependency graph only.** Closure pulls `staff/rotaWriter` → `utils/rotaFold` | Yes — and it is **not invoked by this release** (§7) |
 | 4 | `salownRotaSeedTenantHistory` | **ABSENT** — a CREATE | New export (`9348b38`), post-dates `ef5c0ed`, zero `RELEASE_LEDGER` rows | Yes — server-only seed path, **not invoked** |
 | 5 | `salownCloseFinancePeriod` | **ABSENT** — a CREATE | New export (`ec8fbe7`), post-dates `ef5c0ed`, zero `RELEASE_LEDGER` rows | Yes — **must not be invoked**; both reader modes stay `legacy` |
-| 6 | `salownEmailExitAgreement` | **UNPROVEN** ⚠️ | `finance/exit.ts` (`19b5aa3`) replaces `exitAssertStaff` (staff-doc-exists) with `exitAssertOwner` (tenant owner or sanctioned super-admin) | Yes |
-| 7 | `salownSendExitSignLink` | **UNPROVEN** ⚠️ | Same guard change. This callable mints a signing token and writes it to `settings/exit_agreement` through the Admin SDK, which bypasses `firestore.rules` entirely | Yes |
+| 6 | `salownEmailExitAgreement` | **`salownemailexitagreement-00011-sif`** · GEN_2 · ACTIVE · `updateTime` **2026-07-13T02:11:54.304323118Z** | `finance/exit.ts` (`19b5aa3`) replaces `exitAssertStaff` (staff-doc-exists) with `exitAssertOwner` (tenant owner or sanctioned super-admin) | Yes |
+| 7 | `salownSendExitSignLink` | **`salownsendexitsignlink-00012-suz`** · GEN_2 · ACTIVE · `updateTime` **2026-07-13T02:11:59.368342604Z** | Same guard change. This callable mints a signing token and writes it to `settings/exit_agreement` through the Admin SDK, which bypasses `firestore.rules` entirely | Yes |
 
-⚠️ **UNPROVEN is a real gap, not a formality.** `RELEASE_LEDGER.md` contains **zero** rows
-naming `salownEmailExitAgreement` or `salownSendExitSignLink`. Their source is provably stale
-(it moved after `ef5c0ed` with no release row since), but **which** revision is live cannot be
-established without a production read, which this task did not authorise. Their rollback
-identity **must be read immediately before deploy** — see §6 and the stopping condition in §8.
+✅ **RESOLVED — and the answer is bigger than the question.** `RELEASE_LEDGER.md` still
+contains **zero** rows naming either function; the identities above came from the bounded
+metadata read, not from the ledger. That closes stopping condition #5. But the `updateTime`
+carries a finding the ledger could not have given us — see **§1.1a**.
+
+#### 1.1a — The exit pair is a 38-day jump, not a one-commit jump ⚠️
+
+Both live revisions were last updated **2026-07-13T02:11:5x Z**. The repo commit live at that
+instant is **`124c67e`** (2026-07-13T02:00:15Z). Everything below is UTC — an earlier reading of
+these timestamps against `+0100` commit dates was wrong and is discarded.
+
+| | rota three | **exit two** |
+|---|---|---|
+| Live source epoch | `ef5c0ed` · 2026-08-17 | **`124c67e` · 2026-07-13** |
+| Age of the jump | 2 days | **38 days** |
+| Shared `index.ts` drift they take | **+143 / −4** | **+1,922 / −342** |
+| New top-level declarations loaded at cold start | few | **57** |
+| New runtime dependency | none | **`functions/src/staff/accessStatus.ts`** — did not exist at `124c67e` (added by `3097521`, S4A, recorded as *not live*) |
+
+**Their own handler delta is tiny and is exactly the intended fix.** Diffed body-to-body between
+`124c67e` and HEAD, each of the two changes in precisely two lines:
+
+```
+- async (request) => {                                + async (request: any) => {          (type only)
+- await exitAssertStaff(db, request.auth?.uid);       + await exitAssertOwner(db, request.auth);
+```
+
+`finance/exit.ts` itself is missing two commits relative to live: `c81d5d5` (strict types, same
+day — type-level) and `19b5aa3` (**the authorization change**). The `.js → .ts` conversion
+(`ce973fb`, 01:31Z) is **already in** the live build.
+
+**So the risk is not in the handlers; it is in the shared module they cold-start.** Every
+function in this codebase loads the whole compiled `lib/index.js`, and these two would jump
+1,922 added lines of it in one step while the other five jump 143.
+
+**Recommendation: keep them in R1.** Rollback is now a proven, targeted, one-command-per-function
+operation; the behavioural delta is the authorization tightening and nothing else; leaving them
+stale keeps a live weakness in place (under `exitAssertStaff`, **any** staff document at the
+tenant — every barber, every receptionist — can email the signed partner exit agreement to an
+arbitrary address and mint a signing token written straight through the Admin SDK); and the
+1,922-line drift does not shrink by waiting, it grows.
+
+**The counter-argument, stated rather than buried:** a 38-day shared-module jump is a materially
+larger blast radius than the other five units, and an owner who wants the smallest possible
+first coordinated release should pull these two into an R2 of their own. That is a legitimate
+choice and it costs only a second release. **It is the owner's call, and R1 is deployable either
+way** — dropping them means deleting two names from the §1.1 command and nothing else.
 
 **`finance/exit.ts` also reaches `salownGetExitByToken` and `salownSignExitByToken`.** They are
 deliberately **NOT** in the target list: neither handler calls the changed guard (verified by
@@ -293,8 +340,8 @@ not changed.**
 | `salownRotaBootstrapTenant` | `salownrotabootstraptenant-00001-bup` |
 | `salownRotaSeedTenantHistory` | **No prior revision — a CREATE.** Rollback is deleting that one function by exact name in `europe-west2`. Never a blanket `--only functions` |
 | `salownCloseFinancePeriod` | **CREATE.** Same: delete by exact name, `europe-west2` |
-| `salownEmailExitAgreement` | ⚠️ **UNPROVEN — must be read immediately before deploy** |
-| `salownSendExitSignLink` | ⚠️ **UNPROVEN — must be read immediately before deploy** |
+| `salownEmailExitAgreement` | **`salownemailexitagreement-00011-sif`** (GEN_2, ACTIVE, `updateTime` 2026-07-13T02:11:54.304323118Z) |
+| `salownSendExitSignLink` | **`salownsendexitsignlink-00012-suz`** (GEN_2, ACTIVE, `updateTime` 2026-07-13T02:11:59.368342604Z) |
 | `hosting:salown` | `fa3c670ddfbdc34a` |
 | `hosting:salown-staff` | `9cd83c70960e062f` |
 | `hosting:whitecrossbarbers-admin` | `982fcf79b4add1f1` |
@@ -337,8 +384,10 @@ Stop and do not continue if, at deploy time, any of these is true:
 2. Either Finance mode is not `legacy`.
 3. Export count is not **78**.
 4. `./scripts/deploy-functions.sh --check-only` does not return exactly **7 owned targets**.
-5. **The live revision of `salownEmailExitAgreement` or `salownSendExitSignLink` cannot be
-   read.** Deploying without a rollback identity is not a release, it is a one-way door.
+5. ~~The live revision of `salownEmailExitAgreement` or `salownSendExitSignLink` cannot be
+   read.~~ **RESOLVED 2026-08-20** by the bounded metadata read (§1.1). Replaced by: **the owner
+   has not chosen** between keeping the exit pair in R1 and splitting it into R2 (§1.1a). Do not
+   deploy the pair on the releasing session's own judgement.
 6. A live identity read at deploy time disagrees with §1 — that means an **unrecorded
    deployment** happened and this manifest is stale.
 7. Any gate in §3 does not reproduce.
@@ -354,9 +403,14 @@ Stop and do not continue if, at deploy time, any of these is true:
   63 + 1 `no-require-imports`, and **28 `no-unused-vars` on the main entrypoint**, which may
   not all be cosmetic. This is the widening the ESLint config already records as a separate
   change; folding 377 problems into a release-prep commit would have hidden them.
-* **Two Functions have no recorded live identity** (§1.1). The `RELEASE_LEDGER` rule — *a
-  release that appears in prose but not here has not been recorded* — has a matching blind
-  spot: a function deployed before the ledger existed has no row, and nothing detects that.
+* **Two Functions have no recorded live identity** (§1.1) — still true of the *ledger*, even
+  though the identities are now known. The `RELEASE_LEDGER` rule — *a release that appears in
+  prose but not here has not been recorded* — has a matching blind spot: a function deployed
+  before the ledger existed has no row, and **nothing detects that**. The 2026-07-13 deploy
+  that produced `-00011-sif` and `-00012-suz` is invisible to every document in `docs/`. A
+  backfill row, or an explicit "pre-ledger, identity read on <date>" marker, would close it.
+* **The exit pair's 38-day shared-module jump** (§1.1a) is a decision the owner has not yet
+  made. R1 is deployable with or without it.
 * `SEC-CATCHALL-1` remains an asserted known exception.
 * The python rules suites (`scripts/testStaffRotaRules.py` and friends) are **not** part of the
   registered `ops/test-rules-emulator.sh` gate; only the six `test/rules/*.emulator.test.js`
@@ -419,6 +473,12 @@ is a second unapproved production write, and it removes the evidence of the firs
 
 ## 12. What preparing this manifest did NOT do
 
-No deployment. No production Firestore or Auth read or write. No callable invoked, not even a
-dry run. No live authenticated check. No booking, payment or checkout. No seed, bootstrap,
-migration or backfill. No period close or adjustment. No mode cutover. No `RELEASE_LEDGER` row.
+No deployment. **No production Firestore or Auth read or write.** No callable invoked, not even
+a dry run. No booking, payment or checkout. No seed, bootstrap, migration or backfill. No period
+close or adjustment. No mode cutover. No `RELEASE_LEDGER` row.
+
+**One production operation did occur, under its own explicit approval:** a read-only Cloud
+Functions **metadata** describe for exactly two function names, returning exactly six fields
+(name, region, generation, state, `updateTime`, live revision identity). No environment
+variable, secret, log, source, Firestore document or Auth record was requested or returned, and
+no other function was queried.
