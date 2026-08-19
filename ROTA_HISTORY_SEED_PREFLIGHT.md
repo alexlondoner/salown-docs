@@ -391,3 +391,75 @@ answers it, **`salownRotaSeedTenantHistory`**, went live the same day at
 
 So the standing order is unchanged: **do not apply the bootstrap** until the historical seed has
 been run and reviewed. `FINANCE_ROTA_HISTORY_MODE` remains `'legacy'`; no tenant is canonical.
+
+---
+
+## 12 · The executed seed dry run — Alex, 2026-08-19
+
+**Approval:** `APPROVE PROD ROTA SEED DRYRUN whitecross barber-1777257519766`.
+**Deployed callable:** `salownRotaSeedTenantHistory` at `salownrotaseedtenanthistory-00001-tol`.
+**Executed:** the authoritative compiled core `seedTenantRotaHistoryCore` with `dryRun: true`,
+against real production data, through an adapter exposing only `.doc(p).get()`.
+**5 Firestore reads · 0 writes** — the adapter has no write method, so a write was unrepresentable.
+
+> ⚠️ **The deployed callable was not invoked.** A synthetic `{ superAdmin: true }` actor was passed
+> to the core directly, so the production auth shell (`staffActorFrom` over a verified ID token)
+> **was not exercised**. Minting a privileged session for a read-only run was explicitly excluded.
+
+### Result — `state: PLANNED`, no issues
+
+| | |
+|---|---|
+| Source rota fingerprint | `ba3d051c59ab2f2e0499be3c24633acf6fb40679def14ef2cbe1c3985db85f94` |
+| Seed plan digest | `f1cac381bd140db4daf38cf1750518740246bf516a4bfbf61ee7235c926637c6` |
+| Change ID | `rota-seed-f1cac381bd140db4daf38cf175051874` |
+| Audit ID | `rota-seed-barber-1777257519766-6c289aeb1ae60e30` |
+| Expected revision | `0` → predicted `1` · genesis hash `17516577f8999903811e95a4f7918d24dd22b4a29c8cc6791ecec95a4dcdc2b3` |
+| Predicted entries hash | `fbd79cc8d822445255ee78550475f6a5aa726dca1186b7719f3824c0df63e65d` |
+| Origin | `ROTA_IMPORT` |
+| Segments / entries | **24 / 24** · declared gaps `[]` · validation issues **none** |
+| Covered range | `2026-02-06` → open-ended, final segment from **`2026-08-16`** (`coversTodayFrom`) |
+| Header path | `tenants/whitecross/staffRota/barber-1777257519766` |
+| Entries path | `…/staffRota/barber-1777257519766/rotaEntries/{entryId}` |
+| Audit path | `tenants/whitecross/auditLogs/rota-seed-barber-1777257519766-6c289aeb1ae60e30` |
+| Writes if later applied | **27** — 24 entry creates + 1 header create + 1 audit create + 1 barber publish update |
+| Idempotent retry | **Yes.** A second identical dry run reproduced every derived value byte-for-byte. An apply carrying this digest back a second time lands `ALREADY_SEEDED` with zero writes (`header.lastChangeId === changeId`) |
+
+**Proof nothing was written:** header `404` · `rotaEntries` **0 docs** · seed audit `404` · bootstrap
+audit `404` · `rotaPolicy/rollout` **absent (unflipped, legacy by absence)** · Alex's barber document
+`updateTime` unchanged at `2026-08-16T19:31:22.625534Z`.
+
+### ⚠️ Finding 1 — `2026-07-13` is a day off in live data and a WORKED day in the plan
+
+`barbers/barber-1777257519766.shiftChanges` holds **12** keys overlapping the seeded range. Eleven
+are consistent with §1. **One is not:**
+
+| Key | Weekday | Live value | In the accepted plan? |
+|---|---|---|---|
+| **`2026-07-13`** | **Monday** | **`{closed: true}`** | ❌ **No.** It falls inside base segment `2026-07-01 → 2026-07-13`, where Monday is a working day |
+| `2026-07-23` | Thursday | `{open:'09:00', close:'20:00'}` | ❌ No — an extended shift. **Wage-neutral** (a covered day is one full wage day); only the hours differ |
+| `2026-08-18` | Tuesday | `{open:'09:00', close:'19:00'}` | ✅ Redundant, not contradictory — inside the open-ended segment where Tuesday already works |
+
+The other nine are the 4 confirmed-off Tuesdays (`{closed:true}`) and 5 of the 11 worked Tuesdays.
+
+**`2026-07-13` has a £100 consequence and it runs OPPOSITE to the correction being pursued.** The
+seed exists to remove a £1,200 overstatement; seeding a day the live record says was closed would
+add £100 back. It is **not** covered by any of the approval's stop conditions — those name worked/off
+*Tuesdays*, and this is a Monday. It is reported rather than passed over.
+
+**This needs an owner decision before any apply:** either 2026-07-13 was worked (the shiftChange is
+wrong) or it was off (the plan needs a 25th segment splitting `2026-07-01 → 2026-07-13` into
+`2026-07-01 → 2026-07-12` plus a closed one-day period). Either answer changes the plan digest.
+
+### ⚠️ Finding 2 — the base daily hours are not specified anywhere accepted
+
+§1 fixes the *days*; it never states the historical daily hours. This run used **Alex's real live
+hours** — Mon–Sat `09:00–19:00`, Sun `10:00–16:00` — not the unit test's `09:00–18:00`, which is a
+test constant. **The digest above is conditional on that choice.** It is wage-neutral under the
+owner's day-based policy, but if a different historical hours basis is intended, the digest changes.
+
+### ⛔ Not a permission to apply
+
+`state: PLANNED` means the plan validates, not that the plan is right. Findings 1 and 2 are both
+open, `FINANCE_ROTA_HISTORY_MODE` is still `'legacy'` so nothing would read the seed, and the
+bootstrap must never run on Alex before or after this seed (§8, sequencing).
