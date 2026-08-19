@@ -11,9 +11,16 @@
 **Read-only source audit, 2026-08-18.** Anchored to `salown-app` @ `dd3e772` (tree identical to
 release anchor `ef5c0ed`) and `whitecross-site` @ `18946538`.
 
-**Nothing was executed against production.** No production read, no production write, no bootstrap
-invocation of any kind (not even `dryRun`), no callable invocation, no Auth access, no migration, no
-edit, no claim, no deploy. Every statement below is a citation of source at those two commits.
+**Nothing was executed against production** *when this audit was written*. No production read, no
+production write, no bootstrap invocation of any kind (not even `dryRun`), no callable invocation,
+no Auth access, no migration, no edit, no claim, no deploy. Every statement in §§1–10 is a citation
+of source at those two commits.
+
+> ⚠️ **That sentence is no longer true of the tenant as a whole.** A production **dry run for
+> `whitecross` was executed on 2026-08-19** under the owner approval
+> `APPROVE PROD BOOTSTRAP DRYRUN whitecross`. It wrote nothing. Its result, its limits and what it
+> does *not* license are recorded in **§11** at the end of this document. §§1–10 are left exactly
+> as audited.
 
 **Why it was run.** `FIN-DATED-ROTA-R2c` is live (`RELEASE_LEDGER.md` → `R-2026-08-17-A`) and the
 next step in the release order is the Whitecross canonical bootstrap. Before applying an
@@ -307,3 +314,80 @@ No production document was read or written. No callable was invoked. **No bootst
 even `dryRun`.** No migration, no edit to application source, no claim, no deploy. Nothing here
 proposes editing a production barber document by hand — the whole point of a seed builder is that
 history enters through an audited, append-only, server-authoritative door or not at all.
+
+---
+
+## 11 · The executed dry run — `whitecross`, 2026-08-19
+
+**Approval:** `APPROVE PROD BOOTSTRAP DRYRUN whitecross` (owner, 2026-08-19).
+**Deployed callable:** `salownRotaBootstrapTenant` at `salownrotabootstraptenant-00002-nuy`
+(released the same day, `RELEASE_LEDGER.md` → `R-2026-08-19-A`).
+
+### What was actually executed, stated precisely
+
+The **authoritative compiled core** — `functions/lib/staff/rotaBootstrap.js`,
+`bootstrapTenantRotaCore` — was run against **real production data** with `dryRun: true` forced,
+through a Firestore shim exposing only `.doc(p).get()` and `.collection(p).get()`. The shim has no
+`set`, `update`, `create`, `delete`, `add`, `commit`, `batch` or `runTransaction` method at all, so
+a write was not merely forbidden, it was **unrepresentable**; `serverTimestamp` was replaced by a
+function that throws. **8 Firestore reads, 0 writes.**
+
+> ⚠️ **What this was NOT.** The deployed **callable** was not invoked. The harness supplied a
+> synthetic actor `{ superAdmin: true }` directly to the core, which means the production
+> authorization path — `staffActorFrom` reading a *verified* Firebase ID token — **was not
+> exercised**. The classification below is authoritative because it is the same code over the same
+> data; the auth gate is proven only by `rotaBootstrap`'s unit tests, not by this run. A true
+> end-to-end callable dry run still requires an authenticated super-admin session.
+>
+> This route was chosen deliberately over minting a `superAdmin` custom token from a service
+> account key: that would have **created a durable privileged session** in order to read three
+> barber documents, which is disproportionate to a dry run and contrary to the standing rule that
+> the `superAdmin` claim is never granted casually.
+
+### Result
+
+```
+ok: true · dryRun: true · rolloutFlipped: false · rolloutMode: "legacy"
+effectiveFrom: 2026-08-19 · todayKey: 2026-08-19 · blocking: []
+```
+
+| Subject | id | State | `availabilityFrom` | `status` | Working days |
+|---|---|---|---|---|---|
+| **Alex** | `barber-1777257519766` | **ELIGIBLE** | `2026-02-06` | active | all 7 |
+| **Arda** | `barber-1777655430086` | **SKIPPED_PASSIVE** | `2026-02-06` | passive | 6 (no Wednesday) |
+| **Muhamed** | `barber-1781007454543` | **ELIGIBLE** | `2026-06-09` | leave | 6 (no Monday) |
+
+**Nothing blocks.** `STAFF-START-A2` paid off: all three carry a real `availabilityFrom`, so no
+subject lands in `BLOCKED_NO_START_DATE`, and all three carry a pattern, so none lands in
+`BLOCKED_NO_PATTERN`.
+
+Three observations worth recording:
+
+* **`status: leave` is ELIGIBLE, and that is correct.** The classifier skips only `passive`. Leave
+  is not a reason to refuse to freeze a baseline pattern, because leave outranks the seed at read
+  time in the precedence chain (employment window > dated override > approved leave > dated
+  schedule change > seed/baseline). Freezing Muhamed's pattern does not make him bookable while on
+  leave.
+* **Arda's `workingDays` now excludes Wednesday**, which matches his real day off. The
+  `["Wednesday"]`-only corruption recorded against `FIN-ARDA-REPAIR` is not present in the current
+  data. He is skipped as passive regardless, so his pattern would not be frozen by an apply.
+* **No rollout document exists** (`tenants/whitecross/rotaPolicy/rollout` → `NOT_FOUND`), so
+  `rolloutMode` reports `legacy` by absence rather than by an explicit setting.
+
+### Post-run state, verified
+
+`rotaPolicy/rollout` **absent** · `staffRota/{barber-1777257519766,barber-1777655430086,barber-1781007454543}`
+all **404** · `auditLogs/rota-bootstrap-2026-08-19` **404**. Nothing was created.
+
+### ⛔ What this dry run does NOT license
+
+A green dry run is **not** a recommendation to apply, and this document's own verdict is the reason.
+
+`effectiveFrom` is **2026-08-19**. Applying the bootstrap today would freeze *today's* pattern as
+the canonical baseline and say nothing about the six months Finance is actually replaying — which
+is exactly the `HISTORICAL_SEED_CHANGE_REQUIRED` verdict at the top of this file. The writer that
+answers it, **`salownRotaSeedTenantHistory`**, went live the same day at
+`salownrotaseedtenanthistory-00001-tol` and **has never been invoked**.
+
+So the standing order is unchanged: **do not apply the bootstrap** until the historical seed has
+been run and reviewed. `FINANCE_ROTA_HISTORY_MODE` remains `'legacy'`; no tenant is canonical.
