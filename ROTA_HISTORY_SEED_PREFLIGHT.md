@@ -429,7 +429,7 @@ against real production data, through an adapter exposing only `.doc(p).get()`.
 audit `404` · `rotaPolicy/rollout` **absent (unflipped, legacy by absence)** · Alex's barber document
 `updateTime` unchanged at `2026-08-16T19:31:22.625534Z`.
 
-### ⚠️ Finding 1 — `2026-07-13` is a day off in live data and a WORKED day in the plan
+### ⚠️ Finding 1 — `2026-07-13` — **RULED ON 2026-08-19, see §13. Alex WORKED it; the plan stands.**
 
 `barbers/barber-1777257519766.shiftChanges` holds **12** keys overlapping the seeded range. Eleven
 are consistent with §1. **One is not:**
@@ -451,7 +451,7 @@ add £100 back. It is **not** covered by any of the approval's stop conditions �
 wrong) or it was off (the plan needs a 25th segment splitting `2026-07-01 → 2026-07-13` into
 `2026-07-01 → 2026-07-12` plus a closed one-day period). Either answer changes the plan digest.
 
-### ⚠️ Finding 2 — the base daily hours are not specified anywhere accepted
+### ⚠️ Finding 2 — base daily hours — **RULED ON 2026-08-19, see §13. Mon–Sat 09:00–19:00, Sun 10:00–16:00 are ACCEPTED, no longer conditional.**
 
 §1 fixes the *days*; it never states the historical daily hours. This run used **Alex's real live
 hours** — Mon–Sat `09:00–19:00`, Sun `10:00–16:00` — not the unit test's `09:00–18:00`, which is a
@@ -463,3 +463,118 @@ owner's day-based policy, but if a different historical hours basis is intended,
 `state: PLANNED` means the plan validates, not that the plan is right. Findings 1 and 2 are both
 open, `FINANCE_ROTA_HISTORY_MODE` is still `'legacy'` so nothing would read the seed, and the
 bootstrap must never run on Alex before or after this seed (§8, sequencing).
+
+---
+
+## 13 · Owner rulings applied, and the re-run — 2026-08-19
+
+Rulings accepted (they close §12's two findings):
+
+1. Alex **WORKED** Monday **2026-07-13**. 2. The live `shiftChanges['2026-07-13'] = {closed:true}` is
+**erroneous** and must not redefine the plan. 3. Historical hours **Mon–Sat 09:00–19:00, Sun
+10:00–16:00**. 4. Plan remains **24** entries. 5. The four off-Tuesdays stay inside base
+`2026-05-27 → 2026-06-29`. 6. `2026-07-21` stays its own worked Tuesday at **17:00–19:00**.
+7. `2026-07-23` 09:00–20:00 is wage-neutral. 8. `2026-08-18` is redundant. 9. The bootstrap must
+**never** run for Alex.
+
+⇒ **The accepted plan is unchanged.** Ruling 1 confirms the base segment `2026-07-01 → 2026-07-13`
+with Monday working; ruling 3 confirms the hours the previous run had used provisionally. The plan
+digest was **recomputed from the accepted plan, not reused**, and independently reproduced the same
+value — which is the correct outcome when the plan is genuinely identical.
+
+### How the erroneous `2026-07-13` entry must be handled — determined from source
+
+**It requires no separate correction, and none should be written.** `src/utils/financeWages.ts`
+(post-`ROTA-SSOT-2`):
+
+```ts
+const answer = rotaHistoryMode(opts.rotaMode) === 'dated' && opts.rotaDay ? opts.rotaDay(dk, dayName) : null
+const sc = answer ? undefined : barber?.shiftChanges?.[dk]
+```
+
+In `'dated'` mode, if the log can speak for a day the map **is not read at all**. The seed covers
+`2026-02-06 →` open-ended, so it speaks for `2026-07-13`, and the erroneous entry becomes
+structurally unreachable for the wage decision. In `'legacy'` mode — what is live now — `answer` is
+`null` by construction and the map still decides, so **the £100 stays wrong until
+`FINANCE_ROTA_HISTORY_MODE` flips to `'dated'`**, seed or no seed. That is the standing
+"the seed alone moves no money" position, unchanged.
+
+Writing a `ROTA_OVERRIDE` to "fix" it would be **worse**, not better: an override *outranks* the
+pattern (`overridden ? answer.works : …`), so it would install a permanent per-day authority for a
+day the base pattern already answers correctly — and it would be a production write nobody needs.
+§6 of this document, which says `shiftChanges` "outranks everything in the wage decision", was
+audited at `ef5c0ed` and is **superseded** by `ROTA-SSOT-2` for `'dated'` mode only.
+
+### Re-run result — deterministic, and it moved
+
+| | Run A (pre-ruling) | **Run B + C (accepted plan)** |
+|---|---|---|
+| State | `PLANNED` | **`PLANNED`** |
+| Segments / entries | 24 / 24 | **24 / 24** |
+| Plan digest | `f1cac381…37c6` | **`f1cac381bd140db4daf38cf1750518740246bf516a4bfbf61ee7235c926637c6`** (unchanged — same plan) |
+| Change ID | — | **`rota-seed-f1cac381bd140db4daf38cf175051874`** |
+| Audit ID | — | **`rota-seed-barber-1777257519766-6c289aeb1ae60e30`** |
+| Predicted entries hash | `fbd79cc8…e65d` | **`fbd79cc8d822445255ee78550475f6a5aa726dca1186b7719f3824c0df63e65d`** |
+| Expected revision | 0 → 1 | **0 → 1** (genesis `17516577…c2b3`) |
+| **Source fingerprint** | `ba3d051c…5f94` | **`93e4bbd45ad9b851e2e65cad2e05ec2eaaf672f947f79bf8925d623907fdcdb8` — CHANGED** |
+
+Runs B and C are byte-identical to each other: deterministic. Local invariant self-check before the
+core saw the plan: total 24 · bases 12 · single-day Tuesdays 11 (list-equal to the accepted 11) ·
+open-ended 1 from `2026-08-16` · four off-Tuesdays inside the base period · `2026-07-21` partial
+exact · **contiguous with zero gaps**.
+
+### ⛔ BLOCKER — Alex's document changed mid-session, and an apply would revert the owner's edit
+
+`barbers/barber-1777257519766.updateTime` moved from `2026-08-16T19:31:22.625534Z` to
+**`2026-08-19T19:57:09.584434Z`**. Exactly one field changed:
+
+```
+dayHours.Thursday.close :  "19:00"  →  "20:00"
+```
+
+Everything else — status, `availabilityFrom`, `workingDays`, `hours`, leave fields and all 12
+`shiftChanges` keys — is unchanged. **This session did not and could not have written it:** the
+adapter exposes only `.doc().get()`, and the new value is `20:00` while every Thursday in this
+session's plan is `19:00` — the opposite direction.
+
+Two consequences, and the second is the blocker:
+
+1. **The fingerprint is void for any earlier plan.** Correct, designed behaviour — the precondition
+   caught it. The values above are current as of `19:57:09Z`.
+2. **An apply would silently revert that edit.** The seed publishes the FINAL segment's pattern onto
+   the barber document (`predictedPublish`). The final open-ended segment carries Thursday
+   `09:00–19:00`, so applying would write Thursday back to `19:00` and undo the 19:57 change.
+
+Ruling 3 fixes the **historical** hours. It does not say what the **open-ended segment from
+2026-08-16** — which covers today and every future day — should carry, and live configuration now
+disagrees with it by one hour on Thursdays. Note the likely provenance: `2026-07-23` was a Thursday
+`09:00–20:00` exception, and Thursday has now become `20:00` as a standing pattern.
+
+**This needs an owner ruling before any apply:** either the final segment adopts Thursday
+`09:00–20:00` (which changes the plan digest), or the 19:57 edit is itself unintended. Wages are
+unaffected either way — the policy is day-based — but bookable Thursday hours are not.
+
+### Reconciliation — all 12 overlapping `shiftChanges`, none unexplained
+
+| Key | Day | Value | Verdict |
+|---|---|---|---|
+| 2026-06-02 · 06-09 · 06-16 · 06-23 | Tue | `{closed:true}` | ✅ ruling 5 — inside base `2026-05-27→06-29`, Tuesday already excluded, no event needed |
+| **2026-07-13** | **Mon** | `{closed:true}` | ⚠️ rulings 1+2 — **erroneous**; plan unchanged; neutralised structurally in `'dated'` mode; **not** corrected by a write |
+| 2026-07-14 · 07-28 · 08-04 · 08-11 | Tue | `09:00–19:00` | ✅ worked Tuesdays, in plan |
+| 2026-07-21 | Tue | `17:00–19:00` | ✅ ruling 6 — exact match to the one-day segment |
+| 2026-07-23 | Thu | `09:00–20:00` | ✅ ruling 7 — wage-neutral. ⚠️ but see the blocker: Thursday `20:00` is now the standing pattern |
+| 2026-08-18 | Tue | `09:00–19:00` | ✅ ruling 8 — redundant, inside the open-ended segment |
+
+**No new `shiftChanges` discrepancy.** The only new discrepancy is `dayHours.Thursday`, above.
+
+### Production unchanged by this session
+
+header `404` · `rotaEntries` **0 docs** · seed audit `404` · bootstrap audit `404` ·
+`rotaPolicy/rollout` **absent, unflipped** · 5 reads per run, writes structurally impossible.
+Alex's barber document did change — at 19:57, by something outside this session, as evidenced above.
+
+### Checks run
+
+seed suite **62/62** · rotaWriter + fold parity **142/142** · financeWages + financeRotaHistory +
+rotaIntent **128/128** · ops guards **119/119** · claims selftest + **45/45** · release-guard ·
+export count **78** · `git diff --check` clean.
