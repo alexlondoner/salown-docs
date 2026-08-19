@@ -797,4 +797,110 @@ header 404 · rotaEntries 0 · seed audit 404 · bootstrap audit 404 · rollout 
 `updateTime` unchanged at `2026-08-19T19:57:09.584434Z`. 5 reads per run; the adapter exposes only
 `.doc().get()`.
 
-**Terminal: `ALEX_ROTA_SEED_APPLY_BLOCKED`.**
+**Terminal: `ALEX_ROTA_SEED_APPLY_BLOCKED`.** — **Gate A RESOLVED in §16 (2026-08-20). Gate B still outstanding.**
+
+---
+
+## 16 · Gate A resolved — the snapshot-derived final segment, 2026-08-20
+
+**Ruling.** The final open-ended segment must preserve Alex's current live rota projection
+*exactly*, including every canonical `dayHours` key. Historical bounded segments keep their accepted
+historical hours. An eventual publish must add, change and remove **nothing**.
+
+### The fix: derive, do not retype
+
+The final segment's pattern is now **read from production through the same read-only adapter,
+validated against the canonical vocabulary, and used verbatim**:
+
+* keys checked against `DAY_HOURS_KEYS = ['open','close','closed','source']` (unknown key ⇒ refuse);
+* `open`/`close` required and time-shaped; `closed` boolean if present; `source` ∈
+  `DAY_HOURS_SOURCES = {'salon','staff'}` if present;
+* the snapshot is **digest-bound** — it is part of the segments, so any later live change produces a
+  different plan digest and voids the plan by construction.
+
+**Ruling 5, answered from source rather than assumed.** `closed` and `source` are **optional**:
+`validatePattern` checks them only `if (row.x !== undefined)`, and `DAY_HOURS_KEYS` is an allowlist,
+not a requirement. The 23 bounded historical segments therefore carry only `{open, close}` and
+validate cleanly (`issues: null`, `histDayHoursKeysOnlyOpenClose: true`). **No historical `source`
+provenance was invented.** Consequence, stated: historical entries record hours without a
+provenance marker, which is exactly what the accepted evidence supports — nobody recorded who set
+Alex's hours in February.
+
+### ⛔→✅ GATE A — and the result is stronger than a zero-diff write
+
+**`predictedPublish` is `null`.** Because the final segment's pattern now equals the live
+projection, `computeCacheConvergence` reports no pattern change, so `barberFieldUpdate` is `null`
+and `rotaSeedImport` never reaches `tx.update(barberRef, …)` at all. The core says so itself:
+
+> *"the legacy cache publishes nothing for today; the barber document is unchanged by this seed"*
+
+| Gate A requirement | Result |
+|---|---|
+| added keys | **0** |
+| changed keys | **0** |
+| removed keys | **0** |
+| all seven days keep exact `source` / `closed` presence and value | ✅ — `source` **7/7**, `closed` **6/7** (Tuesday has none live), untouched |
+| Thursday 09:00–20:00 | ✅ `{"close":"20:00","closed":false,"open":"09:00","source":"staff"}` |
+| `workingDays` and top-level `hours` unchanged | ✅ all seven days; `hours` `{09:00, 19:00}` |
+
+Not "a write that happens to change nothing" — **no write to the barber document is emitted.**
+
+**Consequence for the write set: 27 → 26.** 24 entry creates + 1 header create + 1 audit create, and
+**no barber publish update**.
+
+Consumer search re-run as a regression check only (`bookingUtils.ts` still reads
+`dayHours[dayName].closed`); it is no longer load-bearing, because a publish that does not happen
+cannot remove a key.
+
+### Recomputed identifiers — everything from `bfad3779…8abb` is STALE
+
+| | STALE — must not be applied | **CURRENT** |
+|---|---|---|
+| Seed plan digest | ~~`bfad3779…8abb`~~ | **`0cdde2f9910b4096f2eb696acfcede401c1b9c51f3d4696e5216be3a879966e2`** |
+| Change ID | ~~`rota-seed-bfad3779b0ff47031c84d4976d571f90`~~ | **`rota-seed-0cdde2f9910b4096f2eb696acfcede40`** |
+| Audit ID | ~~`…-2189926c0f9baed4`~~ | **`rota-seed-barber-1777257519766-1ede6e017a3a9800`** |
+| Predicted entries hash (synthetic actor A only) | ~~`d2be374d…d40f`~~ | **`3bacfb31c62838c7bd4260c736157ec8bcec2112fd52c32ae9614168f6e3ff44`** |
+| Source fingerprint | — | **`93e4bbd45ad9b851e2e65cad2e05ec2eaaf672f947f79bf8925d623907fdcdb8`** (unchanged) |
+| Entry count · revision | — | **24** · **0 → 1** |
+| **Expected write set** | ~~27~~ | **26** |
+
+Both stale audit ids and the current one return **404**: none has ever been written.
+
+### Determinism, actor-independence and the absence of a clock
+
+* **Three runs, same synthetic actor** → output files byte-identical, sha256
+  `28fa9b66c31ac146a62e9c6177af5448832474f5ec8b02f16b55add58e4dea94`.
+* **A different synthetic actor** → `sourceRotaFingerprint`, `seedPlanDigest`, `changeId`,
+  `auditId`, `entryCount`, `predictedRevision`, `state` and `predictedPublish` all **identical**;
+  only `predictedEntriesHash` moves (`3bacfb31…` → `14f122b7…`), because `buildSeedEntries` stamps
+  `audit.actorRef` on every entry.
+* **No clock contaminates the plan.** The date rolled from 2026-08-19 to 2026-08-20 between runs.
+  Re-digesting *yesterday's* plan *today* still yields exactly `bfad3779…8abb`. `todayKey` is the
+  only date-bearing field and it is reported output, not plan input.
+
+### The future gate rule — binding for any real apply
+
+1. **Never compare a real operator's `predictedEntriesHash` to a synthetic actor's.** They differ by
+   design and must. Actor attribution is not to be weakened or removed to make hashes match.
+2. **The authenticated callable dry run and the apply must be performed by the SAME authenticated
+   operator**, in one session.
+3. **Bind the apply to the real callable dry-run response** — its `seedPlanDigest` and
+   `sourceRotaFingerprint` handed straight back — plus the unchanged genesis pre-state
+   (`expectedRevision: 0`, `expectedEntriesHash: ROTA_CHAIN_GENESIS`). `predictedEntriesHash` is
+   **output, never precondition**.
+
+### Safety, re-verified after all five runs
+
+header **404** · rotaEntries **0** · new seed audit **404** · stale seed audit **404** · bootstrap
+audit **404** for both 2026-08-19 and 2026-08-20 · rollout **absent/unflipped** · barber
+`updateTime` **`2026-08-19T19:57:09.584434Z`**, one value observed throughout · both Finance modes
+`'legacy'` · no active claim · bootstrap never run for Alex.
+
+**Checks:** seed 62/62 · rotaWriter + fold twins 142/142 · rotaBootstrap 25/25 · full Functions 1891
+(1854 pass · 0 fail · 37 self-skips) · frontend rota/finance 158/158 · ops guards 119/119 · claims
+selftest + 45/45 · release-guard · exports **78** · `git diff --check` clean.
+
+### ⛔ Gate B remains outstanding
+
+No sanctioned authenticated production invocation path exists (§15). Not bypassed, not implemented
+here. The plan is ready for that tool; it is not ready to apply.
