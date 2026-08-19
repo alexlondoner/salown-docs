@@ -684,3 +684,117 @@ seed **62/62** · rotaWriter + fold twins **142/142** · rotaBootstrap **25/25**
 **1891** (1854 pass · 0 fail · 37 emulator self-skips) · frontend rota/finance readers **140/140** ·
 ops guards **119/119** · claims selftest + **45/45** · release-guard · exports **78** ·
 `git diff --check` clean.
+
+---
+
+## 15 · Production apply gate — **BLOCKED**, 2026-08-19
+
+Gate preparation only; nothing was applied. Every bound value was independently re-read and
+recomputed rather than carried over. **Two gates fail, and a third value does not reproduce.**
+
+### Fresh pre-apply checks — 1–6, 9, 10 all PASS
+
+| Check | Result |
+|---|---|
+| 1 · ledger row + deployed revision | `R-2026-08-19-A` present · `salownrotaseedtenanthistory-00001-tol` ACTIVE GEN_2 |
+| 2 · Finance modes | `FINANCE_ROTA_HISTORY_MODE = 'legacy'` · `FINANCE_PERIOD_CLOSE_MODE = 'legacy'` |
+| 3 · bootstrap | never run for Alex — `auditLogs/rota-bootstrap-2026-08-19` **404** |
+| 4 · genesis | header **404** · rotaEntries **0** · seed audit **404** · bootstrap audit **404** · rollout **absent/unflipped** |
+| 5 · doc identity | `updateTime` **`2026-08-19T19:57:09.584434Z`** == bound |
+| 6 · Thursday | `dayHours.Thursday.close` = **`20:00`** |
+| 9 · race surface | no active claim; no concurrent cutover; no operator action in flight |
+| 10 · target ids | tenant `whitecross`, subject `barber-1777257519766` — from §1 of this document |
+
+### Check 7–8 — one bound value does NOT reproduce
+
+| Bound value | Recomputed | |
+|---|---|---|
+| source fingerprint `93e4bbd4…cdb8` | identical | ✅ |
+| plan digest `bfad3779…8abb` | identical | ✅ |
+| change ID `rota-seed-bfad3779b0ff47031c84d4976d571f90` | identical | ✅ |
+| audit ID `rota-seed-barber-1777257519766-2189926c0f9baed4` | identical | ✅ |
+| entry count 24 · revision 0 → 1 · state `PLANNED` | identical | ✅ |
+| **predicted entries hash `d2be374d…d40f`** | **`a70c7ba8…7a96`** | ❌ |
+
+**Cause, established from source — it is not a defect.** `buildSeedEntries` stamps every entry with
+`audit: { actorRef, actorRole?, channel:'import' }`. The hash is therefore a function of the CALLER
+IDENTITY. Measured directly: `dryrun-local-harness` → `d2be374d…`, `gate-verify` → `a70c7ba8…`,
+`some-real-operator` → `a1fceb5b…`. It is **not** time-dependent — the callable deliberately does
+not supply `nowInstant`, so `audit.atInstant` is absent.
+
+**Consequence for the gate:** the bound hash is reproducible only under the synthetic dry-run actor,
+which must never be used in production. A real operator will necessarily produce a different value,
+**correctly**. `predictedEntriesHash` is therefore not a valid pre-apply commitment and must not be
+bound. It is *not* an apply precondition — the apply requires `expectedEntriesHash ===
+ROTA_CHAIN_GENESIS` (the PRE-state) — so nothing downstream depends on it.
+
+### ⛔ GATE A FAILS — the publish narrowing is NOT a contractual normalization
+
+Exact recursive diff of the complete publish (`tx.update(barberRef, {...publish})`; a nested map
+in `update()` replaces the whole field):
+
+* top-level keys **written**: `workingDays`, `dayHours`, `hours`
+* top-level keys **untouched** (14): `active`, `availabilityFrom`, `bio`, `color`, `id`,
+  `leaveFrom`, `leavePaid`, `leaveUntil`, `name`, `order`, `photo`, `role`, **`shiftChanges`**,
+  `status`
+* **ADDED: 0 · CHANGED: 0** — `dayHours.Thursday.close` is `20:00` on both sides
+* **REMOVED: 13 keys across all SEVEN days** — `source:'staff'` ×**7**
+  (Mon, Tue, Wed, Thu, Fri, Sat, Sun) and `closed:false` ×**6** (all but Tuesday, which has no
+  `closed` key live). **This is not a Thursday-only effect.**
+
+**Why this blocks.** The removal is not guaranteed by any contract:
+
+1. `toRotaBarberFieldUpdate` — the single shared projection used by the seed **and** by the live
+   `salownRotaTransaction` writer — does `if (pattern.dayHours != null) update.dayHours =
+   pattern.dayHours`. It copies **verbatim**. There is **no normalization step anywhere**, and the
+   frontend twin is identical.
+2. Nothing post-processes it: `tx.update(barberRef, { ...publish })`.
+3. **No test asserts `source`/`closed` are stripped.** There is no stripping contract to appeal to.
+4. The canonical vocabulary positively **includes** them: `DAY_HOURS_KEYS = ['open','close',
+   'closed','source']`, and the accepted golden fixture `packages/shared/src/rotaFold.golden.json`
+   carries `"source"` 6× and `"closed"` 12× inside `dayHours`.
+
+So `{open, close}` is **what this hand-authored plan happens to contain**, not the canonical
+published representation. The 13 removals are an **unreviewed mutation introduced by the plan**, and
+the gate's own rule applies: stop.
+
+**Consumers — recorded, but not the reason for the block.** `bookingUtils.ts:475`
+(`barber.dayHours[dayName].closed`) and `createBooking.ts` read `dayHours.*.closed`; an absent key
+is falsy exactly as `false` is, so those specific reads would behave identically. `weekHours.ts`
+types `closed: boolean` and pins key order `open, close, closed[, note]`. No reader of
+`dayHours.*.source` was found. **None of that is sufficient** — the gate forbids accepting the
+removal merely because current readers appear unaffected, and the contract evidence above shows it
+is unintended rather than sanctioned.
+
+**Smallest remedy, NOT implemented here.** Only the FINAL segment's pattern is ever published, so
+carrying `{open, close, closed, source}` on that one segment — matching live byte-for-byte — makes
+the publish diff empty. That changes the plan digest and every dependent identifier, so it needs a
+fresh dry run and a fresh owner ruling. It is named, not applied.
+
+### ⛔ GATE B FAILS — no sanctioned authenticated production invocation path exists
+
+* **No UI or product surface invokes `salownRotaSeedTenantHistory`.** Searched `salown-app/src`,
+  `salown-app/hosting`, `whitecross-site/barber-panel/src`: the only match anywhere is a *comment*
+  in `financeRotaHistoryCutover.ts`.
+* **No runbook procedure.** `FIN_PERIOD_CLOSE_DESIGN.md` §225 records that apply/adjust are
+  `superAdmin`-only — an authorization statement, not an invocation method.
+* **No callable-invocation tooling** in either repository.
+
+The callable requires a Firebase ID token carrying `superAdmin: true`. The permitted routes are
+exhausted: a durable privileged session may not be minted, the synthetic dry-run actor may not be
+used in production, and invoking the core directly would evade the callable boundary — which is the
+very gate the apply must exercise.
+
+**Smallest safe missing prerequisite** (stated, deliberately not built): an authenticated
+super-admin surface that calls the callable from a real operator session — e.g. a super-admin-only
+control that issues `httpsCallable('salownRotaSeedTenantHistory')` with `dryRun` first and the
+returned digest handed back for apply. That exercises the real `staffActorFrom` path, needs no new
+credential, and leaves the operator identity in `audit.actorRef` where it belongs.
+
+### Verified again: zero production mutation
+
+header 404 · rotaEntries 0 · seed audit 404 · bootstrap audit 404 · rollout absent ·
+`updateTime` unchanged at `2026-08-19T19:57:09.584434Z`. 5 reads per run; the adapter exposes only
+`.doc().get()`.
+
+**Terminal: `ALEX_ROTA_SEED_APPLY_BLOCKED`.**
