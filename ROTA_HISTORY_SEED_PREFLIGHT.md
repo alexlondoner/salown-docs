@@ -904,3 +904,90 @@ selftest + 45/45 · release-guard · exports **78** · `git diff --check` clean.
 
 No sanctioned authenticated production invocation path exists (§15). Not bypassed, not implemented
 here. The plan is ready for that tool; it is not ready to apply.
+
+---
+
+## 17 · The authenticated production dry run — Stage 1, executed 2026-08-20
+
+**One real production invocation, `dryRun: true`, through the deployed Gate B surface. Zero writes.**
+Appended as a dated record; §§1–16 are unchanged.
+
+### How it was invoked
+
+Through the deployed UI only — `https://salown-admin.web.app/ops/rota-seed`, artifact
+`da385a716686bb6d` (served `index-nocVEGff.js` sha256 `1515292e…b145`, re-verified immediately
+before). An **existing** Firebase-authenticated super-admin browser session was used: operator
+**`aerulas@gmail.com` · UID `CsktIKNC0wRaP2eK8DECVMWPD0m1`**, which is the security-audit baseline
+super-admin. The page rendered past `ProtectedRoute`, which is itself proof the verified ID-token
+claim carried `superAdmin: true`; the claim was resolved by the application's own
+`getIdTokenResult`, and no forced refresh was needed or performed.
+
+**No token was minted, copied, printed or exposed. No credential was created, no actor synthesized,
+no core called directly.** The callable was reached only by clicking the page's Stage 1 control —
+**exactly once**, with no retry, no DevTools invocation and no manipulation of the request or
+payload.
+
+### Pre-state, captured read-only immediately before
+
+header `staffRota/barber-1777257519766` **404** · `rotaEntries` **0** · seed audit
+`rota-seed-barber-1777257519766-1ede6e017a3a9800` **404** · `rotaPolicy/rollout` **404** · Alex's
+barber document `updateTime` **`2026-08-19T19:57:09.584434Z`** · seed callable
+**`salownrotaseedtenanthistory-00001-tol`** · no active claim, all three repos clean.
+
+### Result — `PLANNED`, readiness GRANTED
+
+The page's own validator granted readiness, which it does only when its failure list is empty —
+so **every** checked field matched: state `PLANNED`, tenant `whitecross`, subject
+`barber-1777257519766`, digest `0cdde2f9…966e2`, fingerprint `93e4bbd4…cdb8`, change ID
+`rota-seed-0cdde2f9910b4096f2eb696acfcede40`, entry count **24**, predicted revision **1**
+(from `0`), write count **26**, `predictedPublish` **null**, issues empty, blocking empty.
+
+| | |
+|---|---|
+| Write set displayed | **26 = 24 entries + 1 header + 1 audit + 0 barber projection** |
+| **Real predicted entries hash** | **`bec05d23c10283cc30998833f47bbf46c03f17bfc925e1e9db2fe16be5807064`** |
+
+> ⚠️ That hash is **OUTPUT ONLY and actor-dependent** — `buildSeedEntries` stamps `audit.actorRef`
+> on every entry. It is a **third distinct value**, different from both synthetic-actor hashes
+> recorded in §16 (`3bacfb31…ff44`, `14f122b7…`), which is exactly what §16's rule predicted and is
+> evidence that attribution is working. It was **not** compared to any earlier harness hash and
+> **must never** become a precondition. The apply binds on digest + fingerprint + `expectedRevision: 0`
+> + `expectedEntriesHash: ROTA_CHAIN_GENESIS`, all of which the server re-derives.
+
+### The two server warnings, recorded rather than dismissed
+
+1. **`12 shiftChanges key(s) overlap the seeded range; they are NOT removed, NOT migrated and still
+   outrank the log in Finance until ROTA-SSOT-2 is closed.`** This matches §13's reconciliation of
+   the same 12 keys and is the known consequence of Finance still running in `legacy` mode.
+2. **`the legacy cache publishes nothing for today; the barber document is unchanged by this seed.`**
+   This is Gate A's conclusion (§16) confirmed by the server on real production data — the reason
+   the write set is 26 and not 27.
+
+### Apply remained unavailable — proven in the strongest available state
+
+Readiness was **true** and the typed-confirmation input became **enabled**, so every apply
+precondition except the kill switch was satisfied — and the apply control stayed disabled, labelled
+*"Apply seed — DISABLED IN THIS BUILD"*, with its accessible name being the disabled title. The
+confirmation phrase was deliberately **not** typed: the served bytes already fold the button's
+`disabled` expression to a literal `true` and contain **no `buildApplyPayload` at all**, so typing
+could not change the outcome. **Apply was not enabled, `ROTA_SEED_APPLY_ENABLED` was not modified.**
+
+### Post-invocation — nothing was written
+
+header **404** · `rotaEntries` **0** · seed audit **404** · `rotaPolicy/rollout` **404** · Alex's
+barber `updateTime` **`2026-08-19T19:57:09.584434Z`, unmoved** · bootstrap audit for 2026-08-20
+**404** · `salownRotaSeedTenantHistory` **`-00001-tol`** unchanged · `salownRotaTransaction`
+**`salownrotatransaction-00003-gov`** unchanged · `salownRotaBootstrapTenant` **`-00002-nuy`**
+unchanged · hosting `salown-admin` `da385a716686bb6d`, `salown` `64a94ff80d5c2d9a`, `salown-staff`
+`c0606fdcb48f5207` all unchanged · Finance modes are source constants and remain
+`FINANCE_ROTA_HISTORY_MODE = 'legacy'` / `FINANCE_COMP_PERIOD_MODE = 'periods'` · all repos clean.
+
+### What this does and does not license
+
+It establishes that the **accepted plan reproduces against live production data through the real
+callable, as a real authenticated operator** — the last unknown Gate B existed to remove. It is
+**not** an authorisation to apply. Applying needs a reviewed source change setting
+`ROTA_SEED_APPLY_ENABLED = true`, a redeploy, a **fresh** dry run in that new artifact by the same
+operator in one session, and its own explicit authorisation. Bootstrap must still never run for this
+subject, and the Finance cutover remains a separate, later operation.
+
