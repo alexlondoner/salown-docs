@@ -991,3 +991,107 @@ callable, as a real authenticated operator** — the last unknown Gate B existed
 operator in one session, and its own explicit authorisation. Bootstrap must still never run for this
 subject, and the Finance cutover remains a separate, later operation.
 
+---
+
+## 18 · ✅ APPLIED — the seed is committed, 2026-08-20
+
+**Owner-authorised, single-use. One dry run, one apply, 26 writes, `SEEDED`.**
+Appended as a dated record; §§1–17 unchanged.
+
+### The temporary apply window
+
+`ROTA_SEED_APPLY_ENABLED` was flipped to `true` in a dedicated, explicitly-labelled commit
+**`e99128b`**, deployed to `hosting:salown-admin` **`da385a716686bb6d` → `5be94b0d23d3d3b8`**
+(release `1787249196154000`, **18:06:36.154Z**), and reverted by **`9e5e591`** and redeployed as
+**`ef97ebdd3834ec74`** (release `1787249939594000`, **18:18:59.594Z**).
+
+**Exposure window: 12 minutes 23 seconds.** The apply-enabled artifact is gone —
+`index-1Eb26_2w.js` now returns the SPA-shell `text/html`, and the live bundle is
+`index-BORmnUzX.js`, byte-identical to the reviewed disabled build.
+
+`src/pages/RotaHistorySeed.jsx` was **byte-unchanged** across the whole operation, so the handler
+that applied is exactly the one reviewed at `a3a4382`; the manifest was byte-identical too
+(sha256 `e5a89c7c…968e`). The revert restores source **byte-identical to `a3a4382`**
+(`git diff a3a4382 HEAD` is empty).
+
+### The invocation
+
+Operator **`aerulas@gmail.com` · UID `CsktIKNC0wRaP2eK8DECVMWPD0m1`**, through the deployed UI only.
+**One** fresh dry run, then **one** apply. No token minted, copied or printed; no credential
+created; no synthetic actor; no REST/curl/Node/Admin-SDK/direct-core path.
+
+Pre-apply state, read-only: header **404** · entries **0** · seed audit **404** · rollout **404** ·
+barber `updateTime` `2026-08-19T19:57:09.584434Z` · seed callable `-00001-tol` · guard `-00003-gov`
+· no active claim.
+
+The state machine was observed advancing exactly as designed: `Blocked: NO_SUCCESSFUL_DRY_RUN` →
+(dry run) → `Blocked: CONFIRMATION_MISMATCH` → (typed phrase) → actionable → applied → consumed.
+
+### Fresh dry run — `PLANNED`
+
+All fields matched; write set **26 = 24 + 1 + 1 + 0**; `predictedPublish` null. Real
+actor-dependent **`predictedEntriesHash` = `bec05d23c10283cc30998833f47bbf46c03f17bfc925e1e9db2fe16be5807064`**
+— output only, not sent back, not required to equal anything.
+
+### Apply — `SEEDED`
+
+| Field | Value |
+|---|---|
+| State | **`SEEDED`** |
+| Tenant · subject | `whitecross` · `barber-1777257519766` |
+| Digest | `0cdde2f9910b4096f2eb696acfcede401c1b9c51f3d4696e5216be3a879966e2` |
+| Source fingerprint | `93e4bbd45ad9b851e2e65cad2e05ec2eaaf672f947f79bf8925d623907fdcdb8` |
+| Revision | **0 → 1** |
+| Entries | **24** |
+| Write set | **26** = 24 entries + 1 header + 1 audit + **0** barber projection |
+| Change ID | `rota-seed-0cdde2f9910b4096f2eb696acfcede40` |
+| Audit ID (derived) | `rota-seed-barber-1777257519766-1ede6e017a3a9800` |
+| Barber projection | **not written** |
+| Resulting entries hash | `bec05d23…7064` — OUTPUT ONLY |
+
+### Independent read-only post-state verification
+
+**Header** — exists · `revision` **1** · `entriesHash` **`bec05d23…7064`**, equal to the dry run's
+predicted hash · `entryCount` **24** · `lastChangeId` the accepted seed change id · `lastOrigin`
+**`ROTA_IMPORT`** · `legacyMode` `canonical` · `updateTime` `2026-08-20T18:10:59.737300Z`.
+
+**Entries** — **24**, `seq` dense 0…23, `entryId` unique and equal to the document id, a **single**
+changeId across all of them, every `origin` `ROTA_IMPORT`, every `type` `ROTA_OPEN`, every
+`audit.actorRef` **`CsktIKNC0wRaP2eK8DECVMWPD0m1`**, the first entry anchored to
+**`ROTA_CHAIN_GENESIS`**, first segment `2026-02-06 → 2026-02-09`, last segment
+`2026-08-16 → open-ended`.
+
+**Audit** — exists at the expected id, `action` `ROTA_SEED_IMPORT`, `userId` the operator UID,
+`changeId` and `seedPlanDigest` matching the manifest, `entryCount` 24. Uniqueness is structural:
+the id is `deriveSeedAuditId(barberId, digest)` and the writer uses `tx.create`.
+
+**Untouched** — Alex's barber document `updateTime` is **still `2026-08-19T19:57:09.584434Z`**, so
+the seed wrote nothing to it and the live weekly snapshot is intact; its **12** `shiftChanges`
+compatibility keys are all still present; `rotaPolicy/rollout` is still **absent (404)**; the two
+other Whitecross subjects have **no** `staffRota` document; no bootstrap audit exists; the seed,
+guard and bootstrap callables are unmoved (`-00001-tol`, `-00003-gov`, `-00002-nuy`), europe-west2
+count still 86; ruleset `a9806b0b-…` `updateTime` unmoved; 2 indexes; `hosting:salown`
+`64a94ff80d5c2d9a` and `hosting:salown-staff` `c0606fdcb48f5207` unmoved; salown-app not edited or
+deployed.
+
+**Finance is unchanged and reads nothing from this.** `FINANCE_ROTA_HISTORY_MODE` is still
+`'legacy'` — a source constant in salown-app, which was not touched. **No wage total changed**, and
+the server said so itself in both warnings: the 12 overlapping `shiftChanges` keys still outrank the
+log in Finance until ROTA-SSOT-2 closes, and the legacy cache published nothing.
+
+### ⚠️ One cosmetic defect observed and not fixed under the window
+
+In the apply-enabled build the static red paragraph still read *"Production apply is compile-time
+disabled… is `false` in this artifact"* while apply was in fact enabled. It is presentational only —
+the gate, the button state and the `Blocked:` line were all correct throughout — but it was
+misleading copy on an irreversible-action screen. It was **not** patched mid-window, deliberately:
+changing page source during an open apply window would have invalidated the reviewed handler
+guarantee. It is harmless in the steady disabled state, where the sentence is true. Worth fixing
+before any future window.
+
+### What this does and does not license
+
+Alex's rota history is now sayable: 24 dated periods, revision 1, append-only. It is **not** read by
+Finance and changes no figure. Still separate and unauthorised: the Finance cutover, the rollout
+flip, and the bootstrap — which **must never run for this subject**, before or after this seed.
+

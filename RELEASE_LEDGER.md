@@ -1,6 +1,35 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
 
+## R-2026-08-20-C — ALEX ROTA HISTORY SEED **APPLIED** · temporary apply window (opened and closed)
+
+> Owner-authorised, single-use production write. Two `hosting:salown-admin` releases in one
+> operation: open the window, apply, close it. **Final live state is apply-DISABLED.**
+
+| Field | Value |
+|---|---|
+| **Owner authorisation** | Explicit, for exactly: a traceable temporary enabled commit · one `hosting:salown-admin` deploy · one fresh authenticated dry run · one apply · read-only verification · immediate restore + redeploy. Nothing else |
+| **Work ID / source** | `ROTA-HISTORY-SEED` / `FIN-ROTA-SEED` · salownadmin `a3a4382` (reviewed disabled) → **`e99128b`** (temporary enabled) → **`9e5e591`** (revert). `git diff a3a4382 9e5e591` is **EMPTY** — source returned byte-identical to the reviewed state |
+| **The only runtime change** | One line: `ROTA_SEED_APPLY_ENABLED` false→true. **`RotaHistorySeed.jsx` byte-unchanged** across the whole operation, so the handler that applied is the handler reviewed at `a3a4382`. Manifest byte-identical (sha256 `e5a89c7c…968e`). No env var, URL flag, storage flag or runtime toggle introduced |
+| **Enabled-build gates** | tests **56/56 · 0 fail** (the four false-build assertions re-pointed at the enabled artifact — contract, auth, payload, readiness, single-flight and response tests untouched) · lint 0 on changed files (repo baseline 6, unchanged) · production build clean · `git diff --check` clean. Enabled artifact verified: both gate sites fold `enabled:!0`, builder default `n=!0`, control runtime-gated `disabled:T!==null` |
+| **Unit 1 — window OPEN** | `hosting:salown-admin` `da385a716686bb6d` → **`5be94b0d23d3d3b8`** · release `1787249196154000` · **2026-08-20T18:06:36.154Z**. Served `index-1Eb26_2w.js` sha256 `f9f9a468…e5e0` == local build |
+| **Operator** | `aerulas@gmail.com` · UID **`CsktIKNC0wRaP2eK8DECVMWPD0m1`** — an existing authenticated super-admin session, deployed UI only. No token minted/copied/printed, no credential created, no synthetic actor, no REST/curl/Node/Admin-SDK/direct-core path |
+| **Pre-apply state (read-only)** | header **404** · entries **0** · seed audit **404** · rollout **404** · barber `updateTime` `2026-08-19T19:57:09.584434Z` · seed callable `-00001-tol` · guard `-00003-gov` · no active claim |
+| **Fresh dry run — 1 invocation** | `PLANNED`, every field matched, write set **26 = 24+1+1+0**, `predictedPublish` null. Real actor-dependent `predictedEntriesHash` **`bec05d23c10283cc30998833f47bbf46c03f17bfc925e1e9db2fe16be5807064`** — output only, never sent back |
+| **State machine observed** | `Blocked: NO_SUCCESSFUL_DRY_RUN` → dry run → `Blocked: CONFIRMATION_MISMATCH` → typed phrase → actionable → applied → consumed. Exactly the reviewed design |
+| **Apply — 1 invocation** | **`SEEDED`** · `whitecross` · `barber-1777257519766` · digest `0cdde2f9…966e2` · fingerprint `93e4bbd4…cdb8` · revision **0 → 1** · entries **24** · writes **26 = 24 entries + 1 header + 1 audit + 0 barber projection** · changeId `rota-seed-0cdde2f9910b4096f2eb696acfcede40` · derived auditId `rota-seed-barber-1777257519766-1ede6e017a3a9800` · barber projection **not written** |
+| **Read-only post-state, verified independently** | **Header**: revision **1**, `entriesHash` **`bec05d23…7064`** (equals the dry-run predicted hash), `entryCount` 24, `lastChangeId` accepted, `lastOrigin` `ROTA_IMPORT`, `legacyMode` `canonical`. **Entries**: 24, `seq` dense 0…23, unique ids equal to document ids, ONE changeId, all `ROTA_IMPORT`/`ROTA_OPEN`, all `audit.actorRef` the operator UID, first anchored to `ROTA_CHAIN_GENESIS`, `2026-02-06→02-09` … `2026-08-16→open`. **Audit**: exists, `ROTA_SEED_IMPORT`, operator UID, changeId+digest match, entryCount 24; uniqueness structural (deterministic id + `tx.create`) |
+| **Untouched, proven after** | Alex's barber `updateTime` **still `2026-08-19T19:57:09.584434Z`** — the seed wrote nothing to it; its **12** `shiftChanges` keys intact; `rotaPolicy/rollout` **absent**; the two other Whitecross subjects have **no** `staffRota`; **no bootstrap audit**; callables `-00001-tol` / `-00003-gov` / `-00002-nuy` unmoved; europe-west2 **86**; ruleset `a9806b0b-…` `updateTime` unmoved; **2** indexes; `hosting:salown` `64a94ff80d5c2d9a`; `hosting:salown-staff` `c0606fdcb48f5207`; salown-app not edited or deployed |
+| **Finance** | **Unchanged and reads none of this.** `FINANCE_ROTA_HISTORY_MODE = 'legacy'` is a salown-app source constant and salown-app was untouched. **No wage total changed** — the server said so in both warnings: the 12 overlapping `shiftChanges` keys still outrank the log until ROTA-SSOT-2 closes, and the legacy cache published nothing |
+| **Unit 2 — window CLOSED** | Revert `9e5e591` · disabled suite **56/56** · lint 0 · build clean · artifact re-verified (gate sites `enabled:!1`, builder `n=!1){if(!n)throw`, literal DISABLED label, enabled-only label absent). `hosting:salown-admin` `5be94b0d23d3d3b8` → **`ef97ebdd3834ec74`** · release `1787249939594000` · **2026-08-20T18:18:59.594Z**. Served `index-BORmnUzX.js` sha256 `72e2f396…f4e4` == local; the enabled bundle now returns the SPA-shell `text/html` |
+| **⚠️ EXPOSURE WINDOW** | **12 minutes 23 seconds** (18:06:36.154Z → 18:18:59.594Z). During it the apply control was reachable only to a verified super-admin with a fresh same-session dry run, the immutable plan by identity and the exact typed phrase |
+| **⚠️ Cosmetic defect, recorded not fixed** | In the enabled build the static red paragraph still read *"Production apply is compile-time disabled… `false` in this artifact"* while apply was enabled. Presentational only — gate, button state and the `Blocked:` line were correct throughout. Deliberately NOT patched mid-window: editing page source during an open apply window would have voided the "handler is byte-identical to the reviewed one" guarantee. Harmless in the disabled steady state, where the sentence is true. **Fix before any future window** |
+| **Rollback identities** | `hosting:salown-admin` **`da385a716686bb6d`** (pre-operation) · source **`a3a4382`**. The seed itself is **append-only and NOT rollback-able** — there is no delete and no rewind path, by design |
+| **⛔ NOT DONE** | No bootstrap (must never run for this subject) · no Finance cutover · no rollout change · no direct Firestore write · no direct-core invocation · no credential created · no function deployed · salown-app and staff hosting untouched · exactly ONE dry run and ONE apply, no retry |
+| **Operator/device** | `whitecrossbarbers@gmail.com` (CLI) · `aerulas@gmail.com` (browser operator) · macOS |
+| **Result** | **APPLIED AND VERIFIED · APPLY RE-DISABLED.** Alex's rota history is committed as 24 dated periods at revision 1. Final repository HEAD and final live hosting are both apply-disabled |
+
+
 ## R-2026-08-20-B — Gate B · authenticated Rota History Seed operator surface (APPLY DISABLED)
 
 > Deployment-only release of an already-implemented, already-reviewed surface. **The apply
