@@ -1555,3 +1555,253 @@ segments of §19.7, `declaredGaps: []`, `expected.seedPlanDigest` set to §19.10
 `expected.entryCount: 21`, `expected.predictedPublish: null`,
 `expected.finalSegmentFrom: '2026-08-04'`, **no `sourceRotaFingerprint` constant** — with its tests
 and its `integritySha256`. **Do not dry-run and do not apply until separately authorized.**
+
+---
+
+## 20 · Arda — the authenticated production dry run, 2026-08-24
+
+> ### Result
+> ```
+> PLANNED · readiness GRANTED · ZERO WRITES · APPLY NOT INVOKED
+> ```
+> Exactly **one** authenticated dry-run invocation of `salownRotaSeedTenantHistory`, through the
+> deployed super-admin operator surface, as `aerulas@gmail.com`. It wrote nothing. **Apply was never
+> clicked, never enabled, and cannot be constructed in this artifact.**
+
+**Identities.** `salownadmin` `c1c2b14` → **`4f8a295`** · `salown-app` `9b6f7ea` → **`6178a59`** ·
+`salown-docs` **`815d537`** (this section is the next commit). All three `main`, all clean, no claims.
+
+### 20.1 · Why a corrective release came first
+
+§19 accepted the evidence but the **operator could not run it**, for two independent reasons found
+before any browser was opened:
+
+1. **The Arda manifest was not in the deployed artifact.** The live surface was
+   `ef97ebdd3834ec74` (2026-08-20), predating `c1c2b14`. A served-byte scan found
+   `alex-whitecross-2026-02-06` ×1 and `arda-whitecross-2026-02-06` ×0.
+2. **The readiness validator could not accept a fresh-fingerprint manifest.** `c1c2b14` did not
+   touch `rotaSeedContract.js`, whose fingerprint rule was a single unconditional equality. Arda
+   deliberately pins none (§19.10), so `undefined !== <any real fingerprint>` failed *every*
+   possible Arda readiness. Proven by feeding a **perfect** contract-conformant Arda response
+   through the real validator: `FINGERPRINT_MISMATCH`, while an Alex control passed.
+
+The one authorized dry run was **not spent** on that predetermined refusal. `4f8a295` fixed both.
+
+### 20.2 · The correction, and that it did not weaken Alex
+
+`4f8a295` changed three files — `rotaSeedContract.js`, `RotaHistorySeed.jsx`, and a new
+`rotaSeedFreshFingerprint.test.js`. **`rotaSeedManifests.js` is not in the diff**, so the Arda
+manifest is byte-identical to the reviewed `c1c2b14` (`git diff c1c2b14 HEAD -- …manifests.js` is
+empty) and the accepted digest, integrity checksum and 21 segments are untouched.
+
+The fingerprint rule is now two modes, **both fail closed**:
+
+| Manifest | Policy | Rule |
+|---|---|---|
+| Alex | `pinned` | `expected.sourceRotaFingerprint` present → **exact match**; mismatch is still `FINGERPRINT_MISMATCH` |
+| Arda | `fresh` | expected absent → the server **must** return a well-formed lowercase 64-hex SHA-256; accepted, surfaced for audit, **never written back** |
+
+`fresh` is a **shape** test, not a truthiness test. Verified case by case against the shipped
+validator:
+
+| Server value | Verdict |
+|---|---|
+| valid lowercase 64-hex | **ACCEPT** |
+| 63 chars · 65 chars · UPPERCASE · non-hex · `''` · missing · `null` · number · boolean | **REFUSE — `FINGERPRINT_MALFORMED`** |
+| Alex + a *well-formed but wrong* fingerprint | **REFUSE — `FINGERPRINT_MISMATCH`** |
+
+### 20.3 · The deployment — one target, proven
+
+| | |
+|---|---|
+| Command | `bash deploy.sh` (repo-guarded; requires typing `salown-admin`) → `npm run build` + `npx firebase-tools deploy --only hosting --project havuz-44f70` |
+| Scope | `firebase.json` declares **one** hosting entry, `site: salown-admin`, **no predeploy/postdeploy hooks** and no `functions`/`rules`/`indexes`/`storage` keys — so `--only hosting` cannot reach a second target from this repo |
+| CLI | **15.15.0** (global and `npx firebase-tools` resolve identically — no version ambiguity) |
+| Project | `havuz-44f70` |
+| Output | `found 5 files in dist`, **3 uploaded**, version finalized, release complete |
+| `salown-admin` | `ef97ebdd3834ec74` → **`7c41a5f53da72474`**, release `1787586651571000`, `2026-08-24T15:50:44.463825Z` |
+
+`dist/` is **git-ignored and untracked**, so the build dirtied no tracked file — repo `dirty=0`
+before and after. No REL-1-style cross-bundle contamination is possible from this repo.
+
+**Every other deployable target, before → after — all identical:**
+
+| Target | Before | After |
+|---|---|---|
+| `salown` | `c0d31a9fac873c69` | `c0d31a9fac873c69` ✅ |
+| `salown-staff` | `c0606fdcb48f5207` | `c0606fdcb48f5207` ✅ |
+| `whitecrossbarbers-saas` | `d7d72c6755a35044` | `d7d72c6755a35044` ✅ |
+| **callable** `salownRotaSeedTenantHistory` | `…-00002-dun` (2026-08-21T21:13:59Z) | **`…-00002-dun`, unmoved** ✅ |
+
+### 20.4 · Served-byte verification, in the documented order
+
+1. The operator page references **`/assets/index-B2ep1SQp.js`** (read from the served HTML, not assumed).
+2. That asset returns **HTTP/2 200** — checked as its own step.
+3. Served hash **equals** the local build byte for byte:
+
+```
+served : 1086427 B  sha256 7143c8ec9d92a03af2388119ea829b5b04b9684cf830022243e122d57ef013fa
+local  : 1086427 B  sha256 7143c8ec9d92a03af2388119ea829b5b04b9684cf830022243e122d57ef013fa   MATCH
+```
+
+| Assertion | Result |
+|---|---|
+| `arda-whitecross-2026-02-06` | ✅ present |
+| `barber-1777655430086` | ✅ present |
+| full digest `d32c6d4b…8b702` | ✅ present |
+| full integrity `3402ac05…e6260` | ✅ present |
+| `FINGERPRINT_MALFORMED` · `fingerprintPolicy` · `server-bound` copy | ✅ present |
+| 64-hex shape test `[0-9a-f]{64}` | ✅ present |
+| `alex-whitecross-2026-02-06` + Alex digest + Alex **pinned** fingerprint + `FINGERPRINT_MISMATCH` | ✅ preserved |
+| hardcoded **"24 entries"** operator copy | ✅ **gone** — now `${entryCount} entries + 1 header + 1 audit + ${+!!predictedPublish} barber projection` |
+
+**One posture change, recorded rather than glossed.** In the previous release `buildApplyPayload`
+was *tree-shaken out*; in this build it is **present** (minified `B3`). That is weaker than before
+and worth stating plainly. It is nevertheless unreachable in three independent ways, all verified in
+the **served** bytes: `ROTA_SEED_APPLY_ENABLED = false`; the function's first statement is
+`if(!n)throw Error("APPLY_DISABLED_IN_THIS_BUILD: ROTA_SEED_APPLY_ENABLED is false")` with the gate
+defaulted from that constant; and its only call site sits behind the same gate plus a plan-identity
+check. The page renders **"Apply seed — DISABLED IN THIS BUILD"** with no reachable handler.
+
+### 20.5 · Operator identity and the displayed plan
+
+Single connected browser, confirmed with the owner before use: **Browser 1**
+(`c78ec85f-1d0b-40f6-8dad-e64dd17c6cdd`, macOS, local). Surface
+`https://salown-admin.web.app/ops/rota-seed`, project `havuz-44f70`. Operator
+**`aerulas@gmail.com` · `CsktIKNC0wRaP2eK8DECVMWPD0m1`**, super-admin.
+
+Default selection is **Alex**; `arda-whitecross-2026-02-06` was selected explicitly. Displayed
+before invoking, all matching the authoritative values:
+
+| Row | Displayed |
+|---|---|
+| Tenant | `whitecross` |
+| Subject | `Arda · barber-1777655430086` |
+| Kind | `HISTORY` |
+| Periods | 21 periods — base six-day weeks (Wednesday off), two dated worked Wednesdays (02-11, 03-18), eight dated off exceptions, 1 open-ended from 2026-08-04 |
+| Expected digest | `d32c6d4b…8b702` |
+| Source fingerprint | **fresh / server-bound — pinned by nothing (docs §19.10)** |
+| Expected writes | **`23 = 21 entries + 1 header + 1 audit + 0 barber projection`** |
+| Barber Document | NOT written … `predictedPublish: null` |
+| Final Segment | open-ended from 2026-08-04, **omits dayHours so the live stray `dayHours.Wednesday` is left untouched** |
+| Apply | **DISABLED IN THIS BUILD** |
+
+**Manifest-driven confirmed:** Arda's own `Worked Wednesdays` / `Final Segment` rows render, Alex's
+`Partial Day` / `Off Tuesdays` / `Final Thursday` rows are **absent**, and there are **no
+`undefined` rows**. The Stage-2 confirm phrase re-keyed to `whitecross/barber-1777655430086/d32c6d4b6226`.
+
+> ⚠️ **Two contract fields are not rendered as rows** — `integritySha256` and `declaredGaps: []`.
+> Neither *differs*; both were verified by other means (integrity present in the served bytes;
+> `declaredGaps: []` in the reviewed manifest and in the payload builder). Recorded as a UI display
+> gap, not a contract mismatch, so a future operator is not surprised by their absence.
+
+### 20.6 · Readiness and the dry run are ONE action here
+
+Worth stating because the distinction matters for counting invocations: this operator has **no
+separate non-callable preflight**. `runDryRun` calls the real callable with `dryRun: true` and feeds
+the response into `validateDryRunResponse`, whose verdict *is* readiness. So readiness and the dry
+run are the same single click and the same single request — which is why the count below is one, not
+two.
+
+### 20.7 · The invocation, and its result
+
+**Exactly one** request, captured at the network layer:
+
+```
+POST https://europe-west2-havuz-44f70.cloudfunctions.net/salownRotaSeedTenantHistory   200
+```
+
+One request in the whole session — no retry, no second dry run, no apply. The payload is
+`buildDryRunPayload`, which hardcodes `dryRun: true` and carries **only** `tenantId`, `barberId`,
+`segments`, `declaredGaps` — it cannot express `dryRun:false`, an `expectedRevision` or a fingerprint.
+
+**Server verdict — `Dry run verified.`**
+
+| Field | Expected | Actual | |
+|---|---|---|---|
+| tenantId | `whitecross` | `whitecross` | ✅ |
+| barberId | `barber-1777655430086` | `barber-1777655430086` | ✅ |
+| manifest | `arda-whitecross-2026-02-06` | same | ✅ |
+| kind | `HISTORY` | `HISTORY`, `archiveTerminalFrom` null | ✅ |
+| state | `PLANNED` | `PLANNED` | ✅ |
+| entryCount | 21 | **21** | ✅ |
+| seedPlanDigest | `d32c6d4b…8b702` | matched | ✅ |
+| changeId | `rota-seed-d32c6d4b62260440ac399c307c1031cf` | matched | ✅ |
+| revision | 0 → 1 | 0 → 1 | ✅ |
+| write set | 23 | **`23 = 21 entries + 1 header + 1 audit + 0 barber projection`** | ✅ |
+| predictedPublish | `null` | `null` (0 barber projection) | ✅ |
+| declaredGaps | `[]` | `[]` | ✅ |
+| issues | `[]` | none | ✅ |
+| genesis pre-state | `17516577…dcdc2b3` | unseeded, at genesis | ✅ |
+| published | false | false — dry run, zero writes | ✅ |
+
+**Fresh `sourceRotaFingerprint`, server-generated:**
+
+```
+c0bfbcb39b8a9bef4ecc4f71950192e6f27b355a913c5f639e6951db1e02d74c
+```
+
+> **This is EVIDENCE, not a manifest constant.** It is audit-only, explicitly *not persisted*, and
+> **must never be pinned into the manifest**. It is a hash of Arda's live rota-relevant fields, so it
+> **goes stale the moment his barber document changes** — any later apply requires its own fresh dry
+> run in the artifact that will perform it. Pinning it would defeat the precondition it exists to be.
+
+An independent corroboration worth recording: §19's read-only capture computed the same value
+locally from the barber document via `sourceRotaFingerprint`'s five inputs. The server derived it
+from live production; the two agree exactly — the plan is bound to the subject state we audited.
+
+`predictedEntriesHash` `e2099b646239ae7af2fce85c039ffa6e07fef8aea89307183d5715a08d02e46f` is
+**OUTPUT ONLY** — actor-dependent, never a precondition.
+
+**The three warnings are exactly the three §19.11 predicted**, none a defect: 7 overlapping
+`shiftChanges` keys (not removed, not migrated, still outranking the log until ROTA-SSOT-2); the
+subject is passive; the legacy cache publishes nothing so the barber document is unchanged.
+
+### 20.8 · Zero-mutation proof
+
+Full baseline re-read after the invocation and compared field by field — **21/21 identical**:
+
+| Field | Value | |
+|---|---|---|
+| barber `docHash` | `716eccd2a0b7998153571d69…` | ✅ |
+| barber `updateTime` | `2026-08-14T23:04:30.613Z` | ✅ |
+| status / active | `passive` / `false` | ✅ |
+| `workingDays` | Mon, Tue, Thu, Fri, Sat, Sun | ✅ |
+| `hours` | `{open 09:00, close 19:00}` | ✅ |
+| **`dayHours` (full byte hash)** | `ebaa65769faa53bdc8ec315dbea34c24…` | ✅ |
+| **`dayHours.Wednesday`** | `{open 09:00, close 19:00, closed false, source staff}` | ✅ **untouched** |
+| `shiftChanges` (full byte hash) | `9258ac3907cae4cea6292ef4762ac6fe…` · 7 keys | ✅ |
+| `availabilityFrom` | `2026-02-06` | ✅ |
+| fingerprint inputs | `c0bfbcb3…` | ✅ |
+| `staffComp` hash / `updateTime` | `b44afdef…` / `2026-08-12T22:13:50.923Z` | ✅ |
+| **`staffRota/barber-1777655430086`** | **still ABSENT** | ✅ |
+| **`rotaEntries`** | **still 0** | ✅ |
+| **`rotaPolicy/rollout`** | **still ABSENT** | ✅ |
+| lifecycle audits | **13**, id-set hash `7e4e0f67…` unchanged | ✅ |
+| Arda records | 667 | ✅ |
+
+**No header, no entries, no rollout, no seed/bootstrap/lifecycle/Finance audit was created.** Finance
+constants unchanged: `ROTA_HISTORY=legacy`, `COMP_PERIOD=periods`, `COMP_AMOUNT=legacy`,
+`FIXED_COST=legacy`.
+
+Tenant-wide `bookings` read 1615 both before and after this invocation. (It stood at 1610 during the
+§19 capture; the difference is the salon's ordinary live trading across the intervening days, not
+attributable to anything here — Arda's own record count is unchanged at 667 and he is passive.)
+
+### 20.9 · Rollback and boundaries
+
+**Hosting rollback target: `ef97ebdd3834ec74`** (Console → Hosting → `salown-admin` → Release
+history → ⋮ → Roll back). Nothing else needs rolling back — the deploy is the only mutation this
+task made anywhere, and it is a static artifact with apply compile-time disabled.
+
+Still **not** authorized and **not** done: apply, `dryRun:false`, any second dry run, function
+deployment, other hosting targets, rules/indexes, bootstrap, rollout, Finance-mode change, Schedule
+Hub save, `dayHours.Wednesday` normalization.
+
+### 20.10 · The next separately authorized step
+
+An apply would require, in order: a reviewed source change setting `ROTA_SEED_APPLY_ENABLED = true`,
+a redeploy of `hosting:salown-admin`, a **fresh** dry run *inside that apply-enabled artifact*
+(the fingerprint above is not reusable), the typed confirmation
+`whitecross/barber-1777655430086/d32c6d4b6226`, and its own explicit authorization. The seed remains
+**append-only and irreversible**; `salownRotaBootstrapTenant` must never run for this subject.
