@@ -261,6 +261,15 @@ is unrecoverable. (b) **Nothing detected it.** Two cheap read-only checks would 
 next morning: *booking exists but no wage day* (Arda 120, Alex 6, Muhamed 0) and *passive staff still
 accruing*.
 
+**Update 4 — the 147-day figure independently re-derived from production (2026-08-24).** A
+read-only evidence capture for the rota seed reconstructed Arda's attendance from the booking
+records by a completely different route (qualifying-record classification, not wage replay) and
+returned the **same 147 worked days and the same 25/25/2/23/25/24/23 histogram** stated above, twelve
+days later. Two independent derivations agreeing is what makes this number evidence rather than a
+reading. The reconstruction, the 21-segment seed plan and the legacy-vs-dated wage diff are in
+[`ROTA_HISTORY_SEED_PREFLIGHT.md` §19](ROTA_HISTORY_SEED_PREFLIGHT.md). **Nothing was written**, and
+`FIN-ARDA-REPAIR` remains blocked on the order below.
+
 **Repair is BLOCKED, deliberately.** `FIN-ARDA-REPAIR` must not run before the closed periods are
 frozen: under a live gate the repair is correct going forward, but it still **re-prices every closed
 month a second time** (+≈£12,300), and one of those months underpins a **signed** exit settlement.
