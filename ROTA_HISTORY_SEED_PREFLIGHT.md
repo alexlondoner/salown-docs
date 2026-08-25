@@ -2209,3 +2209,304 @@ log. Nothing about the applied seed was altered by this task.
 flipping `FINANCE_ROTA_HISTORY_MODE` to `dated` would half-migrate the tenant, which
 `financeRotaHistoryCutover.ts` forbids. That, plus `ROTA-BOOTSTRAP-APPLY` settling every remaining
 subject, gates the flip.
+
+---
+
+## 23 · Muhamed — read-only evidence audit, 2026-08-25
+
+> ### State
+> ```
+> EVIDENCE_CAPTURED · PLAN VALIDATES · TWO MONEY DECISIONS NEED AN OWNER RULING
+> MANIFEST NOT CREATED · NOT DRY-RUN · NOT APPLIED · ZERO PRODUCTION MUTATION
+> ```
+> Read-only audit only. No manifest, no dry run, no apply, no deploy, no Finance-mode change,
+> no browser action, no production write of any kind.
+
+**Anchors.** `salown-app` **`457b25f`** · `salownadmin` **`fc6259e`** · `salown-docs` `60c6f83`
+(this section is the next commit). All `main`, all clean, **no claims**. Project `havuz-44f70`,
+hosting `salown-admin` `39b47e0206fd73f3` (apply-disabled), callable
+`salownrotaseedtenanthistory-00002-dun`. Finance modes `legacy` / `periods` / `legacy` / `legacy`.
+
+### 23.1 · Muhamed is not Arda — the contract differences that matter
+
+| | Arda (§19) | **Muhamed** |
+|---|---|---|
+| lifecycle | `passive`, `active:false` | **`active`, `active:true`** |
+| comp period | closed, `effectiveTo 2026-08-04` | **OPEN, `effectiveTo: null`** |
+| wage authority (live `COMP_AMOUNT=legacy`) | `partnerConfig` £100/day | **`partnerConfig` £41.60/day** |
+| stored comp | £600/week | **£250/week** |
+| day off | Wednesday | **Monday** |
+| history | complete and bounded | **still being written** |
+
+**£1,414.40 is not a rate — it is `34 × £41.60`, a window-bounded total.** The day rate comes from
+`partnerConfig.Muhamed.wage = 41.6` because `FINANCE_COMP_AMOUNT_MODE` is `legacy`. The dated
+alternative — `staffComp` £250/week ÷ 6 contracted days = £41.666… — is **not live** and is the
+known 7-hundredths-of-a-penny discrepancy `financeCompAmount.ts` deliberately refuses to settle in
+source. **Arda's £100/day assumptions were not used anywhere in this audit.**
+
+### 23.2 · Baseline (field-masked, read-only)
+
+`barbers/barber-1781007454543` — `createTime 2026-06-09T12:18:10.766Z`,
+`updateTime 2026-08-23T14:55:07.730Z`, hash `fbd512ada9fbec00…5fee3eb`:
+
+| Field | Value |
+|---|---|
+| `status` / `active` | `active` / `true` |
+| `availabilityFrom` | **`2026-06-09`** |
+| `workingDays` | Tue, Wed, Thu, Fri, Sat, Sun — **Monday off** |
+| `hours` | `{09:00, 19:00}` |
+| `dayHours` | 6 keys Tue–Sun. **`Monday` ABSENT** ✅ — the sanctioned Schedule Hub normalization removed the stray row and nothing has re-added it |
+| weekly hours | Tue–Sat 10h × 5 + Sun 6h = **56 h/week** ✅ as accepted |
+| `shiftChanges` | **THREE keys, not one** — see below |
+| `leaves` | `[{from: 2026-07-14, until: 2026-08-17}]` ✅ ; `leaveFrom`/`leaveUntil` null |
+| `sourceRotaFingerprint` (local, evidence only) | `0ab34f9d911f7e65ffea0e45494e44f1d701d03b7d72b4895df9c94e39cb71d6` |
+
+> ⚠️ **Lead corrected.** The brief named one dated override (`2026-07-13`). Production carries
+> **three** `shiftChanges` keys: `2026-07-13 {open 09:00, close 19:00}`,
+> `2026-08-24 {open 09:00, close 19:00}` and `2026-08-25 {closed: true}`. The second is a **genuinely
+> worked Monday**; the third is a closure on **today**, and §23.6 shows it is load-bearing.
+
+`staffComp/barber-1781007454543` — `createTime 2026-07-15T14:49:12.677Z`,
+`updateTime 2026-08-12T22:13:50.730Z`, hash `68e24a5059b090cf…148c667d`: **one** `wage` period,
+`{amount: 250, period: 'week'}`, `effectiveFrom 2026-06-09`, **`effectiveTo: null`**.
+
+**Genesis — clean.** `staffRota/barber-1781007454543` **absent**, `rotaEntries` **0**,
+`rotaPolicy/rollout` **absent**, and tenant-wide the only `rota-seed-*` audits are Alex's and Arda's
+— **none for Muhamed**. 11 barberId-keyed audits, id-set hash `…` unchanged across the audit.
+
+### 23.3 · Query shapes and identity resolution
+
+Reads only — `.get()` / `.select()` / `getAll()` with explicit field masks; the capture script
+contains no Firestore write vocabulary (sole lexical match: `crypto.createHash().update()`). The
+historical range was **derived, not assumed**: the booking scan ran unbounded (`FROM = 2000-01-01`).
+
+Identity resolved through the canonical Finance boundary rule
+(`scripts/wageDriftAudit.cjs:1157-1161`): `normalizeName(barberName || nameById[barberId] || barberId)`
+→ nameKey **`muhamed`**.
+
+| | |
+|---|---|
+| candidate records resolving to `muhamed` | **86** |
+| matched by barber **document id** | 26 |
+| matched by `barberName` | 60 |
+| recovered via **legacy `barberId`** | **0** |
+| `barber`-field residue | none |
+| duplicate hashes | 0 |
+
+Unlike Arda (79 records recoverable only through the legacy fallback), Muhamed's records never need
+it — he joined after the document-id convention. The fallback was still applied, and its zero count
+is itself evidence.
+
+### 23.4 · Classification — no exclusions, no ambiguity
+
+| Class | Count |
+|---|---|
+| qualifying `CHECKED_OUT` | **85** |
+| qualifying `UNPAID` | **1** |
+| born-block | **0** |
+| standalone product sale | **0** |
+| cancelled / no-show / pending | **0** |
+| **ambiguous** | **0** |
+
+Source histogram: `Walk-in 80 · Website 4 · Treatwell 1 · salOWN 1`. Every record has a resolvable
+Europe/London date key (timezone from `settings/settings.presentation` via the TR-A precedence).
+**No record is excluded, so no exclusion can change a worked-date decision.**
+
+### 23.5 · Attendance reconstruction
+
+**37 worked dates**, `2026-06-09` → `2026-08-24`. The first qualifying date equals both
+`availabilityFrom` and the barber document's `createTime` day — the range is corroborated three ways,
+not assumed.
+
+| Weekday | Mon | Tue | Wed | Thu | Fri | Sat | Sun |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| worked | **2** | 5 | 6 | 6 | 6 | 6 | 6 |
+
+Months: `2026-06` 18 · `2026-07` 12 · `2026-08` 7.
+
+**Verifications the brief asked for:**
+
+| Question | Answer |
+|---|---|
+| `2026-07-13` | **worked** — a Monday (outside the base pattern), 2 qualifying records, `shiftChanges` override present ✅ |
+| leave `2026-07-14` → `2026-08-17` | **zero** qualifying records inside it — leave is clean, no attendance conflict |
+| records after leave end | 7 consecutive days `2026-08-18` → `2026-08-24` |
+| any Monday genuinely worked | **two**: `2026-07-13` and **`2026-08-24`** — both carry a dated override |
+| first / last qualifying | `2026-06-09` / `2026-08-24` |
+| did the weekly normalization change a historical fact | **No.** It removed only `dayHours.Monday`; `workingDays` never contained Monday, so no worked date, no wage day and no weekday histogram entry moves. Both worked Mondays are established by **bookings + dated overrides**, not by the weekly field |
+
+**Scheduled dates with zero qualifying attendance: 31.** Thirty fall inside the approved leave.
+**Exactly one does not — `2026-06-23` (Tuesday).**
+
+> **`2026-06-23` disambiguated rather than assumed.** The shop was **open** that day: Arda has 4
+> bookings. Muhamed has zero. So it is a personal absence, not a closure. Under the owner ruling
+> *"do not invent attendance merely from a weekly working-day field"*, `2026-06-23` is **not worked**
+> — and legacy Finance pays it today purely because `workingDays` contains Tuesday.
+
+### 23.6 · The candidate plan — four shapes through the real planner
+
+Derived with the canonical `canonicalizeSeedPlan` / `buildSeedEntries` / `computeCacheConvergence` /
+`rotaLegacyWriteGate` from `salown-app@457b25f`. **All four validate with `issues: []`,
+`fold.ok true`, and `predictedPublish: null`** — none would write the barber document.
+
+| Candidate | Segments | Digest | Publish |
+|---|---:|---|---|
+| **A — attendance-faithful, final omits `dayHours`** | **7** | `012ad0cd…c10fce3e` | `null` |
+| B — pattern-faithful (no `2026-06-23` exception) | 5 | `397f9c6c…dbda5cdf` | `null` |
+| C — attendance-faithful, final carries `dayHours` | 7 | `cff02c55…454381e4` | `null` |
+| D — attendance-faithful, final bare (no `hours`) | 7 | `78d3cee4…2bdf2216` | `null` |
+
+**C does not fail as Arda's equivalent did**, and the reason is instructive: Muhamed's `dayHours`
+keys are a **subset** of his `workingDays` (no stray Monday), so `DAY_HOURS_NOT_IN_PATTERN` never
+fires and the values already equal the live projection. It is still **not** preferred — it would
+state historical daily hours no owner has ruled on. **A is the recommended shape**: it omits
+`dayHours` (so `dayHours.Monday` can never be reintroduced and no barber write occurs) and carries
+only the live `hours` summary on the final segment.
+
+**Plan A — the ordered 7 segments** (base = Tue, Wed, Thu, Fri, Sat, Sun):
+
+| # | from → to | workingDays | Kind |
+|---:|---|---|---|
+| 1 | `2026-06-09` → `2026-06-22` | base 6 | base |
+| 2 | `2026-06-23` → `2026-06-23` | Wed, Thu, Fri, Sat, Sun | **off exception** — no booking, shop open |
+| 3 | `2026-06-24` → `2026-07-12` | base 6 | base |
+| 4 | `2026-07-13` → `2026-07-13` | **Monday** | **worked exception** |
+| 5 | `2026-07-14` → `2026-08-23` | base 6 | base (spans the leave — see below) |
+| 6 | `2026-08-24` → `2026-08-24` | **Monday** | **worked exception** |
+| 7 | `2026-08-25` → **`null`** | base 6, `hours {09:00, 19:00}` | **final, open-ended** |
+
+`entryCount` **7** · `declaredGaps` **`[]`** · `coversTodayFrom 2026-08-25` · fold `ok, revision 1,
+7 periods, issues []` · `entriesHash dc845d5738e07ce8…286d350e` ·
+`changeId rota-seed-012ad0cdbe1cadba01fbff1d6bf5b09b` ·
+`auditId rota-seed-barber-1781007454543-69bb55eaf800af0d` · predicted write set **9** = 7 entries +
+1 header + 1 audit + 0 barber projection. Deterministic entry ids `…-e1` … `…-e7`.
+Overlapping `shiftChanges`: all three keys, **reported not touched**.
+
+> **The leave interval is deliberately NOT encoded as rota segments.** Two reasons, both from source:
+> a weekly segment with no working days is refused (`SEGMENT_WEEKLY_NO_WORKING_DAYS`), and a
+> `by_exception` terminal is legal only as the FINAL segment. More importantly it is unnecessary —
+> leave is a **separate authority**: `accruesWageOnDay` suppresses accrual via `isOnLeave` unless an
+> explicit override exists, identically in both modes. Encoding it would duplicate a rule that
+> already works and would make the log say something about availability it does not own.
+
+**`sourceRotaFingerprint` `0ab34f9d…39cb71d6` is EVIDENCE ONLY.** It is not installed anywhere and
+must be generated fresh by a sanctioned readiness/dry run. Its inputs are exactly
+`workingDays`, `dayHours`, `hours`, `availabilityFrom` and `status` — so any Schedule Hub save that
+touches those five voids it.
+
+### 23.7 · Finance — the £1,414.40 reproduces, and then two dates move
+
+Computed with the shipped pure readers, **without changing any production configuration**
+(`rotaMode` passed per call).
+
+**Reconciliation of the earlier figure — it reproduces exactly.** In the accepted historical window
+`2026-02-06 → 2026-08-20`, Muhamed **legacy = 34 days = £1,414.40** ✅, and the previously reported
+**delta £0** was correct *for the unseeded state*: with no log, `rotaDayResolver` returns `null` and
+dated falls back to legacy on every date. **£0 was the absence of a log, not a property of Muhamed.**
+
+Introducing candidate plan A changes that:
+
+| Window | Muhamed legacy | Muhamed dated (plan A) | Δ |
+|---|---|---|---|
+| `2026-02-06 → 2026-08-20` (accepted historical) | 34 d · **£1,414.40** | 33 d · £1,372.80 | **−£41.60** |
+| `2026-02-06 → 2026-08-25` (as-of today) | 38 d · £1,580.80 | 38 d · £1,580.80 | **£0.00** |
+
+> ⚠️ **That £0 is a coincidence, not agreement.** It is two offsetting £41.60 moves:
+> `2026-06-23` **removed** and `2026-08-25` **added**. A net-zero delta that hides two changed dates
+> is exactly the kind of figure that gets mistaken for "no change".
+
+**Whitecross combined, both windows** (Alex and Arda from their live seeded logs):
+
+| Window | Subject | legacy | dated | Δ |
+|---|---|---:|---:|---:|
+| **`→ 2026-08-20`** | Alex | £19,100.00 | £18,000.00 | −£1,100.00 |
+| | Arda | £14,800.00 | £14,700.00 | −£100.00 |
+| | Muhamed (plan A) | £1,414.40 | £1,372.80 | −£41.60 |
+| | **combined** | **£35,314.40** | **£34,072.80** | **−£1,241.60** |
+| **`→ 2026-08-25`** | Alex | £19,600.00 | £18,500.00 | −£1,100.00 |
+| | Arda | £14,800.00 | £14,700.00 | −£100.00 |
+| | Muhamed (plan A) | £1,580.80 | £1,580.80 | £0.00 |
+| | **combined** | **£35,980.80** | **£34,780.80** | **−£1,200.00** |
+
+Alex −£1,100 and Arda −£100 reproduce §19/§21 exactly. The historical-window combined figure differs
+from §19's accepted **−£1,200** by precisely **−£41.60** — Muhamed's `2026-06-23`, and nothing else.
+
+### 23.8 · ⚠️ The structural finding — a seeded log outranks a *future* closure
+
+Proven at the resolver, not inferred:
+
+| Date | `shiftChanges` | legacy | dated (plan A) | |
+|---|---|---|---|---|
+| `2026-06-23` Tue | — | pays | **does not pay** | diverges |
+| `2026-08-24` Mon | `{open, close}` | pays | pays | agrees |
+| **`2026-08-25` Tue (today)** | **`{closed: true}`** | **does not pay** | **pays** | **diverges** |
+
+Cause, from `financeWages.accruesWageOnDay`: in `dated` mode, when the log can speak for a day,
+`const sc = answer ? undefined : barber?.shiftChanges?.[dk]` — **the map is not read at all**. A seed
+must contain an open-ended final segment covering today, that segment states a weekly pattern, today
+is a base weekday, so the log says "works" and today's `{closed: true}` becomes invisible.
+
+**This is not a defect in the plan; it is the ROTA-SSOT-2 gap made concrete.** A seed cannot express
+a closure on today or any future date, and the log outranks the map for every day it covers. Arda
+never surfaced it (passive, comp closed, so post-boundary dates accrue nothing either way). Muhamed
+surfaces it because he is **active with an open comp period and a closure on the day of seeding**.
+
+Practical consequence: **the correctness of a Muhamed seed depends on the day it is applied.** Applied
+today it would create a wage day the owner explicitly closed.
+
+### 23.9 · Cutover-readiness matrix
+
+| Check | State |
+|---|---|
+| Alex header + entries valid | ✅ 26 entries, fold `ok`, revision 2, 25 periods, `issues []` |
+| Arda header + entries valid | ✅ 21 entries, fold `ok`, revision 1, 21 periods, `issues []` |
+| Muhamed header / entries | ❌ **absent / 0** — at genesis |
+| Candidate Muhamed plan valid | ✅ 4 shapes, all `issues: []`, all `predictedPublish: null` |
+| All accruing subjects covered | ❌ **2 of 3** |
+| No subject partially migrated | ❌ Muhamed unseeded ⇒ a `dated` flip half-migrates the tenant |
+| Finance legacy↔dated parity understood | ✅ every moved date enumerated and explained |
+| Compensation periods covered | ✅ all three subjects have a usable `staffComp` period |
+| `rotaPolicy/rollout` | **absent** — tenant is LEGACY |
+| Cutover preconditions (`financeRotaHistoryCutover.ts`) | ❌ requires **every** accruing subject seeded **and** `ROTA-BOOTSTRAP-APPLY` settling the rest |
+
+**Verdict: NOT READY** — and source, not convention, is why. `financeRotaHistoryCutover.ts` states a
+half-seeded tenant "is not wrong — it is half-migrated, which is worse to reason about than either
+end." Muhamed's individual delta being £0 in the current window is **not** an argument for the flip;
+§23.7 shows that £0 is two offsetting changes.
+
+### 23.10 · ⛔ Two money decisions require an owner ruling
+
+Both are determinate in *evidence* and open in *policy*. Neither is mine to settle.
+
+**Ruling 1 — `2026-06-23`, −£41.60.** The evidence is unambiguous: shop open, colleague working,
+Muhamed zero bookings. Applying the stated attendance ruling makes it not-worked, which **removes a
+wage day the owner has been paying**. Arda's equivalent dates were ruled on individually and
+explicitly; Muhamed has no such ruling. *Does a scheduled day with no booking become unpaid for
+Muhamed, as it did for Arda?*
+
+**Ruling 2 — seeding while a same-day closure exists, +£41.60.** Per §23.8 a seed applied today makes
+`2026-08-25` payable in dated mode despite `{closed: true}`. Options: apply on a day with no closure
+on it; accept the divergence and record it; or defer Muhamed until ROTA-SSOT-2 closes the
+`shiftChanges`-vs-log precedence. *Which?*
+
+### 23.11 · Production non-mutation proof
+
+Full baseline re-read after the audit — **21/21 fields identical**: barber `docHash`, `createTime`,
+`updateTime 2026-08-23T14:55:07.730Z`, `status`/`active`, `workingDays`, `hours`, `dayHours` full
+hash, **`dayHours.Monday` still ABSENT**, `shiftChanges` full hash, `leaves`, `availabilityFrom`,
+fingerprint inputs, `staffComp` hash + `updateTime`, `staffRota` still **absent**, `rotaEntries`
+still **0**, `rotaPolicy/rollout` still **absent**, 11 audits with an unchanged id-set, 86 records.
+
+Tenant-wide `bookings` 1617 before and after. **No manifest created, no callable invoked, no dry run,
+no apply, no deploy, no browser action, no Finance-mode change.** `salownadmin` and `salown-app` were
+read only — neither was edited.
+
+### 23.12 · Next, separately authorized
+
+1. **Obtain the two rulings in §23.10.** Nothing downstream is safe to fix without them.
+2. Then materialize `MUHAMED_WHITECROSS_MANIFEST` in `salownadmin` from the ruled shape (A or B),
+   with tests and an `integritySha256`, **no pinned `sourceRotaFingerprint`** — code + tests only,
+   not dry-run, not applied.
+3. Then a single sanctioned dry run, then a single Apply, each separately authorized.
+4. Only after all three subjects are seeded does `FIN-ROTA-HISTORY-READ` become evaluable — and it
+   still needs `ROTA-BOOTSTRAP-APPLY` and its own authorization.
