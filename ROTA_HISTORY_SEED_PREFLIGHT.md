@@ -3006,3 +3006,173 @@ unauthorized: **`FIN-ROTA-HISTORY-READ`**. **This task changed no Finance mode a
 
 **Hosting rollback:** `4cd8def008cef920` — apply-disabled and safe, though it predates the bootstrap
 operator.
+
+> ✅ **Applied 2026-08-25 — see §27. Whitecross is now CANONICAL.**
+
+---
+
+## 27 · Whitecross tenant bootstrap — ✅ APPLIED, 2026-08-25
+
+> ### Result
+> ```
+> CUTOVER APPLIED · rollout mode=canonical reason=MIGRATED · exactly 2 writes
+> 3/3 ALREADY_CANONICAL · ZERO per-subject writes · Finance modes UNCHANGED
+> ```
+> One fresh dry run and **one** Apply as `aerulas@gmail.com`. **Whitecross is now a canonical
+> tenant.** No `ROTA_START`, no history change, no barber/staffComp/wage write, no Finance-mode change.
+> The operator was returned to **apply-DISABLED** immediately afterwards.
+
+**Anchors.** `salown-app` `517b721` · `salownadmin` `9467df5` · `salown-docs` `aa7af6b`. All clean,
+zero claims, temporary flip **never committed**.
+
+### 27.1 · Pre-Apply gate
+
+Gates 219/219. Both flags committed `false`. Baseline immediately before enabling Apply: exactly 3
+barbers and 3 `staffRota` docs; **Alex rev 2 / 26**, **Arda rev 1 / 21**, **Muhamed rev 1 / 5**; every
+fold `ok`, `issues: []`, and every `entriesHash` **equal to its canonical fold hash**; 3
+`ROTA_SEED_IMPORT` audits; **rollout ABSENT**; **zero bootstrap audits**; `auditLogs` 3082; Finance
+`legacy`/`periods`/`legacy`/`legacy`; callable `salownrotabootstraptenant-00002-nuy`.
+
+All three `sourceRotaFingerprint` inputs were **unchanged since the §26 dry run** —
+Alex `3b25c0e2…f7ef40`, Arda `c0bfbcb3…02d74c`, Muhamed `0ab34f9d…cb71d6`.
+
+### 27.2 · The apply-enabled window
+
+| Step | Evidence |
+|---|---|
+| flip | `ROTA_BOOTSTRAP_APPLY_ENABLED` `false` → `true`, **one line, one file**; `git diff --stat` = `1 file changed, 1 insertion(+), 1 deletion(-)`; untracked 0 |
+| **seed flag untouched** | `ROTA_SEED_APPLY_ENABLED` still `false`; `rotaSeedContract.js` sha256 `84e388bd…427312` unchanged |
+| gates | **215/219**. The 4 failures are *exactly* the kill-switch assertions — `BS-3`, `BS-13`, `BS-21`, `BSS-7`. Every contract, validator, state-machine, authentication and payload test stayed green |
+| **`BS-3` checked specifically** | it asserts *three* things: bootstrap flag false, **seed flag false**, and that the bootstrap file never references the seed flag. Verified the latter two still hold — seed flag `false`, and `grep` shows **0** cross-references in either direction. It failed **only** on the bootstrap flag |
+| enabled deploy | `salown-admin` `cbb1b9e702ce26ae` → **`b9ff293502e3e68d`**, CLI 15.15.0 |
+| enabled served bytes | `/assets/index-sb7McbR-.js`, 200, `sha256 3cf6b91e321eeb75…5db212f` = local build. **Bootstrap gate `!0` ENABLED**, **seed gate `!1` still DISABLED**. No production fingerprint embedded (all three: 0 occurrences) |
+| revert | source restored **before any browser action**; `rotaBootstrapContract.js` sha256 `7fbe6404…cb5610`, byte-identical to `9467df5`; `git diff 9467df5 HEAD` empty; `dirty=0`; gates back to **219/219** |
+
+### 27.3 · The fresh dry run
+
+> ⚠️ **The first click did not fire again** — the same non-firing `find`-ref click as §26.3. Proven
+> from **both** sources before touching anything: the network buffer was **completely empty** (not a
+> single request of any kind, so the absence is meaningful rather than a rollover) and the UI gate was
+> still `NO_SUCCESSFUL_DRY_RUN` with no result block, i.e. readiness was null. Because nothing had
+> been invoked, the coordinate click that followed was **the single authorized invocation, not a
+> retry**.
+
+**Dry run verified.** Write set **2 = 0 per-subject + 1 rollout + 1 audit**, rollout
+`legacy → canonical`. The verdict is code-enforced by `validateBootstrapDryRunResponse` +
+`checkBootstrapSubjects`, so green proves: `ok`/`dryRun`/tenant; exactly the 3 expected ids with no
+missing, extra or duplicate; all three `ALREADY_CANONICAL`; **no subject carrying a `changeId`**;
+every `sourceFingerprint` a valid lowercase 64-hex; `blocking` empty; `rolloutMode === legacy`;
+**`rolloutFlipped === false`**. Fingerprints were captured into the readiness object only — never
+persisted, never pinned.
+
+**Final drift check immediately before Apply: every field clean** — rollout still absent, zero
+bootstrap audits, all three headers/entries/folds unchanged, and all three fingerprints reproducing
+from current source state.
+
+### 27.4 · The Apply
+
+Confirmation typed `whitecross/bootstrap/canonical` — **30 characters, character-exact**. Gate
+progression observed in order: `NO_SUCCESSFUL_DRY_RUN` → `CONFIRMATION_MISMATCH` → satisfied
+(the `Blocked:` line disappeared only after the exact phrase). One click, no retry.
+
+**`Cutover applied. The tenant is now canonical.`**
+
+**`tenants/whitecross/rotaPolicy/rollout`** — created `2026-08-25T20:47:50.266Z`
+(`createTime == updateTime`, so it was created once and never rewritten):
+
+```
+schemaVersion      1
+mode               canonical
+reason             MIGRATED
+effectiveDate      2026-08-25
+setBy              CsktIKNC0wRaP2eK8DECVMWPD0m1
+migratedBarberIds  [barber-1777257519766, barber-1777655430086, barber-1781007454543]
+bootstrapBarberId  null          ← no per-subject bootstrap was performed
+```
+
+`migratedBarberIds` contains **exactly** the three expected ids and nothing else.
+
+**Audit — exactly one**, `rota-bootstrap-2026-08-25-01daad7ca734b24e`, created
+`2026-08-25T20:47:50.326Z`:
+
+```
+action           ROTA_TENANT_BOOTSTRAP        source  rota-bootstrap
+actor            CsktIKNC0wRaP2eK8DECVMWPD0m1 / super-admin   ← real owner, no synthetic actor
+target           rotaPolicy/rollout · whitecross
+effectiveFrom    2026-08-25    todayKey 2026-08-25
+rolloutFlipped   true          rolloutMode canonical      blocking []
+outcomes         barber-1777257519766:ALREADY_CANONICAL
+                 barber-1777655430086:ALREADY_CANONICAL
+                 barber-1781007454543:ALREADY_CANONICAL
+```
+
+**Zero `ROTA_START` audits exist** — asserted, not assumed.
+
+### 27.5 · Before/after — exactly two writes, nothing else
+
+**History untouched** (13 fields × 3 subjects): `revision`, `entryCount`, `entriesHash`,
+`lastChangeId`, `lastOrigin`, **`headerUpdateTime`**, live entry count, **entry id-set hash**,
+**entry payload hash**, `foldOk`, fold hash, `foldIssues`, fold periods — all unchanged for Alex,
+Arda and Muhamed.
+
+**Subjects untouched** (11 fields × 3): `docHash`, **`updateTime`**, `dayHours` hash and keys,
+`shiftChanges` hash and keys, `leaves` hash, `availabilityFrom`, `status`, `active`,
+`sourceRotaFingerprint`. All three `staffComp` unchanged. The 3 `ROTA_SEED_IMPORT` audits unchanged
+by id-set.
+
+**Changed — and only this:**
+
+| | before → after | writes |
+|---|---|---:|
+| `rotaPolicy/rollout` | absent → **present, canonical** | 1 |
+| `ROTA_TENANT_BOOTSTRAP` audit | 0 → **1** | 1 |
+| `auditLogs` total | 3082 → **3083** | (+1, exactly the bootstrap audit) |
+| | **total** | **2** ✅ |
+
+**Finance modes unchanged:** `ROTA_HISTORY=legacy` · `COMP_PERIOD=periods` · `COMP_AMOUNT=legacy` ·
+`FIXED_COST=legacy`. **No wage total moved** — the tenant being canonical changes *who may write the
+rota*, not *what Finance reads*. That remains `FIN-ROTA-HISTORY-READ`.
+
+> **Request-count evidence, stated honestly.** Directly observed: an empty buffer proving the
+> non-firing first click, then the CORS preflight `OPTIONS … → 204` after the dry run (one preflight
+> per POST). By the pre-Apply check the buffer had **rolled over** and the preflight had aged out, so
+> the Apply POST was not read from it — the same limitation as §25.5/§26.3. The deterministic
+> production proof of a **single successful Apply** is: the rollout document has
+> `createTime == updateTime` (created once, never rewritten) and there is **exactly one**
+> `ROTA_TENANT_BOOTSTRAP` audit with `auditLogs` up by exactly 1. A second Apply would have found the
+> tenant already canonical and could not have produced a second audit.
+
+### 27.6 · Posture restored
+
+Both flags already `false`. Rebuilt and redeployed from the clean tree: `salown-admin`
+`b9ff293502e3e68d` → **`a6787af6fb4f6678`**. Served `/assets/index-CaKUcZsm.js`, 200,
+`sha256 7d70f0859394ce40…2e1075` — **byte-identical to the §26 disabled build** — **bootstrap gate
+`!1`**, **seed gate `!1`**, `BOOTSTRAP_APPLY_DISABLED_IN_THIS_BUILD` present.
+
+**The operator is NOT left apply-enabled.** Across the whole task only `salown-admin` moved; `salown`
+`c0d31a9fac873c69`, `salown-staff` `c0606fdcb48f5207`, `whitecrossbarbers-saas` `d7d72c6755a35044`
+and callable `salownrotabootstraptenant-00002-nuy` are unchanged.
+
+### 27.7 · Rollback — and its real limits
+
+**Hosting: `4cd8def008cef920`** — apply-disabled and safe (it predates the bootstrap operator).
+**Do not roll back to `b9ff293502e3e68d`**: that is the apply-ENABLED window artifact.
+
+**Data rollback is NOT a hosting concern and is NOT authorized.** The tenant is now canonical, and
+that is the point of the cutover: from here the R2c guards bind, and direct client writes to the
+rota-owned fields are denied. Reverting would mean deleting or rewriting
+`tenants/whitecross/rotaPolicy/rollout` — outside every sanctioned writer, and it would leave the
+`ROTA_TENANT_BOOTSTRAP` audit describing a state that no longer exists. **Deleting or resetting
+rollout is explicitly forbidden** and was not attempted. It is also not needed: the cutover moved no
+money, and `FINANCE_ROTA_HISTORY_MODE` is still `legacy`.
+
+### 27.8 · State and the next separately authorized step
+
+**Whitecross is CANONICAL**, with all three accruing subjects seeded and none at partial migration:
+Alex 26 entries rev 2, Arda 21 rev 1, Muhamed 5 rev 1, every fold clean. The rollout document records
+the migration and the audit records who did it.
+
+Next, separately authorized: **`FIN-ROTA-HISTORY-READ`** — the Finance read-side cutover. Its
+"half-migrated tenant" precondition is now fully satisfied for the first time. It still needs its own
+analysis and authorization, and the arithmetic to re-verify before any flip remains §23.7 plus the
+accepted `2026-08-25` +£41.60 divergence. **This task changed no Finance mode and moved no wage.**
