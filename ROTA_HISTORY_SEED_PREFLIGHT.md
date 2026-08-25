@@ -2510,3 +2510,176 @@ read only — neither was edited.
 3. Then a single sanctioned dry run, then a single Apply, each separately authorized.
 4. Only after all three subjects are seeded does `FIN-ROTA-HISTORY-READ` become evaluable — and it
    still needs `ROTA-BOOTSTRAP-APPLY` and its own authorization.
+
+> ✅ **Steps 1–3a are now done: both rulings were given, the manifest is materialized (`db3e9e6`), and
+> the production dry run is VERIFIED — see §24.** The Apply remains unauthorized.
+
+---
+
+## 24 · Muhamed — the authenticated production dry run, 2026-08-25
+
+> ### Result
+> ```
+> PLANNED · 5 entries · write set 7 · predictedPublish null · ZERO WRITES · APPLY NOT INVOKED
+> ```
+> Exactly **one** authenticated dry-run invocation as `aerulas@gmail.com`, through the deployed
+> **apply-DISABLED** operator. Nothing was written. Apply is compile-time disabled in this artifact
+> and was never available.
+
+**Anchors.** `salownadmin` `fc6259e` → **`db3e9e6`** · `salown-app` `457b25f` → **`0f6e118`** ·
+`salown-docs` `c6e3152`. All `main`, clean, **no claims**. `ROTA_SEED_APPLY_ENABLED = false`
+throughout — never flipped, tree `dirty=0` before, during and after the build.
+
+### 24.1 · The two owner rulings, and the plan they selected
+
+§23.10 stopped on two money questions. Both were ruled, and the manifest is **candidate B** — the
+plan I derived as *pattern-faithful* — not candidate A:
+
+| Ruling | Decision | Consequence |
+|---|---|---|
+| **`2026-06-23`** (scheduled Tuesday, no booking, shop open) | **WORKED and PAYABLE** — no off exception | the −£41.60 removal does **not** happen; his historical pay is untouched |
+| **`2026-08-25`** (open final segment vs live `{closed:true}`) | **divergence ACCEPTED**, recorded not blocking | in dated mode that date becomes payable, **+£41.60** (§23.8) |
+
+The operator surfaces both rulings as first-class rows (`Ruling20260623`, `Accepted Divergence`), so
+an approver reads the reasoning on the screen rather than trusting a commit message. That choice
+drops the plan from **7 segments to 5** and the write set from 9 to **7**.
+
+### 24.2 · Gates and manifest verification
+
+`db3e9e6` touched five files — `rotaSeedManifests.js` plus four test files; **no product source, no
+contract change**. Gates at HEAD: `node --test` **180/180**.
+
+**Alex and Arda are byte-preserved**, asserted individually rather than assumed: Alex integrity
+`26b81a28…1bb970`, digest `0cdde2f9…966e2`, 24 segments; Arda integrity `3402ac05…e6260`, digest
+`d32c6d4b…8b702`, 21 segments. Registry order is Alex, Arda, Muhamed.
+
+**Muhamed manifest — 19/19 field checks PASS:**
+
+| Field | Value |
+|---|---|
+| id | `muhamed-whitecross-2026-06-09` |
+| kind / tenant / barber | `HISTORY` / `whitecross` / `barber-1781007454543` |
+| segments · declaredGaps | **5** · `[]` |
+| `expected.seedPlanDigest` | `397f9c6cf9eff14c26619e1444f4dedbcc69d3d37daaa08b7eb6c54fdbda5cdf` |
+| `integritySha256` | `ad23c4fcaa6268ce81022d077441f2ec82567331240f452ca26926e947f1dd7e` |
+| entryCount · writeCount · revision | 5 · **7** · 0 → 1 |
+| `predictedPublish` | `null` |
+| `expected.sourceRotaFingerprint` | **ABSENT** ✅ |
+| final segment | `2026-08-25` → `null`, **omits `dayHours`** |
+| segments carrying `dayHours` | **0** |
+
+**Independently recomputed** from the manifest's own segments through the authoritative pure
+functions — not taken on trust:
+
+```
+computeSeedPlanDigest → 397f9c6c…5cdf                    MATCHES the manifest
+deriveSeedChangeId    → rota-seed-397f9c6cf9eff14c26619e1444f4dedb      MATCHES
+deriveSeedAuditId     → rota-seed-barber-1781007454543-50e2ebce0a59a128 MATCHES
+```
+
+The five segments: `2026-06-09→07-12` base 6 · `07-13` **Monday** · `07-14→08-23` base 6 ·
+`08-24` **Monday** · `08-25→null` base 6 with `hours {09:00,19:00}`.
+
+### 24.3 · Deployment — one target, flag never flipped
+
+| | |
+|---|---|
+| Command | `bash deploy.sh` → `npm run build` + `npx firebase-tools deploy --only hosting --project havuz-44f70` |
+| CLI | **15.15.0** · 5 files found, **2 uploaded** |
+| `salown-admin` | `39b47e0206fd73f3` → **`5a4af3c69dc5bad4`**, `2026-08-25T15:43:56.105280Z` |
+
+Unchanged: `salown` `c0d31a9fac873c69`, `salown-staff` `c0606fdcb48f5207`, `whitecrossbarbers-saas`
+`d7d72c6755a35044`, callable **`salownrotaseedtenanthistory-00002-dun`**.
+
+**Served-byte proof** — `/assets/index-DF-ESqGR.js`, HTTP/2 200, 1,089,526 B,
+`sha256 c23601c6eb212a2d…1f98925c`, **identical to the local build**. Present: Muhamed id, barberId,
+digest, integrity; Alex and Arda preserved; `APPLY_DISABLED_IN_THIS_BUILD`. **Compiled apply gate
+default `!1` — DISABLED.** Absent: Muhamed's evidence-only fingerprint and Arda's §21 fingerprint —
+no historical fingerprint is embedded anywhere.
+
+### 24.4 · Operator selection — and an honest note on how it was made
+
+Operator `aerulas@gmail.com` · `CsktIKNC0wRaP2eK8DECVMWPD0m1`. Displayed values all matched §24.2,
+including both ruling rows, `Declared gaps none — []`, `Predicted publish null — no barber projection
+write`, `Final segment from 2026-08-25`, `Expected writes 7 = 5 entries + 1 header + 1 audit + 0
+barber projection`, the confirm phrase re-keyed to `whitecross/barber-1781007454543/397f9c6cf9ef`,
+and **Apply seed — DISABLED IN THIS BUILD**.
+
+> ⚠️ **The manifest selection was made by the owner by hand, not by automation.** macOS renders a
+> native `<select>` popup as an OS-level menu that synthetic input cannot reach; several approaches
+> (click+typeahead, arrow+Enter, option-element click, keyboard focus without opening) all left the
+> panel on Alex. **The dry run was NOT invoked while the wrong subject was selected** — doing so
+> would have spent the single authorization on Alex, who is already seeded. The workflow paused,
+> the owner selected Muhamed, and the panel was re-verified field by field before the click. The
+> same limitation is recorded in §22.4; it is a tooling constraint of the automation environment,
+> never a reason to proceed unverified.
+
+### 24.5 · The invocation
+
+**Exactly one** request:
+
+```
+POST https://europe-west2-havuz-44f70.cloudfunctions.net/salownRotaSeedTenantHistory   200
+```
+
+No retry, no second dry run, no apply. The payload is `buildDryRunPayload`, which hardcodes
+`dryRun: true` and carries only `tenantId`, `barberId`, `segments`, `declaredGaps`.
+
+**Server verdict — `Dry run verified.`**
+
+| Field | Expected | Actual | |
+|---|---|---|---|
+| tenant / barber / manifest | `whitecross` / `barber-1781007454543` / `muhamed-whitecross-2026-06-09` | matched | ✅ |
+| kind · state | `HISTORY` · `PLANNED` | matched | ✅ |
+| entryCount | 5 | **5** | ✅ |
+| seedPlanDigest | `397f9c6c…5cdf` | matched | ✅ |
+| changeId | `rota-seed-397f9c6cf9eff14c26619e1444f4dedb` | matched | ✅ |
+| revision | 0 → 1 | 0 → 1 | ✅ |
+| write set | 7 | **`7 = 5 entries + 1 header + 1 audit + 0 barber projection`** | ✅ |
+| predictedPublish | `null` | `null` | ✅ |
+| declaredGaps · issues | `[]` · `[]` | none reported | ✅ |
+| genesis pre-state | `17516577…dcdc2b3` | unseeded, at genesis | ✅ |
+
+**Fresh `sourceRotaFingerprint`, server-generated:**
+
+```
+0ab34f9d911f7e65ffea0e45494e44f1d701d03b7d72b4895df9c94e39cb71d6
+```
+
+Accepted under the **fresh** policy (`fingerprintPolicy` = `fresh`, since the manifest pins none),
+surfaced for audit and **not written back into source or the manifest**. It equals the value §23.2
+computed locally from the live document — the server derived it independently from production, so
+the agreement is proof the subject has not drifted since the audit, not a reused constant.
+
+`predictedEntriesHash 5cfd3f96c751187988cb54d0d5c9050dde808bf557edea41851409458e9d3287` is
+**OUTPUT ONLY** — actor-dependent, never a precondition.
+
+**Two warnings, and two is correct.** The 3 overlapping `shiftChanges` keys, and the legacy cache
+publishing nothing. **There is no "subject is passive" warning** — unlike Arda, Muhamed is `active`,
+so the core does not emit it. Warning count differing from Arda's three is expected, not a defect.
+
+### 24.6 · Zero-mutation proof
+
+Full baseline re-read after the invocation — **22/22 fields identical**: barber `docHash
+fbd512ad…5fee3eb`, `createTime`, `updateTime 2026-08-23T14:55:07.730Z`, `active`/`true`,
+`workingDays`, `hours`, `dayHours` full hash `fc3dab9f…e734917c`, **`dayHours.Monday` still ABSENT**,
+`shiftChanges` full hash `b9ff930e…f1befdec` with all three keys, `leaves`, `availabilityFrom`,
+fingerprint inputs, `staffComp 68e24a50…148c667d`, **`staffRota` still absent**, **`rotaEntries`
+still 0**, **`rotaPolicy/rollout` still absent**, 11 audits with an unchanged id-set, 86 records.
+
+Tenant-wide `rota-seed-*` audits remain **exactly two** — Alex's and Arda's. **No Muhamed seed audit
+exists.** Finance modes unchanged: `legacy` / `periods` / `legacy` / `legacy`.
+
+### 24.7 · State and the next separately authorized step
+
+Muhamed is **planned and proven, not seeded**. His log is still empty; the tenant remains at two of
+three subjects seeded, so `FIN-ROTA-HISTORY-READ` is still **NOT READY**.
+
+**Next: the single production Apply for Muhamed** — which requires, in order, a reviewed
+`ROTA_SEED_APPLY_ENABLED = true` flip, a redeploy, a **fresh** dry run inside that apply-enabled
+artifact (the fingerprint above is not reusable), the typed confirmation
+`whitecross/barber-1781007454543/397f9c6cf9ef`, and its own explicit authorization. The seed is
+**append-only and irreversible**, and `salownRotaBootstrapTenant` must never run for this subject.
+
+**Hosting rollback:** `39b47e0206fd73f3` — also apply-disabled, so it is a safe target, though it
+lacks the Muhamed manifest.
