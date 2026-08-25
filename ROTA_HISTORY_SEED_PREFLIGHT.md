@@ -3176,3 +3176,244 @@ Next, separately authorized: **`FIN-ROTA-HISTORY-READ`** — the Finance read-si
 "half-migrated tenant" precondition is now fully satisfied for the first time. It still needs its own
 analysis and authorization, and the arithmetic to re-verify before any flip remains §23.7 plus the
 accepted `2026-08-25` +£41.60 divergence. **This task changed no Finance mode and moved no wage.**
+
+> ✅ **`FIN-ROTA-HISTORY-READ` DEPLOYED 2026-08-25 — see §28. Finance now reads the dated log.**
+
+---
+
+## 28 · `FIN-ROTA-HISTORY-READ` — ✅ DEPLOYED, 2026-08-25
+
+> ### Result
+> ```
+> FINANCE_ROTA_HISTORY_MODE  legacy → dated      (hosting:salown only)
+> COMP_PERIOD periods · COMP_AMOUNT legacy · FIXED_COST legacy   — ALL UNCHANGED
+> Both accepted fixed windows reproduce EXACTLY · ZERO production mutation
+> ```
+> The last item in the chain. Finance now resolves a past day from the append-only canonical log
+> instead of the undated `barbers.workingDays` projection. **Read-side only** — no Firestore write, no
+> callable, no functions deploy, no change to history, rollout, barbers, staffComp or bookings.
+
+**Anchors.** `salown-app` `517b721` → **`e3ac516`** (implementation `ed5c6bd`) · `salownadmin`
+`9467df5` (untouched) · `salown-docs` `164d0e2`. All `main`, clean, **zero claims** (the
+`FIN-ROTA-HISTORY-READ` claim was acquired in `427d633`/`820dc6d` and released in `e3ac516`).
+
+### 28.1 · Source contract
+
+`HEAD == e3ac516` exactly, single-parent (no merge commit), `ed5c6bd` an ancestor, and the only
+commit after the implementation is the SYNC + claim-release — **no unreviewed Finance change**.
+
+The four modes at HEAD:
+
+```
+FINANCE_ROTA_HISTORY_MODE = 'dated'      ← the one-line change
+FINANCE_COMP_PERIOD_MODE  = 'periods'    unchanged
+FINANCE_COMP_AMOUNT_MODE  = 'legacy'     unchanged
+FINANCE_FIXED_COST_MODE   = 'legacy'     unchanged
+```
+
+`git diff ed5c6bd~1 ed5c6bd` over the other three cutover files is **empty**. The non-test diff is
+that constant plus comments.
+
+| Contract point | Evidence |
+|---|---|
+| dated used when the log can speak | `f(i.rotaMode)===\`dated\`&&i.rotaDay?i.rotaDay(n,r):null` — compiled, in the served bytes |
+| missing / empty / torn / out-of-range falls back | `rotaDayResolver` returns `null` for a non-array or empty log; `worksOnDayFromAnswer` then returns `wdays.includes(day)` — both found compiled in the served bytes |
+| booking / availability / slot do NOT consume the mode | **zero** booking/availability/slot modules import `financeRotaHistoryCutover`. The three raw `workingDays.includes` sites (`Dashboard.tsx` ×2, `bookingUtils.ts`) are **availability**, deliberately outside this cutover — that boundary is `ROTA-SSOT-2`, still open |
+| no independent wage predicate in reports/exports | the wage predicate appears only in `Finance.tsx`, `homeMetrics.ts`, `OccupancyPanel.tsx` (+ a comment in `Barbers.tsx`). `Home.tsx` delegates to `homeMetrics`, which **does** plumb `rotaDay: rotaDayResolver(...)`. `financeCompPeriodCompare.ts` carries 9 predicate calls but is the COMP_PERIOD diagnostic, explicitly **not on the render path** |
+| rollback is the one-line inverse | `'dated'` → `'legacy'` + `hosting:salown` redeploy. **No production-data rollback** — an unread log moves no figure |
+
+**Gates at `e3ac516`:** `vitest run` **4744/4744 passed, 156 files** (above the 4721 Ubuntu baseline;
+zero failures — the stderr lines are deliberate negative-control assertions). `tsc --noEmit` 0,
+scoped eslint 0, `git diff --check` clean, production build clean.
+
+### 28.2 · Pre-deploy production baseline
+
+`rotaPolicy/rollout` `mode: canonical`, `reason: MIGRATED`, `migratedBarberIds` **exactly** the three
+ids; **1** bootstrap audit; **0** `ROTA_START` audits; **3** `ROTA_SEED_IMPORT` audits.
+
+| Subject | rev | entries | fold | `entriesHash` == fold hash |
+|---|---:|---:|---|---|
+| Alex | 2 | 26 | `ok`, 25 periods, `issues []` | ✅ `751de38d…960cf4` |
+| Arda | 1 | 21 | `ok`, 21 periods, `issues []` | ✅ `e2099b64…02e46f` |
+| Muhamed | 1 | 5 | `ok`, 5 periods, `issues []` | ✅ `5cfd3f96…9d3287` |
+
+Rota-history index diagnostics: **3 barbers, 3 logs, 3 usable, 0 missing / 0 empty / 0 malformed,
+0 ambiguous** — a fully migrated tenant, no half-migration.
+
+### 28.3 · The accepted reconciliation — reproduced through the shipped readers
+
+Computed with `accrualDayKeys` / `rotaDayResolver` / `buildRotaHistoryIndex` compiled from
+`e3ac516`, over live production inputs. **Not handwritten arithmetic.**
+
+**Through `2026-08-20`:** legacy **£35,314.40** → dated **£34,114.40** · delta **−£1,200.00** ✅
+**Through `2026-08-25`:** legacy **£35,980.80** → dated **£34,822.40** · delta **−£1,158.40** ✅
+
+Both accepted fixed windows reproduce **exactly**.
+
+**Subject deltas through `2026-08-25`, with the full moved-date sets verified individually** — a
+matching net total was explicitly not accepted as sufficient:
+
+| Subject | legacy → dated | Δ | removed | added |
+|---|---|---:|---|---|
+| **Alex** | 196 d £19,600.00 → 185 d £18,500.00 | **−£1,100.00** | `02-24, 03-03, 03-17, 03-24, 03-31, 04-07, 04-14, 04-21, 05-05, 05-12, 05-19, 07-07` (12) | `07-13` (1) |
+| **Arda** | 148 d £14,800.00 → 147 d £14,700.00 | **−£100.00** | `03-28, 03-29, 04-17` (3) | `02-11, 03-18` (2) |
+| **Muhamed** | 38 d £1,580.80 → 39 d £1,622.40 | **+£41.60** | — | `08-25` (1) |
+
+**Both Muhamed rulings hold in the live computation:** `2026-06-23` is **absent from the removed
+set** — it remains worked and payable, no −£41.60 removal; and `2026-08-25` is the single added
+date, producing exactly **+£41.60**.
+
+**Current window (`→ 2026-08-26`, as-of today):** legacy **£36,122.40** → dated **£34,964.00**,
+delta **−£1,158.40** — the *same* delta and the *same* moved-date sets as the 08-25 window. The
+absolute totals rose only because ordinary trading added `2026-08-26` for Alex (196→197 legacy) and
+Muhamed (38→39 legacy); that date counts in **both** modes, so it moves nothing. **No date after
+`2026-08-25` joins any moved set.**
+
+### 28.4 · Deployment — one target
+
+`npm run deploy:panel` = `vite build && firebase deploy --only hosting:salown --project havuz-44f70`.
+Proven before executing: `firebase.json` carries **two** hosting entries plus `functions` and
+`firestore` keys, so a blanket `--only hosting` would reach `salown-staff` — the narrow
+`--only hosting:salown` cannot. CLI **15.15.0**, 123 files found, **30 uploaded**.
+
+| Target | before → after |
+|---|---|
+| **`salown`** | `c0d31a9fac873c69` → **`ad1f4709e28fd6c7`** (`2026-08-25T23:36:02Z`) |
+| `salown-admin` | `a6787af6fb4f6678` unchanged |
+| `salown-staff` | `c0606fdcb48f5207` unchanged |
+| `whitecrossbarbers-saas` | `d7d72c6755a35044` unchanged |
+| functions | **87 before, 87 after**; `salownRotaSeedTenantHistory -00002-dun`, `salownRotaBootstrapTenant -00002-nuy`, `salownRotaTransaction -00004-wex` all unmoved |
+
+> **REL-1 handled.** Deploying `hosting:salown` still runs the *other* hosting entry's predeploy hook,
+> which rebuilt the tracked `hosting/staff-bundle/**`. Cleaned with explicit paths only
+> (`rm` the new chunk, `git restore` the two tracked files) — never `git restore .` — leaving
+> `dirty=0`. **`salown-staff` was not published**; its live version is unchanged.
+
+### 28.5 · Served-byte proof
+
+Asset path read from the **live** page, status checked separately, then hashed — the documented order
+that avoids hashing a 404 error page:
+
+```
+/public-bundle/assets/index-hU13K5oO.js        200   1 230 890 B
+  served 961b6226f774894189c44b8c5a0a815ded63a80556655ba87e174bd29ecbbc54  == local ✅
+/public-bundle/assets/Finance-C0x7P-V5.js      200     197 148 B
+  served 58d1f9ea14ed3e07227cc5621b347ce813a8eb81c21eb12ac6e2e1e68f74f12f  == local ✅
+/public-bundle/assets/rotaHistoryActions-DoO-xcyV.js  200
+  served 85ad8e1d914810e83b4a77caac127a7f7c6ee4b684f9b88e700e586df24a04e3  == local ✅
+```
+
+**The four modes as compiled into the served bytes** (minified, so read as resolver defaults rather
+than from comments):
+
+```js
+var f = e => e || `dated`;     // rotaHistoryMode  ← THE CUTOVER
+var p = e => e || `legacy`;    // compAmountMode
+var b = e => e || `periods`;   // compPeriodMode
+var He = e => e || `legacy`;   // fixedCostMode
+```
+
+Safe fallback, proven **structurally** in the served bytes (comments are minified away):
+`function I(e){return!Array.isArray(e)||e.length===0?null:(t,n)=>A(e,t,n)}` (resolver → `null` for an
+absent/empty log) and `function C(e,t,n){return n?n.works:e.includes(t)}` (no answer → the legacy
+`workingDays` membership test).
+
+| Assertion | |
+|---|---|
+| seed / bootstrap Apply capability enabled by this deploy | ✅ **none** — `ROTA_SEED_APPLY_ENABLED`, `ROTA_BOOTSTRAP_APPLY_ENABLED`, `buildApplyPayload`, both callable names, `bootstrap/canonical`: **0 chunks each** |
+| historical fingerprints / digests embedded | ✅ **none** — all nine checked values absent |
+| credentials | ✅ `PRIVATE KEY`, `serviceAccount`, `firebase-adminsdk`: 0 chunks |
+
+### 28.6 · Non-canonical fallback — no half-migration
+
+Seven tenants exist; **only `whitecross` is canonical** (3 `staffRota` docs, 52 entries). The other
+six — `dayi-barbers`, `demo`, `herohairs`, `the-hair-lab`, `tr-demo`, `yusufo` — have **no rollout
+document and zero rota logs**.
+
+Driving the *shipped* readers (mode = `dated`) over that exact shape:
+
+```
+index diagnostics : subjectsWithUsableLog 0, subjectsMissingLog 1
+rotaDayResolver   : null                      ← falls back
+legacy accrual    : ["2026-08-03","2026-08-04"]
+dated  accrual    : ["2026-08-03","2026-08-04"]   IDENTICAL ✅
+```
+
+A **torn** log behaves the same: `subjectsWithMalformedLog 1`, dated result identical to legacy. No
+error, no blank total, no dated label without a valid log. **An unseeded tenant is byte-for-byte
+unchanged by this release.**
+
+### 28.7 · Zero-mutation proof
+
+Full baseline re-read after deploy and after the live page reads — **every field identical**:
+rollout document (data **and** `updateTime`), the bootstrap audit id, the 3 seed audit ids, `0`
+`ROTA_START` audits; all three headers (`revision`, `entryCount`, `entriesHash`, `lastChangeId`,
+`headerUpdateTime`, entry id-set hash, entry payload hash, fold result); all three barber documents
+(`docHash`, `updateTime`, `dayHours`, `shiftChanges`, `leaves`, `availabilityFrom`, `status`,
+`active`, `sourceRotaFingerprint`); all three `staffComp`. **`auditLogs` total 3084 → 3084, delta 0.**
+
+**No Firestore write, no callable invocation, no seed/bootstrap/operator action, no wage or Finance
+period record touched.**
+
+### 28.8 · ⚠️ Limitation — the visible-UI check was NOT completed
+
+**Stated plainly rather than papered over.** The Admin panel would not render in the automated
+browser session: `/app` and `/app/finance` both sat on *"Loading panel…"*. So the Finance wage cards,
+total wages, P&L wage line, Home metric, occupancy denominator and period-close label were **not read
+from the live UI**. Every figure in §28.3 comes from the *authoritative product primitives* over live
+production data, not from the screen.
+
+**This is NOT caused by the release, and the proof is byte-level.** The pre-cutover commit
+(`517b721`) was built in a scratch worktree and its entry chunk compared with the deployed one after
+normalising hashed chunk filenames:
+
+```
+post-cutover entry: 1 225 618 B
+pre-cutover  entry: 1 225 618 B
+normalized IDENTICAL: True
+```
+
+**The boot code shipped by this deploy is literally the same bytes as before it.** Corroborating:
+`PanelLayout.tsx` is untouched by `ed5c6bd` (empty diff), and the network capture shows the
+**Finance chunk was never fetched** — none of the changed code executed.
+
+An initial diagnosis that the session lacked a `tenantId` claim was **wrong and is corrected here**:
+a read-only Auth check shows `aerulas@gmail.com` carries
+`{"tenantId":"whitecross","superAdmin":true,"tenantRole":"owner"}`. The boot inputs are healthy
+server-side too — tenant doc present, `settings/settings` present, 3 barbers, 24 services **all**
+carrying `order`, 2 staff docs. `PanelLayout.init()` awaits `Promise.all([loadTenantIntoConfig,
+loadServicesIntoConfig])` **without a try/catch**, so any client-side rejection leaves `ready` false
+forever — which is what the spinner shows. (`tenants/whitecross.shopName` is `undefined`, which is
+why the sidebar reads the default "salOWN" rather than a salon name.)
+
+> 🔴 **Separate finding, NOT actioned here:** the Admin panel boot can hang indefinitely on an
+> unguarded `Promise.all` rejection. It predates this release and is outside this task's authorization
+> (no source edits except rollback). It deserves its own item — an owner unable to load Finance is a
+> production-severity issue independent of the cutover, and the missing `try/catch` around the two
+> loaders is the concrete fix.
+
+**Acceptance judgement.** No acceptance check *failed*; one could not be *run*. Rolling back would
+discard a correctly verified release in response to a pre-existing, byte-proven-unrelated condition —
+so the forward-rollback was deliberately **not** taken. The visible-UI reconciliation remains
+outstanding and should be closed the next time the panel renders for a tenant session.
+
+### 28.9 · Rollback
+
+**One line, then one deploy.** Set `FINANCE_ROTA_HISTORY_MODE` back to `'legacy'` in
+`src/utils/financeRotaHistoryCutover.ts`, run the gates, commit with `[skip ci]`, and
+`npm run deploy:panel` (`--only hosting:salown`). Prefer this **forward legacy build** over rolling
+back to hosting `c0d31a9fac873c69`, which would also discard unrelated reviewed fixes.
+
+**No production-data rollback exists or is needed:** the seeds, the rollout and the audits are
+untouched by this release, and an unread log moves no figure. `'legacy'` is not a fallback branch —
+it is the untouched pre-cutover rule, golden-parity asserted.
+
+### 28.10 · State and what is explicitly NOT next
+
+Whitecross Finance now reads the dated canonical history. The accepted movement — Alex −£1,100,
+Arda −£100, Muhamed +£41.60, **net −£1,158.40** through `2026-08-25` — is live.
+
+**Deliberately not started, per instruction:** any further Finance mode
+(`COMP_AMOUNT`, `FIXED_COST`), period-close, compensation-amount, archive cleanup, or seed/operator
+deletion work. The only follow-ups this release leaves behind are the §28.8 visible-UI reconciliation
+and the separate panel-boot finding.
