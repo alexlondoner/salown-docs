@@ -2864,3 +2864,145 @@ Next, separately authorized: **`FIN-ROTA-HISTORY-READ`** — the Finance read-si
 requires its own analysis and authorization, and `ROTA-BOOTSTRAP-APPLY` must still settle any
 remaining subject. The accepted arithmetic to re-verify before any flip is §23.7 plus this seed's
 accepted `2026-08-25` +£41.60 divergence. **This task changed no Finance mode and moved no wage.**
+
+---
+
+## 26 · Whitecross tenant bootstrap — production dry run, 2026-08-25
+
+> ### Result
+> ```
+> DRY RUN VERIFIED · 3/3 ALREADY_CANONICAL · blocking [] · rolloutFlipped false
+> ZERO WRITES · BOOTSTRAP NOT APPLIED · Finance modes UNCHANGED
+> ```
+> Exactly **one** `salownRotaBootstrapTenant` dry run as `aerulas@gmail.com`, through the deployed
+> **apply-DISABLED** bootstrap operator. Nothing was written. `rotaPolicy/rollout` is still absent and
+> the tenant is still LEGACY.
+
+**Anchors.** `salownadmin` `db3e9e6` → **`9467df5`** · `salown-app` `0f6e118` → **`517b721`** ·
+`salown-docs` `9e1ca2d`. All `main`, clean, **zero claims** (the bootstrap-operator coordination claim
+was acquired in `dc603da` and released in `517b721`). Both Apply flags committed `false`:
+`ROTA_SEED_APPLY_ENABLED` and `ROTA_BOOTSTRAP_APPLY_ENABLED`.
+
+Gates at `9467df5`: `node --test` **219/219**, eslint clean on all six changed files, `vite build` ok,
+`git diff --check` clean, tree `dirty=0` after build. **The seed surface is untouched** —
+`git diff db3e9e6 HEAD` over `rotaSeedManifests.js`, `rotaSeedContract.js` and `RotaHistorySeed.jsx`
+is empty.
+
+### 26.1 · Pre-state — the bootstrap's own preconditions, proven
+
+This is the first operation whose *correctness argument is the state of the other three*. All of it
+was proven read-only before invoking:
+
+| Subject | Header | revision | entries | fold | `entriesHash` == fold hash |
+|---|---|---:|---:|---|---|
+| **Alex** `barber-1777257519766` | present, `canonical`, `lastOrigin ROTA_CHANGE` | **2** | 26/26 | `ok`, 25 periods, `issues []` | ✅ `751de38d…960cf4` |
+| **Arda** `barber-1777655430086` | present, `canonical`, `lastOrigin ROTA_IMPORT` | **1** | 21/21 | `ok`, 21 periods, `issues []` | ✅ `e2099b64…02e46f` |
+| **Muhamed** `barber-1781007454543` | present, `canonical`, `lastOrigin ROTA_IMPORT` | **1** | 5/5 | `ok`, 5 periods, `issues []` | ✅ `5cfd3f96…9d3287` |
+
+Exactly **3** barbers in the tenant and exactly **3** `staffRota` documents — no fourth subject and no
+orphan header. Exactly **3** `ROTA_SEED_IMPORT` audits, one per subject.
+**`rotaPolicy/rollout` ABSENT**, **zero `ROTA_TENANT_BOOTSTRAP` audits**, `auditLogs` total 3082.
+Finance modes `legacy` / `periods` / `legacy` / `legacy`. Callable
+**`salownrotabootstraptenant-00002-nuy`** (2026-08-19), unchanged all task.
+
+Every stop condition in the brief was checked and none fired.
+
+### 26.2 · Deployment — apply-disabled, one target
+
+`bash deploy.sh` → `--only hosting --project havuz-44f70`, CLI 15.15.0, 5 files found / 2 uploaded.
+**Both flags stayed `false` throughout** — no flip at any point, tree `dirty=0` before and after.
+
+`salown-admin` `4cd8def008cef920` → **`cbb1b9e702ce26ae`**. Unchanged: `salown`
+`c0d31a9fac873c69`, `salown-staff` `c0606fdcb48f5207`, `whitecrossbarbers-saas` `d7d72c6755a35044`,
+callable `salownrotabootstraptenant-00002-nuy`.
+
+**Served-byte proof** — `/assets/index-CaKUcZsm.js`, HTTP/2 200, 1,106,513 B,
+`sha256 7d70f0859394ce40fa1a94a702fa2d7e5fd8f03260c84e17a1e1d2578e2e1075`, **identical to the local
+build**.
+
+| Assertion | |
+|---|---|
+| route `/ops/rota-bootstrap` | ✅ |
+| `salownRotaBootstrapTenant` callable name | ✅ |
+| `ALREADY_CANONICAL`, `ROTA_TENANT_BOOTSTRAP` | ✅ |
+| all three barber ids in the reviewed config | ✅ |
+| **`BOOTSTRAP_APPLY_DISABLED_IN_THIS_BUILD`** | ✅ |
+| `APPLY_DISABLED_IN_THIS_BUILD` (seed gate still present) | ✅ |
+| **compiled bootstrap gate default `!1`** | ✅ DISABLED |
+| any production fingerprint embedded | ✅ **none** — Alex, Arda and Muhamed values all absent |
+
+The confirmation phrase is **runtime-constructed**, `` `${tenantId}/bootstrap/${expected.rolloutTo}` ``
+→ `whitecross/bootstrap/canonical`, so its absence as a string literal is correct rather than a miss.
+The payload builder is `{ tenantId, dryRun: true }` and can express nothing else.
+
+### 26.3 · The invocation — and an honest note on the first click
+
+> ⚠️ **The first click did not fire.** It landed while the page was still hydrating and produced **no
+> request at all** — verified by a clean network read showing **zero** `cloudfunctions` entries with a
+> non-full buffer, and by the page showing no result and no in-flight state. Because nothing had been
+> invoked, clicking again was **the single authorized invocation, not a retry**. That distinction was
+> established from evidence before acting, not assumed.
+
+**Verdict: `Dry run verified.`** Write set **2 = 0 per-subject + 1 rollout + 1 audit**; rollout
+**legacy → canonical**.
+
+That verdict is **code-enforced**, not a reading of the screen. `validateBootstrapDryRunResponse` +
+`checkBootstrapSubjects` refuse readiness unless *all* of the following hold, so a green verdict is
+proof of every one:
+
+| Enforced condition | |
+|---|---|
+| `ok: true`, `dryRun: true`, `tenantId === whitecross` | ✅ |
+| exactly the 3 expected barber ids — `UNEXPECTED_SUBJECT`, `DUPLICATE_SUBJECT`, `MISSING_SUBJECT` all clear | ✅ |
+| every subject `state === ALREADY_CANONICAL` | ✅ |
+| **no subject carries a `changeId`** — i.e. no planned `ROTA_START`, zero per-subject writes | ✅ |
+| every subject's `sourceFingerprint` is a valid **lowercase 64-hex** sha256 | ✅ |
+| `blocking` is an array **and empty** | ✅ |
+| `rolloutMode === legacy` (the pre-state) | ✅ |
+| **`rolloutFlipped === false`** — a dry run flips nothing | ✅ |
+
+The fingerprints are captured into the readiness object's `subjectFingerprints` for a later apply
+handshake and are **memory-bound only — never persisted, never pinned into source**. The bundle scan
+in §26.2 confirms none is embedded.
+
+**Apply remained unavailable throughout** — `Apply cutover — DISABLED IN THIS BUILD`, and no
+confirmation was typed.
+
+> **Request count, stated precisely.** The extension's buffer retained the **CORS preflight**
+> `OPTIONS … /salownRotaBootstrapTenant` → `204` (one preflight per POST) but the POST itself had aged
+> out of the captured window by the time I read it — the same buffer limitation recorded in §25.5. The
+> authoritative proof that at most one invocation occurred is production: `rotaPolicy/rollout` is
+> still absent and no `ROTA_TENANT_BOOTSTRAP` audit exists, so no apply ran; and the first click is
+> proven to have produced no request at all.
+
+### 26.4 · Zero-mutation proof
+
+Full tenant baseline re-read after the dry run and compared field by field — **every field
+identical**:
+
+- **`rotaPolicy/rollout` still ABSENT**; **zero `ROTA_TENANT_BOOTSTRAP` audits**; `auditLogs` total
+  unchanged at 3082; the 3 `ROTA_SEED_IMPORT` audits unchanged by id-set.
+- All three headers: `revision`, `entryCount`, `entriesHash`, `lastChangeId`, **`headerUpdateTime`**,
+  live entry count, **entry id-set hash and entry payload hash**, `foldOk`, fold hash, fold periods and
+  `foldIssues` — unchanged for Alex, Arda and Muhamed.
+- All three barber documents: `docHash`, **`updateTime`**, `dayHours` hash and keys, `shiftChanges`
+  hash and keys, `leaves` hash, `availabilityFrom`, `status`, `active` and `sourceRotaFingerprint` —
+  unchanged.
+- All three `staffComp` documents unchanged.
+- Finance modes `legacy` / `periods` / `legacy` / `legacy`.
+
+### 26.5 · State and the next separately authorized step
+
+Whitecross is **still LEGACY**. The bootstrap is *proven ready* and **not applied**: the tenant has
+three canonically seeded subjects, all classifying `ALREADY_CANONICAL`, with nothing blocking, and an
+apply would write exactly **two** documents — the rollout flip and one audit — and **no** per-subject
+history, barber document, compensation or wage.
+
+Next, separately authorized: **`ROTA-BOOTSTRAP-APPLY`** — requiring a reviewed
+`ROTA_BOOTSTRAP_APPLY_ENABLED = true` flip, a redeploy, a **fresh** dry run inside that artifact (these
+fingerprints are memory-bound and not reusable), the typed confirmation
+`whitecross/bootstrap/canonical`, and its own explicit authorization. Separately again, and still
+unauthorized: **`FIN-ROTA-HISTORY-READ`**. **This task changed no Finance mode and moved no wage.**
+
+**Hosting rollback:** `4cd8def008cef920` — apply-disabled and safe, though it predates the bootstrap
+operator.
