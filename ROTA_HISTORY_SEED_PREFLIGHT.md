@@ -2049,3 +2049,163 @@ flipping `FINANCE_ROTA_HISTORY_MODE` to `dated` today would half-migrate the ten
 `financeRotaHistoryCutover.ts` explicitly forbids. That precondition, plus `ROTA-BOOTSTRAP-APPLY`
 settling every remaining subject, gates the flip. Also open: the apply-side validator fix (§21.6) and
 the apply-disabled redeploy (§21.7).
+
+> ✅ **Both §21 open items are now CLOSED by §22** (2026-08-25): the validator parity defect is fixed
+> (`fc6259e`) and the live operator is back to apply-disabled (`39b47e0206fd73f3`).
+
+---
+
+## 22 · Safe posture restored — the corrected apply-DISABLED operator, 2026-08-25
+
+> ### Result
+> ```
+> hosting:salown-admin b208d564c11edc34 → 39b47e0206fd73f3 · apply DISABLED · validator parity FIXED
+> ZERO callable invocations · ZERO production-data mutation
+> ```
+> Hosting-only deployment. The seed operator was **not used to perform any action**: no dry run, no
+> apply, no callable of any kind. Arda's applied seed is byte-for-byte as §21 left it.
+
+**Anchors.** `salownadmin` `7af5090` → **`fc6259e`** (`VALIDATOR_FIX_COMMIT`) ·
+`salown-app` `a1d863e` → **`457b25f`** (`COORDINATION_COMMIT`) · `salown-docs` `27e1a5c`.
+All clean, no claims.
+
+### 22.1 · The validator parity fix
+
+`fc6259e` closes §21.6 at its root cause rather than at its symptom. The fingerprint rule is no
+longer implemented twice — one canonical helper is now used by **both** validators:
+
+```js
+function G3(expected, server, bound) {           // compiled form, from the served bytes
+  return typeof expected === 'string'
+    ? (server === expected ? null : {code:'FINGERPRINT_MISMATCH', …})   // PINNED  (Alex)
+    : isSha256(server)                                                  // FRESH   (Arda)
+        ? (bound != null && server !== bound ? {code:'FINGERPRINT_MISMATCH', …} : null)
+        : {code:'FINGERPRINT_MALFORMED', …};
+}
+```
+
+The apply side additionally **binds** the value to `readiness.serverFingerprint` — the fresh value
+the handshake actually produced — so a different well-formed fingerprint is still refused. The dry
+run passes no bound, because it *produces* the fingerprint. Neither path ever writes it back.
+
+Proven locally against **the exact §21 apply response that was wrongly rejected**:
+
+| Case | Verdict |
+|---|---|
+| the real §21 response (`c0bfbcb3…d74c`) | **validates ✅** — the false failure is gone |
+| a different well-formed fingerprint | refused — `FINGERPRINT_MISMATCH` ✅ |
+| a malformed value (`zz`) | refused — `FINGERPRINT_MALFORMED` ✅ |
+| Alex, pinned, wrong value | refused — `FINGERPRINT_MISMATCH` ✅ (unchanged) |
+
+Also corrected: the operator's failed-verdict copy now states the outcome is **AMBIGUOUS** and
+directs to read-only verification, rather than implying nothing was written — the §21.6 lesson,
+written into the product.
+
+Gates at `fc6259e`, apply-disabled: **157/157** `node --test`, eslint clean on the 3 changed files,
+`vite build` ok, `git diff --check` clean. **`rotaSeedManifests.js` is not in the diff** — Arda's
+manifest remains byte-identical to `c1c2b14`, and the local manifest assertion suite passes 23/23.
+
+### 22.2 · The deployment — one target, flag never flipped
+
+| | |
+|---|---|
+| Command | `bash deploy.sh` (typed `salown-admin`) → `npm run build` + `npx firebase-tools deploy --only hosting --project havuz-44f70` |
+| CLI | **15.15.0** |
+| Flag | `ROTA_SEED_APPLY_ENABLED = false` **before, during and after** the internal build — no flip, no temporary edit, tree `dirty=0` throughout |
+| Output | 5 files found, **3 uploaded** |
+| `salown-admin` | `b208d564c11edc34` → **`39b47e0206fd73f3`**, release `1787618993820000`, `2026-08-25T00:49:46.874Z` |
+
+`firebase.json` declares one hosting entry (`site: salown-admin`), **no predeploy hooks**, and no
+`functions`/`rules`/`indexes`/`storage` keys. `dist/` is untracked. **Every other target unchanged:**
+`salown` `c0d31a9fac873c69`, `salown-staff` `c0606fdcb48f5207`, `whitecrossbarbers-saas`
+`d7d72c6755a35044`, callable **`salownrotaseedtenanthistory-00002-dun`** (unmoved,
+`2026-08-21T21:13:59Z`).
+
+### 22.3 · Served-byte proof
+
+```
+/assets/index-C7Ie3K1l.js   HTTP/2 200   1 087 346 B
+served sha256 08ffb6118f4d040a01b7edb18597e2384c96accad6257ab70ab13362889313a1
+local  sha256 08ffb6118f4d040a01b7edb18597e2384c96accad6257ab70ab13362889313a1   MATCH
+```
+
+**The compiled kill switch, before and after — the core assertion of this task:**
+
+| Build | `buildApplyPayload` gate default |
+|---|---|
+| previous (`index-DvympQm7.js`, apply-enabled) | **`!0`** ⚠️ |
+| **now** (`index-C7Ie3K1l.js`) | **`!1`** ✅ **DISABLED** |
+
+| Assertion | |
+|---|---|
+| Arda + Alex manifest ids | ✅ both present (evidence only) |
+| Arda full digest `d32c6d4b…8b702`, full integrity `3402ac05…e6260` | ✅ |
+| `FINGERPRINT_MALFORMED` + `FINGERPRINT_MISMATCH` + `fingerprintPolicy` | ✅ both policies present |
+| shared parity helper `G3(expected, server, bound)` | ✅ present |
+| `Integrity SHA-256` and `Declared gaps` rows | ✅ |
+| `APPLY_DISABLED_IN_THIS_BUILD` + *"is false in this artifact"* | ✅ |
+| the §20/§21 fresh fingerprint pinned as a constant | ✅ **absent** |
+
+### 22.4 · Read-only browser smoke
+
+Single connected browser (Browser 1, macOS, local). Operator opened read-only as
+`aerulas@gmail.com`. **Nothing was invoked:** the network capture for the tab shows **zero**
+`cloudfunctions` requests. Dry run was not clicked, no confirmation typed, Apply not clicked.
+
+The page renders **"Apply seed — DISABLED IN THIS BUILD"** with the full explanation
+(*"…no apply payload can even be constructed…"*) — the safe posture, confirmed in the live UI.
+
+Alex (the default selection) renders **`Integrity SHA-256`** and **`Declared gaps: none — [] (contiguous plan)`**
+correctly.
+
+> ⚠️ **Stated honestly:** the manifest dropdown would not commit a change to Arda in this session.
+> macOS renders a native `<select>` popup as an OS-level menu that page-level synthetic input cannot
+> reach, and after several attempts it stayed on Alex. I stopped rather than keep poking near
+> controls I must not touch. **Arda's rows are nevertheless proven** three ways: the row values are
+> rendered generically off the *selected manifest object* (`v: C.integritySha256`, `v: J3(C)` — one
+> code path, no per-manifest branch), Alex demonstrates that path working live, and Arda's integrity
+> and `declaredGaps` are present in the served bytes. Arda's rows were also confirmed live in §21.2
+> on the previous build with identical rendering code. This is a tooling limitation of the smoke,
+> not an unverified claim.
+
+### 22.5 · Production non-mutation — nothing moved
+
+Re-read after deployment and compared field by field against the §21 post-apply state.
+
+**Arda's seed — 16/16 identical:** header `exists`, `createTime` and `updateTime`
+`2026-08-25T00:13:42.272Z`, `revision 1`, `entryCount 21`, `lastChangeId`, `entriesHash e2099b64…e46f`,
+`legacyBlocked null` (**published false**), 21 entries with an identical id-set **and identical
+payload hash**, the single seed audit with identical `createTime` and identical content hash, still
+exactly **two** `rota-seed-*` audits tenant-wide, and an unchanged tenant `auditLogs` total of 3061.
+
+**Subject and configuration — 13/13 identical:** barber `docHash 716eccd2…f40f0cb8` and `updateTime
+2026-08-14T23:04:30.613Z`, `passive`/`false`, `workingDays`, `hours`, **`dayHours` full hash
+`ebaa6576…eae501` including `Wednesday`**, `shiftChanges` full hash `9258ac39…aab435`, `staffComp`
+`b44afdef…5269ae`, `rotaPolicy/rollout` **still absent**, 13 barberId-keyed audits, 667 Arda records.
+
+**Finance modes unchanged:** `ROTA_HISTORY=legacy` · `COMP_PERIOD=periods` · `COMP_AMOUNT=legacy` ·
+`FIXED_COST=legacy`.
+
+**Request proof: ZERO callable invocations.** No dry-run POST, no Apply POST, no seed/bootstrap/
+rollout/Finance audit created, no direct Firestore write, no Schedule Hub save. The only production
+change made by this task is one hosting release.
+
+### 22.6 · Rollback and state
+
+**Hosting rollback: `b208d564c11edc34`** — but note what that version *is*: the **apply-enabled**
+artifact. Rolling back to it would re-open the apply path, so it is the wrong remedy for almost any
+problem with this release. The correct fallback for a defect in `fc6259e` is a forward deploy of a
+corrected disabled build. The earlier safe version `7c41a5f53da72474` is also apply-disabled but
+lacks both the §21.2 UI rows and this validator fix.
+
+**Arda remains seeded, not published, not projected.** The canonical log states his history;
+`legacyFieldsPublished` is false; the barber document is untouched; no Finance consumer reads the
+log. Nothing about the applied seed was altered by this task.
+
+### 22.7 · Next, separately authorized
+
+**Finance / read-side rollout evaluation** (`FIN-ROTA-HISTORY-READ`) — unchanged from §21.8 and
+**not started here**. Whitecross has two of three accruing subjects seeded; **Muhamed is not**, so
+flipping `FINANCE_ROTA_HISTORY_MODE` to `dated` would half-migrate the tenant, which
+`financeRotaHistoryCutover.ts` forbids. That, plus `ROTA-BOOTSTRAP-APPLY` settling every remaining
+subject, gates the flip.
