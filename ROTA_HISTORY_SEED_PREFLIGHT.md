@@ -2683,3 +2683,184 @@ artifact (the fingerprint above is not reusable), the typed confirmation
 
 **Hosting rollback:** `39b47e0206fd73f3` — also apply-disabled, so it is a safe target, though it
 lacks the Muhamed manifest.
+
+> ✅ **Applied 2026-08-25 — see §25.** All three Whitecross subjects are now seeded.
+
+---
+
+## 25 · Muhamed — ✅ APPLIED, 2026-08-25
+
+> ### Result
+> ```
+> SEEDED · revision 0 → 1 · 5 entries · 7 writes · barber document NOT written
+> ALL THREE WHITECROSS SUBJECTS NOW SEEDED · Finance modes UNCHANGED
+> ```
+> One fresh dry run and **one** Apply as `aerulas@gmail.com`. Append-only and irreversible. The live
+> operator was returned to **apply-DISABLED** immediately afterwards.
+
+**Anchors.** `salownadmin` **`db3e9e6`** · `salown-app` **`0f6e118`** · `salown-docs` `5f0442c`.
+All clean, no claims, no commit of the temporary flip.
+
+### 25.1 · Owner rulings — final, and carried into the log
+
+| Ruling | Effect in the applied log |
+|---|---|
+| `2026-06-23` **worked and payable** | no off exception — the fold answers **works = true** for that date |
+| `2026-08-25` dated divergence **accepted** (+£41.60) | the open final segment covers today; documented, not blocking |
+
+No further ruling was required, and none was invented.
+
+### 25.2 · The apply-enabled window
+
+| Step | Evidence |
+|---|---|
+| flip | `false` → `true`, **one line, one file**; `git diff --stat` = `1 file changed, 1 insertion(+), 1 deletion(-)`; untracked 0 |
+| gates | **172/180**. The 8 failures are *exactly* the kill-switch assertions — `AO-15`, `AP-16`, `APPLY-1`, `ARCH-23`, `OP-9`, `production apply is DISABLED…`, `the kill switch is a source constant…`, `apply is disabled in this build and says so`. Every apply state-machine, manifest and validator test stayed green. Before the flip 180/180; after the revert **180/180** |
+| **`AP-16` checked specifically** | it asserts *two* things — flag `false` **and** no historical fingerprint in product source. Verified the second half still holds: `0ab34f9d…` and `c0bfbcb3…` each appear **0** times in `rotaSeedContract.js`, `rotaSeedManifests.js` and `RotaHistorySeed.jsx`. It failed **only** on the flag |
+| enabled deploy | `salown-admin` `5a4af3c69dc5bad4` → **`f06bac5b2ed72b3e`**, CLI 15.15.0 |
+| enabled served bytes | `/assets/index-BS1wblzO.js`, 200, `sha256 b06e4e32fa73a60e…89678f72` = local build. Compiled gate **`!0` ENABLED**. All three manifests present; validator parity present; **no** fingerprint constant embedded |
+| revert | source restored **before any browser action**; `rotaSeedContract.js` `sha256 84e388bd…db427312`, byte-identical to `db3e9e6`; `git diff db3e9e6 HEAD` empty; `dirty=0`; untracked 0 |
+
+The temporary flip was **never committed**.
+
+### 25.3 · The fresh dry run
+
+Muhamed selected **synthetically this time** (single-character `M` typeahead worked on this load,
+unlike §24 where the owner had to select by hand). Every displayed field re-verified, and Apply was
+correctly blocked at **`NO_SUCCESSFUL_DRY_RUN`** before invocation.
+
+**Exactly one** dry-run POST → `200`. `PLANNED` · entryCount **5** · digest `397f9c6c…5cdf` ·
+changeId `rota-seed-397f9c6cf9eff14c26619e1444f4dedb` · revision 0 → 1 · write set
+**7 = 5 + 1 header + 1 audit + 0 barber projection** · `predictedPublish null` · `declaredGaps []` ·
+no issues · genesis pre-state · **two** warnings (no passive warning — Muhamed is active).
+
+Fresh server fingerprint **`0ab34f9d911f7e65ffea0e45494e44f1d701d03b7d72b4895df9c94e39cb71d6`**.
+
+> This is a **new** value produced by *this* dry run inside the apply-enabled artifact and bound to
+> *this* readiness object — `buildApplyPayload` reads `readiness.serverFingerprint`, so the Apply
+> could only ever carry the fingerprint from this run. It equals the §23/§24 value because the
+> subject's five fingerprint inputs genuinely have not changed; that identity is the drift proof, not
+> a reuse.
+
+**Final drift check immediately before Apply: 16/16 fields clean**, fingerprint independently
+recomputed from the live document and matching, genesis re-confirmed (header absent, entries 0, only
+Alex's and Arda's seed audits).
+
+### 25.4 · The Apply — one request, and what it wrote
+
+Confirmation typed `whitecross/barber-1781007454543/397f9c6cf9ef` — **44 characters, character-exact**,
+and independently re-derived as `whitecross/<barberId>/<digest[:12]>`. Gate progression observed in
+order: `NO_SUCCESSFUL_DRY_RUN` → `CONFIRMATION_MISMATCH` → satisfied. One Apply click, no retry.
+
+**The operator reported success correctly this time** — *"Seed applied. State SEEDED"* with the full
+result block. This is the §21.6 defect staying fixed: `fc6259e`'s shared
+`sourceFingerprintFailure` helper accepted the fresh fingerprint on the **apply** side, where Arda's
+run wrongly reported `FINGERPRINT_MISMATCH` on a successful write. **The parity fix is now proven in
+production, not just in tests.**
+
+**Header `tenants/whitecross/staffRota/barber-1781007454543`** — created `2026-08-25T16:15:40.299Z`:
+
+| Field | Value |
+|---|---|
+| `revision` | **1** · `entryCount` **5** |
+| `lastChangeId` | `rota-seed-397f9c6cf9eff14c26619e1444f4dedb` |
+| `lastOrigin` · `legacyMode` · `legacyBlocked` | `ROTA_IMPORT` · `canonical` · `null` |
+| `entriesHash` | `5cfd3f96c751187988cb54d0d5c9050dde808bf557edea41851409458e9d3287` |
+| `cacheState` | `appliedRevision 1`, `coverage "covered"`, `effectiveDate 2026-08-25`, `activatedAt null` |
+
+The `entriesHash` **equals the dry run's `predictedEntriesHash`** — predicted and actual agree.
+
+**The 5 entries**, ids `rota-seed-397f9c6cf9eff14c26619e1444f4dedb-e1 … -e5`, all `ROTA_OPEN`,
+`seq` 0–4, **5 unique ids**, actor `CsktIKNC0wRaP2eK8DECVMWPD0m1` / `super-admin` on every entry:
+
+| seq | from → to | workingDays | hours |
+|---:|---|---|---|
+| 0 | `2026-06-09` → `2026-07-12` | Tue–Sun (base 6) | — |
+| 1 | `2026-07-13` → `2026-07-13` | **Monday** | — |
+| 2 | `2026-07-14` → `2026-08-23` | Tue–Sun (base 6) | — |
+| 3 | `2026-08-24` → `2026-08-24` | **Monday** | — |
+| 4 | `2026-08-25` → **`null`** | Tue–Sun (base 6) | `{09:00, 19:00}` |
+
+**Every entry carries `dayHours: null`** — the final segment omits it, so the absent
+`dayHours.Monday` can never be reintroduced.
+
+**Canonical fold over the live entries:** `ok: true`, `revision 1`,
+`entriesHash 5cfd3f96…e9d3287` (matches the header), **`issues: []`**, **5 periods**, 5/5 unique ids.
+**Only the two exception entries contain Monday** — `2026-07-13` and `2026-08-24`, asserted rather
+than eyeballed. Date verdicts:
+
+| Date | Weekday | Verdict |
+|---|---|---|
+| `2026-06-23` | Tuesday | covered, **works** ✅ (owner ruling honoured) |
+| `2026-07-13` | Monday | covered, **works** ✅ |
+| `2026-08-24` | Monday | covered, **works** ✅ |
+| `2026-08-25` | Tuesday | covered, **works** ✅ (the accepted divergence) |
+| `2026-06-15` | Monday | covered, **not worked** ✅ (ordinary Monday) |
+
+**Audit — exactly one**, `rota-seed-barber-1781007454543-50e2ebce0a59a128` (the predicted id),
+created `2026-08-25T16:15:40.299Z`: `action ROTA_SEED_IMPORT`, `source rota-seed-import`, actor
+`CsktIKNC0wRaP2eK8DECVMWPD0m1` / `super-admin` — **the real owner, no synthetic actor** — `revision 1`,
+`entryCount 5`, `seedPlanDigest 397f9c6c…5cdf`, `sourceRotaFingerprint 0ab34f9d…71d6`,
+`seedFrom 2026-06-09`, `seedFinalFrom 2026-08-25`, `declaredGaps []`,
+**`legacyFieldsPublished: false`**, `convergenceReason AS_OF_ADVANCED`, `gateDecision ALLOW`,
+5 `entryIds`, and the 3 overlapping `shiftChanges` keys recorded but untouched.
+
+**Tenant-wide there are now exactly three `rota-seed-*` audits** — Alex (2026-08-20), Arda
+(2026-08-25 00:13), Muhamed (2026-08-25 16:15). One per subject, no duplicates.
+
+### 25.5 · Before/after — everything else untouched
+
+**20/20 fields identical**: barber `docHash fbd512ad…5fee3eb`, `createTime`, **`updateTime
+2026-08-23T14:55:07.730Z` unmoved** (no barber projection), `active`/`true`, `workingDays`, `hours`,
+`dayHours` full hash `fc3dab9f…e734917c`, **`dayHours.Monday` still ABSENT**, `shiftChanges` full hash
+`b9ff930e…f1befdec` with all three keys, `leaves`, `availabilityFrom`, fingerprint inputs,
+`staffComp 68e24a50…148c667d`, **`rotaPolicy/rollout` still absent**, 11 barberId-keyed audits with an
+unchanged id-set, 86 records.
+
+Changed, as authorized: `staffRota` absent → **present**; `rotaEntries` 0 → **5**.
+
+**Finance modes unchanged:** `ROTA_HISTORY=legacy` · `COMP_PERIOD=periods` · `COMP_AMOUNT=legacy` ·
+`FIXED_COST=legacy`. **No wage total moved** — the log is inert until `FIN-ROTA-HISTORY-READ`.
+
+> ⚠️ **Request-count evidence, stated precisely.** Directly observed: one dry-run POST (`200`) after
+> the dry run, and still exactly one dry-run POST with **zero** Apply POSTs immediately before the
+> Apply click. After the Apply the extension's network buffer had **rolled over** — it retained only
+> two recent Firestore listen-channel requests — so the Apply POST itself was not re-read from that
+> buffer. The authoritative proof of exactly-one-apply is Firestore: **one** header at revision 1,
+> **exactly 5** entries with deterministic ids, and **exactly one** create-only seed audit. A second
+> Apply would have been refused at the header check and could not have produced a second audit,
+> because the audit id is derived and create-only.
+
+### 25.6 · Posture restored — mandatory cleanup completed
+
+Source flag was already `false` (restored in §25.2). Rebuilt and redeployed from the clean tree:
+`salown-admin` `f06bac5b2ed72b3e` → **`4cd8def008cef920`**. Served
+`/assets/index-DF-ESqGR.js`, 200, `sha256 c23601c6eb212a2d…1f98925c` — **byte-identical to the §24
+disabled build** — compiled gate **`!1` DISABLED**, `APPLY_DISABLED_IN_THIS_BUILD` present.
+
+**The live operator is NOT left apply-enabled.** Across the whole task only `salown-admin` moved;
+`salown` `c0d31a9fac873c69`, `salown-staff` `c0606fdcb48f5207`, `whitecrossbarbers-saas`
+`d7d72c6755a35044` and callable **`salownrotaseedtenanthistory-00002-dun`** are all unchanged.
+
+### 25.7 · Rollback
+
+**Hosting rollback: `39b47e0206fd73f3`** — apply-disabled and safe, though it predates the Muhamed
+manifest. **Do not roll back to `f06bac5b2ed72b3e`**: that is the apply-ENABLED window artifact.
+
+**Data rollback: none exists.** The log is append-only; `rotaSeedImport.ts` has no update and no
+delete path, and `ROTA_SUPERSEDE` carries no pattern or dates (§4). Undoing would require privileged
+Admin-SDK deletion of the header, its 5 entries and the audit — outside every sanctioned writer and
+destructive of the audit trail. **Not attempted, not authorized**, and not needed while
+`FINANCE_ROTA_HISTORY_MODE` stays `legacy`.
+
+### 25.8 · State and the next separately authorized step
+
+**All three Whitecross accruing subjects are now seeded** — Alex (24 entries, rev 2), Arda (21, rev 1),
+Muhamed (5, rev 1). Each is seeded but **not published and not projected**: `legacyFieldsPublished`
+false, barber documents untouched, no Finance consumer reading the log.
+
+Next, separately authorized: **`FIN-ROTA-HISTORY-READ`** — the Finance read-side cutover, now
+*evaluable* for the first time since the "half-migrated tenant" precondition is satisfied. It still
+requires its own analysis and authorization, and `ROTA-BOOTSTRAP-APPLY` must still settle any
+remaining subject. The accepted arithmetic to re-verify before any flip is §23.7 plus this seed's
+accepted `2026-08-25` +£41.60 divergence. **This task changed no Finance mode and moved no wage.**
