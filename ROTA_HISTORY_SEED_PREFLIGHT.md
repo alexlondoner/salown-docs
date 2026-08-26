@@ -4031,3 +4031,208 @@ contradict the owner:
 
 **Deliberately NOT edited here** — it remains the final **Ubuntu** cleanup item, and it is the last
 open thread on this whole line of work.
+
+## 32 · 🏁 **MIGRATION CLOSED** — operator surfaces retired, `hosting:salown-admin` deployed and verified
+
+> ### State
+> ```
+> hosting:salown-admin  a6787af6fb4f6678 → 5dffd1fff03c9049   (R-2026-08-26-B)
+> served bytes == reviewed build · 27/27 operator markers ABSENT · both routes redirect
+> ZERO production writes · ZERO callable invocations · no functions/rules/indexes touched
+> ```
+
+This is the closing entry for the rota-history migration. Everything §18–§31 was building toward is
+done, so the temporary machinery that did it leaves the shipped product.
+
+### 32.1 · What is complete
+
+| | |
+|---|---|
+| **Whitecross canonical history** | Alex `rev 2 / 26 entries` · Arda `rev 1 / 21` · Muhamed `rev 5 / 10`. All three `legacyMode: canonical`. |
+| **Canonical rollout** | `tenants/whitecross/rotaPolicy/rollout` — `mode: canonical`, `reason: MIGRATED`, `effectiveDate 2026-08-25`, all three barber ids listed, `bootstrapBarberId: null`. |
+| **Finance dated read** | live since §28 (`FINANCE_ROTA_HISTORY_MODE = 'dated'`), and **corrected** in §31 — Muhamed's `2026-08-25` now pays £0.00 in both legacy and dated. |
+| **Operator surfaces** | **retired** from the product UI by `5644a61` and now **proven absent from the served bundle**. |
+
+### 32.2 · Retired from surface · preserved in source
+
+The distinction is the whole point of the release, so both halves are proven rather than asserted.
+
+**Removed** (`App.jsx`, `Sidebar.jsx` — the only two files whose product code changed):
+routes `/ops/rota-seed` and `/ops/rota-bootstrap`, both page imports, and both CONFIG nav entries.
+With the imports gone the pages leave the entry graph and the production build tree-shakes their
+page, manifest, contract and apply code out. The bundle shrank **1,106,513 → 1,056,466 bytes**.
+
+**Preserved, deliberately not deleted** — `git diff 9467df5 5644a61` over
+`src/ops/rotaSeedManifests.js`, `src/ops/rotaSeedContract.js`, `src/ops/rotaBootstrapContract.js`
+and `src/pages/` is **empty**, so all of it is byte-unchanged:
+
+* `rotaSeedManifests.js` with all three manifest identities intact —
+  `alex-whitecross-2026-02-06`, `arda-whitecross-2026-02-06`, `muhamed-whitecross-2026-06-09`
+* both operator pages (`RotaHistorySeed.jsx`, `RotaBootstrap.jsx`) and both contract modules
+* every manifest/contract/unit test — they still run from source on every `npm test`
+* **both Apply flags still compile-time `false`**: `ROTA_SEED_APPLY_ENABLED = false`,
+  `ROTA_BOOTSTRAP_APPLY_ENABLED = false`
+
+An audit can still reproduce exactly what was applied; a browser can no longer reach it.
+
+### 32.3 · Gates
+
+`salownadmin` `9467df5` → **`5644a61`** (HEAD == the authorised commit; nothing newer, so nothing
+restores a retired route, nav entry or import). `salown-app` `203ab86` → **`b6c4995`**;
+`salown-docs` `19efef7`. All three `main == origin/main`, `porcelain 0`, no other session's claim.
+
+```
+npm test        228 / 228 pass · 0 fail · 0 skipped
+eslint          clean on all 5 changed files
+vite build      clean → dist/assets/index-BuXG2opB.js
+bundle scan     0 hits across 21 operator markers
+git diff --check clean
+```
+
+> **⚠️ One gate failed first, and the reason is worth keeping.** `rotaMigrationRetired.test.js`
+> test 4 (*"the built bundle contains none of the operator evidence"*) **failed** on the first run,
+> asserting the bundle still contained `/ops/rota-seed`. The cause was a **stale local `dist/`** from
+> 2026-08-25 21:48 — the pre-retirement build left on disk by the earlier operator deploy. The test
+> scans whatever `dist/assets/*.js` exists and only *skips* when the directory is absent, so a stale
+> build makes it fail loudly rather than silently pass. `rm -rf dist && vite build` then gave
+> 228/228. **The test behaved correctly; the artefact was old.** Worth noting because the opposite
+> design — skipping when the build is stale — would have shipped a false green.
+
+### 32.4 · Deployment scope, proven structurally before deploying
+
+`salownadmin/firebase.json` declares **one** hosting entry (`"site": "salown-admin"`), **no**
+`predeploy`/`postdeploy` hooks, and **no** `functions`, `firestore`, `storage` or `indexes` keys.
+So from this repo a hosting deploy structurally cannot reach a second site or any function — the
+same finding recorded at §21's release, re-verified here against the current file.
+
+Command (firebase-tools **15.15.0**), narrower than `deploy.sh`'s `--only hosting` by naming the
+target explicitly, per `DEPLOY.md`'s never-`--only hosting` rule:
+
+```
+npx firebase-tools deploy --only hosting:salown-admin --project havuz-44f70
+```
+
+`5 files in dist`, 2 uploaded. **`a6787af6fb4f6678` → `5dffd1fff03c9049`**, release
+`2026-08-26T12:39:15.639Z`, 7 files. No predeploy churn — `git status --porcelain` stayed **0**
+through the deploy (this repo has no hooks, so REL-1 does not apply).
+
+### 32.5 · Served-byte proof
+
+Asset path resolved from the served HTML rather than assumed: `/assets/index-BuXG2opB.js`,
+HTTP **200**.
+
+```
+served  sha256 6ec9a820d5f058a5a173fe352ef2e9ef74bdf5a1387e669319e32caa9fee79f6
+local   sha256 6ec9a820d5f058a5a173fe352ef2e9ef74bdf5a1387e669319e32caa9fee79f6   IDENTICAL
+```
+
+**Absence matrix — every marker counted in the SERVED bytes, not in source:**
+
+| Marker | hits | | Marker | hits |
+|---|---|---|---|---|
+| `/ops/rota-seed` | **0** | | `salownRotaSeedTenantHistory` | **0** |
+| `/ops/rota-bootstrap` | **0** | | `salownRotaBootstrapTenant` | **0** |
+| `rota-seed` (bare) | **0** | | `ROTA_TENANT_BOOTSTRAP` | **0** |
+| `rota-bootstrap` (bare) | **0** | | `BY_EXCEPTION_LEGACY_UNSAFE` | **0** |
+| `Rota History Seed` | **0** | | `DISABLED IN THIS BUILD` | **0** |
+| `Rota Tenant Bootstrap` | **0** | | `bootstrap/canonical` | **0** |
+| `alex-whitecross-2026-02-06` | **0** | | `buildApplyPayload` | **0** |
+| `arda-whitecross-2026-02-06` | **0** | | `buildBootstrapApplyPayload` | **0** |
+| `muhamed-whitecross-2026-06-09` | **0** | | `APPLY_ENABLED` | **0** |
+| Alex digest `0cdde2f9…966e2` | **0** | | `APPLY_DISABLED_IN_THIS_BUILD` | **0** |
+| Arda digest `d32c6d4b…b702` | **0** | | `seedPlanDigest` | **0** |
+| Muhamed digest `397f9c6c…5cdf` | **0** | | `integritySha256` | **0** |
+| Alex integrity `26b81a28…b970` | **0** | | | |
+| Arda integrity `3402ac05…6260` | **0** | | | |
+| Muhamed integrity `ad23c4fc…dd7e` | **0** | | | |
+
+**27/27 absent.** Normal super-admin markers **present** in the same served bytes:
+`/applications`, `/tenants`, `/audit`, `/onboard-import`, `/settings`, `/analytics`, `/infra`,
+`/live-chat`, and the `Applications` / `Audit Log` / `Onboard Import` / `Tenants` headings.
+
+### 32.6 · Authenticated smoke — real super-admin session
+
+Signed in as `aerulas@gmail.com`.
+
+| Surface | Result |
+|---|---|
+| `/` Platform Overview | ✅ renders — 7 active tenants, system health, tenant cards |
+| `/applications` | ✅ renders — New (0) / Approved (2) / Rejected (5) / All (7) |
+| `/tenants` | ✅ renders |
+| `/audit` Audit Log | ✅ renders — populated, newest first |
+| `/onboard-import` | ✅ renders |
+| Sidebar | ✅ **12 links, zero `/ops/` entries** — CONFIG is now Platform Settings · Security · Audit Log |
+| **`/ops/rota-seed`** | ⛔ **unreachable** → catch-all `<Navigate to="/" replace/>` → `/` Platform Overview |
+| **`/ops/rota-bootstrap`** | ⛔ **unreachable** → `/` Platform Overview |
+
+On the retired route the tab loaded **one** script — `index-BuXG2opB.js` — and **no operator
+chunk**; the rendered DOM contained `Rota History Seed`, `Rota Tenant Bootstrap`, `rota-seed`,
+`rota-bootstrap`, `Dry Run`, `Apply` and `manifest` **zero times each**.
+
+**Callable traffic across the whole smoke: exactly one request to `cloudfunctions.net` —
+`adminGetOwnerActivity` (a normal read-only Tenants call).** Zero `salownRotaSeedTenantHistory`,
+zero `salownRotaBootstrapTenant`. **No write or action control was clicked anywhere.**
+
+### 32.7 · Only `salown-admin` moved
+
+| Site | before | after |
+|---|---|---|
+| **`salown-admin`** | `a6787af6fb4f6678` | **`5dffd1fff03c9049`** |
+| `salown` | `530227de55dd4618` | unchanged |
+| `salown-staff` | `c0606fdcb48f5207` | unchanged |
+| `whitecrossbarbers-saas` | `d7d72c6755a35044` | unchanged |
+| `whitecrossbarbers-admin` | `545d6de1513a552c` | unchanged |
+| `whitecrossbarbers-app` | `e652bfac69724b22` | unchanged |
+| `whitecrossbarbers-owner` | `3e305825c3e9d4fd` | unchanged |
+
+> **⚠️ `firebase functions:list` is NOT a reliable inventory, and this release proves it.** The
+> before/after diff appeared to show one function *added* (`salownPublishPublicCampaign`). It was a
+> **measurement artefact**. Four consecutive listings of the same unchanged project returned
+> **96 · 115 · 115 · 115** rows — the command truncates non-deterministically, and the baseline
+> capture caught a short page. `salownPublishPublicCampaign` belongs to salown-app **`c8036f0`
+> (2026-08-11)**, fifteen days old and an ancestor of current HEAD; and a hosting deploy from a repo
+> whose `firebase.json` has no `functions` key cannot create one under any circumstances.
+>
+> Compared as **name sets** instead of row counts: **nothing is missing** (`comm -23` empty — no
+> deletion), and all three callables are present in **all four** listings —
+> `salownRotaSeedTenantHistory`, `salownRotaBootstrapTenant`, `salownRotaTransaction`.
+> **Compare inventories by name set, never by row count.** (Same failure family as the recorded
+> `functions:log` pagination quirk.)
+
+**The callables are retained fail-closed and deliberately NOT deleted.** Both Apply flags ship
+`false`, so no artifact can build an apply payload; the server side stays available for a future
+authorised migration and for audit, and deleting it was explicitly out of scope.
+
+### 32.8 · Zero mutation
+
+Read-only capture before the deploy and again after all browser work:
+
+```
+Alex    staffRota   rev 2 · 26 entries · 751de38d…4960cf4 · canonical   IDENTICAL
+Arda    staffRota   rev 1 · 21 entries · e2099b64…d02e46f · canonical   IDENTICAL
+Muhamed staffRota   rev 5 · 10 entries · 8d3d7f07…20311a · canonical    IDENTICAL
+rotaPolicy/rollout  dcfaa041…dab25b @ 2026-08-25T20:47:50.266Z          IDENTICAL
+settings/rotaRollout                 absent → absent
+auditLogs  total 3101 → 3101 · seed 3 → 3 · bootstrap 1 → 1 · rota-tx 9 → 9
+           full id-set hash a01421e4…b1117                              IDENTICAL
+```
+
+No Firestore write, no callable invocation, no seed/bootstrap dry run or apply, no deletion of
+`staffRota`, entries, audits or rollout, no functions deploy or delete, no `salown` /
+`salown-staff` / `whitecrossbarbers-saas` deploy, no rules or indexes, no Finance-mode change.
+**Canonical data and audits are intentionally retained** — the migration's output is the product,
+and the log is append-only by design.
+
+### 32.9 · Rollback
+
+* **Hosting:** `hosting:salown-admin` → **`a6787af6fb4f6678`**.
+* **Source:** `salownadmin` → **`9467df5`** — restores both routes and both nav entries. Note that
+  the operators would come back **still apply-disabled**, because both flags are `false` in that
+  commit too; re-enabling apply is a separate reviewed source change and a separate authorisation.
+* **Data:** none exists and none is needed — this release wrote nothing.
+
+### 32.10 · What remains open (not started here, deliberately)
+
+`PANEL-BOOT-2` (a deadline in `runPanelBoot`; §28.8 still open) · quick-date UX ·
+`FIN-PERIOD-CLOSE` · compensation-amount and fixed-cost cutovers · archive deletion ·
+callable deletion. None was begun.
