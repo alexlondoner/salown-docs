@@ -98,7 +98,7 @@ elsewhere as current.
 | ➕ `hosting:whitecrossbarbers-admin` — premium barber panel | version **`d6b075dced96fe33`** · release `1784645863227000` · 38 files / 3,340,328 B | 2026-07-21T14:57:43.227Z | LIVE — read 2026-08-17. **In the R2c release.** Content is byte-identical to the `-owner` target (identical path+hash manifest, sha256 `5834a65f…`) but the **version id is not shared** |
 | ➕ `hosting:whitecrossbarbers-owner` — premium barber panel (second target) | version **`36650c5110490b6d`** · release `1784645862668000` · 38 files / 3,340,328 B | 2026-07-21T14:57:42.668Z | LIVE — read 2026-08-17. **In the R2c release.** ⚠️ **Its rollback identity is `36650c5110490b6d`, never `d6b075…`** — a Hosting version belongs to one site |
 | `hosting:salown-admin` — Super Admin | version **`9f457fc2c8ee4b35`** · release `1785493665740000` | 2026-07-31T10:27:45.740Z | LIVE_VERIFIED, marker-proven |
-| `hosting:whitecrossbarbers-saas` — whitecrossbarbers.com | version **`25b14188c8e6e9ed`** · release `1786646659069000` | 2026-08-13T18:44:19.069Z | LIVE, **reproducible** from the `REL-4` anchor `ops/rel4/` (anchor commit `36d77f82`) — the passive gate transplanted onto the live artefact, `WCP-5` closed. The 2026-08-13 stop (`R-2026-08-13-X`) is what made this possible. Rollback `e6be08684d312ce7`. ⛔ `main` is **still** not deployable here (`WCP-2` + `WCP-3`) |
+| `hosting:whitecrossbarbers-saas` — whitecrossbarbers.com | version **`3594d36e409569d1`** · release `1787760229045000` | 2026-08-26T16:03:49.045Z | LIVE, **reproducible** from the `REL-6` anchor `ops/rel6/` (anchor commit `287ca3b1`) — campaign parity (`WCP-2`) transplanted onto the live REL-5 artefact; `verify.sh --live` **58/58 PASS**. Chain: REL-4 `25b14188c8e6e9ed` → REL-5 `d7d72c6755a35044` → **REL-6 `3594d36e409569d1`**. Rollback **`d7d72c6755a35044`**. ⛔ `main` is **still** not deployable here — the held **W1/C1 booking cutover** + PAY-CHANNELS-A/O1W checkout work is in `main` and is **not feature-flagged** (`WCP-1` + `WCP-3`) |
 | 🔄 Cloud Functions | **111 total** — **84** `europe-west2` + **27** `us-central1` *(was 108 / 81 / 27)*. R2c added exactly three, all CREATEs, one shared build `6f6da55a-1371-4e2d-a029-ac84745ccc3a`: `salownRotaTransaction` **`-00001-biy`** · `salownProvisionTeamMember` **`-00001-log`** · `salownRotaBootstrapTenant` **`-00001-bup`**, all GEN_2 / `nodejs22` / `europe-west2` | 2026-08-17T16:39:04–09Z | **LIVE_VERIFIED** — ledger `R-2026-08-17-A`. `us-central1` unchanged at 27. **None has ever been invoked.** `salownPublishPublicCampaign` remains source-present / live-absent (`CAM-2`) |
 | 🔄 `firestore.rules` | ruleset **`60abf8e4-e6ca-43e0-8bb7-26ef72ae58ba`** *(supersedes ~~`10914cef-35a1-4b2d-a085-4d79680f212c`~~, and before it ~~`640c3dae-…`~~)* · 48,130 B · sha256 **`b04f7745c5b420db3aaeeefdc7355e085f9115a28b573e7ed80ff1ba1b9809a4`** | release updated **2026-08-17T17:06:06.400701Z** (ruleset createTime 17:06:05.495119Z) | **LIVE_VERIFIED** — live source **fetched back out of production** and hash-matched to the candidate; carries R2c's rota rules **and** `SEC-CATCHALL-1` in one artefact. Authorization vs the deployed bytes: **15/15** (old ruleset scored 9/15). **Rollback `10914cef-…`**, byte-exact source preserved at `evidence/rules/firestore.rules.PREV-10914cef-35a1-4b2d-a085-4d79680f212c` |
 | Firestore indexes | **2 composite, both READY** | — | STATUS_UNKNOWN — `TEC-6`, the repo declares **0** |
@@ -139,13 +139,13 @@ here; commit and release identifiers are never renamed.
 |---|---|---|---|---|---|---|---|---|---|---|
 | P0 | `REL-2a` | The 2026-08-12 Admin release has no ledger entry and no provable source | `STATUS_UNKNOWN` | salown-app | — | — | **UNKNOWN** (deploy→commit) | `11cc739f548c5e10` | Backfill from operator memory or accept UNKNOWN permanently | 2026-08-12 |
 | P0 | `REL-3` | Prohibit deploy→commit; every release needs a clean-tree pinned anchor | `PLANNED` | all | — | `REL-2` | — | — | Adopt §15; add the pre-release tree/anchor gate | 2026-08-12 |
-| P0 | `CAM-2` | `salownPublishPublicCampaign` server-side publisher | `PUSHED_NOT_LIVE` | salown-app | — | owner release window | `c8036f0` | **absent from the 108 live functions** | Deploy the publisher by exact name, then `CAM-3` | 2026-08-12 |
-| P0 | `CAM-3` | Republish `public/campaign` mirrors so they carry `multiplier` | `BLOCKED` | data | — | `CAM-2` | — | whitecross mirror written 2026-06-18, **no `multiplier`** | Server-side backfill after `CAM-2`; **never** "press Save once" | 2026-08-12 |
-| P0 | `CAM-1` | salOWN campaign resolver (frontend half) | `LIVE_VERIFIED` **but not delivering** | salown-app | — | `CAM-3` | `01bfebe` | `11cc739f548c5e10` | Do not close: the guarantee is dark until `CAM-3` | 2026-08-12 |
-| P0 | `WCP-2` | Whitecross homepage campaign parity | `PUSHED_NOT_LIVE` / `BLOCKED` | whitecross-site | — | `CAM-3` | `bc25d257` | **proven absent** from `e6be08684d312ce7` | Hold. Deploying now blanks a live banner | 2026-08-12 |
-| P2 | `CAM-5` | Backfill rollback snapshot carries a **pre-write** `updateTime` precondition, so the emitted rollback plan cannot execute after a successful apply | `CONFIRMED_OPEN` | salown-app | — | — | `c8036f0` (`scripts/backfillPublicCampaign.cjs`) | n/a — operator tooling, nothing deployed | Re-emit the snapshot **after** the write (or add a `--snapshot-out-post`) so `lastUpdateTime` matches post-apply state; deliberately NOT changed during the `CAM-3` release | 2026-08-26 |
+| P0 | `CAM-2` | `salownPublishPublicCampaign` server-side publisher | `LIVE_VERIFIED` ✅ **CLOSED** | salown-app | — | — | `c8036f0` | **live**: v2 `firestore.document.v1.written` trigger, `europe-west2`, nodejs22 (`functions:list`, 2026-08-26) | Closed. Not redeployed in the closure | 2026-08-26 |
+| P0 | `CAM-3` | Republish `public/campaign` mirrors so they carry `multiplier` | `LIVE_VERIFIED` ✅ **CLOSED** | data | — | — | `c8036f0` (`scripts/backfillPublicCampaign.cjs`) | mirror **`active:false` · `2026-05-24`→`2026-08-18` · `multiplier:2`**, `updateTime` **`2026-08-26T14:31:42.789Z`** | Closed — backfill applied **WRITE 1 / ERROR 0**, canonical `settings/settings` untouched, one document platform-wide | 2026-08-26 |
+| P0 | `CAM-1` | salOWN campaign resolver (frontend half) | `LIVE_VERIFIED` ✅ **now delivering** | salown-app | — | — | `01bfebe` | `11cc739f548c5e10` | `CAM-3` landed 2026-08-26, so the mirror now carries a `multiplier` and the resolver has real input | 2026-08-26 |
+| P0 | `WCP-2` | Whitecross homepage + loyalty campaign parity (one shared resolver) | `LIVE_VERIFIED` ✅ **CLOSED** | whitecross-site | — | — | `45fc15f8` + `00ecf2dd` (+ `bacfda34`), shipped as **REL-6** `287ca3b1` | hosting **`3594d36e409569d1`** · release `1787760229045000` · 2026-08-26T16:03:49.045Z | Closed — `verify.sh --live` **58/58 PASS** + live browser check; rollback anchor `d7d72c6755a35044` | 2026-08-26 |
+| P2 | `CAM-5` | Backfill rollback snapshot carries a **pre-write** `updateTime` precondition, so the emitted rollback plan cannot execute after a successful apply | `CONFIRMED_OPEN` | salown-app | — | — | `c8036f0` (`scripts/backfillPublicCampaign.cjs`) | n/a — operator tooling, nothing deployed | **Still open after the 2026-08-26 closure.** Re-emit the snapshot **after** the write (or add `--snapshot-out-post`) so `lastUpdateTime` matches post-apply state. Confirmed in practice: the `CAM-3` snapshot now holds the stale pre-write `updateTime` `2026-06-18T09:38:38.698Z` | 2026-08-26 |
 | P0 | `WCP-3` | W1 premium cutover — booking created before payment fail-closed (phantom bookings) | `BLOCKED` | whitecross-site | — | O1W F→D→E2E coordinated activation | — | current live artefact still on the legacy path | Coordinated activation, owner-scheduled | 2026-08-12 |
-| P0 | `WCP-1` | Live Whitecross artefact is a hand-composed hybrid matching no Git SHA | `IN_PROGRESS` — **releases are reproducible now, `main` still is not** | whitecross-site | released | — | anchor `36d77f82` (`ops/rel4/`) | `25b14188c8e6e9ed` · `script.js` sha256 `2abd181e…49575` (prev `e6be08684d312ce7` / `ffa63589…e77637`) | `REL-4` closed the *release* half: `ops/rel4/assemble.sh` rebuilds the served artefact byte-for-byte. **Still open:** reconciling `main` with production, which needs `WCP-2` + `WCP-3` | 2026-08-13 |
+| P0 | `WCP-1` | Live Whitecross artefact is a hand-composed hybrid matching no Git SHA | `IN_PROGRESS` — **releases are reproducible now, `main` still is not** | whitecross-site | — | — | anchor `287ca3b1` (`ops/rel6/`) | `3594d36e409569d1` · `script.js` sha256 `e20a097e…970d3e` (chain `ffa63589…` → `2abd181e…` → `f7332e13…` → `e20a097e…`) | Three anchors now compose (`ops/rel4` → `ops/rel5` → `ops/rel6`), each rebuilding the served artefact byte-for-byte. **`WCP-2` closed 2026-08-26**, so the remaining blocker to reconciling `main` is **`WCP-3`** — the held **W1/C1 booking cutover** (+ PAY-CHANNELS-A, O1W-HARDENING), which is in `main`, is **not feature-flagged** (`buildC1BookingInput` is called unconditionally on the booking submit path), and would go live the moment the repo root is deployed | 2026-08-26 |
 | P0 | `WCP-4` | `firebase.public-site.json` would re-expose the repository | **`DONE` — source deploy-guard.** Deliberately **NOT** `LIVE_VERIFIED`: this package retired a *config file* and pinned a *contract*; it published no artefact, so there is no live identity for it to be verified against and claiming one would be a category error | whitecross-site | — | — | **`4b6f44b3`** | **no deploy — none possible.** Live `whitecrossbarbers-saas` is unchanged (`25b14188c8e6e9ed`) | ✅ The file is **absent from the working tree** and `firebase.saas.json` is the only approved public-site config. Enforced, not remembered: `scripts/wcp4-public-site-config.test.mjs` (**14/14 pass, re-run 2026-08-17**) asserts retirement, keeps `firebase.public-site.json` in the approved ignore list *even though the file is gone* so a resurrection is still excluded, forbids any executable reference to it, and carries two negative controls — dropping any one approved exclusion fails, and an alternate root config with an equal-or-stronger policy passes. Nothing further to do | 2026-08-17 |
 | P0 | `WCP-5` | Whitecross premium site resurrected a **departed** barber from a stale `shiftChanges` override | **`LIVE_VERIFIED`** | whitecross-site | released | — | `8c655389` (impl) · `36d77f82` (REL-4 anchor) | `hosting:whitecrossbarbers-saas` **`25b14188c8e6e9ed`** · release `1786646659069000` · 2026-08-13T18:44:19.069Z | Shipped by transplanting the gate onto the live artefact, **not** by deploying `main`. Served `script.js` `2abd181e…49575`; `isBarberPassive` precedes `shiftChanges` in both paths. Ledger `R-2026-08-13-Y` | 2026-08-13 |
 | P0 | `FIRESTORE-RULES-SSOT-P0` | **Five non-canonical directories could publish a Firestore ruleset to `havuz-44f70`** — `salown-panel/firebase.json`, `whitecross-site/firebase.json` (+ stale `firestore.indexes.json`), `whitecross-site/barber-panel/firebase.json`, and TWO git worktrees. `docs/DEPLOY.md` has said "rules deploy only from salown-app" since 2026-06-21 and **nothing enforced it**: `firebase deploy --only firestore:rules` is a correct command that, typed in the wrong directory, replaces the canonical 563-line ruleset with a stale one | **`PUSHED_NOT_LIVE` — and now EXERCISED IN ANGER, successfully.** Enforcement is in source and proven by tests; this package changed who *may* publish, never what *is* published. ✅ **2026-08-17 first real test:** the `R-2026-08-17-A` ruleset publish came from **`salown-app` authority only** — `firebase deploy --only firestore:rules --project havuz-44f70` run from that repo — and **`whitecross-site` remained non-authoritative throughout**, its `scripts/check-rules-authority.sh` returning *"this repo declares no Firestore deploy target (salown-app owns rules)"* both before and after. The salown-side `ops/rules-authority.test.js` also passed as a pre-deploy gate. One ruleset published, from the one sanctioned door | salown-app + whitecross-site + salown-panel + salown-docs | released | — | **`a9b72f2`** (salown-app) · **`acf73795`** (whitecross-site) · **`96ba11b`** (salown-docs) | **not deployed** — no ruleset published; live ruleset unchanged and unread | **Severity was understated by the brief.** Three stale copies did not merely lack the removed super-admin write grant — their global fallback was `match /{document=**} { allow read, write: if isAuth(); }`, the pre-`[P1-A]` cross-tenant hole: every logged-in user of every tenant, read AND write, over every other tenant's data. A worktree held a 17-line ruleset making every tenant subcollection `allow read: if true`. **Removal, not redirection:** pointing a second config at the canonical file would have been the same defect with better manners — two configs that can publish are two things to keep in sync, and the one that drifts is discovered by an outage. With no `firestore` block, `--only firestore:rules` fails **locally at config parse**, before any network call or credential (`Cannot understand what targets to deploy/serve`), proven in all three directories for `rules`, `indexes` and bare `firestore`. **Surgical:** the only key removed from each `firebase.json` is `firestore`; `hosting`/`functions`/`storage` are byte-identical and all hosting targets still resolve (`firebase target` verified in all three). **Worktrees are time machines** — their config is whatever the checked-out commit said, so fixing `main` cannot fix them; both were pruned (`git worktree remove`, no `--force`; the whitecross one's local package-lock change was rescued to stash `835211dd1c8a02935828129dee83e247ec609c93` first) and the guard fails on ANY future worktree carrying a rules config — **no allowlist**. **Guard:** `ops/rulesAuthority.mjs` + `ops/rules-authority.test.js` (30 tests, in `npm test` and the deploy workflow) assert exactly one authority resolving to `salown-app/firestore.rules`, no stray `firestore.rules` filename anywhere, no foreign deploy invocation, and no global write grant in the canonical ruleset — matching the *shape* `match /{ANY=**}`, where the existing Python gate enumerates three wildcard names. Comments are stripped first, and `emulators:exec --only firestore` is deliberately NOT a deploy. Repo-local second lock in whitecross-site: `scripts/check-rules-authority.sh`, wired into `deploy.sh` and `scripts/deploy-functions.sh`. **Negative controls all fired and cleared.** ⚠️ Two findings left OPEN, not fixed: `storage.rules` has exactly one copy (whitecross-site) and was never audited, and `TEC-6` still forbids any index deploy | 2026-08-16 |
@@ -219,34 +219,55 @@ here; commit and release identifiers are never renamed.
 
 ## 5. P0 — Production integrity and financial correctness
 
-### 5.1 The campaign chain is half-live, and that is the most important fact in this file
+### 5.1 The campaign chain — **CLOSED END-TO-END 2026-08-26** ✅
 
-The 2026-08-10 decision was: **do not release CAMPAIGN-LIFECYCLE-PARITY until a server-side
-`public/campaign` publisher exists.** Half of it shipped anyway, inside the unrecorded 2026-08-12
-Admin release.
+*(This section previously read "The campaign chain is half-live, and that is the most important fact
+in this file." That was true from 2026-08-12 until 2026-08-26. It is now closed; the history is kept
+below because the failure mode it records is the reusable lesson.)*
 
-Evidence, all read from production on 2026-08-12:
+**What was wrong.** The 2026-08-10 decision was: do not release CAMPAIGN-LIFECYCLE-PARITY until a
+server-side `public/campaign` publisher exists. Half of it shipped anyway, inside the unrecorded
+2026-08-12 Admin release — `CAM-1` (the strict frontend resolver) went live while `CAM-2` (the
+publisher) was not deployed and `CAM-3` (the mirror) still had no `multiplier`. The guarantee was
+dark: a strict resolver reading a mirror that could never satisfy it.
 
-- **`CAM-1` is LIVE.** The served entry chunk `index-CjxIhWAr.js` on `hosting:salown`
-  `11cc739f548c5e10` contains `⚡ Bonus points earned` and **no** `Double Points — Active` /
-  `2× loyalty points`. That is `01bfebe`'s BookingPage: it reads `tenants/{tid}/public/campaign`
-  and resolves through `resolveActiveCampaign`, which is **strict** — a campaign with no configured
-  `multiplier` returns `null`.
-- **`CAM-2` is not live.** `salownPublishPublicCampaign` does not exist among the 108 deployed
-  functions. There is still no server-side writer of `public/campaign`.
-- **`CAM-3` is the gap.** `tenants/whitecross/public/campaign` reads
-  `{active: true, startDate: "2026-05-24", endDate: "2026-08-24"}` — **no `multiplier`** —
-  `updateTime` **2026-06-18T09:38:38Z**. The campaign is inside its window today.
+**How it closed, in three gates, each verified against production reads rather than exit codes:**
 
-**What this does and does not mean.** It did **not** remove a live banner from the salOWN booking
-page: that banner had never rendered for a customer (it previously read auth-only
-`settings/settings` and swallowed the 403). So the customer-visible state is unchanged — dark
-before, dark now. What changed is that **the repair shipped and did not take effect**, and the item
-must not be recorded as delivered. The premium site is the mirror image: `whitecrossbarbers.com`
-**is** showing the banner right now, from live `script.js` that reads the same mirror but needs only
-`active` + dates — with a hardcoded "2× loyalty points" and the *visitor's* clock. Deploying `WCP-2`
-against today's mirror would blank it. `CAM-3` first, in the coordinated order already recorded
-under the Marketing theme.
+- **Gate A · `CAM-2` — LIVE.** `salownPublishPublicCampaign` is deployed: v2
+  `google.cloud.firestore.document.v1.written` trigger, `europe-west2`, nodejs22. It was **not**
+  redeployed during the closure; it was found already live and confirmed by `functions:list`.
+- **Gate B · `CAM-3` — CLOSED.** `scripts/backfillPublicCampaign.cjs` applied **WRITE 1 / ERROR 0**
+  to `tenants/whitecross/public/campaign` — the only document written platform-wide (whitecross is
+  in fact the only tenant that has that document at all). Canonical `settings/settings` untouched,
+  its `updateTime` byte-identical before and after. Mirror moved
+  `{active:true, 2026-05-24→2026-08-24, no multiplier}` → **`{active:false, 2026-05-24→2026-08-18,
+  multiplier:2}`**, `updateTime` `2026-06-18T09:38:38.698Z` → **`2026-08-26T14:31:42.789Z`**.
+- **Gate C · `WCP-2` — LIVE.** Released as **REL-6** to `hosting:whitecrossbarbers-saas` version
+  **`3594d36e409569d1`** (release `1787760229045000`, 2026-08-26T16:03:49.045Z), from an isolated
+  workspace of 58 files. `verify.sh --live` → **58/58 byte-identical, PASS**, plus a live browser
+  check on whitecrossbarbers.com. Rollback anchor **`d7d72c6755a35044`**.
+
+**Why the customer sees nothing, and why that is the correct pass.** The campaign ended 2026-08-18
+and is `active:false`, so the right state on both pages is **hidden** — which is what production now
+shows. The acceptance test was deliberately *not* "switch a campaign on in production": active-window
+behaviour is proven by the 15/15 contract tests, and the live test is that an inactive campaign is
+correctly invisible on both surfaces.
+
+**Three defects closed with it,** all of which had been shipping wrong answers to customers:
+the day boundary was the **visitor's** clock rather than `Europe/London`; the multiplier was
+hardcoded `2×` in markup the till never read; and `loyalty.html` was reading the auth-only
+`settings/settings`, which a signed-out visitor cannot read at all.
+
+**The reusable lesson — a patch's pre-image can be missing even when the commit is correct.**
+`45fc15f`'s `script.js` hunks delete an inline resolver introduced by `bacfda34` (2026-08-10) that
+was **never deployed**; production still served the 2026-06-18 primitive banner (`6ce43a16`). Both
+hunks failed against the live baseline. "Apply the reviewed commit to the live artefact" is only
+valid when the live artefact **is that commit's parent** — verify it, never assume it. The campaign
+region was transplanted whole from `main` instead, and proven confined: 127,142 of 130,250 bytes
+byte-identical to the live bytes.
+
+**Still open:** `CAM-5` — the backfill's rollback snapshot carries a pre-write `updateTime`
+precondition, so it cannot execute after a successful apply. Fails safe, not push-button.
 
 ### 5.2 Release governance — `REL-2a`, `REL-3`, `REL-4`
 
@@ -783,7 +804,7 @@ Verified against production in this pass (2026-08-12) unless dated otherwise:
   (TR-A/B/B2/C/D1 + Units 4–9 + TR-P1), TR-CURRENCY A–G, service identity read side, CI hosting
   scope + release guard + emulator pin.
 
-**`CAM-1` is LIVE_VERIFIED but is deliberately NOT in this list as "completed"** — see §5.1.
+**`CAM-1` / `CAM-2` / `CAM-3` / `WCP-2` — the campaign chain — CLOSED END-TO-END 2026-08-26.** `CAM-2` live (v2 Firestore-written trigger, `europe-west2`, nodejs22), `CAM-3` backfilled (WRITE 1 / ERROR 0, canonical untouched), `WCP-2` released as **REL-6** `hosting:whitecrossbarbers-saas` **`3594d36e409569d1`** (`verify.sh --live` 58/58 PASS). `CAM-1` now has real input and is delivering. See §5.1. Still open: **`CAM-5`**.
 
 ---
 
@@ -795,8 +816,7 @@ Verified against production in this pass (2026-08-12) unless dated otherwise:
 |---|---|---|
 | `FIN-COMP-S3A` | `f1239ba` | no deploy; `FINANCE_COMP_PERIOD_MODE='legacy'`; no consumer wired; no tenant enabled |
 | `FIN-S2` | `10e754a` | pushed, no deployment at completion; production unchanged |
-| `CAM-2` | `c8036f0` | publisher absent from the 108 deployed functions |
-| `WCP-2` | `bc25d257` | proven absent from the live Whitecross artefact; deploying blanks a live banner |
+| `W1` / `C1` / `BSP-W1` / `PAY-CHANNELS-A` / `O1W-HARDENING` | in `whitecross-site` `main` | **HELD.** The website booking cutover to `salownCreateBooking` + external checkout/recovery. **Not feature-flagged** — `buildC1BookingInput` is called unconditionally on the plain booking submit path, so a repo-root deploy activates it instantly. Measured on the served artefact after `REL-6`: all markers **0**. This is why `main` still requires a `REL-*` anchor |
 | `LOC-PRE-A` (Functions half) | `72ce9be` | storage-only seam; Functions half never deployed |
 | `STF-2A` S4A | `3097521` | source + tests; no callable, no UI |
 | `O1S` future-booking core | `e428124` | Functions not deployed |
