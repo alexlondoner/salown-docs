@@ -99,10 +99,23 @@ No functions, rules or firestore deploy accompanied any of the three gates.
 
 ### Still open
 
-**`CAM-5`** (P2, `CONFIRMED_OPEN`) — `backfillPublicCampaign.cjs` writes `--snapshot-out` *before* the
-apply block, so the emitted rollback plan carries a **pre-write** `updateTime` precondition and
-cannot execute after a successful apply. It fails **safe** (refuses rather than clobbers), but the
-file is not push-button. Deliberately not fixed during the release window.
+**`CAM-5`** (P2, `PUSHED_NOT_LIVE` — was `CONFIRMED_OPEN`) — `backfillPublicCampaign.cjs` wrote
+`--snapshot-out` *before* the apply block, so the emitted rollback plan carried a **pre-write**
+`updateTime` precondition and could not execute after a successful apply. It failed **safe**
+(refused rather than clobbered), but the file was not push-button. Deliberately not fixed during the
+release window; **fixed in source afterwards, 2026-08-26, `d997ab6`.**
+
+`--snapshot-out-post=<path>` now emits the executable plan (defaulting to
+`<--snapshot-out>.post.json`), pairing the pre-write document data with the precondition minted from
+`WriteResult.writeTime` — the write's own commit timestamp, taken from the write result rather than
+a re-read so it can only ever name the version this run created. `--snapshot-out` keeps its shape
+and is now labelled `executable: false`.
+
+**Nothing was deployed and no production write was made for this.** It is operator tooling, so there
+is no live artefact to verify against; the evidence is 78 unit tests over fakes (full suite
+4829/4829 green). The new path has **not** been exercised against real Firestore — no emulator run,
+no `--apply`. It stays `PUSHED_NOT_LIVE` until a genuine backfill or an emulator run emits a
+post-apply file and rolls one tenant back with it.
 
 ---
 
