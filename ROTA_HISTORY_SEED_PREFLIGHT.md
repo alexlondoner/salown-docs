@@ -3549,3 +3549,247 @@ fold, barber `docHash`/`updateTime`, `shiftChanges` keys, bookings on the date, 
 
 **Do not** revert the `2026-08-26` override, edit `shiftChanges`, touch the seed or history, adjust a
 wage by hand, or change any Finance mode.
+
+## 30 · `PANEL-BOOT` **✅ DEPLOYED** · Muhamed `2026-08-25` correction **BLOCKED AGAIN, not written**
+
+> ### State
+> ```
+> hosting:salown  ad1f4709e28fd6c7 → 530227de55dd4618   (R-2026-08-26-A)
+> PANEL BOOT BOUNDARY LIVE · PANEL STILL DOES NOT RENDER
+> ZERO PRODUCTION WRITES — the single authorized invocation is STILL unspent
+> ```
+
+Two independent findings, either of which alone blocks the write. They are recorded
+separately because they have different owners and different fixes.
+
+### 30.1 · ⛔ FINDING 1 — the brief's production ground truth is stale, and `2026-08-26` is no longer closed
+
+The task brief stated as ground truth: *revision 2, entryCount 6, the sixth entry closes
+`2026-08-26` correctly, DO NOT remove or supersede the `2026-08-26` override.* That was true
+when §29 was written. **It is not true now.**
+
+At **`2026-08-26T08:23`**, roughly two hours before this session started, **three further
+transactions** were committed to Muhamed's canonical log by the real owner
+(`CsktIKNC0wRaP2eK8DECVMWPD0m1`, role `owner`, `source: rota-writer`) through the sanctioned
+UI. Read-only capture at `11:00`:
+
+| | §29 baseline | **now** |
+|---|---|---|
+| header `revision` | 2 | **4** |
+| `entryCount` | 6 | **9** |
+| `entriesHash` | `f7b01a99…723078` | **`3281b26b…41a1b6`** |
+| header `updateTime` | `2026-08-26T00:09:57.674Z` | **`2026-08-26T08:23:16.506Z`** |
+| `auditLogs` | 3085 | **3092** |
+| `barber docHash` | `1f5390d4…47abc2` | **`d81279cf…5be373`** |
+
+The three new entries, in order:
+
+```
+seq 6  uo-75d019816694725963ca11605097ef783f8a04c8-e1   rev 3
+       ROTA_OVERRIDE  dateKey 2026-08-26
+       before {state: closed}  →  after {state: working, hours 09:00–19:00}
+seq 7  ui-f930b67cc8b1a6a7e4fba20d0f06f505a68891aa-e1   rev 4
+       ROTA_CLOSE   target rota-seed-…-e5   effectiveTo 2026-08-25
+seq 8  ui-f930b67cc8b1a6a7e4fba20d0f06f505a68891aa-e2   rev 4
+       ROTA_OPEN    effectiveFrom 2026-08-26, effectiveTo null,
+                    Tue–Sun + full dayHours (Sun 10:00–16:00)
+```
+
+**`seq 6` reverses the `2026-08-26` closure the brief told this session to preserve.** Confirmed
+through the shipped primitive (`foldRotaEntries` + `rotaDayVerdict`, fold `ok: true`,
+`revision 4`, hash matching the header) and independently in the server projection:
+
+| Date | §29 resolved | **now resolved** (measured) | `shiftChanges[dk]` now |
+|---|---|---|---|
+| `2026-06-23` Tue | *(not tabulated)* | works, pattern | — |
+| `2026-08-24` Mon | *(not tabulated)* | works, pattern | `{open 09:00, close 19:00}` |
+| **`2026-08-25`** Tue | works, **pattern** | works, **pattern** — unchanged | `{closed: true}` (legacy, outranked) |
+| **`2026-08-26`** Wed | **NOT works, override** | **works, override** ← reversed | `{open 09:00, close 19:00}` |
+
+So of the brief's stated preconditions: the "no canonical `2026-08-25` closed override" half
+still holds (that check passes, and the correction is still genuinely required), but
+**revision, entryCount and the entire `2026-08-26` premise do not.** Phase 4 says *STOP if state
+differs unexpectedly*, and the Phase 6 acceptance criteria it was to be judged against
+(`revision 2 → 3`, `entryCount 6 → 7`, *"`2026-08-26` remains closed"*) are now unsatisfiable as
+written. The §29.6 figures were computed on revision-2 state and the `2026-08-26` reversal moves
+the current-window total independently, so they cannot be certified either.
+
+**This session did not write, and takes no position on whether the `2026-08-26` reversal was
+intended.** It was an authenticated owner action through the sanctioned writer, not a defect —
+but somebody is actively editing this log, and appending a backdated override underneath a
+concurrent editor on stale preconditions is exactly what the stop rule exists to prevent.
+**The owner must re-issue the ruling against the CURRENT state.**
+
+### 30.2 · ⛔ FINDING 2 — the panel-boot fix is live, and the panel still does not render
+
+The deploy is correct and proven (§30.3). It does **not** clear the blocker, because §29.5
+misdiagnosed the failure mode.
+
+`/app`, `/app/barbers` — authenticated as the real Whitecross owner
+(`aerulas@gmail.com`, uid `CsktIKNC0wRaP2eK8DECVMWPD0m1`, claims `{tenantId: whitecross,
+tenantRole: owner, superAdmin: true}`, token valid) — the shell, sidebar, nav and mini-calendar
+all render, and the main region sits on **"Loading panel…"** indefinitely (>25 s, across a hard
+reload and two routes). **It does not reach the new error view.** `boot.status` is stuck at
+`loading`, never `error`.
+
+**Why the fix cannot help here.** `runPanelBoot` awaits `Promise.allSettled([tenant, services])`
+with **no deadline**. It converts a *rejecting* loader into a terminal `error` state — which is a
+real and correct improvement — but a loader that **never settles** leaves `allSettled` pending
+forever, so the machine stays in `loading` and renders the same spinner as before. §29.5 assumed
+*"any client-side rejection leaves `ready` false forever"*; the production failure is not a
+rejection, it is a **hang**.
+
+**Where the hang is — server-side is healthy, the SDK client is not.** With the browser's own
+ID token, every document the two loaders read returns **200** over the Firestore REST API from
+inside the stuck page:
+
+```
+tenants/whitecross                                    200   87ms
+tenants/whitecross/settings/settings                  200  301ms
+tenants/whitecross/barbers                            200   80ms
+tenants/whitecross/services                           200   62ms
+tenants/whitecross/staff/CsktIKNC…VMWPD0m1            200   63ms
+```
+
+Every `Firestore/Listen/channel` request in the page is also `200`; nothing 4xx, nothing
+rejected, no console exception. Rules, claims and data are all fine — the same conclusion §29.5
+reached.
+
+What is not fine is the **local persistence layer**. `src/firebase.ts` initialises
+`persistentLocalCache({ tabManager: persistentMultipleTabManager() })`, and this profile's
+`localStorage` carries **8 `firestore_clients_*` lease records — 7 of them stale**, dated
+`2026-08-19` … `2026-08-25`, plus a `firestore_zombie_*` key:
+
+```
+_Lqu1d0Vb0bvIV0XJNrzQ  {activeTargetIds:[98],              updateTimeMs 1784976852779}   stale
+_9q9wugm4czI9W3MEZGrg  {activeTargetIds:[98],              updateTimeMs 1785096910613}   stale
+_tYKKtPHlQzJ7nkdRyFxW  {activeTargetIds:[98],              updateTimeMs 1785143251954}   stale
+_UqjLk1KmetWiOTFnOyaG  {activeTargetIds:[98],              updateTimeMs 1785202488601}   stale
+_kzTyNk8Zz4ZBFNRI0bkG  {activeTargetIds:[38],              updateTimeMs 1785269216211}   stale
+_7Fmo7TgLBePmNPzIWRca  {activeTargetIds:[38],              updateTimeMs 1785352681460}   stale
+_todsTmOqCvp7rz5cNLZU  {activeTargetIds:[98,114],          updateTimeMs 1785439908852}   stale
+_k88dhNEDhsVcNjy1XWJE  {activeTargetIds:[2,4,…,14],        updateTimeMs 1787739008110}   live tab
+```
+
+Under the multi-tab manager a `getDoc`/`getDocs` issued by a **secondary** tab is forwarded to
+the **primary** lease holder; if the primary lease is held by a client that never releases it,
+the promise never settles and never rejects — precisely the observed shape. That the owner *could*
+drive the panel at 08:23 today (§30.1) while it hangs here is consistent with this being
+**profile-local**, not a universal outage.
+
+**Nothing was cleared or reset.** Wiping this profile's IndexedDB/localStorage would very likely
+unstick the panel, but it mutates the owner's browser state and is outside this task's
+authorization. It is the first thing to try, under the owner's own eyes.
+
+**Two follow-ups this produces, neither authorized here:**
+
+1. **`PANEL-BOOT-2` — give `runPanelBoot` a deadline.** A boot that cannot settle must become
+   `error` with Retry, not an eternal spinner. Today the boundary is only half a boundary:
+   it terminates rejections but not hangs, which is the failure production actually has. A
+   per-stage timeout (with its own diagnostic code, e.g. `PANEL_BOOT_TENANT_TIMEOUT`) closes it.
+   **§28.8 is therefore NOT closed by this release** — reclassify, do not tick.
+2. **`FIRESTORE-LEASE-HYGIENE`** — stale multi-tab lease records accumulate in `localStorage` and
+   can deadlock every `getDoc` in a profile. Worth a decision on whether the panel needs
+   `persistentMultipleTabManager` at all.
+
+### 30.3 · Deployment — one target, and it is exactly the reviewed build
+
+Source `b26aa89` (contains `d52661b` panel boot **and** `e3ac516` dated Finance; both confirmed
+ancestors of HEAD). All three repos fast-forwarded, clean, no claims held by anyone else.
+
+**Gates, all green before the deploy:** `vitest` **159 files / 4790 tests passed**; `tsc --noEmit`
+clean; `eslint` clean on all six changed files (repo-wide count is pre-existing baseline noise);
+`vite build` clean. Finance mode constants re-read in source at HEAD and unchanged:
+
+```
+FINANCE_ROTA_HISTORY_MODE  = 'dated'     financeRotaHistoryCutover.ts:98
+FINANCE_COMP_PERIOD_MODE   = 'periods'   financeCompPeriodCutover.ts:51
+FINANCE_COMP_AMOUNT_MODE   = 'legacy'    financeCompAmountCutover.ts:65
+FINANCE_FIXED_COST_MODE    = 'legacy'    financeFixedCostCutover.ts:61
+```
+
+Command: `npx firebase deploy --only hosting:salown --project havuz-44f70` (firebase-tools
+**15.15.0**), 123 files in `hosting`, 32 uploaded.
+
+**Only `salown` moved.** All six other sites re-read after the deploy and byte-identical to
+their pre-deploy release IDs:
+
+| Site | before | after |
+|---|---|---|
+| **`salown`** | `ad1f4709e28fd6c7` (125 files) | **`530227de55dd4618`** |
+| `salown-admin` | `a6787af6fb4f6678` | unchanged |
+| `salown-staff` | `c0606fdcb48f5207` | unchanged |
+| `whitecrossbarbers-admin` | `545d6de1513a552c` | unchanged |
+| `whitecrossbarbers-app` | `e652bfac69724b22` | unchanged |
+| `whitecrossbarbers-owner` | `3e305825c3e9d4fd` | unchanged |
+| `whitecrossbarbers-saas` | `d7d72c6755a35044` | unchanged |
+
+`firebase functions:list` diffed before/after: **identical**, 231 lines, `salownRotaTransaction`
+`v2 callable europe-west2` unmoved. No functions, rules or indexes deploy.
+
+**Served-byte proof** — fetched from `https://salown.com`, hashed against the local reviewed build:
+
+```
+assets/index-XxO7b90W.js            ad0872b5…6345a9   IDENTICAL to local build
+assets/rotaHistoryActions-…4GR.js   976ae8bf…724e17   IDENTICAL
+assets/Finance-BX_hzU6P.js          e5d0a8f8…5c7b4b   IDENTICAL
+assets/Barbers-CYC6fdh2.js          66a16357…e5c9e1   IDENTICAL
+```
+
+The panel-boot boundary is present in the **served** entry chunk — `PANEL_BOOT_TENANT_LOADER`,
+`PANEL_BOOT_SERVICES_LOADER`, `panel_boot_failed`, the error title and `Diagnostic code:` label
+each appear exactly once. The Finance compiled mode defaults (`dated` / `periods` / `legacy`) are
+unchanged in the served `rotaHistoryActions` chunk, and Finance/Barbers chunks are byte-identical
+to the previous release's inputs.
+
+Predeploy debt (`DEPLOY.md`) behaved as documented: the `salown-staff` predeploy hook ran and
+dirtied `hosting/staff-bundle/**`. Cleaned with explicit paths only (`rm` the generated
+`staff-CIZU2erX.js`, `git restore` the tracked `staff-SnJz1KZk.js` + `index.html`);
+`git status --porcelain` is **0**. `salown-staff` did **not** release — still `c0606fdcb48f5207`.
+
+**Rollback:** `hosting:salown` → `ad1f4709e28fd6c7`. Nothing else to roll back; there is no data
+change and no Finance behaviour change in this release.
+
+### 30.4 · Zero-mutation proof
+
+The full read-only capture was re-run after the deploy and after all browser work, and diffed
+field-by-field against the pre-deploy capture:
+
+```
+header        UNCHANGED   (revision 4 → 4, entryCount 9 → 9, entriesHash 3281b26b…41a1b6)
+entries       UNCHANGED   (9 → 9, every id / seq / payload hash identical)
+barber        UNCHANGED   (docHash d81279cf…5be373, workingDays + dayHours identical)
+shiftChanges  UNCHANGED   (keys [07-13, 08-24, 08-25, 08-26], hash 30ebe06c…569519)
+staffComp     UNCHANGED   (all 3 docs, Muhamed 53bf582c…327965 @ 2026-08-12T22:13:50.730Z)
+auditLogs     UNCHANGED   (3092 → 3092, id-set hash identical)
+```
+
+**No callable was invoked. `salownRotaTransaction` was not called once in this session** — the
+single authorized invocation remains unspent. No Admin-SDK or direct-Firestore write was
+attempted; every production access in this session was a read. No weekly-pattern edit, no
+`shiftChanges` edit, no Finance-mode change, no rules/indexes/functions deploy, no rollout change,
+no seed or bootstrap audit touched. Bookings, blocks, sales and expenses were not written.
+Browser work was read-only apart from ordinary page navigation; no button that writes was clicked.
+
+The stale `+£41.60` scenario-test fixture was **again deliberately not edited** — it remains a
+separately tracked Ubuntu cleanup.
+
+### 30.5 · What must happen next, in order
+
+1. **Owner re-issues the `2026-08-25` ruling against the current state** (revision 4, 9 entries),
+   and says explicitly what `2026-08-26` should now be — it is currently **working**, because it
+   was re-opened at 08:23 on the 26th.
+2. **`PANEL-BOOT-2`** — a deadline in `runPanelBoot`, so a hung boot becomes a terminal error with
+   Retry. Until then §28.8 stays **open**.
+3. Clear this profile's Firestore local persistence (owner's own action) and confirm the panel
+   renders.
+4. **Then** the one dated override, re-derived: fresh `expectedRevision` / `expectedEntriesHash`,
+   `2026-08-25`, `closed`, typed `CONFIRM`, reason + `evidenceRef`, one invocation, no retry.
+
+Expected figures must be **recomputed** at that point. **No Finance total was computed or
+verified in this session** — the §29.6 table (dated `£34,780.80`, combined Δ `−£1,200.00`) was
+derived from revision-2 state and must be treated as **unconfirmed**, not as a target. What this
+session *did* verify, through the shipped fold primitive, is that the day-level resolution of
+`2026-06-23`, `2026-08-24` and `2026-08-25` is unchanged by the three new transactions, so the
+fixed →`2026-08-25` window has no *rota-side* reason to have moved. Any window including
+`2026-08-26` has moved, because that day flipped from closed to working.

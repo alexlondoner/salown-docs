@@ -1,6 +1,34 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
 
+## R-2026-08-26-A — `PANEL-BOOT` failure boundary · 1-unit deployment-only release
+
+> Deployment-only release of an already-implemented, already-reviewed fix. No source change was
+> made in this session. Owner-authorised for exactly: one targeted `hosting:salown` deploy ·
+> authenticated read-only panel verification · **one** backdated `salownRotaTransaction` override.
+> **The override was NOT invoked** — see "⛔ NOT DONE".
+
+| Field | Value |
+|---|---|
+| **Owner authorisation** | Explicit, for one targeted `hosting:salown` deploy plus verification, and one single `salownRotaTransaction` ROTA_OVERRIDE for Muhamed on `2026-08-25`. Explicitly **NOT** authorised: any other source change, deploy, callable or production write |
+| **Work ID / source** | `PANEL-BOOT` · salown-app **`d52661b`** (implementation), released at **`b26aa89`**. Deployed from HEAD **`b26aa89`** (`main == origin/main`, `git status --porcelain` **0**, no active claim held by any other session). `d52661b` **and** `e3ac516` both confirmed ancestors of HEAD. No commit newer than `b26aa89` existed |
+| **Toolchain** | machine-global `firebase-tools` **15.15.0** |
+| **Gates (pre-deploy, from the clean tree)** | frontend **4790/4790** (159 files) · `tsc --noEmit` clean · `eslint` clean on all six changed files (`panelBoot.ts`, `PanelBootError.tsx`, `PanelLayout.tsx` + their three tests); repo-wide eslint count is pre-existing baseline noise, unchanged · `vite build` clean |
+| **Finance modes re-read at HEAD** | `FINANCE_ROTA_HISTORY_MODE` **`dated`** · `FINANCE_COMP_PERIOD_MODE` **`periods`** · `FINANCE_COMP_AMOUNT_MODE` **`legacy`** · `FINANCE_FIXED_COST_MODE` **`legacy`** — in source **and** as compiled defaults in the served `rotaHistoryActions-DqfTt4GR.js`. Unchanged by this release |
+| **Unit 1 — `hosting:salown`** | `npx firebase deploy --only hosting:salown --project havuz-44f70`. **`ad1f4709e28fd6c7` → `530227de55dd4618`** · release time 2026-08-26T10:06:18.182Z · 123 files found, 32 uploaded |
+| **Served-byte proof** | Path the page actually loads, read from `/app`: `/public-bundle/assets/index-XxO7b90W.js`. Fetched and hashed: **`ad0872b5…6345a9`**, **byte-identical** to the local reviewed build. Same for `rotaHistoryActions-DqfTt4GR.js` (`976ae8bf…724e17`), `Finance-BX_hzU6P.js` (`e5d0a8f8…5c7b4b`) and `Barbers-CYC6fdh2.js` (`66a16357…e5c9e1`) |
+| **The boundary proven in the SERVED bytes** | Present, once each, in the served entry chunk: `PANEL_BOOT_TENANT_LOADER`, `PANEL_BOOT_SERVICES_LOADER`, `panel_boot_failed`, the error title (*"couldn't finish loading"*) and the `Diagnostic code:` label |
+| **⚠️ REL-1 fired again, and was cleaned** | `--only hosting:salown` ran the **other** target's predeploy hook and rebuilt tracked `hosting/staff-bundle/**`. Mandatory cleanup per `DEPLOY.md`, explicit paths only: `rm` the generated `staff-CIZU2erX.js`, `git restore` the tracked `staff-SnJz1KZk.js` + `index.html`. `git status --porcelain` back to **0**. `salown-staff` did **not** release |
+| **Only one site moved** | All six other sites re-read after the deploy and unchanged: `salown-admin` **`a6787af6fb4f6678`** · `salown-staff` **`c0606fdcb48f5207`** · `whitecrossbarbers-admin` **`545d6de1513a552c`** · `whitecrossbarbers-app` **`e652bfac69724b22`** · `whitecrossbarbers-owner` **`3e305825c3e9d4fd`** · `whitecrossbarbers-saas` **`d7d72c6755a35044`** |
+| **Function inventory delta** | `firebase functions:list` captured before and after and `diff`ed: **identical**, 231 lines. `salownRotaTransaction` (`v2` · callable · `europe-west2` · 256 Mi · nodejs22) unmoved |
+| **⛔ Verification FAILED — the release does not clear the blocker** | Authenticated as the real Whitecross owner (`aerulas@gmail.com`, uid `CsktIKNC0wRaP2eK8DECVMWPD0m1`, claims `{tenantId: whitecross, tenantRole: owner, superAdmin: true}`, token valid). `/app` and `/app/barbers`: shell, sidebar, nav and mini-calendar render; the main region stays on **"Loading panel…"** past 25 s, across a hard reload and both routes, and **never reaches the new error view** — `boot.status` stuck at `loading`. `runPanelBoot` has **no deadline**, so it terminates a rejecting loader but not a hanging one. All five loader documents return **200** over REST with the page's own token; all `Listen/channel` requests 200; no console exception. Stall is profile-local `persistentMultipleTabManager` lease deadlock (8 `firestore_clients_*`, 7 stale, + a `firestore_zombie_*` key). **§28.8 is NOT closed by this release.** See [INCIDENTS.md 2026-08-26](INCIDENTS.md) and [`ROTA_HISTORY_SEED_PREFLIGHT.md` §30](ROTA_HISTORY_SEED_PREFLIGHT.md) |
+| **⛔ NOT DONE — deliberately** | **`salownRotaTransaction` was NOT invoked, not once.** The single authorised override is **unspent**. No Admin-SDK or direct-Firestore write was attempted; every production access this session was a read. No weekly-pattern edit · no `shiftChanges` edit · no Finance-mode change · no rollout flip · no seed, bootstrap or archive · no `functions` / `firestore:rules` / `indexes` deploy · no Staff App deploy · no source change · no browser button that writes was clicked · the browser profile's local persistence was **not** cleared |
+| **Second, independent blocker found** | The brief's production ground truth was **stale**. At 2026-08-26T08:23 the real owner committed three further transactions: Muhamed's header is now **revision 4 / entryCount 9** (`3281b26b…41a1b6`, `auditLogs` 3092), and `seq 6` **reversed the `2026-08-26` closure** (`closed` → `working`) that the brief required be preserved. Phase 6's acceptance criteria are unsatisfiable as written; the owner must re-issue the ruling against current state |
+| **Production unchanged — read-only, before vs after** | Full capture re-run after the deploy and after all browser work, diffed field-by-field: header **UNCHANGED** (rev 4, 9 entries, `3281b26b…41a1b6`) · all 9 entry ids/seqs/payload hashes **UNCHANGED** · barber `docHash` **`d81279cf…5be373`** **UNCHANGED** · `workingDays` + `dayHours` **UNCHANGED** · `shiftChanges` **UNCHANGED** (`30ebe06c…569519`) · `staffComp` all 3 docs **UNCHANGED** (Muhamed `53bf582c…327965` @ 2026-08-12T22:13:50.730Z) · `auditLogs` **3092 → 3092**, id-set hash identical |
+| **Rollback identities** | `hosting:salown` → **`ad1f4709e28fd6c7`**. Nothing else to roll back — no data change and no Finance behaviour change in this release |
+| **Operator/device** | `whitecrossbarbers@gmail.com` · macOS · `alish/panel-boot-deploy` |
+| **Result** | **DEPLOYED + served-byte verified**, but **NOT `LIVE_VERIFIED`** — the authenticated UI pass did not succeed. Outcome token: `SALOWN_PANEL_BOOT_DEPLOYED_OVERRIDE_BLOCKED_NO_WRITE` |
+
 ## R-2026-08-23-A — `ROTA-SSOT-1` Schedule Hub · 2-unit deployment-only release
 
 > Deployment-only release of an already-implemented, already-reviewed feature. No redesign, no
