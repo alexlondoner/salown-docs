@@ -99,23 +99,39 @@ No functions, rules or firestore deploy accompanied any of the three gates.
 
 ### Still open
 
-**`CAM-5`** (P2, `PUSHED_NOT_LIVE` — was `CONFIRMED_OPEN`) — `backfillPublicCampaign.cjs` wrote
-`--snapshot-out` *before* the apply block, so the emitted rollback plan carried a **pre-write**
-`updateTime` precondition and could not execute after a successful apply. It failed **safe**
-(refused rather than clobbered), but the file was not push-button. Deliberately not fixed during the
-release window; **fixed in source afterwards, 2026-08-26, `d997ab6`.**
+**`CAM-5`** (P2, `IMPLEMENTED_VERIFIED` ✅ **CLOSED** — was `CONFIRMED_OPEN`) —
+`backfillPublicCampaign.cjs` wrote `--snapshot-out` *before* the apply block, so the emitted
+rollback plan carried a **pre-write** `updateTime` precondition and could not execute after a
+successful apply. It failed **safe** (refused rather than clobbered), but the file was not
+push-button. Deliberately not fixed during the release window; fixed afterwards, 2026-08-26,
+`d997ab6` + `2e45ef9`.
 
-`--snapshot-out-post=<path>` now emits the executable plan (defaulting to
-`<--snapshot-out>.post.json`), pairing the pre-write document data with the precondition minted from
-`WriteResult.writeTime` — the write's own commit timestamp, taken from the write result rather than
-a re-read so it can only ever name the version this run created. `--snapshot-out` keeps its shape
-and is now labelled `executable: false`.
+`--snapshot-out-post=<path>` emits the executable plan (defaulting to `<--snapshot-out>.post.json`),
+pairing the pre-write document data with the precondition minted from `WriteResult.writeTime` — the
+write's own commit timestamp, taken from the write result rather than a re-read so it can only ever
+name the version this run created. `--snapshot-out` keeps its shape, labelled `executable: false`.
 
-**Nothing was deployed and no production write was made for this.** It is operator tooling, so there
-is no live artefact to verify against; the evidence is 78 unit tests over fakes (full suite
-4829/4829 green). The new path has **not** been exercised against real Firestore — no emulator run,
-no `--apply`. It stays `PUSHED_NOT_LIVE` until a genuine backfill or an emulator run emits a
-post-apply file and rolls one tenant back with it.
+**Why it was not closed on the unit tests, and should not have been.** Held at `PUSHED_NOT_LIVE`
+pending a real run, the emulator found a second and independent defect: the precondition was stored
+as `toDate().toISOString()`. Commit timestamps are not millisecond-aligned
+(`seconds=1787765816 nanoseconds=551808000`) and `Timestamp.toDate()` rounds 551.808ms up to 552ms,
+so the rebuilt precondition named a **later** instant and Firestore answered
+`3 INVALID_ARGUMENT: Invalid base version, it is greater than the stored version`. The plan was
+still unexecutable while 78 green tests said it was fixed. Snapshots now carry
+`updateTimeExact: { seconds, nanoseconds }` verbatim.
+
+The apply loop also left `require.main` as exported `applyPlan`, so the CLI and the emulator suite
+drive the **same** function and the test-side duplicate is gone.
+
+**Evidence:** `scripts/backfillPublicCampaign.emulator.test.cjs` — **11/11** against a real
+Firestore emulator, inside the canonical gate (**554/554**, general 527 / packages 27). vitest
+**4843/4843**, eslint clean, emulator ports and processes clean after the run. The suite refuses
+anything that is not a loopback emulator in the reserved `demo-` namespace with every credential
+environment variable unset, and it checks that before `firebase-admin` is required.
+
+**Nothing was deployed and no production write was made — and none is required.** This is operator
+tooling: it ships no artefact, so there is no live identity to verify against and `LIVE_VERIFIED`
+would be a category error. `IMPLEMENTED_VERIFIED` is the correct terminal state.
 
 ---
 
