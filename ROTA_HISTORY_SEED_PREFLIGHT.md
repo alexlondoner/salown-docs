@@ -3417,3 +3417,135 @@ Arda −£100, Muhamed +£41.60, **net −£1,158.40** through `2026-08-25` — 
 (`COMP_AMOUNT`, `FIXED_COST`), period-close, compensation-amount, archive cleanup, or seed/operator
 deletion work. The only follow-ups this release leaves behind are the §28.8 visible-UI reconciliation
 and the separate panel-boot finding.
+
+> ⛔ **SUPERSEDED 2026-08-26 — the `2026-08-25` +£41.60 is no longer accepted. See §29.**
+
+---
+
+## 29 · Muhamed `2026-08-25` — ruling superseded; corrective override **BLOCKED, not written**
+
+> ### State
+> ```
+> OWNER RULING SUPERSEDED · CORRECTION REQUIRED · NOT APPLIED
+> ZERO WRITES — the sanctioned writer could not be reached
+> ```
+
+### 29.1 · ⛔ The superseded ruling
+
+**Muhamed did NOT work on `2026-08-25`. That date must be CLOSED and NOT PAYABLE.**
+
+This **supersedes** the earlier accepted ruling recorded in **§23.8, §23.10 (ruling 2), §24.1, §25.1
+and §28.3**, which let the dated log make `2026-08-25` payable and treated the **+£41.60** as an
+accepted divergence. That acceptance is **withdrawn**. Wherever those sections say the divergence is
+"ACCEPTED … recorded, not blocking", read this section instead.
+
+Corroborating evidence for the ruling (the ruling is authoritative regardless): **zero** qualifying
+rows for Muhamed on `2026-08-25` — no bookings, no blocks, no product sales — and the legacy map has
+carried `shiftChanges['2026-08-25'] = {closed: true}` since before the cutover.
+
+The stale scenario test still encodes the old expectation. **It was deliberately NOT edited in this
+task** — Ubuntu updates it separately.
+
+### 29.2 · Why the day is still paid
+
+`accruesWageOnDay` reads `const sc = answer ? undefined : barber?.shiftChanges?.[dk]`. The seeded
+open segment (`2026-08-25 → null`, Tue–Sun) **answers** for the date, so the legacy `{closed:true}`
+is never consulted. Confirmed against the live log with the real primitive:
+
+| Date | resolver answer | legacy pays | dated pays |
+|---|---|---|---|
+| **`2026-08-25`** Tue | `{works:true, source:pattern}` | **false** | **true** ← the £41.60 |
+| `2026-08-26` Wed | `{works:false, source:override}` | false | false |
+
+### 29.3 · Pre-state — the brief's expectation was stale
+
+Expected in the brief: revision 1 / 5 entries. **Actual: revision 2 / 6 entries.** A
+`ROTA_OVERRIDE` already exists — but for the **wrong date**:
+
+```
+uo-8278b4b17f8d0d8320d2891b52ff26d04f12ef57-e1
+subjectId barber-1781007454543   ✅   after {state: closed}   ✅
+dateKey   2026-08-26             ❌   (target is 2026-08-25)
+actor     …VMWPD0m1 / owner      atInstant 2026-08-26T00:09:56.688Z
+```
+
+So **no valid closed override exists for `2026-08-25`** and the write remains required — the
+"already exists, do not write" branch does **not** apply. Cause (§ prior audit): the quick Day-off
+control sends `dateKey: toDateKey(new Date())` — *the device's day*. The click landed at 01:09 BST on
+the **26th**, so it closed the 26th. That day is genuinely closed and correct; it must not be reverted.
+
+**Baselines at precheck:** header revision **2**, entryCount **6**,
+`entriesHash f7b01a99…723078`, header `updateTime 2026-08-26T00:09:57.674Z`; barber
+`docHash 1f5390d4…47abc2`, `updateTime 2026-08-26T00:09:57.674Z`;
+`staffComp 53bf582c…327965`, `updateTime 2026-08-12T22:13:50.730Z`; `auditLogs` **3085**;
+`shiftChangesKeys [07-13, 08-24, 08-25, 08-26]`. Finance modes **dated / periods / legacy / legacy**,
+proven both in source at `e3ac516` and as compiled resolver defaults in the served bytes.
+
+### 29.4 · Writer contract — proven capable, so this is not a contract failure
+
+| | |
+|---|---|
+| callable | `salownRotaTransaction`, `europe-west2` |
+| payload | `{action:'ROTA_OVERRIDE', barberId, changeId, expectedRevision, expectedEntriesHash, lane:null, dateKey, overrideState, overrideHours, reason, evidenceRef}` |
+| handshake | `expectedRevision` = `state.revision`, `expectedEntriesHash` = `state.entriesHash`, read fresh via `loadRotaSubjectState` |
+| idempotency | `changeId = uo-<digest(barberId, dateKey, expectedRevision, overrideState, hours, reason, evidenceRef)>` — a replay addresses the same entry doc and `tx.create` refuses a duplicate |
+| entry | one `ROTA_OVERRIDE`, single `dateKey`, `before`/`after` — **no range, no weekly-pattern edit, no rewrite** |
+| projection | the server also projects into `shiftChanges[dateKey]` — server-authored, and for `2026-08-25` the value is already `{closed:true}` |
+| audit | written by the server; the browser deliberately writes none |
+| backdated gates | `ROTA_OVERRIDE` is the **only** action permitted in the past. It requires super-admin authority, a **reason** and an **evidenceRef** (`BACKDATED_REASON_REQUIRED`, `BACKDATED_EVIDENCE_REQUIRED`, `BACKDATED_ATTRIBUTION_REQUIRED`), plus a typed `CONFIRM` in the UI |
+
+**Phase 1 passes:** the sanctioned writer can encode a one-day closed override without rewriting
+history. Since tenant-today is `2026-08-26`, `2026-08-25` is backdated, so the correction must go
+through the **dated** form (`submitDayChange`), not the quick button.
+
+### 29.5 · ⛔ The blocker
+
+The Admin panel would not render. `/app/barbers` (and `/app/finance`) sit on **"Loading panel…"**
+indefinitely: `PanelLayout` gates `<Outlet/>` on `ready`, and `init()` awaits
+`Promise.all([loadTenantIntoConfig, loadServicesIntoConfig])` **with no `try/catch`**, so any
+client-side rejection leaves `ready` false forever. The route chunk is never even fetched.
+
+Everything else is healthy: all requests **200**, auth and token refresh fine, Firestore listen
+channels open, the account carries `{tenantId: whitecross, superAdmin: true, tenantRole: owner}`,
+and server-side the tenant doc, settings, 3 barbers, 24 services (all with `order`) and 2 staff docs
+all exist. **This is the pre-existing §28.8 panel-boot defect**, not a new one — and it is the same
+defect that now blocks the correction.
+
+**Per the authorization — "if the browser panel cannot load, do not bypass the callable boundary" —
+no Admin-SDK or direct-Firestore workaround was attempted.** The single authorized invocation was
+**not** consumed and remains available.
+
+### 29.6 · What the correction will produce (verified in advance, not applied)
+
+Simulated in memory through the product primitives — **nothing written**:
+
+| | current | after the correction |
+|---|---|---|
+| `2026-08-25` | payable | **not payable** |
+| Muhamed dated Δ (→08-25) | +£41.60 | **£0.00** |
+| Combined legacy (→08-25) | £35,980.80 | £35,980.80 |
+| Combined dated (→08-25) | £34,822.40 | **£34,780.80** |
+| Combined Δ (→08-25) | −£1,158.40 | **−£1,200.00** |
+
+Alex (−£1,100) and Arda (−£100) are unchanged, `2026-06-23` stays worked/payable, and the →`2026-08-20`
+window is untouched. The correction moves **exactly one date**.
+
+### 29.7 · Zero-mutation proof
+
+Re-read after every check: header `revision`/`entryCount`/`entriesHash`/`updateTime`, all 6 entries,
+fold, barber `docHash`/`updateTime`, `shiftChanges` keys, bookings on the date, `auditLogs` total —
+**all unchanged**. State remains revision **2**, 6 entries, `auditLogs` 3085, and **no override for
+`2026-08-25`**. All three repos clean; no commits beyond this evidence, no deploy, no callable.
+
+### 29.8 · The unblock, then the one write
+
+1. **Fix the panel boot** — wrap `PanelLayout.init()`'s `Promise.all` in `try/catch` so a failed
+   tenant/services read degrades instead of hanging (its own authorized task; it also closes §28.8).
+2. Then, in the authenticated Whitecross owner session, **one** dated override via Team Members →
+   `submitDayChange`: date `2026-08-25`, state `closed`, typed `CONFIRM`, plus the reason and
+   evidence reference the server requires for a backdated day. One invocation, no retry.
+3. Then verify: header 2 → **3**, entries 6 → **7**, exactly one new `ROTA_OVERRIDE` for
+   `2026-08-25`, fold `ok`/`issues: []`, and the §29.6 figures.
+
+**Do not** revert the `2026-08-26` override, edit `shiftChanges`, touch the seed or history, adjust a
+wage by hand, or change any Finance mode.
