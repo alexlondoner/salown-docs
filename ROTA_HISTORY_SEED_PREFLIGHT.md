@@ -3793,3 +3793,241 @@ session *did* verify, through the shipped fold primitive, is that the day-level 
 `2026-06-23`, `2026-08-24` and `2026-08-25` is unchanged by the three new transactions, so the
 fixed →`2026-08-25` window has no *rota-side* reason to have moved. Any window including
 `2026-08-26` has moved, because that day flipped from closed to working.
+
+## 31 · Muhamed `2026-08-25` — ✅ **APPLIED**, canonical override written, Finance corrected
+
+> ### State
+> ```
+> revision 4 → 5 · entryCount 9 → 10 · fold ok, issues []
+> 2026-08-25 CLOSED / NOT PAYABLE · 2026-08-26 WORKING (preserved) · weekly pattern preserved
+> EXACTLY ONE callable invocation · exactly one entry · exactly one audit
+> ```
+
+### 31.1 · The final owner rulings, and what they settle
+
+| Ruling | Effect |
+|---|---|
+| **`2026-08-25` — Muhamed did NOT work** | must be **CLOSED**, **no wage**. Corrected here. |
+| **`2026-08-26` — Muhamed DID work** | the `closed → working` reversal of `08:23` (§30.1) was **intentional and correct**. **Preserved untouched.** |
+| **The weekly-pattern edit of `08:23`** | (`ROTA_CLOSE` of seed `e5` at `effectiveTo 2026-08-25` + new `ROTA_OPEN` from `2026-08-26` with full `dayHours`) was **intentional and correct**. **Preserved untouched.** |
+
+§30.1 recorded those three transactions as unexplained drift and stopped. They are now ruled
+**deliberate**. Only `2026-08-25` ever required correction, and it is the only thing this section
+changed.
+
+### 31.2 · The unblock — the panel renders
+
+§30.2 diagnosed a profile-local `persistentMultipleTabManager` lease deadlock. On the operator's
+selection the same **Browser 1 / macOS** profile was used again, and **the deadlock is gone** —
+nothing was cleared or mutated to achieve that; the stale leases simply no longer bind. Verified as
+the real Whitecross owner (`Alex · OWNER`, tenant **Whitecross Barbers**):
+
+* `/app/home` — renders fully (KPI row, quick actions, weekly revenue, today's schedule)
+* `/app/barbers` — renders fully (LIVE strip, both member cards, working-week grids)
+* `/app/finance` — renders fully (see §31.6)
+* no infinite spinner, no `PanelBootError`, route chunks load
+
+**`PANEL-BOOT-2` (a deadline in `runPanelBoot`) remains open and still required** — the boundary
+still cannot terminate a hang, and §28.8 stays open. A profile that recovers on its own is not a fix.
+
+### 31.3 · Pre-write baseline and the final drift check
+
+Captured read-only immediately before the click, and identical to the §30 capture:
+
+```
+revision      4                    entryCount   9  (9 entry docs)
+entriesHash   3281b26b…41a1b6      hdr update   2026-08-26T08:23:16.506Z
+barber        d81279cf…5be373      @ 2026-08-26T08:23:11.762Z
+shiftChanges  [07-13, 08-24, 08-25, 08-26]  hash 30ebe06c…569519
+staffComp     Muhamed 53bf582c…327965 @ 2026-08-12T22:13:50.730Z
+auditLogs     3096                 hosting:salown 530227de55dd4618 (unmoved)
+Finance modes dated / periods / legacy / legacy   (source at HEAD acee924)
+```
+
+Fold through the shipped primitive: `ok: true`, `revision 4`, hash matching the header,
+`issues: []`. Resolution: `2026-08-25` **works, pattern** (no override — write required),
+`2026-08-26` **works, override** (preserve), `2026-06-23` / `2026-08-24` / `2026-07-13` works.
+Weekly-pattern entry `seq 8` hash `1f94fcf1…bad459` recorded as a must-preserve value.
+**Invocations so far this session: zero.**
+
+**A UI detail worth recording, because it looks like a contradiction and is not.** The drawer's
+*"Past · kept as the wage record"* list showed **`Tue 25 Aug · Day off · recorded`** *before* the
+correction. That list reads `subject.shiftChanges` — the **legacy projection** (`Barbers.tsx:1881`),
+which has carried `{closed: true}` for that date since before the cutover. The canonical log had no
+override for it. So the panel was *displaying* the day as off while dated Finance *paid* it: the
+§29.2 divergence, visible on screen. Not a reason to skip the write — the reason for it.
+
+### 31.4 · The single write
+
+Composed in **Team Members → Muhamed → Schedule → One-day changes** (the dated form, **not** a
+Today/quick-toggle control), deep-linked at
+`/app/barbers?member=barber-1781007454543&section=schedule`.
+
+The UI named the target date before the click: field **`25/08/2026`**, and the past-correction panel
+headed **"Past correction — this may change the wage total for Tue 25 Aug"**. Field values read back
+out of the live DOM immediately before submitting:
+
+```
+date        2026-08-25
+state       Day off (closed)
+reason      Owner attendance correction — Muhamed did not work on 2026-08-25
+evidenceRef OWNER-RULING-2026-08-26-MUHAMED-2026-08-25-NOT-WORKED
+confirm     CONFIRM
+```
+
+**"Save one-day change" clicked exactly once.** Not the drawer's "Save changes" button — that one
+saves the member including the weekly pattern, and was never pressed. The form reset itself, which
+`submitDayChange` does only on `res.ok`. **No retry was made or needed.**
+
+### 31.5 · Authoritative post-write verification
+
+```
+revision      4 → 5                 entryCount   9 → 10  (10 entry docs)
+entriesHash   3281b26b…41a1b6 → 8d3d7f07…20311a
+lastChangeId  uo-d1146824a6b9e3423893c76b7e0e07f2ef6f812b   lastOrigin ROTA_OVERRIDE
+hdr update    2026-08-26T10:45:08.123Z
+auditLogs     3096 → 3097
+```
+
+The new entry, `seq 9` — the only entry that did not exist before:
+
+```json
+{
+  "entryId": "uo-d1146824a6b9e3423893c76b7e0e07f2ef6f812b-e1",
+  "changeId": "uo-d1146824a6b9e3423893c76b7e0e07f2ef6f812b",
+  "prevHash": "3281b26b05981db7dea53674eab093c477327b3ebd5114cd84f4a4f3db41a1b6",
+  "type": "ROTA_OVERRIDE", "origin": "ROTA_OVERRIDE", "lane": null,
+  "subjectId": "barber-1781007454543", "dateKey": "2026-08-25",
+  "before": {"state": "scheduled", "hours": null},
+  "after":  {"state": "closed",    "hours": null},
+  "reason": "Owner attendance correction — Muhamed did not work on 2026-08-25",
+  "evidenceRef": "OWNER-RULING-2026-08-26-MUHAMED-2026-08-25-NOT-WORKED",
+  "audit": {"actorRef": "CsktIKNC0wRaP2eK8DECVMWPD0m1", "actorRole": "owner",
+            "atInstant": "2026-08-26T10:45:07.285Z"}
+}
+```
+
+`prevHash` **is** the pre-write `entriesHash`, so the `expectedRevision`/`expectedEntriesHash`
+handshake matched against exactly the state that was audited. The actor is the real authenticated
+owner, not a service account. `before.state` is `scheduled` — derived by the server from
+`rotaOverrideFromFold`, i.e. the canonical log, **not** from `shiftChanges` — which is why the
+legacy map already reading `{closed: true}` did not make this a no-op.
+
+**Fold after:** `ok: true`, `revision 5`, `entriesHash 8d3d7f07…20311a` (matches the header),
+**`issues: []`**.
+
+| Date | before | **after** |
+|---|---|---|
+| `2026-06-23` Tue | works, pattern | works, pattern — **payable, unchanged** |
+| `2026-07-13` Mon | works, pattern | works, pattern — unchanged |
+| `2026-08-24` Mon | works, pattern | works, pattern — unchanged |
+| **`2026-08-25`** Tue | works, **pattern** | **NOT works, override** ← the correction |
+| **`2026-08-26`** Wed | works, override | **works, override — preserved** |
+| `2026-08-27` Thu | works, pattern | works, pattern — unchanged |
+
+### 31.6 · Finance — recomputed through the product primitives, not assumed
+
+Computed against **live production inputs** (`barbers`, `partnerConfig`, `staffComp`, `rotaLogs`,
+booking-derived `workedDays`) through the shipped `resolveAccrualCost` / `accruesWageOnDay` /
+`rotaDayResolver`, running the **same** inputs against the 9-entry log and the 10-entry log.
+Muhamed's rate is **£41.60/day**.
+
+**Fixed window through `2026-08-25`:**
+
+| | legacy | dated | delta | Muhamed delta |
+|---|---|---|---|---|
+| before | £23,680.80 | £22,622.40 | −£1,058.40 | **+£41.60** |
+| **after** | £23,680.80 | **£22,580.80** | **−£1,100.00** | **£0.00** ✅ |
+
+**Current window through `2026-08-26`, recomputed fresh (the §28/§29 totals were NOT reused):**
+
+| | legacy | dated | delta | Muhamed delta |
+|---|---|---|---|---|
+| before | £23,822.40 | £22,764.00 | −£1,058.40 | +£41.60 |
+| **after** | £23,822.40 | **£22,722.40** | **−£1,100.00** | **£0.00** |
+
+Per-day, through `accruesWageOnDay` in both modes:
+
+```
+2026-06-23 Tue   legacy £41.60   dated £41.60     payable, untouched
+2026-08-24 Mon   legacy £41.60   dated £41.60     unchanged
+2026-08-25 Tue   legacy  £0.00   dated  £0.00  ←  CORRECTED — legacy and canonical now AGREE
+2026-08-26 Wed   legacy £41.60   dated £41.60     he worked; correctly paid
+```
+
+**Muhamed's `2026-08-25` wage is £0, and his historical dated-vs-legacy divergence is £0.00.** The
+whole £41.60 gap that §23.8 opened and §29.1 withdrew is now closed at the source rather than
+accepted.
+
+> #### ⚠️ The brief's expected totals are **fixture** figures, not production figures — corrected here
+>
+> The brief expected `legacy £35,980.80 / dated £34,780.80 / delta −£1,200.00`. Those are the
+> constants of the **hermetic scenario test** `financeRotaHistoryCutover.scenario.test.ts`
+> (window B: `legacyCombined 3_598_080`, `datedCombined 3_482_240`), whose barbers, logs and rates
+> are synthetic. The arithmetic checks out *for the fixture* — `3_482_240 − 4_160 = 3_478_080` =
+> £34,780.80, delta −£1,200.00 — so the brief's numbers are the fixture's correct post-correction
+> values. They are simply **not** what production holds.
+>
+> **Production, measured:** `legacy £23,680.80 / dated £22,580.80 / delta −£1,100.00` through
+> `2026-08-25`. The combined delta is **−£1,100.00, not −£1,200.00**, because in production **Arda's
+> divergence is £0.00**, where the fixture models −£100. Alex accounts for the entire −£1,100.
+> The one figure that transfers exactly is the one that matters here: **Muhamed £0.00.**
+>
+> Recording this because a payroll figure carried from a fixture into a production expectation is
+> precisely how a wrong number becomes institutional.
+
+**Visible in Finance** (`/app/finance` → Monthly Summary, August 2026): the page loads with no
+loading-panel regression, wage cards and totals render, **Total wages £3,232.80**. *Staff wages —
+this week (24 Aug – 30 Aug)* shows **Muhamed 2 days × £41.6 = £83.20** — `24 Aug` and `26 Aug` only.
+Before the correction the same elapsed week would have counted **3** days / £124.80. `2026-08-25` is
+visibly excluded from his wage.
+
+### 31.7 · Zero-mutation proof — everything except the one authorized change
+
+Re-read after the write and again after all browser work:
+
+```
+all 9 prior entries   IDENTICAL — id, seq and payload hash, every one
+  seq 6  2026-08-26 override    UNCHANGED  (b3a6b499…59a4ce)
+  seq 8  weekly pattern         UNCHANGED  (1f94fcf1…bad459)
+barber workingDays / dayHours   UNCHANGED
+shiftChanges                    UNCHANGED — keys and values byte-identical
+                                (08-25 was ALREADY {closed:true}; the server projection
+                                 had nothing to move, which is contractually expected)
+staffComp (all 3 docs)          UNCHANGED — Muhamed 53bf582c…327965 @ 2026-08-12
+auditLogs                       3096 → 3097 · exactly ONE new id:
+                                rota-tx-barber-1781007454543-uo-d1146824a6b9e3423893c76b7e0e07f2ef6f812b
+Alex   staffRota                rev 2, 26 entries, 751de38d…4960cf4 @ 2026-08-24T02:03:49.792Z
+Arda   staffRota                rev 1, 21 entries, e2099b64…d02e46f @ 2026-08-25T00:13:42.272Z
+settings/finance_config         89ae6977…50afc7 @ 2026-07-19T19:27:31.360Z
+settings/rotaRollout            absent (unchanged)
+bookings 1633 · expenses 30     unchanged
+hosting:salown                  530227de55dd4618 — no deploy
+Finance modes                   dated / periods / legacy / legacy — unchanged
+```
+
+**Exactly one callable invocation in this session.** No direct Firestore or Admin-SDK write; every
+other production access was a read. No weekly-pattern edit, no `shiftChanges` edit, no manual wage
+adjustment, no history deletion or rewrite, no Finance-mode change, no deploy, no source edit, and
+the stuck browser profile was neither cleared nor mutated.
+
+### 31.8 · Rollback
+
+There is no deletion. If the ruling were ever reversed, the correct action is a **new compensating
+`ROTA_OVERRIDE`** for `2026-08-25` — `scheduled` to hand the day back to the pattern, or `working`
+to pay it — appended on top. Entry `uo-d1146824…-e1` stays in the log for ever either way. Do not
+delete it and do not edit `shiftChanges` by hand.
+
+### 31.9 · ⚠️ Remaining — one stale test, and it is now provably stale
+
+`src/utils/financeRotaHistoryCutover.scenario.test.ts` still encodes the **withdrawn** ruling. It is
+hermetic, so it is still green — that is the problem, not a reassurance. Two of its assertions now
+contradict the owner:
+
+* `'Ruling 2 — 2026-08-25 BECOMES payable in dated mode: +£41.60'` — expects `accrues(…dated) === true`
+  and `deltaPennies === 4_160`. Production now resolves that date **closed**.
+* `'window B as-of 08-25: £35,980.80 → £34,822.40, delta −£1,158.40'` — the corrected fixture values
+  are **£34,780.80** and **−£1,200.00** (`datedCombined 3_482_240 → 3_478_080`).
+
+**Deliberately NOT edited here** — it remains the final **Ubuntu** cleanup item, and it is the last
+open thread on this whole line of work.
