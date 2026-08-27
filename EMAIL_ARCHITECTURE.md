@@ -39,6 +39,48 @@ No mail sent to a customer with `client.isMember === true` shows the double-poin
 (`_salownSendConfirmationEmail`, client lookup + `dpActive=!isMember&&…`) and the loyalty email
 (`salownSendLoyaltyEmail`, `doublePointsActive=!isMember&&…`). The templates were not touched.
 
+## `premiumEmailTemplate` — a Super Admin toggle that reaches NOTHING (WCP-3 P-2.5, 2026-08-27)
+
+Recorded because the belief that "premium email is controlled from Super Admin" is reasonable,
+matches a real UI control, and is **wrong** — and re-deriving it costs an audit every time.
+
+The toggle exists: **Super Admin → Tenants → Branding & Email → "Premium email template"**
+(`super-admin/src/pages/Tenants.jsx`) writes `tenants/{id}.premiumEmailTemplate` and records a
+`branding_update` audit entry. Everything about it works except its effect.
+
+| Layer | Reads it? | Evidence |
+|---|---|---|
+| Booking **confirmation** email | **No** | `functions/src/emails/index.ts` never mentions the field |
+| Cancel / reschedule emails | **No** | same module, same absence |
+| Loyalty **adjustment** email | reads, then **discards** | `functions/src/index.ts` — `const isPremium = tenantData.premiumEmailTemplate === true`, an `if (isPremium) { html = … }` branch, and then an **unconditional** `html = ET.buildLoyaltyUpdateHtml(…)` that overwrites it. The source labels the branch *"kept dead; safe to delete later."* |
+| Shared type | declared only | `packages/shared/src/tenant.ts` — `premiumEmailTemplate?: boolean` |
+
+So it is **vestigial, not broken in transit**: the unified templates deliberately superseded the
+per-tenant premium/standard HTML. Reviving the dead branch would revert that decision, and giving
+the confirmation email a premium variant means authoring a template that does not exist. Both are
+product decisions, not repairs — which is why WCP-3 P-2.5 pinned the truth with tests
+(`functions/src/bookings/createBooking.test.js` § 5EM-5/5EM-7) and changed no email source.
+
+### What actually decides a customer's email — precedence, highest first
+
+| # | Control | Where | Decides | Whitecross today |
+|---|---|---|---|---|
+| 1 | `FORCE_SALOWN_SENDER_TENANTS` | **hardcoded array**, `functions/src/emails/index.ts` | Forces the Brevo sender regardless of `emailConfig` | **listed** ⇒ Brevo |
+| 2 | `settings/emailConfig` (`email` + `appPassword`) | private settings subdoc | Own-Gmail `"From: Salon"` sender when 1 does not apply | present but **overridden** by 1 |
+| 3 | `salonName` → `name` → `'salOWN'` | tenant root doc | Display name in the sender, subject and calendar title | **"Whitecross Barbers"** |
+| 4 | `presentation` (`EI.emailPresentation`) | settings + root mirror | Language, locale, currency, date format | UK / `en` |
+| 5 | `premiumEmailTemplate` | tenant root doc, Super Admin toggle | **nothing** | irrelevant |
+
+**Effective result for Whitecross:** a confirmation sent via **Brevo** as
+**`"Whitecross Barbers via salOWN"`**, rendered by the unified `ET.buildConfirmationHtml`
+template with UK presentation, carrying the **server-stamped** `barberName` from the booking
+document. The email is sent only once the booking is `CONFIRMED`, so a `PENDING`
+external-checkout booking is never announced before payment.
+
+**If premium branded confirmations are actually wanted**, the smallest honest route is a template
+variant in `ET.buildConfirmationHtml` selected by this existing toggle — a designed change with its
+own approval, not a reconnection.
+
 ## Sender Branding
 
 - Display name: `"{Salon Name} via salOWN"` — introduces the salon, grows the salOWN brand
