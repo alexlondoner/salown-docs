@@ -1,6 +1,35 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
 
+## R-2026-08-27-A — `WCP-3 Gate A` · 1-unit deployment-only release (Firestore rules)
+
+**Owner-approved, single unit, no source change.** Rules only: `bookingFlags` becomes a
+super-admin-owned key. Functions, hosting, Super Admin, REL-7 and every tenant document were
+explicitly out of scope and are proven untouched below.
+
+| Field | Value |
+|---|---|
+| **Owner authorisation** | Explicit, for ONE `firestore:rules` deploy plus read-only verification. Explicitly **NOT** authorised: functions (Gate B), Super Admin hosting (Gate C), REL-7, any Firestore/tenant-config write, any callable invocation |
+| **Work ID / source** | `WCP-3` P-2/P-2.5 · salown-app **`e01b55c`** (HEAD == `origin/main`, clean, no claims; `373587b` and `88f580b` both ancestors) |
+| **Toolchain** | machine-global `firebase-tools` **15.15.0** · command identical to `ops/rulesAuthority.mjs` › `CANONICAL_DEPLOY_COMMAND`, run from `CANONICAL_DEPLOY_DIR` |
+| **Gates** | `ops/rules-authority.test.js` **30/30** · `./ops/test-rules-emulator.sh` **PASS** — `bookingFlags` **10/10**, `superAdminCatchall` 21/21, `financeConfig` 20/20, `financePeriods` 14/14, `availabilityFrom`/`staffRota`/`rotaRollout` green |
+| **Pre-deploy identity check** | Active ruleset read back BEFORE the deploy: **`a9806b0b-cada-4cad-909f-c9b07f2d3e77`**, released `2026-08-19T19:00:43.786396Z`, source sha256 **`1818bd21…135c0a`**, 66,071 B — matched the P-2.6 measurement exactly, so no drift |
+| **Scope proven BEFORE deploying** | live→source **semantic** diff (comments + blank lines stripped both sides) = **4 code lines added, 0 removed**, and **0** added lines that do not name `bookingFlags` |
+| **Unit 1 — `firestore:rules`** | `firebase deploy --only firestore:rules --project havuz-44f70` → `✔ cloud.firestore: rules file firestore.rules compiled successfully` → `✔ firestore: released rules firestore.rules to cloud.firestore` → `✔ Deploy complete!` |
+| **New live identity** | ruleset **`e79d05c1-9e19-4136-96fb-41ecdd81ce21`** *(supersedes ~~`a9806b0b-…`~~)* · 67,145 B · sha256 **`025c431e1afd6371addb3323aa73ab4836efbf72e1da11b8fbd65901d7a415cb`** · createTime `2026-08-27T12:40:15.395967Z` · release updated **`2026-08-27T12:40:16.453548Z`** |
+| **Source-of-truth proof** | The live ruleset source, fetched back out of production, is **BYTE-IDENTICAL** to `salown-app/firestore.rules` at `e01b55c`. Not "semantically equal" — the same bytes |
+| **Old → new semantic change** | **4 added, 0 removed**, all four `hasAny(['bookingFlags'])` conjuncts, one per settings write clause (`settings/{docId}` and `settings/{docId}/{sub=**}`, × create/update). Each sits inside the non-super-admin branch of an `allow …: if isSuperAdmin() \|\| (isTenantAny(tenantId) …)` clause |
+| **Authorization verified on the ACTIVE bytes** | The repo `firestore.rules` the emulator suite evaluates is byte-identical to the deployed ruleset, so the suite's verdict is a statement about production: owner, admin and staff are **denied** every `bookingFlags` change (enable, disable, container replace, container clear, and smuggled alongside a legitimate field); a foreign tenant and the anonymous public site are denied; **super-admin is allowed**, with or without a `tenantId` claim |
+| **Not weakened** | `match /public/{doc}` still `allow read: if true; allow write: if false` · `isSuperAdmin()` helper intact, **62** call sites, all 8 settings write clauses still lead with it · `presentation` still owner-gated (owner yes, plain admin no) · ordinary settings fields still writable by any tenant member · settings READ unchanged for owner/admin/staff, still denied to anonymous |
+| **No live write used to test** | Deliberately. Authorization was proven by active-ruleset inspection plus the emulator, never by attempting a permitted/denied write against production |
+| **Known exclusions — nothing here was touched** | Functions **115 → 115**, `salownCreateBooking` still `salowncreatebooking-00004-gom`, `salownPublishPublicBookingFlags` still absent, zero functions with a 2026-08-27 `updateTime` · `hosting:whitecrossbarbers-saas` `last-modified` `2026-08-26T16:03:48Z` · `hosting:salown-admin` `2026-08-26T12:39:14Z` · `hosting:salown` `2026-08-26T10:06:17Z` · **2 composite indexes, both READY, unchanged** · `tenants/whitecross/settings/settings.bookingFlags` **ABSENT** · `tenants/whitecross/public/bookingFlags` **HTTP 404** |
+| **Customer-visible effect** | **None.** No tenant has the `bookingFlags` key, so no write that previously succeeded now fails. The change removes an ability nobody was exercising |
+| **Rollback** | Redeploy the preserved predecessor: copy `evidence/rules/firestore.rules.PREV-a9806b0b-cada-4cad-909f-c9b07f2d3e77` (66,071 B, sha256 `1818bd21…135c0a`) over `salown-app/firestore.rules`, then `firebase deploy --only firestore:rules --project havuz-44f70` from `salown-app`. **Rules roll back by re-publishing source, never by pointing at a ruleset id** — and never with a broad or full `firebase deploy` |
+| **Repos after** | whitecross-site `a187863b` · salown-app `e01b55c` · super-admin `810dc3e` · salown-docs — all `0/0`, clean, no claims |
+| **⚠️ Pre-existing gap found while writing this row** | Ruleset **`a9806b0b-…`** went live on **2026-08-19T19:00:43Z** and has **no ledger row of its own**; it appears only as an "untouched exclusion" in later releases, and `ROADMAP.md`'s per-target rules row still named its predecessor `60abf8e4-…`. Its rollback source *was* preserved at the time (`evidence/rules/firestore.rules.PREV-60abf8e4-…`, 19 Aug 20:00), so the artefact discipline held and only the ledger row was missed. ROADMAP is corrected to the current truth by this release; the missing 2026-08-19 row is **not** reconstructed here, because nobody in this session performed that deploy and inventing its gates would be worse than recording the gap |
+
+---
+
 ## R-2026-08-26-B — `ROTA-MIGRATION-RETIRE` · 1-unit deployment-only release (migration closure)
 
 > Deployment-only release of an already-implemented, already-reviewed retirement. No source change
