@@ -1,6 +1,33 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
 
+## R-2026-08-30-A — `STAFF-OFFBOARD-TERMINAL` · 2-unit release (targeted Functions + `hosting:salown`)
+
+**Owner-approved, one function and one hosting site.** The canonical departure: one
+operation that writes all three employment authorities together. **No Firestore data
+write, no rules change, no new callable, no new collection, no new field.**
+
+| Field | Value |
+|---|---|
+| **Owner authorisation** | Explicit and staged: build option A, then *"Guard yeşilse önce functions, canlı yazısız probe'dan sonra hosting deploy et"*. Explicitly **NOT** authorised: adding a dot-directory exception to the namespace guard; the Arda production backfill (*"Arda production write için henüz onay yok"*) |
+| **Work ID / source** | `STAFF-OFFBOARD-TERMINAL` · salown-app **`ce6329f`** (HEAD == `origin/main`, 0/0, clean) |
+| **Blocker cleared before deploying** | The guard aborted while a parallel session's git worktree `alex/.wt-checkout-reassign` existed — it is scanned as a SECOND `salown` functions codebase, and 85/85 guard failures named it. **The guard was not modified and not bypassed.** The other session's owner secured their work and removed the worktree; the guard was then re-run and passed offline, normalising to exactly one target |
+| **Unit 1 — Cloud Function** | `./scripts/deploy-functions.sh salownStaffLifecycle` (the guarded wrapper; no blanket, no second selector). `salownstafflifecycle-00001-rec` → **`salownstafflifecycle-00002-xud`**, update `2026-08-29T23:06:12Z`, srcGen **`1788044738059943`** |
+| **Config parity after** | `europe-west2` · nodejs22 · entryPoint `salownStaffLifecycle` · SA `1050766582653-compute@` · 256Mi/1cpu · timeout 60s · max 20 · concurrency 80 · ingress `ALLOW_ALL` · **secrets []** — every value preserved; only `revision` and `srcGen` moved |
+| **Artefact proof** | The deployed archive was pulled back out of GCS by `srcGen` and compared file by file against the commit: `lifecycleOffboard.ts`, `rotaWriter.ts`, `lifecycleCallable.ts`, `lifecycleContract.ts`, `rotaCallable.ts`, `rotaActivation.ts`, `utils/rotaFold.ts` — **7/7 BYTE-IDENTICAL to `ce6329f`** |
+| **Live write-free probe** | (a) unauthenticated POST to the live callable → HTTP **401**, `{"details":{"reason":"UNAUTHENTICATED"}}` — the new boundary's own vocabulary, so the new revision is serving. (b) The **deployed `lib/` bytes** were required directly and run against an in-memory double: **9/9** refusals with **0 writes queued in total** — the op exists (`LAST_WORKING_DAY_INVALID`, not `OP_NOT_IMPLEMENTED`), an impossible calendar day is refused, a future last working day is refused, a server-owned field is refused by name, and the backdate gate demands super-admin → reason → evidence in that order; an `admin` is refused; `REHIRE` is still `OP_NOT_IMPLEMENTED`. `IMPLEMENTED_OPS` contains `OFFBOARD` and `ROTA_ACTIONS` contains `ROTA_OFFBOARD` **in the deployed bytes**. **The live callable was never invoked with a valid request and no booking, tenant or staff document was touched** |
+| **Unit 2 — `hosting:salown`** | `npx firebase deploy --only hosting:salown --project havuz-44f70`. `6c573a52fea189ca` → **`c3ed073022d75d19`** · release **`1788045055287000`** |
+| **Served-byte proof** | `/app` entry `index-D5Qw0LTZ.js` (200) → `Barbers-CsbIkjw-.js` (200, 131 261 B), sha256 **`7c07ecae…1973c172`**, byte-identical to the local build of `ce6329f`. Marker `OFFBOARD` in the served Barbers chunk: **0 → 1** |
+| **Scope after** | Functions: `europe-west2` **89**, `us-central1` **29**, and exactly **one** function carries today's deploy stamp — `salownStaffLifecycle`. (`salownCancelByToken` shows `22:53:17Z`, **thirteen minutes before this deploy started** and by another actor; recorded here because this ledger states what was observed, not what was intended.) Hosting: only `salown` moved — `salown-staff` `2f873efa339d544c`, `salown-admin` `6376b019192dd6c6`, `whitecrossbarbers-saas` `bc10782d09d28b00`, all unchanged. Ruleset and indexes **not deployed** |
+| **REL-1** | The salown deploy re-ran the staff predeploy hook and dirtied tracked `hosting/staff-bundle/**`; the new chunk was removed and the two tracked files restored by explicit path. Tree back to **0/0** |
+| **Zero-data-write proof** | Read back after both deploys: Arda's rota header still `revision 1` · `entryCount 21` · 21 entry documents · `entriesHash e2099b64…2e46f`; `staffComp` still `2026-02-06 → 2026-08-04`; barber still `status: passive` / `active: false`; `auditLogs` holds **0** `stafflifecycle_offboard_*` records out of 3 213 |
+| **Customer-visible effect** | None. The owner's Team Members screen gains a departure sheet; no salon or customer surface changed, no money figure and no booking moved |
+| **Gates** | offboard unit **26/26** · **emulator gate 575/575 PASS** (general 548 + packages 27) · intent 28/28 · staffLifecycle 81/81 · rota 241/241 · `tsc` clean in both projects · namespace guard `--check-only` exit 0. Pre-existing red, unrelated and proven so on a pristine tree: `functions/src/utils/rotaFold.test.js` §11b (since `ed5c6bd`, 2026-08-26) |
+| **Rollback** | Function: `gcloud run services update-traffic salownstafflifecycle --region=europe-west2 --to-revisions=salownstafflifecycle-00001-rec=100 --project=havuz-44f70`; permanent rollback = rebuild the pinned source and redeploy through the **same guarded wrapper**, never a broad deploy. Hosting: Console → Hosting → site **`salown`** → **`6c573a52fea189ca`** → Roll back (by VERSION ID). Source anchor: **`aed51d4`** (the tree before the implementation); `git revert ce6329f` returns the op to `OP_NOT_IMPLEMENTED` and changes nothing already written |
+| **Left open** | **The Arda backfill is NOT done and is NOT authorised.** The capability is live and its dry run is prepared (`lastWorkingDay 2026-08-04` → terminal `2026-08-05`, 0 conflicting bookings); the production write waits for an explicit owner approval |
+
+---
+
 ## R-2026-08-29-A — `HOME-ACCRUAL-PERIOD-PARITY` · 1-unit release (`hosting:salown`)
 
 **Owner-approved, one hosting site, source change.** Home's "days worked" figure now passes
