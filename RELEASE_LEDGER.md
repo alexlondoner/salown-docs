@@ -1,6 +1,35 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
 
+## R-2026-08-29-A — `HOME-ACCRUAL-PERIOD-PARITY` · 1-unit release (`hosting:salown`)
+
+**Owner-approved, one hosting site, source change.** Home's "days worked" figure now passes
+through the SAME dated employment authority Finance uses. No Firestore write, no rules change,
+no callable, no new collection, no new field.
+
+| Field | Value |
+|---|---|
+| **Owner authorisation** | Explicit, for option **A** (the code fix) and the targeted deploy it needs. Explicitly **NOT** authorised: option **B** (writing any rota terminal period), any Firestore data write, the OFFBOARD capability (option **C**, left as a separate work item), functions, rules/indexes, `hosting:salown-staff`, any Whitecross site |
+| **Work ID / source** | `HOME-ACCRUAL-PERIOD-PARITY` · salown-app **`93e0fa4`** (claim `c693387` → fix `93e0fa4`; HEAD == `origin/main`, 0/0, clean) |
+| **Defect** | `computeBarberPerformance` passed `periods: null` into `resolveAccrualDays`; Finance's five accrual call sites all pass `periodsForBarber(...)`. Home was therefore a **laxer authority than Finance** on the one question both answer, and a departed member whose last rota period is open-ended kept accruing rota days for the whole elapsed month. whitecross/Arda read **24** days for August 2026 against Finance's **3** (1, 2 and 4 August; the owner confirmed 2 August was worked with no booking on it, and 4 August was the last day) |
+| **Fix** | Home builds the same `buildCompPeriodIndex` Finance builds and passes the same argument. Not a second algorithm and **no rate is read** — only `effectiveFrom` / `effectiveTo` (the `CompPeriodInterval` contract). `BarberPerf.days` becomes `number \| null`: a `passive` member whose employment bounds the viewer may not read gets **no figure** rather than one that exceeds the authoritative answer |
+| **Role safety** | `staffComp` is `read: isSuperAdmin() \|\| isOwner(tenantId)` in the **live** ruleset `e79d05c1-…` (verified from the Rules API, not from the repo file). The card itself is `isAdmin`-gated (super-admin \| owner \| admin). Home gates the read on the **claim** — `isSuperAdmin \|\| tenantRole === 'owner'` — so an unentitled viewer never issues the query at all, rather than relying on a denial. No new role, no widened rule, no callable, and no compensation value reaches the page |
+| **Fallback, stated** | Index absent ⇒ `compPeriodVerdict` → `'unknown'` ⇒ the legacy S2 rule stands, unchanged. That is correct for an employed member (open period ⇒ gated and legacy agree) and is asserted; it is wrong only for a departed one, which is exactly the `days: null` case |
+| **Gates** | `homeMetrics.test.ts` **50/50** (12 new: P1–P11, covering the open-ended-rota + closed-period case, the exact 3-day answer, the booking-less 2 August day, the closed 3 August, both interval ends, active-staff invariance, the no-record fallback both ways, a compensation-leak source scan, a Home ≤ Finance parity assertion and the DST/month boundaries) · full frontend **161 files / 4912 PASS** · `tsc --noEmit` clean · `vite build` clean |
+| **Live baseline proven before deploying** | `hosting:salown` version **`4b7b14af4ea02359`**; served `Home-BcihuoXn.js` (37 947 B) contains the marker `staffComp` **0** times — the pre-fix artefact |
+| **Unit 1 — `hosting:salown`** | `npx firebase deploy --only hosting:salown --project havuz-44f70`. 124 files, 33 uploaded |
+| **New live identity** | version **`6c573a52fea189ca`** · release **`1788031464847000`** (`2026-08-29T19:24:24.847Z`, FINALIZED). Previous: **`4b7b14af4ea02359`** |
+| **Served-byte proof** | `/app` entry `index-DCTeHNGm.js` (HTTP 200) → `Home-XeZZTaxe.js` (HTTP 200, 38 548 B), sha256 **`dc4b556a…980add1`**, **byte-identical** to the local build of `93e0fa4`. Marker `staffComp` in the served Home chunk: **0 → 1** |
+| **Production behaviour proof** | Live whitecross snapshot (3 barbers, 263 August bookings, 3 staffComp docs, 3 rota logs) run through the real `computeBarberPerformance`: **owner** view Arda **3** · Alex **29** · Muhamed **11**, each equal to the same-inputs `resolveAccrualCost` answer Finance computes; **admin** view Alex 29 · Muhamed 11 unchanged, Arda's day figure withheld (`null`) |
+| **Scope after** | Only `salown` moved. No functions deployed (no `deploy-functions.sh` run), ruleset **`e79d05c1-…`** untouched, no indexes, `salown-staff` untouched. **REL-1** tracked-artefact cleanup performed: the salown deploy re-ran the staff predeploy hook and dirtied `hosting/staff-bundle/**`; the new chunk was removed and the two tracked files restored by explicit path, tree back to 0/0 |
+| **Zero-write proof** | Nothing was written to Firestore. After the deploy: Arda's rota header still `revision 1` · `entryCount 21` · `entriesHash e2099b64…2e46f` · `lastChangeId rota-seed-d32c6d4b…`; last entry still `ROTA_OPEN 2026-08-04 → null`; `staffComp` still `2026-02-06 → 2026-08-04`; barber doc still `status: passive` / `active: false` with 7 `shiftChanges` keys |
+| **Other tenants** | Surveyed all 7 tenants: **no tenant other than whitecross has a passive barber or any `staffComp` document**. For every one of them the index is empty and every barber is active, so `periods` is `undefined`, the verdict is `'unknown'` and the legacy path is byte-for-byte what it was |
+| **Customer-visible effect** | None. Owner/admin panel only; no salon or customer surface, no money figure and no booking changed |
+| **Rollback** | Previous version **`4b7b14af4ea02359`**. Site-scoped: Firebase Console → Hosting → site **`salown`** → Release history → `4b7b14af4ea02359` → ⋮ → **Roll back**. By VERSION ID, never by bundle name. Source-side anchor: **`c693387`** (the tree immediately before the fix); `git revert 93e0fa4` restores it. **Never roll back another hosting site** |
+| **Left open** | The underlying data gap is untouched and deliberate: Arda's rota log still ends in an open-ended 6-day period, because no canonical writer can backdate a terminal archive (`ROTA_CHANGE` → `BACKDATED`, `ROTA_END` → `BACKDATED` / `FUTURE_ACTIVATION_NOT_READY`, the seeder is genesis-only → `HEADER_EXISTS`). That is option **C** — an OFFBOARD/archive capability authorised to backdate — and it is a separate work item |
+
+---
+
 ## R-2026-08-27-C — `WCP-3 Gate C` · 1-unit deployment-only release (`hosting:salown-admin`)
 
 **Owner-approved, one hosting site, no source change.** The operator control for the booking
