@@ -1,6 +1,31 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
 
+## R-2026-08-30-B — `STAFF-OFFBOARD-TERMINAL` UI2 + the Whitecross/Arda departure repair
+
+**One hosting release, then ONE owner-approved production operation, performed from the
+panel by a real super-admin session.** The first use of the capability, and the repair of
+the drift that bought it.
+
+| Field | Value |
+|---|---|
+| **Owner authorisation** | *"Arda için backfill'i panelden uygula. Son çalışma günü 2026-08-04… Admin SDK kullanma, canlı callable'ı gerçek super-admin oturumuyla çalıştır… Başka personele veya kayda dokunma."* |
+| **Why a second release first** | The departure sheet was reachable only from the card button's ACTIVE branch, and Arda is already `passive` — his only control was "Activate". Activating him to offboard him would have written a fake employment blip into a record whose purpose is to be evidence, so the door was added to the **Former staff** row instead. `3d72dfc` |
+| **Unit 1 — `hosting:salown`** | `c3ed073022d75d19` → **`8dd16a9f3d6930e3`**. Served `Barbers-DzOwn7Ll.js` carries the `Record departure` marker (0 → 1). REL-1 staff-bundle cleanup performed |
+| **Unit 2 — the production operation** | Performed in the browser: Team Members → Former staff → **Arda** → *Record departure* → last working day `2026-08-04` → the sheet raised its own backdated demand (super-admin + reason + evidence) → reason and evidence entered → confirm phrase `Arda · left` typed → **Record departure**. The live `salownStaffLifecycle` callable was invoked by the page under the operator's own session. **No Admin SDK, no script, no direct write** |
+| **Result** | `APPLIED`. Panel: *"Arda is recorded as former staff. Their last working day was 2026-08-04."* |
+| **Audit — lifecycle** | `stafflifecycle_offboard_barber-1777655430086_c511f7d5f9f25a4b` · `STAFF_OFFBOARDED` · source `staff-lifecycle` · actor `aerulas@gmail.com` · `meta`: `lastWorkingDay 2026-08-04` · `terminalFrom 2026-08-05` · `backdated true` · `superAdminActor true` · `compPeriodClosed false` |
+| **Audit — rota append** | `rota-tx-barber-1777655430086-off_6f00a88e6b85bad363a2c977` · `ROTA_OFFBOARD` · source `rota-writer` · actorRole `super-admin`. Audit collection 3 213 → **3 215** (exactly the two records this operation writes) |
+| **Rota, before → after** | `revision` **1 → 2** · `entryCount` **21 → 23** · `entriesHash` `e2099b64…2e46f` → **`1e9dcee0…3f3a6e52`** · `lastOrigin` `ROTA_IMPORT` → **`ROTA_OFFBOARD`** · `lastChangeId` **`off_6f00a88e6b85bad363a2c977`** |
+| **The two new entries** | seq **21** `ROTA_CLOSE` origin `ROTA_OFFBOARD` `effectiveTo 2026-08-04` · seq **22** `ROTA_OPEN` origin `ROTA_OFFBOARD` `effectiveFrom 2026-08-05`, `effectiveTo null`, `scheduleMode by_exception`, `workingDays []`. The 21 committed entries are unchanged |
+| **Compensation** | `[2026-02-06 → 2026-08-04]`, **unchanged and not written** — it was already correct, so the operation skipped it (`compPeriodClosed: false`). A departure closes what is open; it does not re-close what somebody already closed |
+| **Barber document** | `status: passive` · `active: false` — re-stated, not invented. **`workingDays` is untouched** (still the 6-day array), which is deliberate: an empty array would flip `hasWeeklyPattern` and drop every accrual for this subject to the booking-derived fallback |
+| **Behaviour after** | Home **Arda 3** · Finance **Arda 3** · equal for every barber over the same window (Alex 30/30, Muhamed 12/12). The dated rota now answers `{works:false, source:'pattern'}` for 2026-08-05, 08-10, 08-30, 09-01 and 2027-01-04 — a SECOND authority saying it, beside the undated `passive` flag — while 1, 2 and 4 August still answer `works: true` |
+| **Scope** | Exactly one subject. `ROTA_OFFBOARD` heads platform-wide: **1**. Alex `rev 2 / ROTA_CHANGE`, Muhamed `rev 5 / ROTA_OVERRIDE`, both `active`, both untouched. Six other tenants hold **no rota log at all**. No booking, receipt, wage or client record was read or written |
+| **Rollback** | The log is append-only: there is no undo, by design. A correction would be a `ROTA_SUPERSEDE` on `off_6f00a88e6b85bad363a2c977` plus an owner decision, and is a separate reviewed operation. Hosting rollback: `c3ed073022d75d19` |
+
+---
+
 ## R-2026-08-30-A — `STAFF-OFFBOARD-TERMINAL` · 2-unit release (targeted Functions + `hosting:salown`)
 
 **Owner-approved, one function and one hosting site.** The canonical departure: one
