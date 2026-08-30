@@ -1,6 +1,57 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
 
+## R-2026-08-30-E — `CHECKOUT-OVERALLOC-GUARD` · 1-unit release (`hosting:salown`)
+
+**Owner-approved, one hosting site, browser-only change.** The writer now refuses a checkout
+that would collect more than the sale is worth, and the Staff App sheet learns the same
+pre-paid rule. **No function, no rules, no indexes, no other site, no Firestore write.**
+
+| Field | Value |
+|---|---|
+| **Owner authorisation** | *"Önce yalnız hosting:salown deploy et; staff target'ını henüz yayınlama. Deploy sonrası bütün admin till sekmelerinde hard refresh zorunlu. salown-staff için 28 Ağustos'tan beri biriken toplam delta'yı gösterip ayrı onay iste."* |
+| **Work ID / source** | `CHECKOUT-OVERALLOC-GUARD` · salown-app **`6e28ae8`** (clean, SHA-pinned `git archive` + `npm ci` workspace) |
+| **Why** | The presenter fix R-2026-08-30-D went live at 12:45:46 and the SAME fault recurred at 14:01 on `WEB-1788085518597-b201cf` (£28 online + £32 at the desk = £60). The writer was correct that time (`receiptPaidEarlier_p: 2800`); the till was eighty minutes stale. Hosting sends `no-cache, no-store` and the Admin panel registers no service worker, so the fix was one reload away and nobody had a reason to reload |
+| **What it adds** | `resolveCheckoutOverAllocation` — the receipt's own I3 invariant evaluated BEFORE the write: refuse when `paidToday + paidEarlier > goods − discount − redeemed + charge + tip`. Only the OVER direction; under-collection is a real situation and untouched. Same exported `toPence` as the invariant, so the two cannot disagree by a rounding rule. Skipped when the booking records no parseable price |
+| **What it also fixes** | `depositPaid`'s `wasCheckedOut ? 0` special case is removed — a correction now collects the REMAINDER and its receipt reconciles (the live `BOOKSY-Alexandre-Gerasimov-6-August-2026-17:15` row is the flagged example). `src/staff/lib/checkoutSheetPayload.ts` reads the same resolver, so the Staff App is not left with a refusal it cannot satisfy — **that half reaches production only via `hosting:salown-staff`, NOT deployed** |
+| **⚠️ CORRECTED CLAIM** | `d91d7b3`'s message presented this as structural protection against a stale till. **It is not.** `src/firestoreActions.ts` ships in the same browser bundle as the checkout screen, so a tab on a pre-guard build runs the old screen AND the old writer. The owner caught the overstatement; `6e28ae8` corrects it in the guard's own doc comment and in the test header. Real stale-client protection needs a server-authoritative boundary — **open as P0** |
+| **Unit 1 — `hosting:salown`** | `firebase deploy --only hosting:salown --project havuz-44f70`. Version **`<R-2026-08-30-D's version, see that row>` → `13ddfea2e18c9c5c`** · release **`1788097961895000`** (2026-08-30T13:52:41.895Z) |
+| **Served-byte proof** | `/app` entry → `/public-bundle/assets/index-BJQlxLsw.js` (200), sha256 **`551fc65d7cfc2b5eab0944bbd14adff6…`**, byte-identical to the SHA-pinned build of `6e28ae8` |
+| **Marker, predicted then verified** | String literals survive minification. `CHECKOUT_OVER_ALLOCATED` in the served entry chunk: **0 → 1** |
+| **Scope after** | Only `salown` moved. `salown-staff` still **`2f873efa339d544c`** serving `staff-WIlAMpTt.js` (byte-identical to a rebuild of `496e69c`, so the live Staff App is provably that commit). Functions / rules / indexes untouched |
+| **REL-1** | **Not incurred.** The build and deploy ran from a temporary workspace, so the tracked `hosting/staff-bundle/**` in the repo was never dirtied. Tree stayed clean of release artefacts throughout |
+| **Data** | **No Firestore write of any kind** |
+| **Gates** | Full suite **5025/5025 PASS** · `tsc --noEmit` clean · 20 new guard cases (both live incidents refused with their exact pence, the corrected version allowed through, every legitimate shape passing, no-price bookings exempt, pence arithmetic incl. the `32 - 28 = 4.000000000000004` the till sends) |
+| **Rollback** | Previous version — see R-2026-08-30-D. Console → Hosting → site **`salown`** → Release history → that VERSION ID → Roll back. Source anchor: **`db9157d`**; `git revert 6e28ae8 d91d7b3` restores the pre-guard writer |
+
+---
+
+## R-2026-08-30-D — `CHECKOUT-PREPAID-PARITY` · 1-unit release (`hosting:salown`)
+
+**Owner-approved, one hosting site, browser-only change.** The till reads the same pre-paid
+resolver the writer does. **No function, no rules, no indexes, no other site, no Firestore write.**
+
+| Field | Value |
+|---|---|
+| **Owner authorisation** | *"db9157d kaynağından yalnız hosting:salown deploy'una onay veriyorum. Functions, rules, indexes veya diğer hosting target'larına dokunma. Deploy temiz ve SHA'ya sabitlenmiş kaynaktan yapılsın; önce/sonra hosting release ID ve sunulan bundle marker'ını doğrula."* |
+| **Work ID / source** | `CHECKOUT-PREPAID-PARITY` · salown-app **`db9157d`** (clean, SHA-pinned `git archive` + `npm ci` workspace) |
+| **Why** | `WEB-1788009493579-5de929` — £32 paid in full online, billed £32 again at the desk, reading "Deposit paid £32 · Paid at venue £32 · **Total £64**". One Stripe payment intent, no second charge: the same money on two ledger lines |
+| **Root cause** | BL-8 (`f7d59aa`, live on this site from **2026-08-28 ~12:0x**) taught `resolvePrePaidAmount` the EXTERNAL_CHECKOUT rail and taught both WRITERS to use it — and changed no PRESENTER. CheckoutPanel's inline tree answered 0 for every booking that was neither an aggregator booking nor typed DEPOSIT, which is exactly the shape of a Website booking paid in full online |
+| **Regression window, measured** | The last external checkout before that release (`WEB-1787901886896-f7074e`, 09:59:30 that morning) carries `platformDepositAmount: 0`; this booking is the FIRST full-online-paid checkout after it. A read-only scan of all **1674** whitecross bookings finds exactly **one** row where `paidAmount + platformDepositAmount` exceeds the sale |
+| **What changed** | The tree moves to `src/components/checkoutDeskPrePaid.ts` as two pure functions. Aggregator and legacy-DEPOSIT branches carried over unchanged (69 live rows must not move); only the branch that was a bare `0` asks `resolvePrePaidAmount`. `isFullyPrepaidAtDesk` is an AMOUNT test, not a type test — `f7074e` paid £22 online then upgraded to a £40 service is still typed FULL and genuinely owes £18 |
+| **Unit 1 — `hosting:salown`** | Version **`4637fa7d98b8e870` → `STATUS_UNKNOWN`** (superseded by R-2026-08-30-E ~67 min later before the ID was captured; recoverable from Console → Hosting → `salown` → Release history, release time **2026-08-30 12:45:46 UK**). Not a guess — recorded as unknown rather than invented |
+| **Served-byte proof** | `/app` entry `index-1dtPmkKP.js` → `BookingForm-Crr-Vv9d.js`, sha256 byte-identical to the SHA-pinned build of `db9157d` |
+| **Baseline proved, not assumed** | A build of the PARENT commit `db9157d^` reproduced the then-live `BookingForm-DRZk7ybN.js` **sha256 `16080498d4da5c9efe932ceb49a3592d…` byte-for-byte** ⇒ the live site was the deterministic build of that commit, so the delta below is complete |
+| **Byte attribution** | Real delta in exactly one chunk: `BookingForm` **+335 B** (CheckoutPanel's chunk). The other 11 chunks moved ±2–13 B — the length of embedded cross-chunk import filenames. Markers predicted from source then verified in the served chunk: `[£,]` **4 → 2** (three inline parses collapsed into one `money()`), `platformDepositAmount` **7 → 8** |
+| **Scope after** | Only `salown` moved. `salown-staff` unchanged at **`2f873efa339d544c`** |
+| **REL-1** | **Not incurred** — temporary workspace, tracked `hosting/staff-bundle/**` never dirtied |
+| **Data** | **No Firestore write of any kind** |
+| **Gates** | Money suites **339/339** across 9 files · `tsc --noEmit` clean · 27 new cases, half a regression guard pinning the 69 live rows |
+| **⚠️ Insufficient on its own** | A till that has not been reloaded keeps running the previous bundle. This release did not, and could not, protect `WEB-1788085518597-b201cf` at 14:01 — see R-2026-08-30-E |
+| **Rollback** | Previous version **`4637fa7d98b8e870`**. Console → Hosting → site **`salown`** → Release history → that VERSION ID → Roll back. Source anchor: **`0233019`**; `git revert db9157d` restores the inline tree |
+
+---
+
 ## R-2026-08-30-C — `STAFF-OFFBOARD-DRAWER` · 1-unit release (`hosting:salown`)
 
 **Owner-approved, one hosting site, browser-only change.** The second surface that could
