@@ -593,17 +593,25 @@ data; it was answering a different question from the one it appeared to answer.
 | | what it asks | who can fix it |
 |---|---|---|
 | **`INFRA_READY`** | is the STRUCTURE in place — a canonical rota that folds, a terminal offboard period, a readable compensation history? | a migration. Nothing an operator can supply at rehire time |
-| **`APPLY_READY`** | on top of that, can the stored data accept a rehire **today**? | the owner, by fixing the specific blocker |
+| **`AWAITING_OPERATOR_INPUT`** | the stored data raises no objection, but the two inputs that decide the operation — the weekly pattern and the pay model, with its commercial values — **have not been chosen yet** | the owner, in the sheet |
+| **`APPLY_READY`** | a server dry-run has validated **those exact inputs**. Only the server may say this | — |
 
 `APPLY_BLOCKED_INFRA` · `REHIRE_COMP_PERIOD_OPEN` ·
 `RETURN_ON_NOT_AFTER_DEPARTURE` · `APPLY_MULTIPLE_BLOCKERS` are the apply-axis
-verdicts.
+blockers.
 
-**Two things the inventory must never claim.** It cannot cover the two OPERATOR
-inputs — the confirmed weekly pattern and the selected pay model — because both
-are supplied in the sheet. And its verdicts are **contract-version dependent**:
-the same person was `READY` under v2's contract and is `APPLY_READY` under v3's,
-for the same data. Every report therefore names the contract it evaluated.
+> **The inventory may never emit `APPLY_READY`.** Its ceiling is
+> `AWAITING_OPERATOR_INPUT`, and that ceiling is the point. Nothing it can read
+> tells it which week the owner will confirm or which pay model they will choose,
+> so a green verdict from it would be a promise about inputs that do not exist —
+> and the first thing it would produce is the drift *"the inventory said green,
+> why was the apply refused?"*. `APPLY_READY` is produced by **one** thing: a
+> server dry-run over the real submitted inputs.
+
+**And its verdicts are contract-version dependent**: the same person was `READY`
+under v2, then `APPLY_READY` under a v3 reading that overclaimed, and is
+`AWAITING_OPERATOR_INPUT` under the corrected one — for identical data. Every
+report names the contract it evaluated.
 
 ### (b3) Readiness is a property of a PERSON, not a tenant
 
@@ -660,18 +668,21 @@ contract   : REHIRE v3
 scope      : passive team members only
 
 whitecross    tenantDate 2026-08-30 · timezone Europe/London (provenance: platform default)
-              passive 1 · INFRA_READY 1 · APPLY_READY 1
-              · barber-1777655430086  infra=INFRA_READY  apply=APPLY_READY
+              passive 1 · INFRA_READY 1 · AWAITING_OPERATOR_INPUT 1
+              · barber-1777655430086  infra=INFRA_READY  apply=AWAITING_OPERATOR_INPUT
 
 dayi-barbers · demo · herohairs · the-hair-lab · tr-demo · yusufo
               passive 0
 
 PLATFORM TOTAL   INFRA_READY 1 · every other infra verdict 0
-                 APPLY_READY 1 · every other apply verdict 0
+                 AWAITING_OPERATOR_INPUT 1 · every other apply verdict 0
+                 APPLY_READY — never emitted by this tool, by construction
 ```
 
-**What it settles.** There is exactly **one** passive person on the platform, and
-both axes are green for them. `NO_STAFF_COMP`, `NO_CANONICAL_ROTA`,
+**What it settles.** There is exactly **one** passive person on the platform, the
+infrastructure axis is green for them, and the apply axis raises no *data*
+objection — it is waiting on the owner's two choices, which is the furthest an
+inventory can honestly go. `NO_STAFF_COMP`, `NO_CANONICAL_ROTA`,
 `NO_TERMINAL_OFFBOARD_PERIOD`, `COMP_HISTORY_INVALID` and `ROTA_HISTORY_INVALID`
 are real contract states with **zero** occurrences today — design guarantees for
 tenants that do not exist yet, not a migration backlog. The unready-tenant case
