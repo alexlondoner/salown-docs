@@ -1,6 +1,30 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
 
+## R-2026-08-30-F — `CHECKOUT-PREPAID-DOUBLE-COUNT` data repair · production operation (no release)
+
+**Not a deploy.** One owner-approved write against production, repairing the two bookings and
+two client records written while the presenter half of BL-8 was missing.
+
+| Field | Value |
+|---|---|
+| **Owner authorisation** | Repair targets stated by the owner field-by-field (*"paidAmount: 32 → 4 · receipt paidEarlier 2800 · receipt paidToday 400 · venue card allocation 3200 → 400 · client totalSpent 60 → 32 · loyalty 32 puan değişmez · Stripe'a dokunulmaz"*), then *"ok yap"* against the stated plan. £4 venue collection on `b201cf` confirmed by the owner |
+| **Tool** | salown-app `scripts/repairCheckoutPrepaidDoubleCount.cjs` — dry run first, then `--apply` |
+| **Documents written** | **4.** `bookings/wvdGrlxvb78J9KxpW36V` · `bookings/DjJj2K7M9E8Qqy3urVTP` · `clients/yfD0xwBOkabUbMzYx0Kk` · `clients/7MBPJSmEnJM5udjmIuS3`. The tool has no query — four ids, named in source |
+| **`…5de929`** | `paidAmount 32→0` · `receiptPaidToday_p 3200→0` · `receiptPaidEarlier_p 0→3200` · allocation service+collected card/total `3200→0`. Nothing was collected at the desk (owner confirmed) |
+| **`…b201cf`** | `paidAmount 32→4` · `receiptPaidToday_p 3200→400` · `receiptTransactionTotal_p 6000→3200` · `receiptReconciled false→true` · `receiptFailures →[]` · allocation `3200→400`. **`receiptPaidEarlier_p` 2800 NOT touched** — BL-8's writer was correct here, the till was stale |
+| **Clients** | `totalSpent 96→64` and `60→32` — `checkoutBooking` had incremented by `total + prePaid` |
+| **Never touched** | Stripe (no API call, no refund) · `platformDepositAmount` · `stripeAmountPaid` · every loyalty field · `totalVisits` · `status` · **`sendLoyaltyEmail`, which is GUARDED at `false`** — the receipt trigger fires only on false→true, so no customer received an email |
+| **Safety model** | Per-field drift guard re-checked INSIDE the transaction (the planning read is stale by definition); one mismatch aborts the run having written nothing. A field already at target is SETTLED, not drift → a second run is a no-op |
+| **Receipt re-verified, not asserted** | The projected shape is run through a hand-mirrored twin of `checkReceiptInvariants` before the write; `receiptReconciled` is set from that result rather than typed in |
+| **Verification after** | Read back from the LIVE documents, not from the tool's report: both bookings now read **£32** as `paidAmount + platformDepositAmount`; invariants recomputed from stored values **PASS** on both; allocations £0.00 and £4.00; `stripeAmountPaid` 32/28, points 32/32, status `CHECKED_OUT`, `sendLoyaltyEmail: false` all unmoved; **4 `BOOKING_REPAIRED` audit rows** |
+| **Gates** | 28 tests in `scripts/repairCheckoutPrepaidDoubleCount.test.js` — 16 shapes through BOTH the twin and the TS original, plus the plan checked as data. Full suite **5053/5053** |
+| **Still open** | `…b201cf`'s `loyaltyEmailSentFor` remains `v1:6000:-1:32:0` — the fingerprint of the **£60 receipt that customer was actually sent**. Re-sending the corrected receipt is an owner decision, not a repair |
+| **Rollback** | Every previous value is in the audit rows and in this table. `git revert` does not apply — re-running the tool with `was`/`now` swapped would restore the pre-repair state, but the pre-repair state is the defect |
+| **Source** | salown-app **`ba15f6b`** |
+
+---
+
 ## R-2026-08-30-E — `CHECKOUT-OVERALLOC-GUARD` · 1-unit release (`hosting:salown`)
 
 **Owner-approved, one hosting site, browser-only change.** The writer now refuses a checkout
