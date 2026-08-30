@@ -1,6 +1,33 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
 
+## R-2026-08-30-G — `CLIENT-SPEND-PREDESK` · 1-unit release (`hosting:salown`)
+
+**Owner-approved, one hosting site, browser-only change.** The client's spend history counts
+the money taken before the desk. **No function, no rules, no indexes, no other site, no
+Firestore write.**
+
+| Field | Value |
+|---|---|
+| **Owner authorisation** | *"Client spend düzeltmesini içeren temiz, SHA-sabitli kaynaktan yalnız hosting:salown deploy et. Functions, rules, indexes, salown-staff veya diğer hosting target'larına dokunma. Deploy sonrası Jonathan'ın client history satırının £32 ve lifetime spend değerinin doğru olduğunu sunulan bundle üzerinden doğrula. BookingDetailPanel.tsx kilitli olduğu için ödeme etiketi ve stale service alanına dokunma."* |
+| **Work ID / source** | `CLIENT-SPEND-PREDESK` · salown-app **`93c5c8a`** (clean, SHA-pinned `git archive` + `npm ci` workspace) |
+| **Why** | The owner opened a repaired booking's client and found a £32 visit recorded as **£4.00**. The Clients page computed spend inline, twice, from `paidAmount` alone — the money settled before the desk lives in `platformDepositAmount`, and **`Clients.tsx` was not on BL-8's own list of readers that add it back** |
+| **Why it was invisible** | Two errors cancelled: a full-online-paid booking used to be billed AGAIN at the desk, so `paidAmount` accidentally held the whole sale. R-2026-08-30-D/E made the till truthful, which removed the second error hiding the first. The history ROW was always wrong regardless — it never had the aggregate's DEPOSIT branch, so every website deposit booking showed the desk's £22 of a £32 visit |
+| **Blast radius, measured** | Over all **1669** non-cancelled whitecross bookings, old rule vs new: lifetime-spend aggregate changes **1 row (+£28.00)**; booking-history row changes **20 rows (+£240.00)**. All under-reports becoming correct; **nothing decreases** |
+| **What changed** | Both call sites go through the new `src/pages/clientSpend.ts`. Aggregator rows deliberately untouched — a Booksy deposit resolves from tenant CONFIG, not the document (`preDeskAmount` returns 0 for Booksy), because a parsed row often carries no deposit field and letting both speak is how one starts double-counting |
+| **Unit 1 — `hosting:salown`** | `firebase deploy --only hosting:salown --project havuz-44f70`. Version **`13ddfea2e18c9c5c` → `be2e2af65c4ca042`** · release **`1788112480638000`** (2026-08-30T17:54:40.638Z) |
+| **Served-byte proof** | `/app` entry `index-BN61RuGf.js` → `Clients-CRnlg2Hh.js`, sha256 **`fd029e40c059912ee680350d3e4aeae8…`**, byte-identical to the SHA-pinned build of `93c5c8a` |
+| **Marker** | `platformDepositAmount` in the served Clients chunk: **1 → 2**. ⚠️ Predicted as 1 → 3 from a source grep that counted a doc comment; the minifier strips comments, so 2 is the correct expectation and the two real code occurrences were confirmed in source before the deploy |
+| **BEHAVIOUR VERIFIED FROM THE SERVED BYTES, not from source** | The four money functions (`k`, `je`, `Me`, `Ne` after minification) were lifted verbatim out of the file salown.com is serving and executed against the live Firestore documents. `WEB-1788085518597-b201cf` (price 32, paidAmount 4, platformDepositAmount 28): history row **£32.00**, lifetime contribution **£32.00**. Grouped as the page groups clients, lifetime spend = **£32.00** (Jonathan, 1 booking) and **£64.00** (Stavros, 2 × £32) — both matching the repaired `client.totalSpent` exactly |
+| **Scope after** | Only `salown` moved. `salown-staff` still **`2f873efa339d544c`** (2026-08-28T14:30:23Z). The R-2026-08-30-E guard is still present in the served entry chunk (`CHECKOUT_OVER_ALLOCATED` = 1) |
+| **Deliberately NOT touched** | `src/components/BookingDetailPanel.tsx` is locked by `alish/checkout-reassign`, so the "Deposit paid" label on a fully prepaid booking and the stale `booking.service` left by a desk service change were reported, not edited (claims rule 7) |
+| **REL-1** | **Not incurred** — temporary workspace; tracked `hosting/staff-bundle/**` never dirtied |
+| **Data** | **No Firestore write of any kind** |
+| **Gates** | Full suite **5074/5074** · `tsc --noEmit` clean · `eslint` clean · 21 new cases, half a regression guard for every shape that must not move |
+| **Rollback** | Previous version **`13ddfea2e18c9c5c`**. Console → Hosting → site **`salown`** → Release history → that VERSION ID → Roll back. Source anchor: **`6e28ae8`**; `git revert 93c5c8a` restores the inline arithmetic |
+
+---
+
 ## R-2026-08-30-F — `CHECKOUT-PREPAID-DOUBLE-COUNT` data repair · production operation (no release)
 
 **Not a deploy.** One owner-approved write against production, repairing the two bookings and
