@@ -701,3 +701,72 @@ immediately before the rollout rather than trusted from this reading.
   the compensation period. A different operation, and it needs its own review.
 * **Scheduled returns** — blocked on `ROTA_FUTURE_ACTIVATION_ENABLED`, §10.2 ②.
 * **Restoring app access** — the S4A saga, §10.2 ④.
+
+## 10.11 What was BUILT — `d3ccfc1`, pushed 2026-08-31, **not deployed**
+
+The design above is now source. `REHIRE` joins `OFFBOARD` in `IMPLEMENTED_OPS`;
+`functions/src/staff/lifecycleRehire.ts` holds the core; the Former-staff sheet in
+`src/pages/Barbers.tsx` composes it; and `cycleStatus` — the last status-only write
+on the Team Members page — was **deleted in the same commit**, exactly as §10.8 (b)
+required, so no tenant can reach the legacy writer while waiting for readiness.
+
+Two rules moved out of the browser and into the contract before the commit, both on
+the owner's correction, and both for the same reason: *a browser convention is not a
+guarantee.*
+
+### (i) The confirmed week is a server fact
+
+`patternConfirmed` is a **request field**, and it must be the boolean `true`.
+`undefined`, `false`, the string `'true'` and `1` are each refused as
+**`PATTERN_NOT_CONFIRMED`** *before the transaction opens a single read* — a caller
+that never showed the operator a week cannot open one, whatever its UI did.
+
+It is then recorded as an attributable fact in the lifecycle audit, beside
+**`intentFingerprint`**: a digest of the week (day **order** is not meaning), the pay
+model type, the return date and the confirmation itself. So the audit says not merely
+*a rehire happened* but *this is the thing the operator confirmed.*
+
+The fingerprint is deliberately **not** folded into the `changeId`. Were it folded in,
+an operator who fixed the week and pressed the button again would silently become a
+**second rehire** instead of hitting the idempotency conflict they should. The id
+derives from the key alone; the fingerprint describes, it does not identify.
+
+### (ii) A self-employed member may not be brought back on a borrowed model
+
+The earlier sheet offered a temporary wage/commission model for a self-employed
+returner. That is the §10.8 (b) mistake in miniature — the feature *appears* to work
+and writes a pay agreement nobody agreed to. The sheet cannot compose a canonical rent
+agreement today, so it composes **nothing** and says so plainly: *this member cannot be
+brought back from here.*
+
+The server enforces the same shape rather than trusting that message.
+`validateSelfEmployedParams` requires the whole agreement — rent mode with its amount
+and period (or its percentage), `productsThroughShop`, `pauseRentOnLeave`,
+`collectedByShop` — and a partial one is refused as
+**`REHIRE_COMP_MODEL_UNSUPPORTED`**, kept distinct from `REHIRE_COMP_MODEL_REQUIRED`
+so the two sentences differ: *this operation cannot compose what you sent* is not
+*you sent nothing*. A **complete** rent agreement is accepted — the contract is not
+narrower than the data model, only the sheet is.
+
+### Proof
+
+| Gate | Result |
+|---|---|
+| Emulator gate (real Firestore) | **581/581 PASS** — R1–R6 cover one commit of all three authorities, a refusal decided *inside* the transaction leaving all three untouched, a moved comp document, two rehires racing one terminal period producing exactly one, the same key twice, and app access never written on any path |
+| `functions` unit | 2213 tests, 24 of them the rehire core's own; **1 foreign failure** |
+| Frontend | 5080 tests; **13 foreign failures** |
+| `tsc` (both projects), `vite build` | clean |
+
+Both foreign sets come from outside this change — another session's
+`.release-clone/` at the workspace root, and a committed
+`financeRotaHistoryCutover.scenario.test.ts` that imports the rota fold without an
+allowlist entry in the `11b` guard. **Neither guard was relaxed**, and the second is
+reported to its owner rather than quietly widened.
+
+### Not live
+
+Nothing is deployed. `salownStaffLifecycle` still refuses `REHIRE` **by name** in
+production, because `IMPLEMENTED_OPS` is a property of the *deployed* artifact. The
+rollout is a targeted functions deploy plus `hosting:salown`, owner approval first, a
+`RELEASE_LEDGER.md` row after — and the readiness inventory re-run immediately before
+it rather than trusted from the 2026-08-30 reading.
