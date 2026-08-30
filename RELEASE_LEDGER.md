@@ -1,6 +1,34 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
 
+## R-2026-08-30-H — `CHECKOUT-PREPAID-PARITY` Staff · 1-unit release (`hosting:salown-staff`)
+
+**Owner-approved after a file-level delta review, one hosting site.** The Staff App till now
+resolves "already paid" from the same function the Admin till and both writers use.
+**No function, no rules, no indexes, no other site, no Firestore write.**
+
+| Field | Value |
+|---|---|
+| **Owner authorisation** | *"59bd39a97e2510858b3f84171088480fcb2e0248 kaynağından yalnız hosting:salown-staff deploy et. Functions, rules, indexes, hosting:salown veya diğer hosting target'larına dokunma. Temiz SHA-sabitli workspace kullan. Rollback hedefi 2f873efa339d544c."* Given only after the delta below was produced — the first request for approval was refused for lacking an exact file/commit list |
+| **Work ID / source** | `CHECKOUT-PREPAID-PARITY` (Staff half) · salown-app **`59bd39a97e2510858b3f84171088480fcb2e0248`**, clean `git archive` + `npm ci` workspace. Workspace source verified against git: `src/firestoreActions.ts` sha256 `7cf93bdd027a9c29…`, `src/staff/lib/checkoutSheetPayload.ts` `d169895c60394096…` |
+| **Baseline proved** | The live bundle was **not assumed** to be `496e69c`: a rebuild of that commit reproduced the live `staff-WIlAMpTt.js` **sha256 `ca4d119af3a9058d…` byte-for-byte**, so the delta below is complete |
+| **What ships — measured, not guessed** | The staff bundle's module closure was read from a **sourcemap build**: **86 files** (40 `src/staff/**`, 46 shared `src/**`, 0 `packages/**`). Intersected with the 23 source files changed since `496e69c`, exactly **TWO** ship: `src/firestoreActions.ts` and `src/staff/lib/checkoutSheetPayload.ts`. The other 21 — including `src/utils/netRevenue.ts`, `homeMetrics.ts`, `staffLifecycle*`, `Home.tsx`, `Barbers.tsx`, `rotaFold.ts`, `packages/shared/src/rota.ts` — are outside the closure and do not reach this bundle |
+| **Behaviour ① — checkout parity** (`d91d7b3`, `6e28ae8`) | The writer refuses an over-collection (`resolveCheckoutOverAllocation`); the `wasCheckedOut ? 0` re-checkout rule is gone so a correction collects the remainder; the sheet reads `resolvePrePaidAmount` instead of its own weaker pair of reads |
+| **Behaviour ② — refund awareness** (`3326db8`, **NOT checkout parity**) | `resolvePrePaidAmount` gains `REFUNDED`/`PARTIALLY_REFUNDED` handling: `max(0, stripeAmountPaid − refundedAmount)` instead of a flat 0, and a refund now outranks a stored `platformDepositAmount`. **Live exposure measured across 1675 bookings: exactly ONE booking resolves differently** — `WEB-1788048932037-b89caf`, `CANCELLED`, fully refunded, old rule credited £10, new credits £0. It cannot reach a checkout. The direction closes an under-charge, it does not open one |
+| **Unit 1 — `hosting:salown-staff`** | `firebase deploy --only hosting:salown-staff --project havuz-44f70`. Version **`2f873efa339d544c` → `c6df19884456d78b`** · release **`1788125445378000`** (2026-08-30T21:30:45.378Z) |
+| **Upload scope** | **2 of 25 files** — `assets/staff-zEIEw5ok.js` and `index.html`. The CLI reported `uploading new files [0/2]`, matching the prediction exactly |
+| **Served-byte proof** | `staff-zEIEw5ok.js` sha256 **`27e09f9e90adeb121bdbe36a62f4aba7`** and `index.html` sha256 **`5a83e43f13dfbae310bf869c0eba2754`**, both byte-identical to the SHA-pinned build |
+| **Unchanged assets confirmed served** | `assets/staff-h5sE0F85.css` (`012863198518600f…`), **`sw.js` (`1cf3b2317d3c1c12…`)** and `site.webmanifest` (`344390f2ff5965d2…`) all byte-identical to the build and to what was live. The service worker is unchanged, so its network-first behaviour is untouched |
+| **Markers, live → served** | `CHECKOUT_OVER_ALLOCATED` **0 → 1** · `PARTIALLY_REFUNDED` **0 → 1** · `refundedAmount` **0 → 2** · `EXTERNAL_CHECKOUT` **1 → 2** · `platformDepositAmount` **6 → 5** (the sheet's two hand-rolled reads collapsed into one resolver) |
+| **BEHAVIOUR VERIFIED FROM THE SERVED BYTES, display level only** | The resolver and its two state Sets (`PO`, `FO`, `IO`, `LO` after minification) were lifted verbatim from the file `staff.salown.com` is serving and executed against in-memory fixtures — **no Firestore client was constructed and no booking was written**. Outstanding at the till: £28 prepaid + £32 upgraded service → **£4.00** · £32 prepaid, unchanged → **£0.00** · website deposit £10 of £32 → **£22.00** · walk-in → **£32.00** · £32 paid with £12 refunded → **£12.00** · fully refunded → **£32.00**. 6/6 |
+| **Scope after** | Only `salown-staff` moved. `salown` still **`be2e2af65c4ca042`** (2026-08-30T17:54:40Z) serving `index-BN61RuGf.js`. Functions / rules / indexes untouched |
+| **Gates** | Checkout-parity suites **215/215** across 7 files · full suite 5074/5074 · `tsc --noEmit` clean · `eslint` clean. No `.map` file reached the artefact (verified 0 before deploy) |
+| **Data** | **No Firestore write of any kind** |
+| **⚠️ What this release does NOT do** | It does not protect a Staff App tab that has not been reloaded — `firestoreActions.ts` ships inside this same bundle. **P0 `CHECKOUT-SERVER-AUTHORITY` stays open** (ROADMAP §5.0) |
+| **Rollback** | Previous version **`2f873efa339d544c`**. Console → Hosting → site **`salown-staff`** → Release history → that VERSION ID → Roll back. Source anchor: **`496e69c`** |
+
+---
+
 ## R-2026-08-30-G — `CLIENT-SPEND-PREDESK` · 1-unit release (`hosting:salown`)
 
 **Owner-approved, one hosting site, browser-only change.** The client's spend history counts
