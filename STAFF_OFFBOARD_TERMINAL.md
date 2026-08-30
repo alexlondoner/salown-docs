@@ -248,97 +248,77 @@ member, with no change to `appendPeriod`.
 
 ## 10.2 The four questions, answered
 
-### ① The pay model — REHIRE does not WRITE one, and REFUSES without one
+### ① The pay model — REHIRE writes it, ATOMICALLY, from a model the owner confirms
 
-> **Owner amendment, 2026-08-30.** The first version of this model said the
-> operation would open no compensation period and merely *warn* that none was
-> open. That was wrong, and wrong in the exact way this whole document exists to
-> prevent. It produced a reachable state of
-> **`active` + bookable + a live weekly rota + no valid `staffComp` period** —
-> working and not accruing. That is not a smaller version of the departure drift,
-> it is the same drift wearing the other face, and a warning is not an authority.
+> **This answer was wrong twice, and the second version was wrong in a way that
+> matters more than the first.** The history is kept because the two mistakes are
+> the same mistake at different depths.
+>
+> **v1** — write no compensation period and merely *warn* that none is open. That
+> left a reachable `active` + bookable + live weekly rota + **no valid `staffComp`
+> period`: working and not accruing. A warning is not an authority.
+>
+> **v2** — write none, but **require** one the owner prepared first. That closed
+> v1's hole and opened a worse one. Preparing the period is itself a write to the
+> employment authority, performed **outside** the transaction, so between step 1
+> and step 4 production holds:
+>
+> ```
+> staffComp : employment has RESUMED (2026-08-30 →, open)
+> barbers   : still passive
+> staffRota : still the terminal archive
+> ```
+>
+> If the owner closes the sheet, or the rehire is refused for any of the reasons
+> §10.3 lists, **that drift is permanent** — and it is drift in the one authority
+> this document had just finished arguing is the record of when employment
+> resumed. v2 fixed a hole by digging a deeper one three lines away.
 
-The correction keeps what was right and fixes what was not:
+**v3, and it is smaller than both.** `REHIRE` writes the compensation period
+**inside the same transaction** as the rota period and the status. The owner
+selects and confirms the pay model **in the sheet**; nothing is written anywhere
+until all three commit together.
 
-* **`REHIRE` still writes NO compensation period.** `comp` stays out of the
-  request keys and out of the write set. The reason is unchanged: a departure has
-  an unambiguous date to close on, a rehire has no unambiguous **amount** to open
-  with, and inventing one writes a commercial decision nobody made into the
-  document Finance prices from. `staffComp` keeps its two writers — the Pay tab
-  and the departure — and gains no third.
-* **`REHIRE` REQUIRES one to already exist.** Inside the transaction it re-reads
-  `staffComp/{barberId}` and refuses unless a **usable period covers `returnOn`**.
-  No period, a gap, a malformed record, or one that stops before `returnOn`
-  ⇒ **`REHIRE_COMP_PERIOD_REQUIRED`**, zero writes.
+**This does not make the operation a third writer of `staffComp`.** It reuses the
+canonical domain helper — `compUtils.appendPeriod` — exactly as the rota half
+reuses `appendRotaChange` rather than composing entries by hand. It is the
+**second orchestration consumer of the same canonical write primitive**, which is
+the identical relationship the departure already has with the rota engine. A
+second *caller* of one rule is not a second *rule*.
 
-The distinction is the whole point: **not writing** something is a scope decision;
-**not requiring** it was a hole. The operation refuses to make somebody bookable
-that Finance would pay nothing for.
-
-**What counts as usable — four conditions, and each rejects something the others
-let through:**
+**The invariant becomes unrepresentable rather than validated.** The request
+carries the pay **model** only; the server composes the period:
 
 ```
-period.effectiveFrom === returnOn            // starts ON the day they return
-period.effectiveTo   === null                // and is the trailing OPEN period
-compPeriodVerdict(history, returnOn) === 'covered'
-fingerprint(period)  === expectedCompFingerprint
+effectiveFrom = returnOn        // server-derived — `effectiveFrom` is a FORBIDDEN key
+effectiveTo   = null
+type, params  = the model the owner confirmed in the sheet
 ```
 
-* **`effectiveFrom === returnOn`, exactly.** "Covers `returnOn`" is not enough,
-  and the gap is not theoretical: an owner who mis-types the date opens a period
-  from 2026-08-20 for somebody returning on 2026-08-30, and the record then
-  **claims an employment that covers ten days the person did not work**. The rota
-  terminal stops the money — `compPeriodVerdict` answers `'outside'` for those
-  days once the terminal period is in force — but that is a second authority
-  compensating for a wrong one, not a correct record. `staffComp` is not merely an
-  accrual input: it is the document that says **when employment resumed**, and two
-  authorities disagreeing about that date is the class of drift this whole item
-  exists to remove. An earlier `effectiveFrom` is refused, not silently priced
-  around.
-* **`effectiveTo === null`.** A closed period that happens to span `returnOn` is an
-  employment already scheduled to end, and a rehire is not the operation that
-  records that.
-* **`compPeriodVerdict === 'covered'`** is kept even though the first two conditions
-  imply it, because it is the canonical predicate every Finance accrual path gates
-  on and it is the one that rejects a **malformed** record: a period whose
-  `effectiveFrom` is not a real date key resolves to `'unknown'`, never
-  `'covered'`. Restating the rule here instead of borrowing it would be a second
-  opinion about what "employed on this day" means.
-* **the precondition is a TRIPLE**, and none of the three is redundant — each
-  catches something the other two cannot:
+So `effectiveFrom === returnOn` stops being a condition that could fail and
+becomes a shape that cannot be built any other way. That is strictly better than
+checking it: a check can be forgotten at a second call site, a construction
+cannot.
 
-  | | what it catches | what it alone would get wrong |
-  |---|---|---|
-  | expected document **`updateTime`** | any PHYSICAL write to `staffComp/{id}`, including one to a field nobody fingerprinted | `syncStaffCompName` bumps the document on a rename without touching `history`, so on its own it refuses honest requests |
-  | canonical **full-history fingerprint** | SEMANTIC change — and `compPeriodVerdict` reads overlapping periods as a **union**, so an edit to an *earlier* entry can move the answer for `returnOn` without touching the trailing one | a benign document write looks identical to no write at all |
-  | **covering-period identity, re-derived INSIDE the transaction** | a change in the DECISION rather than the data — above all the midnight case, where `returnOn` itself moved between render and commit | it cannot tell a stale read from a fresh one |
+**What the transaction still verifies**, because `appendPeriod` is append-only and
+must land on the history it was composed against:
 
-  **Two distinct refusals, because they need two different sentences.**
-  `REHIRE_COMP_DOCUMENT_MOVED` says *the pay record was touched — re-open the
-  sheet*; `REHIRE_COMP_PERIOD_REQUIRED` says *the period itself does not satisfy
-  the four conditions*. Collapsing them into one code is what makes a strict
-  precondition unusable: an operator told "your period is wrong" when somebody
-  merely renamed the member will go looking for a problem that is not there.
+* the history reads as periods (`COMP_HISTORY_INVALID`);
+* the trailing period is **CLOSED**, and closed strictly before `returnOn`. An
+  open trailing period on a departed member means the departure never closed the
+  wage boundary, or somebody opened one by hand — either way `appendPeriod` would
+  silently *auto-close* it at `returnOn − 1`, editing a period nobody asked to
+  edit. **`REHIRE_COMP_PERIOD_OPEN`**, zero writes;
+* the document has not moved since the sheet read it — the precondition triple
+  below, now guarding *the history the append will be applied to* rather than a
+  period the owner prepared;
+* `appendPeriod` itself does not throw (**`REHIRE_COMP_APPEND_REFUSED`**).
 
-**Drift between the sheet and the commit is refused, not tolerated.** The sheet
-shows the period read-only; the request carries the fingerprint of exactly what
-it displayed; the transaction re-reads the document and refuses if the answer
-moved. That is the treatment the rota preconditions already get
-(`expectedRevision` / `expectedEntriesHash`), applied to the other authority, and
-wage data earns it: without it, a rate edited between render and submit would be
-committed under a period the operator never saw.
-
-**The resulting operation order:**
-
-1. the owner opens the new compensation period on the **Pay tab** —
-   `effectiveFrom` **exactly** `returnOn`, open-ended, no overlap with the closed
-   one, a live model;
-2. the rehire sheet displays that period **read-only** — the owner sees what
-   Finance will price before agreeing to anything;
-3. `REHIRE` re-reads the same document **inside the transaction**;
-4. valid ⇒ the rota period and the status open together;
-5. missing, changed or not covering ⇒ **zero writes**.
+**The rejected alternative — a draft compensation record.** The owner prepares a
+non-effective draft and the transaction promotes it. It is safe, but the model has
+no draft concept anywhere today, so it means a new document state, a new lifecycle
+for it, and a new way for a draft to be orphaned. It buys nothing v3 does not
+already have. Recorded as considered and declined.
 
 ### ② Backdated? No. Future-dated? Also no. `returnOn` is TODAY.
 
@@ -401,6 +381,9 @@ must **say so** (§10.5).
   "idempotencyKey": "slv-rhr-…",
   "returnOn": "2026-09-01",              // MUST equal the tenant's today
   "pattern": { "scheduleMode": "weekly", "workingDays": [...], … },
+  "comp": { "type": "wage", "params": { … } },   // the MODEL only — the server
+                                                 // composes effectiveFrom = returnOn
+                                                 // and effectiveTo = null
   "expectedCompFingerprint": "sha256…",  // canonical fold of the WHOLE history
   "expectedCompUpdateTime": {            // Firestore's own physical precondition,
     "seconds": 1788049840,               //   carried as {seconds,nanoseconds} —
@@ -409,8 +392,10 @@ must **say so** (§10.5).
 }
 ```
 
-`comp`, `restoreAppAccess` and `restoreServices` are **removed** from
-`LIFECYCLE_REQUEST_KEYS.REHIRE`.
+`restoreAppAccess` and `restoreServices` are **removed** from
+`LIFECYCLE_REQUEST_KEYS.REHIRE`. **`comp` stays** — it is the pay model the owner
+confirmed, and §10.2 ① is why. `effectiveFrom` / `effectiveTo` remain FORBIDDEN
+keys: the caller states the model, never the dates.
 
 **Authority:** owner or super-admin — the same gate as `OFFBOARD`. One lifecycle
 boundary, one role list.
@@ -423,17 +408,21 @@ staffRota/{id}/rotaEntries/{e1}  ROTA_CLOSE  → effectiveTo = returnOn − 1   
 staffRota/{id}/rotaEntries/{e2}  ROTA_OPEN   → effectiveFrom = returnOn, the confirmed week
 staffRota/{id}                   revision, entriesHash, entryCount, lastChangeId, lastOrigin
 barbers/{id}                     workingDays / dayHours / hours — by the ENGINE's convergence
+staffComp/{id}                   history[] + the new OPEN period, via appendPeriod (set, merge)
 auditLogs/stafflifecycle_rehire_…  the lifecycle record                      (create)
 auditLogs/rota_append_…            the engine's own append record
 ```
 
-`staffComp` appears nowhere in that list, and that is the point.
+`staffComp` **is** in that list, and that is the point: it commits with the other
+two or not at all. What is NOT in the list is any date the caller chose.
 
 **Refusals** — each costs zero writes:
 
 | Code | When |
 |---|---|
-| **`REHIRE_COMP_PERIOD_REQUIRED`** | the trailing `staffComp` period does not satisfy the conditions: `effectiveFrom === returnOn`, `effectiveTo === null`, verdict `'covered'` |
+| **`REHIRE_COMP_MODEL_REQUIRED`** | no `comp` model in the payload. The sheet must not submit without one |
+| **`REHIRE_COMP_PERIOD_OPEN`** | the trailing `staffComp` period is not closed, or not closed strictly before `returnOn`. `appendPeriod` would silently auto-close it at `returnOn − 1`, editing a period nobody asked to edit |
+| **`REHIRE_COMP_APPEND_REFUSED`** | `appendPeriod` threw — the append would overlap a closed period |
 | **`REHIRE_COMP_DOCUMENT_MOVED`** | the compensation document changed between the sheet reading it and the transaction — `updateTime` or the full-history fingerprint moved. A separate code from the one above on purpose: it means *re-open the sheet*, not *your period is wrong* |
 | **`REHIRE_NOT_READY`** | this subject cannot be rehired at all yet — see the readiness verdict (§10.8 b2). Never falls back to a status-only write |
 | `SUBJECT_NOT_PASSIVE` | the member is not departed. **An already-active member is refused**, not settled — see §10.4 |
@@ -457,12 +446,13 @@ The list an implementation is measured against. Every line is testable.
    is refused too (`RETURN_ON_NOT_AFTER_DEPARTURE`).
 4. **`returnOn` equals the tenant's today**, resolved from the authoritative tenant
    timezone — never the browser clock, never the server's.
-5. **The trailing `staffComp` period satisfies all four conditions** —
-   `effectiveFrom === returnOn` **exactly**, `effectiveTo === null`, verdict
-   `'covered'`, and unchanged since the sheet displayed it. An `effectiveFrom`
-   earlier than `returnOn` is refused even though the rota terminal would stop the
-   money: the record would claim an employment covering days nobody worked.
-   Otherwise `REHIRE_COMP_PERIOD_REQUIRED` with zero writes.
+5. **The compensation period is composed by the SERVER and written in the SAME
+   transaction** — `effectiveFrom = returnOn` by construction, never by a caller
+   and never by a check. The trailing existing period must be **closed strictly
+   before `returnOn`** (`REHIRE_COMP_PERIOD_OPEN`), `appendPeriod` must not throw
+   (`REHIRE_COMP_APPEND_REFUSED`), and the document must not have moved since the
+   sheet read it (`REHIRE_COMP_DOCUMENT_MOVED`). **No compensation write happens
+   outside this transaction, at any point in the flow.**
 6. **The same idempotency key produces no second entry and no second audit
    record**, against a real Firestore under contention.
 7. **The archived weekly pattern is a SUGGESTION only** — §10.5.
@@ -550,11 +540,16 @@ itself, and neither is a detail.
 
 ### (a) Six of seven tenants cannot reach `REHIRE` at all
 
-`NO_TERMINAL_PERIOD` and `REHIRE_COMP_PERIOD_REQUIRED` are both fail-closed, and
-on 2026-08-30 the platform holds **one** tenant with any `staffComp` document and
+`NO_TERMINAL_PERIOD` and the comp-history refusals are fail-closed, and on
+2026-08-30 the platform holds **one** tenant with any `staffComp` document and
 **one** with any canonical rota log — whitecross, both times. Every other tenant
-would find `REHIRE` structurally unusable: no terminal period to close, and no pay
-period to validate.
+would find `REHIRE` structurally unusable: no terminal period to close, and no
+readable compensation history to append to.
+
+**Measured, not assumed:** the read-only inventory (§10.10) reports **one** passive
+person platform-wide, on whitecross, and **zero** on the other six tenants. The
+unready-tenant case is therefore real in contract and **empty in production
+today** — which is why the rollout rule below costs nothing to apply.
 
 That is the **correct** answer on its own terms — the whole point of §10.2 ① is
 not to make somebody bookable that Finance would pay nothing for — but it must be
@@ -588,7 +583,29 @@ housekeeping; what may not survive the rollout is its **reachability**. An unrea
 tenant gets a refusal that explains itself and a route to readiness — never a
 button that writes one third of an employment.
 
-### (b2) Readiness is a property of a PERSON, not a tenant
+### (b2) Readiness is TWO questions, and conflating them gives a wrong answer
+
+The first run of the inventory reported Arda **READY** — and a rehire submitted
+that moment would have been **refused**, because under the then-current contract
+he had no pre-created compensation period. The verdict was not wrong about the
+data; it was answering a different question from the one it appeared to answer.
+
+| | what it asks | who can fix it |
+|---|---|---|
+| **`INFRA_READY`** | is the STRUCTURE in place — a canonical rota that folds, a terminal offboard period, a readable compensation history? | a migration. Nothing an operator can supply at rehire time |
+| **`APPLY_READY`** | on top of that, can the stored data accept a rehire **today**? | the owner, by fixing the specific blocker |
+
+`APPLY_BLOCKED_INFRA` · `REHIRE_COMP_PERIOD_OPEN` ·
+`RETURN_ON_NOT_AFTER_DEPARTURE` · `APPLY_MULTIPLE_BLOCKERS` are the apply-axis
+verdicts.
+
+**Two things the inventory must never claim.** It cannot cover the two OPERATOR
+inputs — the confirmed weekly pattern and the selected pay model — because both
+are supplied in the sheet. And its verdicts are **contract-version dependent**:
+the same person was `READY` under v2's contract and is `APPLY_READY` under v3's,
+for the same data. Every report therefore names the contract it evaluated.
+
+### (b3) Readiness is a property of a PERSON, not a tenant
 
 "Does this tenant have any `staffComp` / any rota log" is the wrong question and
 would give the wrong answer: within one salon, Alex can be rehire-ready while
@@ -613,6 +630,14 @@ payroll to a console would be the wrong tool for making the payroll safe.
 
 ### (c) Two smaller edges, recorded so they are not rediscovered
 
+* **Timezone is reported as a RESOLVED value with a PROVENANCE, never as a raw
+  field.** An absent `presentation.timezone` is not an unknown: it is the
+  authoritative platform default
+  (`PLATFORM_PRESENTATION_DEFAULTS.timezone === 'Europe/London'`). Printing
+  `UNRESOLVED` — as the first run of the inventory did for whitecross — reads as a
+  failed measurement when the measurement was correct. The line is
+  `timezone: Europe/London (provenance: platform default | settings/settings |
+  tenant root)`.
 * **Midnight.** `returnOn` must equal the tenant's today AND the comp period's
   `effectiveFrom`. A period opened at 23:55 and a rehire submitted at 00:05 is a
   legitimate refusal, but a confusing one. The sheet must re-resolve the tenant
@@ -624,7 +649,41 @@ payroll to a console would be the wrong tool for making the payroll safe.
   find the rota replaying while the comp condition no longer holds. The settled
   answer must be read from the three authorities, exactly as `OFFBOARD`'s is.
 
-## 10.9 Deliberately still out of scope
+## 10.9 The inventory, run 2026-08-30
+
+Read-only, zero writes, no callable invoked, no payroll / pattern / name / contact
+printed. Per person: the stable barber id and the two verdicts.
+
+```
+asOf(UTC)  : 2026-08-30T11:02:05.519Z
+contract   : REHIRE v3
+scope      : passive team members only
+
+whitecross    tenantDate 2026-08-30 · timezone Europe/London (provenance: platform default)
+              passive 1 · INFRA_READY 1 · APPLY_READY 1
+              · barber-1777655430086  infra=INFRA_READY  apply=APPLY_READY
+
+dayi-barbers · demo · herohairs · the-hair-lab · tr-demo · yusufo
+              passive 0
+
+PLATFORM TOTAL   INFRA_READY 1 · every other infra verdict 0
+                 APPLY_READY 1 · every other apply verdict 0
+```
+
+**What it settles.** There is exactly **one** passive person on the platform, and
+both axes are green for them. `NO_STAFF_COMP`, `NO_CANONICAL_ROTA`,
+`NO_TERMINAL_OFFBOARD_PERIOD`, `COMP_HISTORY_INVALID` and `ROTA_HISTORY_INVALID`
+are real contract states with **zero** occurrences today — design guarantees for
+tenants that do not exist yet, not a migration backlog. The unready-tenant case
+of §10.8 (b) is therefore **empty in production**, which is why the rollout rule
+costs nothing to apply now and would cost a great deal to apply later.
+
+**What it does not settle.** It is a snapshot, and the six tenants with no passive
+member will acquire one the moment somebody is offboarded — through the new flow,
+so their terminal periods are born correct. The inventory must be re-run
+immediately before the rollout rather than trusted from this reading.
+
+## 10.10 Deliberately still out of scope
 
 * **Location transfer** (`LOCATION_LEAVE`) — declared, unimplemented, untouched.
 * **Correcting a mistaken departure** — `ROTA_SUPERSEDE` plus an owner decision on
