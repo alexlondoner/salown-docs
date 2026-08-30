@@ -305,11 +305,21 @@ fingerprint(period)  === expectedCompFingerprint
   `effectiveFrom` is not a real date key resolves to `'unknown'`, never
   `'covered'`. Restating the rule here instead of borrowing it would be a second
   opinion about what "employed on this day" means.
-* **the fingerprint** covers the **whole `history` array**, not just the trailing
-  period. `compPeriodVerdict` reads overlapping periods as a **union** — legal by
-  contract but real in production — so an edit to an *earlier* entry can change
-  the answer for `returnOn` without touching the trailing one. Fingerprinting only
-  the period the sheet displayed would leave exactly that gap open.
+* **the precondition is a TRIPLE**, and none of the three is redundant — each
+  catches something the other two cannot:
+
+  | | what it catches | what it alone would get wrong |
+  |---|---|---|
+  | expected document **`updateTime`** | any PHYSICAL write to `staffComp/{id}`, including one to a field nobody fingerprinted | `syncStaffCompName` bumps the document on a rename without touching `history`, so on its own it refuses honest requests |
+  | canonical **full-history fingerprint** | SEMANTIC change — and `compPeriodVerdict` reads overlapping periods as a **union**, so an edit to an *earlier* entry can move the answer for `returnOn` without touching the trailing one | a benign document write looks identical to no write at all |
+  | **covering-period identity, re-derived INSIDE the transaction** | a change in the DECISION rather than the data — above all the midnight case, where `returnOn` itself moved between render and commit | it cannot tell a stale read from a fresh one |
+
+  **Two distinct refusals, because they need two different sentences.**
+  `REHIRE_COMP_DOCUMENT_MOVED` says *the pay record was touched — re-open the
+  sheet*; `REHIRE_COMP_PERIOD_REQUIRED` says *the period itself does not satisfy
+  the four conditions*. Collapsing them into one code is what makes a strict
+  precondition unusable: an operator told "your period is wrong" when somebody
+  merely renamed the member will go looking for a problem that is not there.
 
 **Drift between the sheet and the commit is refused, not tolerated.** The sheet
 shows the period read-only; the request carries the fingerprint of exactly what
@@ -391,7 +401,11 @@ must **say so** (§10.5).
   "idempotencyKey": "slv-rhr-…",
   "returnOn": "2026-09-01",              // MUST equal the tenant's today
   "pattern": { "scheduleMode": "weekly", "workingDays": [...], … },
-  "expectedCompFingerprint": "sha256…"   // the period the sheet displayed
+  "expectedCompFingerprint": "sha256…",  // canonical fold of the WHOLE history
+  "expectedCompUpdateTime": {            // Firestore's own physical precondition,
+    "seconds": 1788049840,               //   carried as {seconds,nanoseconds} —
+    "nanoseconds": 954000000             //   never round-tripped through an ISO
+  }                                      //   string (CAM-5: toDate() rounds)
 }
 ```
 
@@ -419,7 +433,9 @@ auditLogs/rota_append_…            the engine's own append record
 
 | Code | When |
 |---|---|
-| **`REHIRE_COMP_PERIOD_REQUIRED`** | the trailing `staffComp` period does not satisfy all four conditions: `effectiveFrom === returnOn`, `effectiveTo === null`, verdict `'covered'`, fingerprint unchanged since the sheet displayed it |
+| **`REHIRE_COMP_PERIOD_REQUIRED`** | the trailing `staffComp` period does not satisfy the conditions: `effectiveFrom === returnOn`, `effectiveTo === null`, verdict `'covered'` |
+| **`REHIRE_COMP_DOCUMENT_MOVED`** | the compensation document changed between the sheet reading it and the transaction — `updateTime` or the full-history fingerprint moved. A separate code from the one above on purpose: it means *re-open the sheet*, not *your period is wrong* |
+| **`REHIRE_NOT_READY`** | this subject cannot be rehired at all yet — see the readiness verdict (§10.8 b2). Never falls back to a status-only write |
 | `SUBJECT_NOT_PASSIVE` | the member is not departed. **An already-active member is refused**, not settled — see §10.4 |
 | `NO_TERMINAL_PERIOD` | the rota holds no terminal `ROTA_OFFBOARD` archive to close. **Fail-closed**: they were never properly offboarded, so the answer is `OFFBOARD` first, or this is a correction |
 | `RETURN_ON_NOT_TODAY` | `returnOn` is not the tenant's today (both directions) |
@@ -454,11 +470,10 @@ The list an implementation is measured against. Every line is testable.
    restoring it is a separate operation.
 9. **`comp`, `restoreAppAccess` and `restoreServices` are removed** from the
    declared request keys.
-10. **`cycleStatus` is deleted only once every tenant can COMPLETE a rehire** — a
-    canonical rota log and a pay model they can open — not merely once every call
-    site points at the new door. See §10.8 (b): on a tenant with neither, the new
-    flow refuses every rehire, and deleting the browser write there leaves the
-    salon unable to reactivate anybody.
+10. **`cycleStatus` is unreachable from every UI call site in the ROLLOUT commit
+    itself** — not later, and not per tenant. The legacy status-only write is not
+    a fallback for anybody (§10.8). Physically deleting the function may follow;
+    remaining **callable** may not.
 11. **Every refusal writes nothing**, including the ones decided inside the
     transaction, proven against a real Firestore.
 12. **The archived history is byte-identical after the rehire** — every entry
@@ -468,6 +483,13 @@ The list an implementation is measured against. Every line is testable.
 14. **The fingerprint covers the whole `history` array**, not the trailing period
     alone — overlapping periods are union-read, so an earlier edit can change the
     answer for `returnOn`.
+15. **All three preconditions are enforced**, and a physical move is reported as
+    `REHIRE_COMP_DOCUMENT_MOVED` rather than as a wrong period.
+16. **The readiness inventory produces a verdict PER PASSIVE PERSON**, from the
+    seven-value vocabulary, and the script prints categories and counts only.
+17. **No surface can perform a status-only activation**, on any tenant, at any
+    point during the rollout — asserted the way the departure's absence is
+    asserted: a brace-matched sweep of every write on the page.
 
 ## 10.5 The UI
 
@@ -512,7 +534,16 @@ scheduled for zero days and accruing nothing**: the mirror image of the drift th
 document describes. `STAFF-REHIRE` closes it, and §10.2 ① is what stops the fix
 from reintroducing it in a new place.
 
-## 10.8 Two consequences that must be settled BEFORE implementation
+## 10.8 The rollout rule, and the consequences behind it
+
+> **Legacy status-only activation is a fallback for NOBODY.** If the new `REHIRE`
+> flow cannot be used, the operation is **fail-closed** and the surface shows the
+> readiness verdict and what the tenant must do. `cycleStatus` is removed from
+> every UI call site **during the rollout**, not after tenant readiness — the old
+> broken writer is never kept reachable while salons are made ready.
+
+The two findings that produced that rule, both from walking the design against
+production rather than against itself.
 
 Both were found by walking the design against production rather than against
 itself, and neither is a detail.
@@ -531,25 +562,54 @@ a decision, not a discovery. The sheet must say **which** condition failed and
 what to do about it, and "adopt the pay model" is the honest answer for a tenant
 that has never opened one.
 
-### (b) …which makes acceptance criterion 10 a trap as written
+### (b) The legacy activation writer is NOT the answer for them
 
-Criterion 10 says `cycleStatus` may be deleted once every activation **call site**
-has moved. That is not sufficient, and the gap is dangerous: on a tenant with no
-rota log and no `staffComp`, every call site can be migrated and the new flow
-still refuses **every** rehire. Deleting the browser write at that point leaves
-those salons **unable to reactivate anybody at all**.
+The obvious reading of (a) — *keep `cycleStatus` until every tenant is ready* —
+is wrong, and it is wrong in the direction that matters. That writer moves
+`status`/`active` and **nothing else**: on an unready tenant the operator would
+appear to rehire somebody while the compensation period and the rota drift
+exactly as before. The feature looking available and quietly producing broken
+data is worse than the feature being unavailable.
 
-The precondition is therefore stronger and must be stated as such:
+> **A feature that is temporarily unusable is safer than one that silently writes
+> a wrong record.**
 
-> `cycleStatus` may be deleted only once every tenant that can hold a passive
-> member can actually **complete** a rehire — a canonical rota log and a pay model
-> they can open — not merely once the call sites point at the new door.
+So the transition has three states and the third one is empty:
 
-Until then the two coexist, and the honest intermediate state is: the new flow is
-the door, and the old write remains reachable **only** where the new one provably
-cannot answer. That is a migration, and it needs its own measurement — the same
-`scripts/analyseCompPeriods.cjs`-shaped read-only inventory that gated
-`FIN-COMP-S3C`, asking "which tenants could complete a rehire today".
+| tenant | activation path |
+|---|---|
+| **rehire-ready** | the new atomic sheet + callable. Legacy path **closed** |
+| **not rehire-ready** | legacy path **also closed**. The sheet says *"rehire setup required"*, shows the read-only readiness result, and offers the super-admin migration/support route |
+| **any tenant** | may **not** use the status-only activation writer |
+
+**Therefore `cycleStatus` is removed from every UI call site in the rollout commit
+itself**, before any tenant is ready. Deleting the function body can follow as
+housekeeping; what may not survive the rollout is its **reachability**. An unready
+tenant gets a refusal that explains itself and a route to readiness — never a
+button that writes one third of an employment.
+
+### (b2) Readiness is a property of a PERSON, not a tenant
+
+"Does this tenant have any `staffComp` / any rota log" is the wrong question and
+would give the wrong answer: within one salon, Alex can be rehire-ready while
+another former staff member is not. The inventory must therefore produce a
+verdict **per passive person**, from this vocabulary:
+
+| verdict | meaning |
+|---|---|
+| `READY` | a rehire would be accepted today |
+| `NO_STAFF_COMP` | no compensation document at all |
+| `NO_CANONICAL_ROTA` | no canonical rota log for this subject |
+| `NO_TERMINAL_OFFBOARD_PERIOD` | a log exists but holds no terminal archive — they were made passive the old way |
+| `COMP_HISTORY_INVALID` | the history cannot be read as periods (malformed, overlapping, gapped) |
+| `ROTA_HISTORY_INVALID` | the log does not fold |
+| `MULTIPLE_BLOCKERS` | more than one of the above |
+
+Two surfaces, two disclosure rules, and they are not the same: the **inventory
+script** prints counts and category names only — the `analyseCompPeriods.cjs`
+discipline, no names, no dates, no amounts — while the **sheet** shows one
+authorized owner their own member's single verdict. A script that printed the
+payroll to a console would be the wrong tool for making the payroll safe.
 
 ### (c) Two smaller edges, recorded so they are not rediscovered
 
