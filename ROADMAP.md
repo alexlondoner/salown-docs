@@ -224,6 +224,46 @@ here; commit and release identifiers are never renamed.
 
 ## 5. P0 — Production integrity and financial correctness
 
+### 5.0 `CHECKOUT-SERVER-AUTHORITY` — the till's arithmetic is still enforced only in the browser · **CONFIRMED_OPEN** *(added 2026-08-30)*
+
+**Status:** `CONFIRMED_OPEN` · **Opened by:** the 2026-08-30 double-count, twice in one day
+([INCIDENTS](INCIDENTS.md), releases `R-2026-08-30-D/E/F`)
+
+A full-online-paid Website booking was billed a second time at the desk and written as £64.
+The presenter fix went live at **12:45:46** and **the same fault recurred at 14:01** on a till
+that had not been reloaded. Hosting sends `no-cache, no-store` and the Admin panel registers no
+service worker, so the corrected code was one reload away and nothing forces that reload — a
+till open since morning is the normal state, not an incident.
+
+**What was shipped, and what it does not do.** `checkoutBooking` now refuses an over-collection
+(`resolveCheckoutOverAllocation` — the receipt's own I3 invariant checked BEFORE the write). That
+is defence in depth and it protects a till from the moment that till has loaded it. **It is not a
+stale-client defence, and it was first written up as though it were** — `src/firestoreActions.ts`
+ships in the SAME browser bundle as the checkout screen, so a tab on a pre-guard build runs the
+old screen and the old writer alike. The owner caught the overstatement; the correction is in the
+guard's own doc comment (`6e28ae8`).
+
+**What closes it.** The arithmetic has to be enforced where the client cannot reach it:
+
+1. **Route UK checkout through the server executor.** `functions/src/checkout/executor.ts` already
+   refuses exactly this case with `TENDER_REFUSED` / `OVER_ALLOCATED`, is deployed
+   (`salowncheckoutbooking-00001-taf`) and is **unreachable** — whitecross resolves to
+   `uk-legacy` and nothing calls it. See [TR_CHECKOUT_ARCHITECTURE.md](TR_CHECKOUT_ARCHITECTURE.md);
+   the UI cutover is the missing package. This is the real fix.
+2. **Or, cheaper and sooner:** a Firestore rules constraint on the booking write, so a checkout
+   that claims more than the sale is worth is rejected regardless of which bundle sent it.
+
+Until one of those exists, the honest statement is that **a till on an old bundle can still write
+a double-counted checkout, and the only mitigation is a reload.** Any release that changes what
+the desk charges must therefore be followed by an explicit "hard-refresh every till" instruction —
+recorded as a release step, not as folklore.
+
+**Related open item:** the Staff App half of the 2026-08-30 fix
+(`src/staff/lib/checkoutSheetPayload.ts`) is committed but **`hosting:salown-staff` is NOT
+deployed**; the Staff App till must not be used until it is. Measured delta since the live staff
+build (`496e69c`): `→ 0233019` **+231 B** (only `3326db8`, BL-4/BL-6 refund awareness) and
+`→ 6e28ae8` **+755 B** (this work). Nothing else reaches that bundle.
+
 ### 5.1 The campaign chain — **CLOSED END-TO-END 2026-08-26** ✅
 
 *(This section previously read "The campaign chain is half-live, and that is the most important fact
