@@ -264,6 +264,40 @@ deployed**; the Staff App till must not be used until it is. Measured delta sinc
 build (`496e69c`): `→ 0233019` **+231 B** (only `3326db8`, BL-4/BL-6 refund awareness) and
 `→ 6e28ae8` **+755 B** (this work). Nothing else reaches that bundle.
 
+### 5.0b `BOOKING-DETAIL-PREPAID` — two corrections owed on the booking detail panel · **CONFIRMED_OPEN** *(added 2026-08-30)*
+
+**Status:** `CONFIRMED_OPEN` · **Blocked on:** `src/components/BookingDetailPanel.tsx` is locked by
+claim `alish/checkout-reassign`. Reported, deliberately not edited — claims rule 7 is a hard stop.
+**Owner instruction:** these belong to the checkout-reassign session's scope.
+
+**① The payment label lies about what happened.** A booking paid IN FULL online renders through
+the `depAmt > 0` branch as **"Deposit paid"**. The amounts are correct as of R-2026-08-30-D/E/F —
+`WEB-1788085518597-b201cf` now reads `Deposit paid £28 · Paid at venue £4 · Total £32` — but £28
+was not a deposit, it was the whole price at the time of booking. The label must read **"Paid
+online"** whenever the pre-desk money is the full settled online payment (`paymentProvider:
+'EXTERNAL_CHECKOUT'` with `paymentType: 'FULL'`), and keep "Deposit paid" for the genuine deposit
+case. `src/components/checkoutDeskPrePaid.ts` already answers "is this fully prepaid" as an AMOUNT
+question — reuse it rather than adding a third opinion.
+
+**② A service change at the desk leaves `booking.service` stale.** The inline edit patches
+`serviceId`, `serviceName`, `price`, `variationId`, `remaining`, `duration`, `endTime` — and not
+`service`. `WEB-1788085518597-b201cf` therefore still carries `service: "Classic Short Back &
+Side"` while its `serviceId` resolves to Skin Fade Cut £32. **This is a live landmine, not a
+cosmetic drift:** `CheckoutPanel.tsx:1075` calls `findServiceByBookingValue(booking.service)`,
+which resolves service document `0i7uQCYi45PEPqyAYiEa` — **the £28 service — on a £32 booking**. It
+does not bite today only because `price: 32` is known and that lookup is a fallback; it bites the
+moment a booking's price cannot be parsed. The three fields must move to the canonical value
+together, in one write.
+
+**Regression test the owner asked for, by shape:** the Jonathan case end to end — Classic Short
+Back & Side £28 booked and paid online, changed at the desk to Skin Fade Cut £32, checked out with
+£28 online + £4 at the venue. Assert: `service`/`serviceId`/`serviceName` all canonical after the
+edit; the panel labels the £28 **Paid online**, not Deposit paid; `paidAmount + platformDepositAmount
+== 32`; the receipt reconciles.
+
+**Related:** [INCIDENTS 2026-08-30](INCIDENTS.md) · releases `R-2026-08-30-D/E/F/G` · the
+service-label history in `NORMALIZATION.md`
+
 ### 5.1 The campaign chain — **CLOSED END-TO-END 2026-08-26** ✅
 
 *(This section previously read "The campaign chain is half-live, and that is the most important fact
