@@ -204,3 +204,191 @@ delete and no rewind — the same property that makes it evidence.
   keep the promise its whole design is.
 * **Services, bookings, receipts, wages already paid.** Nothing historical is
   edited, ever.
+
+---
+
+# 10. REHIRE — the model
+
+**Status:** model DECIDED 2026-08-30, implementation not started (`STAFF-REHIRE`,
+`PLANNED`). Nothing below is built. It is written down now because the four open
+questions all have answers that fall out of facts already established, and an
+undecided model is how the departure ended up with three doors in the first place.
+
+## 10.1 What a rehire is, and the one thing it is not
+
+A rehire is a **new employment period** for somebody whose previous one is closed.
+It appends; it never edits. The archived rota entries, the closed compensation
+period and every past booking stay exactly as they are — the same rule the
+departure follows, from the other end.
+
+It is **not** the correction of a mistaken departure. Those are different
+operations wearing one word, and conflating them is how an append-only log stops
+being one:
+
+| | rehire | correction |
+|---|---|---|
+| the departure | really happened | should never have been recorded |
+| the gap | real, and accrues nothing | does not exist |
+| the log | append a new period | withdraw the departure (`ROTA_SUPERSEDE` on its `changeId`) |
+| the pay period | a NEW one, opened by the owner | the closed one is amended |
+
+`compUtils.appendPeriod` already enforces the distinction and will not be argued
+with: it **throws** when a new period would overlap a closed one. So a same-day
+"undo" cannot be expressed as a rehire, and must not be given a code path that
+pretends it can. **`REHIRE` refuses rather than amending.**
+
+## 10.2 The four questions, answered
+
+### ① What "reopen the pay period" means — it does NOT open one
+
+`REHIRE` writes **no compensation period at all**, and `comp` leaves the declared
+key allowlist.
+
+The asymmetry with `OFFBOARD` is deliberate and it has a reason. A departure has
+an unambiguous date to close a period ON — the last working day. A rehire has no
+unambiguous **amount** to open one WITH, and inventing one (copying the old rate,
+say) writes a commercial decision nobody made into the document Finance prices
+from. The correct behaviour when no pay model is open is already defined and
+already safe: `compPeriodVerdict` answers `'outside'`, nothing accrues, and
+Finance is right to accrue nothing.
+
+So the operation returns a **warning** — the same shape `OFFBOARD` returns when
+there was no period to close — and the owner sets the pay model in the one place
+that owns it, exactly as a brand-new member does (design §4: a new member lands
+on the Pay tab). This keeps every `staffComp` write in the Pay tab and the
+departure, and adds no third writer.
+
+### ② Backdated? No. Future-dated? Also no. `returnOn` is TODAY.
+
+Both halves are refusals, and they are refused for **opposite** reasons — which is
+why neither gets the exemption the other might suggest.
+
+- **The past** is refused because `ROTA_CHANGE` refuses it outright, and that rule
+  is the one the 2026-08-12 wage incident bought. `ROTA_OFFBOARD` was given a
+  narrow, argued exception because a departure is the one period edit with a
+  legitimate past — somebody left three weeks ago and the log was never told. A
+  rehire has no such story: the person is standing in the salon. **No exception is
+  argued, so none is taken.**
+- **The future** is refused because publishing a future period is a job somebody
+  must do on the effective date, and nothing runs (`ROTA_FUTURE_ACTIVATION_ENABLED
+  = false`). `ROTA_OFFBOARD` was exempted from that gate on the argument that
+  `passive` is an undated absolute stop, so the legacy cache did not matter. **For
+  a rehire the opposite is true**: the member becomes bookable, and the legacy
+  cache is precisely what the availability surfaces read. A future rehire would
+  need the cache published on the return date — which is the job that does not
+  exist. So the exemption is not merely unavailable here, it would be wrong.
+
+One rule, no exceptions: **`returnOn` must equal the tenant's today.** When
+`ROTA_FUTURE_ACTIVATION_ENABLED` becomes true, this is the first thing that may
+be revisited — and until then a salon that knows somebody returns next Monday
+performs the rehire on Monday.
+
+### ③ One transaction, through the same seam
+
+Yes. `appendRotaChange` with an ordinary **`ROTA_CHANGE`** — no new engine action
+is needed, because the rota half already works: A3a in
+`functions/src/staff/rotaArchive.test.js` proves that a `ROTA_CHANGE` on the
+return date closes the terminal archive and opens a new weekly period with every
+archived entry preserved byte for byte.
+
+The status write rides in `attachExtraWrite`, and the reads in `attachExtraRead`,
+exactly as the departure does. That seam gets its **second consumer**, which is
+the argument for having added it rather than special-casing the departure.
+
+**The legacy cache republishes itself, and this is the mechanism that makes the
+whole thing work.** `rotaLegacyWriteGate` gives opposite answers to the two
+operations, and both are correct:
+
+| | new period | convergence reason | gate |
+|---|---|---|---|
+| `OFFBOARD` | `by_exception` / `[]` | `BY_EXCEPTION_LEGACY_UNSAFE` | **BLOCK** — an empty `workingDays` would flip `hasWeeklyPattern` and drop every accrual to the booking fallback |
+| `REHIRE` | `weekly` / real days | `PATTERN_CHANGED` | **ALLOW** — the engine republishes `workingDays` / `dayHours` / `hours`, which is exactly what a returning member needs |
+
+So the rehire does not write the legacy cache itself and must not: the engine
+writes it, from the canonical period, as a projection.
+
+### ④ App access — excluded, for the reason `OFFBOARD` excluded it
+
+`restoreAppAccess` and `restoreServices` leave the declared key allowlist.
+`staff/{uid}.accessStatus` belongs to the S4A offboarding state machine, which is
+**resumable precisely because Auth + Firestore + FCM cannot be made atomic**.
+Folding it into this transaction would make the transaction unable to keep the one
+promise its whole design is. Restoring an account stays a separate, resumable
+operation.
+
+## 10.3 The resulting contract
+
+```jsonc
+{
+  "op": "REHIRE",
+  "barberId": "barber-…",
+  "idempotencyKey": "slv-rhr-…",
+  "returnOn": "2026-09-01",      // MUST equal the tenant's today
+  "pattern": { "scheduleMode": "weekly", "workingDays": ["Tuesday", "Thursday"], … }
+}
+```
+
+`comp`, `restoreAppAccess`, `restoreServices` are **removed** from
+`LIFECYCLE_REQUEST_KEYS.REHIRE`. Everything else stays server-derived and refused
+by name.
+
+**Authority:** owner or super-admin — the same gate as `OFFBOARD`. It writes no
+`staffComp`, so a narrower argument for admin could be made; it is not made,
+because a rehire changes employment state and re-enables bookability, and one
+lifecycle boundary with one role list is worth more than a marginal permission.
+
+**Writes (all or nothing):**
+
+```
+barbers/{id}                     status: 'active', active: true, updatedAt   (set, merge)
+staffRota/{id}/rotaEntries/{e1}  ROTA_CLOSE  → effectiveTo = returnOn − 1     (create)
+staffRota/{id}/rotaEntries/{e2}  ROTA_OPEN   → effectiveFrom = returnOn, the new week
+staffRota/{id}                   revision, entriesHash, entryCount, lastChangeId, lastOrigin
+barbers/{id}                     workingDays / dayHours / hours — by the ENGINE's convergence
+auditLogs/stafflifecycle_rehire_…  the lifecycle record                      (create)
+auditLogs/rota_append_…            the engine's own append record
+```
+
+**Refusals** (each costs zero writes):
+
+| Code | When |
+|---|---|
+| `SUBJECT_NOT_PASSIVE` | only a departed member can be rehired |
+| `NO_TERMINAL_PERIOD` | the rota holds no terminal archive to close — they were never properly offboarded, so the answer is `OFFBOARD` first, or this is a correction |
+| `RETURN_ON_NOT_TODAY` | `returnOn` is not the tenant's today (both directions, §10.2 ②) |
+| `PATTERN_REQUIRED` | no weekly pattern supplied; its CONTENT is judged by the fold, not here |
+| `PERMISSION_DENIED` / `ACTOR_OFFBOARDED` / `IDEMPOTENCY_CONFLICT` / `ROTA_REFUSED` / `PARTIAL_STATE` | as `OFFBOARD` |
+
+**`SETTLED`** when the member is already `active` with a live weekly period —
+zero writes, however many times it is asked, under any key.
+
+**Warning on success:** `no compensation period is open for this member; set their
+pay model on the Pay tab` — always, because §10.2 ① means it is always true.
+
+## 10.4 The UI, and the payoff
+
+The Former staff row's **"✓ Activate"** becomes the rehire sheet: `returnOn` fixed
+to today and read-only, a weekly pattern seeded from the **archived pre-departure
+week** (read from the log, not from `barbers.workingDays`, which is a cache), the
+consequence rows, and the confirm phrase.
+
+`cycleStatus` then has no caller and is **deleted**. That is the payoff worth
+naming: after `STAFF-REHIRE`, the Team Members page performs **no lifecycle status
+write at all** — every transition (leave, return, departure, rehire) goes through
+`salownStaffLifecycle`, and `barbers.status` has exactly one writer.
+
+## 10.5 What this fixes, stated plainly
+
+Today, activating a departed member writes only `status`/`active`. The terminal
+rota period stays in force, so every dated reader keeps answering `works: false`
+— verified on Whitecross/Arda out to 2027-01-04 — while `barbers.workingDays` was
+never cleared, so legacy availability offers them again. The member is **bookable,
+scheduled for zero days and accruing nothing**: the mirror image of the drift this
+document exists to describe. `STAFF-REHIRE` is what closes it.
+
+## 10.6 Deliberately still out of scope
+
+- **Location transfer** (`LOCATION_LEAVE`) — declared, unimplemented, untouched.
+- **Correcting a mistaken departure** — `ROTA_SUPERSEDE` plus an owner decision on
+  the compensation period. A different operation, and it needs its own review.
+- **Scheduled returns** — blocked on `ROTA_FUTURE_ACTIVATION_ENABLED`, §10.2 ②.
