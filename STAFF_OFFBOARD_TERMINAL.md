@@ -182,7 +182,22 @@ delete and no rewind — the same property that makes it evidence.
 ## 9. Deliberately out of scope
 
 * **REHIRE.** Reopening a compensation period and a rota is its own operation with
-  its own authority. `LIFECYCLE_OPS.REHIRE` stays declared and unimplemented.
+  its own authority. `LIFECYCLE_OPS.REHIRE` stays declared and unimplemented, and
+  is tracked as **`STAFF-REHIRE`** on the roadmap (`PLANNED`, model not designed).
+
+  Two facts worth carrying into that design, both established here:
+
+  - **the rota half needs no new action.** An ordinary `ROTA_CHANGE` on the return
+    date closes the terminal archive and opens a new weekly period, with every
+    archived entry preserved byte for byte — `rotaArchive.test.js` A3a proves it
+    end to end;
+  - **activation today writes only the status.** `cycleStatus` sets
+    `status: 'active'` / `active: true` and nothing else, so after it the terminal
+    rota period is still in force (the dated readers keep answering `works:false`)
+    while `barbers.workingDays` was never cleared, so legacy availability offers
+    the member again. That is the mirror image of the drift this document exists
+    to describe — bookable, scheduled for zero days, accruing nothing — and it is
+    the actual reason `STAFF-REHIRE` matters.
 * **App access.** `staff/{uid}.accessStatus` is the S4A offboarding state machine
   (`offboarding.ts`), which is *resumable* precisely because Auth + Firestore +
   FCM cannot be made atomic. Folding it in would make this transaction unable to
