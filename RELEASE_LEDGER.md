@@ -1,6 +1,33 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
 
+## R-2026-08-30-C — `STAFF-OFFBOARD-DRAWER` · 1-unit release (`hosting:salown`)
+
+**Owner-approved, one hosting site, browser-only change.** The second surface that could
+half-record a departure is removed. **No function, no rules, no indexes, no other site.**
+
+| Field | Value |
+|---|---|
+| **Owner authorisation** | *"hosting:salown deploy'una onay veriyorum. Kaynak 0233019, hedef https://salown.com, rollback 8dd16a9f3d6930e3. Yalnız hosting:salown deploy et; functions, Firestore rules, indexes veya diğer hosting target'larına dokunma."* |
+| **Work ID / source** | `STAFF-OFFBOARD-DRAWER` · salown-app **`0233019`** (HEAD == `origin/main`, 0/0, clean) |
+| **What it removes** | The edit drawer's Status chooser was the last surface that could end an employment with a browser write, doing the identical two-of-three shape the card button used to: write `status`/`active` on save, call `closeCompPeriod` best-effort beside it — explicitly allowed to fail with only a warning — and never touch the rota. Removed rather than disabled: `closeCompPeriod` is no longer imported by the page at all, `cycleStatus`'s `active → passive` half is deleted (every call site had already been rerouted, so the branch was dead), and the profile payload omits `status`/`active` on an active → passive save the way it already omits them for a leave |
+| **What it reroutes** | The chooser opens the SAME departure sheet the card and the Former staff row use → one `salownStaffLifecycle` `op: 'OFFBOARD'` request. A completed departure now closes the drawer, because an editing buffer left open over a record that just changed is how a Save five seconds later writes `status: 'active'` back onto somebody who has just left |
+| **Explicitly unchanged** | Activation / rehire — same single write, same audit action, same "pay model needs reopening" note, same call sites |
+| **Unit 1 — `hosting:salown`** | `npx firebase deploy --only hosting:salown --project havuz-44f70`. **`8dd16a9f3d6930e3` → `4637fa7d98b8e870`** · release **`1788049840954000`** (2026-08-30T00:30:40.954Z) |
+| **Served-byte proof** | `/app` entry `index-z12zslzi.js` (200) → `Barbers-CjUBDBUx.js` (200, 131 410 B), sha256 **`4421a21c…f9e9eeef`**, byte-identical to the local build of `0233019` |
+| **The old path is GONE from the served bytes** | String literals survive minification, so they are the honest markers. In the shipped chunk, before → after: `set-passive (edit drawer)` **1 → 0** · `set-passive` **2 → 0** · `pay period could NOT be closed` **2 → 0** · `pay period closed` **2 → 0** |
+| **The new path is present** | `Record departure` **2 → 3** (the third entry point) · `Record a departure` 2 · `OFFBOARD` 3 · the new refusal string `Use "Record departure" to make somebody former staff.` **0 → 1**. Activation's note `pay model needs reopening` **2 → 2**, unchanged |
+| **Three entries, one destination — proven in the served bytes** | `slv-off` (the departure attempt key) occurs exactly **once**, inside the minified opener `or`. `or(` has exactly **three** call sites: the card button (`e._status === 'active' ? or(e) : er(e)`), the Former staff row (`me && … onClick: () => or(e)`, title *"Close this departure across status, pay period and rota"*), and the drawer chooser (`i ? (W ? or(tr(W)) : void 0) : q(t => ({...t, status: e}))`). All three drive the same submitter, which calls `submitOffboardOperation` |
+| **Activation, as served** | The minified `er` reads: `leave` → refuse · **`r !== 'passive'` → refuse** with the new sentence · otherwise one `updateDoc(..., {status: 'active', active: !0})`, the audit, the refresh and the unchanged note. **No `closeCompPeriod`, no `status: next`, no passive write anywhere in it** |
+| **Scope after** | Only `salown` moved. `salown-staff` `2f873efa339d544c` · `salown-admin` `6376b019192dd6c6` · `whitecrossbarbers-saas` `bc10782d09d28b00` · `whitecrossbarbers-admin` `545d6de1513a552c` · `whitecrossbarbers-owner` `3e305825c3e9d4fd` — all unchanged. Functions: **89** in `europe-west2`, **none** updated since 2026-08-30T00:00Z, `salownStaffLifecycle` still on srcGen `1788044738059943`. Ruleset still `e79d05c1-…` (2026-08-27). No indexes |
+| **REL-1** | The salown deploy re-ran the staff predeploy hook and dirtied tracked `hosting/staff-bundle/**`; the new chunk was removed and the two tracked files restored by explicit path. Tree back to **0/0** |
+| **Data** | **No Firestore write of any kind.** This release changes only what the browser can ask for |
+| **Gates** | Full frontend suite **161 files / 4938 tests PASS** · `tsc` clean · `vite build` clean. Seven new absence/wiring assertions against comment-stripped source, including a brace-matched sweep of every `updateDoc`/`setDoc` argument list on the page proving none can set `passive` and that the one remaining status write is the activation |
+| **Customer-visible effect** | None. Owner/admin panel only |
+| **Rollback** | Previous version **`8dd16a9f3d6930e3`**. Console → Hosting → site **`salown`** → Release history → that VERSION ID → Roll back. Source anchor: **`3d72dfc`**; `git revert 0233019` restores the drawer's old path |
+
+---
+
 ## R-2026-08-30-B — `STAFF-OFFBOARD-TERMINAL` UI2 + the Whitecross/Arda departure repair
 
 **One hosting release, then ONE owner-approved production operation, performed from the
