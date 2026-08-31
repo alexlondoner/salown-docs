@@ -1,6 +1,25 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
 
+## R-2026-08-31-A — CHECKOUT-REASSIGN, function only
+
+| Field | Value |
+|---|---|
+| **Work item** | `CHECKOUT-REASSIGN` — admin-only, same-day post-checkout barber correction |
+| **Source SHA** | **`179cff5`** (`main == origin/main`, clean tree, deployed from the canonical `salown-app` checkout) |
+| **Deployed unit** | `salownReassignBooking` ONLY — `europe-west2`, codebase `salown`, project `havuz-44f70`, via `./scripts/deploy-functions.sh` |
+| **Live identity** | `salownreassignbooking-00002-viw` → **`salownreassignbooking-00003-yan`** · srcGen `1786746904088492` → **`1788168678163201`** · 2026-08-31T09:32:30Z |
+| **Rollback identity** | **`salownreassignbooking-00002-viw`** (srcGen `1786746904088492`) — the pre-release revision, still recoverable from GCS by generation |
+| **Verification — artefact, not exit code** | Deployed zip pulled back from GCS by generation and diffed against the local build: `lib/bookings/reassignBooking.js`, `lib/bookings/staffCallableSupport.js`, `lib/index.js` all **byte-identical**. Deployed artefact carries `BOOKING_REASSIGN_TODAY_ONLY`, `BOOKING_REASSIGN_ADMIN_REQUIRED`, `BOOKING_CHECKOUT_TIME_UNKNOWN`, `correctionTargetDenial`. Deployed archive boots clean (1129 ms, 84 exports). `us-central1` still lists 29 functions — nothing deleted |
+| **Behaviour change** | `CHECKED_OUT` was refused unconditionally (`BOOKING_NOT_REASSIGNABLE`). It now opens a second lane requiring ALL of: owner/admin/superAdmin · `checkedOutAt` on the tenant-local **today** (tenant timezone resolved from `settings/settings` inside the transaction) · target barber currently assignable · target ≠ source. `CANCELLED`/`NO_SHOW`/`BLOCKED` and the unresolved lane are unchanged. Audit is now written **inside** the write transaction |
+| **Boot-graph expansion — measured, accepted** | The live revision dated from 2026-08-14, so the boot closure grew **62 → 79 modules**: 16 added (FIN-PERIOD-CLOSE Phase A/B/C, the staff lifecycle/rota suite, `payments/refundIntent`, `bookings/publicBookingFlags`) and 7 changed, only 2 of them this work item's. All 16 proven to load at boot via `require.cache`, all clean. Cold start 944 ms → 1129 ms. `package-lock.json` **byte-identical** to the live revision, so the dependency tree is unchanged and the blast radius is first-party only. Loaded ≠ reachable: other functions keep their own revisions and `salownCloseFinancePeriod` is still not deployed |
+| **Deliberately NOT deployed** | `hosting:salown` — **no owner approval**. `firestore.rules`, indexes, `hosting:salown-staff`, `whitecrossbarbers-*`, and every other function |
+| **Consequence of the split** | Today's live panel already opens the barber field on a checked-out booking, so the same-day correction **works now** without the UI change. The undeployed panel only makes the affordance honest (hides the field out of window) and supplies friendly error text; until it ships, an out-of-window attempt shows the raw reason code in the toast |
+| **Gates** | functions typecheck 0 · unit 2213/2172 with 1 failure (`11b`, identical on `origin/main` baseline in the same clone) · bookings emulator 105/105 · reassign emulator 41/41 · archive/namespace/deploy-policy 101/90 (11 failures, identical to baseline) · frontend targeted 35/35 · frontend typecheck 0 · build ✓ |
+| **Coordination** | Namespace guard correctly ABORTED a first attempt: a release clone inside `~/Desktop/alex/` made `WORKSPACE_ROOT` see two salown codebases. Clone moved out of the workspace; the guard was right. Deploy then ran from the canonical checkout so the guard retained whitecross-site coverage. `STAFF-REHIRE` held its deploy during the window and holds `hosting:salown` for a combined, separately-approved release |
+| **Production business-data writes** | **ZERO.** No Firestore document read or written, no callable invoked, no real sale re-attributed. Verification was artefact-only |
+| **Still pending** | `hosting:salown` (combined release with `STAFF-REHIRE`, owner approval outstanding) · the 2026-08-29 mis-attributed sale, which this release does NOT reach — it is out of window by design and belongs to `BOOKING-ATTRIBUTION-REPAIR` |
+
 ## R-2026-08-30-H — `CHECKOUT-PREPAID-PARITY` Staff · 1-unit release (`hosting:salown-staff`)
 
 **Owner-approved after a file-level delta review, one hosting site.** The Staff App till now
