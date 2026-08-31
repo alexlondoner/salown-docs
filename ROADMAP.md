@@ -216,12 +216,86 @@ here; commit and release identifiers are never renamed.
 | P2 | `COM-M1` | In-account plan upgrade (request→approve) | `PLANNED` | salown-app | — | — | — | — | Focus-day task | 2026-08-10 |
 | P2 | `LEG-1` | salOWN ToS / Privacy pages | `PLANNED` | salown-app | — | — | — | landing footer `href="#"` | Write before onboarding scales | 2026-07-16 |
 | P2 | `TEC-2` | `I2` Phase 2 — functions modularisation (parsers slice next) | `PLANNED` | salown-app | — | — | — | `index.ts` **4,738** lines | One slice, one targeted deploy | 2026-08-10 |
+| P1 | `STAFF-IDENTITY-LINK` | **There is no canonical link between a `staff` account and a `barbers` document**, so the server cannot answer "which barber is this authenticated user?" — which makes self-barber enforcement unimplementable, not merely unbuilt | `BLOCKED` | salown-app | — | — | — | — | Design an explicit `barberId` link on the staff doc (or `staffUid` on the barber doc) plus a controlled migration, then re-run the measurement before enforcing anything | 2026-09-01 |
+| P1 | `STAFF-SELF-BLOCK-ACCESS` | **Plain staff may be unable to use "Block my time"** at tenants whose barber documents carry no `email`: `functions/src/bookings/blocks.ts` resolves a non-privileged actor's own barber by `barbers.email == token email` and denies `PERMISSION_DENIED` on zero hits | `STATUS_UNKNOWN` | salown-app | — | `STAFF-IDENTITY-LINK` | — | — | **Needs one live attempt by a staff-role user to confirm or refute** — do not fix on inference alone | 2026-09-01 |
 | P1 | `CHECKOUT-REASSIGN` | Post-checkout barber correction: a completed sale could not be moved off the wrong team member at all (`BOOKING_NOT_REASSIGNABLE`), so revenue and commission stayed with someone who did not do the work | **`LIVE_VERIFIED`** (server half) | salown-app | released | — | **`179cff5`** | `salownreassignbooking-00003-yan` (was `-00002-viw`), srcGen `1788168678163201`, deployed bytes diffed against the local build and byte-identical | Owner/admin/superAdmin + tenant-local same day (keyed on `checkedOutAt`, tenant timezone) + assignable target. ✅ **`hosting:salown` RELEASED 2026-08-31** as part of the combined `R-2026-08-31-B` with `STAFF-REHIRE` (`be2e2af65c4ca042` → `602578d1b9f76bda`), approved by the owner naming both work items — one site, one version, so the two could not be separated. Independently verified from the served bytes: `index-Bgb27bgR.js` carries the confirmation copy, the error-text mapping, the window explanation and the settings fail-closed string, none of which were in the previous bundle. ⚠️ A hosting rollback to `be2e2af65c4ca042` would remove BOTH work items; the function rollbacks stay independent. The 2026-08-29 mis-attributed sale is OUT OF WINDOW by design and belongs to `BOOKING-ATTRIBUTION-REPAIR` | 2026-08-31 |
 | P2 | `TR-TZ-1` | **BookingDetailPanel formats four dates/times with a hardcoded `Europe/London`** (`:680`, `:919`, `:925`, `:1619`) instead of the tenant's resolved presentation timezone | `PLANNED` | salown-app | — | — | — | — | Found while fixing the reassignment window's own timezone (`CHECKOUT-REASSIGN`, `e85fb5d`): the GATE now reads the tenant contract, these DISPLAY formatters still do not, so a TR tenant sees a UK clock on the same panel. Display-only — no gate, no money, no stored value depends on them, which is why it was recorded rather than folded into that change. The panel already resolves the tenant zone (`tenantTimeZone`), so the fix is to pass it to these four call sites | 2026-08-30 |
 | P2 | `TEC-1` | `REL-1` predeploy topology dirties the tracked staff bundle | `PLANNED` | salown-app | — | — | — | — | Isolated-clone deploys sidestep it — candidate fix | 2026-08-10 |
 | DORM | `VIS-*` | Marketplace + Trust Score · Stripe Billing M3–M5 · Capacitor/App Store · cross-tenant AI · subdomain themes · Booksy write-back | `DORMANT` | — | — | — | — | — | Not scheduled | 2026-08-10 |
 
 ---
+
+
+### `STAFF-IDENTITY-LINK` / `STAFF-SELF-BLOCK-ACCESS` — the measurement that produced them (2026-09-01)
+
+Both items came out of a READ-ONLY measurement, run to answer a product question — *would
+"a plain staff member may only sell as themselves" break a real salon workflow?* — before
+building the rule. It could not answer that question, and the reason it could not is the
+finding.
+
+**Method.** Firestore REST, read-only, no writes and no callable invocations. For every
+booking in the window: read the attributed barber, resolve the CREATING actor (from
+`createdBy` on product sales, or the `WALK_IN_CREATED` / `PRODUCT_SALE_CREATED` audit event
+for everything else), map that actor to their own barber, and compare. Counts only — no
+names, phones, emails or amounts left the query. Bookings the operator did not attribute by
+hand were excluded up front: external/online sources, parser imports, blocks, and anything
+carrying `barberAutoAssigned` or `barberSelection: 'auto'`.
+
+**What it found instead.** The actor-to-barber mapping is impossible for the two real
+tenants, because the key does not exist:
+
+| tenant | barber docs carrying `email` |
+|---|---|
+| whitecross | **0 / 3** |
+| herohairs | **0 / 1** |
+| dayi-barbers | 1 / 1 |
+| tr-demo | 1 / 4 |
+
+A whitecross barber document has `active, availabilityFrom, bio, color, dayHours, hours,
+id, leaveFrom, leavePaid, leaveUntil, name, order, photo, role, shiftChanges, status,
+workingDays` — no `email`, no `uid`, no `staffUid`. The staff document has `email, name,
+role` — no `barberId`. The only field the two share is `name`.
+
+**Counts, whitecross, 25-day post-cutover window (2026-08-06 → 2026-08-31):** 230 bookings,
+176 with a recorded actor, 8 unattributable, 47 excluded as external/online, 2 auto-assigned,
+2 blocks. Of the 171 resolvable, **136 were created by an `owner` and 35 by plain `staff`,
+and every one of them landed in "actor is not linked to any barber"** — not because those
+people are not barbers, but because the join key is absent. Over 90 days the same query
+returns 509 unattributable of 814, which is the pre-cutover era: before the 2026-08-06
+callable cutover the browser wrote bookings directly and recorded no actor at all. The audit
+trail is sound going forward and unusable going backward.
+
+Where the key does exist the method works and produces sensible answers: `dayi-barbers`
+resolved to `self`, `tr-demo` to five `CROSS` cases all created by an **owner**, which is
+the legitimate shape. **Cross-attribution by plain staff was never observed anywhere — and
+that is weak evidence, not a clearance**, because the only tenant with real staff volume is
+the one that cannot be measured.
+
+**Why the fix is not name or email matching.** Making `name` the authority for a permission
+gate contradicts the matching rule the rest of the platform already follows, and `barberKey`
+exists precisely because names collide and get renamed. Backfilling `email` onto barber
+documents would make `blocks.ts` work again but keeps a mutable, PII-shaped field as an
+identity key, and it would still be a second source of truth beside the staff document. The
+durable answer is an explicit, stable id link, written once through one authority and
+consumed by one resolver — the shape `TEAM_IDENTITY_CONTRACT.md` already prescribes for the
+staff/claim relationship — plus a controlled migration for existing tenants, since a link
+that is absent on some documents and present on others is a third state nobody has designed
+for.
+
+**On the `blocks.ts` risk specifically.** `blocks.ts` resolves a non-privileged caller's own
+barber by email and denies `PERMISSION_DENIED` when the lookup returns zero rows. Whitecross
+has zero barber emails and one staff-role user, so the code path and the data together imply
+that user cannot create or delete their own time block. This is recorded as
+`STATUS_UNKNOWN`, not as a confirmed incident: **it has not been observed failing**, no live
+attempt was made, and inferring a production defect from source plus a data shape is exactly
+the kind of claim this project has been burned by before. One attempt by that user settles
+it in seconds; until then it should not be written up as fact, and it should not be "fixed"
+on inference.
+
+**Bounded, on purpose.** The measurement script lives in a scratchpad, not in `scripts/` —
+it answers a question that is only interesting until the identity link exists, and it should
+be re-run rather than maintained. No production data was written, no callable was invoked,
+and no application code changed to produce any of this.
 
 ## 5. P0 — Production integrity and financial correctness
 
