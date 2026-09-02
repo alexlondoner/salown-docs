@@ -150,3 +150,47 @@ payment links / terminal.
   must have one is where money bugs live.
 * No change to how future bookings are saved, or to the TR executor's request contract.
 * The product records the tax-point date. It does not compute VAT.
+
+---
+
+## 6. Phase 1 core — authored 2026-09-02 (`da3630d`), NOT WIRED
+
+`functions/src/advances/advanceCore.ts` + 25 tests. Core only: no callable, no index export, no
+caller — the PSA1 discipline. Three design decisions were taken inside the core and are recorded
+here because they are not obvious from the owner's contract alone.
+
+**6.1 The mapping is the design.** `COLLECTED → PAYMENT`; `REFUNDED / REDEEMED / TRANSFERRED /
+RETAINED_AS_FEE → REFUND`. All four of the latter are money leaving the held account, which is
+exactly what the fold's REFUND means. Two consequences, both load-bearing:
+
+* `paid_m` **is** the held balance — no second definition of "held" exists.
+* Two of the fold's existing invariants become the account's safety rules instead of hand-written
+  checks: `M3_NON_NEGATIVE_PAID` forbids taking out more than was put in, and
+  `M2_NON_NEGATIVE_OUTSTANDING` forbids collecting more than the booking is worth — which **is**
+  the owner's `0 < deposit ≤ outstanding balance` rule, enforced by shared arithmetic.
+
+**6.2 Phase 1 admits no REVERSAL, deliberately.** Splitting outflows by domain kind over the
+reversal-resolved set would require exporting `resolveReversals` from the byte-mirrored parity core
+— a change to the most load-bearing money code in the product, for a case Phase 1 does not need. A
+mistake is corrected the way money is corrected: by appending a compensating entry. The fold still
+sees every entry and still enforces every invariant; only the per-kind split assumes no row has been
+cancelled. Reversal is a later, deliberate slice, and it is the only reason to touch the parity core.
+
+**6.3 The fail-closed gate has a low bar on purpose.** `classifyExistingPrepayment` refuses on ANY
+sign of foreign pre-paid money — `stripeAmountPaid`, `paymentProvider: EXTERNAL_CHECKOUT`, a legacy
+`paymentType: DEPOSIT`, or a `platformDepositAmount` that carries no `advanceLedgerVersion` marker.
+The projection writes that marker so the ledger's own output is never mistaken for a foreign rail.
+The constraint is lifted when Stripe and the importers write into this ledger — not widened case by
+case. The 2026-09-02 Booksy import shape (`paymentType: DEPOSIT`, `paidAmount: 10`) is pinned as a
+test case: it refuses today, and must.
+
+**Correction to PAYMENT_PLAN_ENGINE.md §0:** it states the parity core "has never had a runtime
+import — only `import type`". That is now stale. `checkout/executor.ts` imports
+`foldReceivableLedger` for real, and the compiled output carries
+`require("../packages/packagePlan")`. The first runtime import already happened; this core is the
+second.
+
+### Still to build for Phase 1 to be usable
+Callable (server-authoritative, idempotency key, audit) · the entry writer and the projection write
+in one transaction · the eligibility read of the booking's commercial total · the "Take advance
+payment" control · the deposit acknowledgement · Phase 1B dispositions.
