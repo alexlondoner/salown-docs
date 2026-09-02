@@ -159,11 +159,31 @@ payment links / terminal.
 caller — the PSA1 discipline. Three design decisions were taken inside the core and are recorded
 here because they are not obvious from the owner's contract alone.
 
+**6.0 CORRECTED 2026-09-02 — one number was answering two questions.** The first core projected
+the HELD balance into `platformDepositAmount`. The owner caught it before a callable was built on
+it: a £500 job with a £100 advance, redeemed at checkout against a till that bills only the £400
+remainder, would report **£400** — because every revenue reader computes
+`paidAmount + platformDepositAmount − tip`. Money does not stop having been paid because the
+service it paid for has now happened. The ledger therefore derives two numbers:
+
+```
+held_m            = inflows − refunded − redeemed − transferredOut − retainedAsFee   (liability)
+appliedToBooking_m = redeemed
+bookingPrepaid_m  = held_m + appliedToBooking_m                                       (paid on this booking)
+```
+
+`platformDepositAmount` is projected from **`bookingPrepaid_m` only**. A transfer is named on both
+sides (`TRANSFERRED_OUT` / `TRANSFERRED_IN`) because writing one half loses money between two
+bookings; Phase 1 keeps the vocabulary and exposes no callable path to it. Two Phase-1 assumptions
+are now enforced rather than assumed: a ledger carrying `reversesEntryId` is refused (`A2`), and two
+entries compensating the same row are refused (`A3`).
+
 **6.1 The mapping is the design.** `COLLECTED → PAYMENT`; `REFUNDED / REDEEMED / TRANSFERRED /
 RETAINED_AS_FEE → REFUND`. All four of the latter are money leaving the held account, which is
 exactly what the fold's REFUND means. Two consequences, both load-bearing:
 
-* `paid_m` **is** the held balance — no second definition of "held" exists.
+* `paid_m` **is** the held balance — no second definition of "held" exists. It is NOT the
+  projection; see §6.0.
 * Two of the fold's existing invariants become the account's safety rules instead of hand-written
   checks: `M3_NON_NEGATIVE_PAID` forbids taking out more than was put in, and
   `M2_NON_NEGATIVE_OUTSTANDING` forbids collecting more than the booking is worth — which **is**
