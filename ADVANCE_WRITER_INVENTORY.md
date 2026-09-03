@@ -32,6 +32,24 @@
 | 6 | `parsers/treatwell.ts` / `fresha.ts` / `ical.ts` — import + reschedule-apply phases | External | the platform | **NO** | Same as #5 | `db.runTransaction` |
 | 7 | `createBooking` / `createWalkIn` / `productSaleCore` / first import | Creation | catalogue or operator | n/a | **Out of scope** — no advance can exist before the booking does | transactional |
 
+### 2.1 CORRECTION, 2026-09-03 — the first inventory was INCOMPLETE
+
+The first pass was built from line-anchored greps and missed two writers that
+genuinely move a booking's commercial total. Re-run by SYMBOL against the real
+call graph, the list gains:
+
+| # | Writer | Class | What it moves | Why it was missed |
+|---|---|---|---|---|
+| 8 | `firestoreActions.editBooking` | Interactive | `price`, `service`, `duration` — a SEPARATE entry point from `patchBooking`, with its own `updateDoc` | the first pass followed `patchBooking` from `BookingDetailPanel` and never asked what else writes a price from the browser |
+| 9 | `packages/executor.ts` → `packageSessionTx` | Server, transactional | writes `price: 0` + `packagePrepaid: true` onto the booking when a package session is linked — it ZEROES the commercial total | it was read as a package writer, not a booking-price writer |
+
+Also re-checked and CLEARED: `reassignBookingCore` writes barber, status and
+`lastReassignment` only — it is not a total mover.
+
+**The lesson is the method, not the miss:** an inventory built from line numbers
+and one screen's call path is not an inventory. This one was rebuilt by scanning
+every write to a booking document and reporting its enclosing symbol.
+
 **The most useful finding is #1:** every interactive edit funnels through ONE function, which already
 carries `assertNotBlock`. The interactive guard is one chokepoint, not four screens. #2 and #3 are
 separate entry points in the same file and need their own call.
