@@ -30,7 +30,7 @@ All tenant data lives under `tenants/{tenantId}/...`.
 | [SERVICE_CONFIG_V2.md](docs/SERVICE_CONFIG_V2.md) | DESIGN: detailed service config (Booksy+Fresha+Treatwell superset), segment array model (service/processing/blocked), editor sections |
 | [SERVICE_EDITOR_DESIGN_BRIEF.md](docs/SERVICE_EDITOR_DESIGN_BRIEF.md) | Service editor REDESIGN brief (for the designer): all fields, sections, wait/squeeze-in hero module, states, brand tokens, "visual only" rule |
 | [FEATURE_FLAGS.md](docs/FEATURE_FLAGS.md) | Flag list + what it does, loyalty/telegram config |
-| [EMAIL_ARCHITECTURE.md](docs/EMAIL_ARCHITECTURE.md) | Brevo, "via salOWN", GDPR unsubscribe, IMAP parser |
+| [EMAIL_ARCHITECTURE.md](docs/EMAIL_ARCHITECTURE.md) | Brevo, "via salOWN", GDPR unsubscribe, IMAP parser, **the confirmation-email gate chain** (every guard is a silent `return`; read the `confirmationEmailSentAt` stamp first — `scripts/confirmation-email-audit.cjs`) |
 | [LIVE_CHAT.md](docs/LIVE_CHAT.md) | salown.com live chat (LC1) — bot-first widget + `salownLandingChat` + super-admin inbox; the 4 cost guards on a public AI endpoint, why polling instead of a listener, local-run recipe |
 | [DEPLOY.md](docs/DEPLOY.md) | Build/deploy commands, symlink, safety order |
 | [INCIDENTS.md](docs/INCIDENTS.md) | Past incidents + lessons learned — **read BEFORE starting bug diagnosis** (see Quick Rule #7) |

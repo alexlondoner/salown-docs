@@ -120,6 +120,46 @@ moved to salown-app; the following are **disabled** in whitecross-site. See: [MU
 
 The only non-email flow still active in whitecross-site: Stripe (`createCheckoutSession` + `stripeWebhook`).
 
+## Where a booking confirmation can die — the gate chain (read 2026-09-04, source-cited)
+
+Every guard below is a bare `return`: a missed confirmation leaves **no error** unless the Brevo/Gmail
+send itself throws. The only data-side evidence is the `confirmationEmailSentAt` stamp written on
+success (`56c8e5e`, 2026-07-13). Read the stamp first, the logs second —
+`salown-docs/scripts/confirmation-email-audit.cjs --tenant <id>` does the first part read-only and
+names the gate per booking; `INCIDENTS.md` 2026-09-04 has the diagnosis order.
+
+**Who produces the booking write** (the two public surfaces do NOT share this part):
+
+| Surface | Writer | Born as | Confirmed by |
+|---|---|---|---|
+| `salown.com/book/<tenant>` (hosted profile) | `salownCreateBooking` callable (`src/utils/hostedBookingCutover.ts` → `'callable'`), `source:'Salown'` | `CONFIRMED` (pay-at-venue) or `PENDING` (Connect) | the create · `salownConnectWebhook` |
+| whitecrossbarbers.com (premium) | legacy anonymous `addDoc`, `source:'Website'` — `WCP-3` cutover still held | `PENDING` | whitecross-codebase `stripeWebhook` |
+| Admin panel / Staff App future booking | `createWalkIn` / `salownCreateBooking` privileged, `bookingType:'booking'` | `CONFIRMED` | the create |
+
+**Trigger A — `salownBookingConfirmationTrigger` (onCreate, `functions/src/index.ts` ≈4422):**
+1. `status` ≠ `CONFIRMED` → return (PENDING bookings wait for Trigger B)
+2. no `clientEmail` → return
+3. `!isEmailableBooking` → return — `bookingType === 'booking'` OR `source ∈ {website, salown}` (`emails/index.ts:111`); walk-ins, aggregator imports, blocks never email
+4. `startTime` missing or `≤ now` → return (future-only; imports/backfills)
+
+**Trigger B — `salownBookingConfirmedEmailTrigger` (onUpdate, ≈4651):**
+1. not a `before.status ≠ CONFIRMED → after.status = CONFIRMED` transition → return (so exactly one email even if two writers confirm)
+2. no `stripeSessionId` **and** `source ∉ {website, salown}` → return — *(no future-only guard here)*
+
+**Shared tail — `_salownSendConfirmationEmail` (`emails/index.ts:160`):**
+5. no `clientEmail` → return
+6. `settings/settings.emailConfirmationEnabled === false` → return — the owner toggle, Settings → Notifications → *"Booking confirmation + reschedule"* (`Settings.tsx:1737`). **One click silences both surfaces.**
+7. `_sendCustomerEmail`: tenant ∈ `FORCE_SALOWN_SENDER_TENANTS` (`['whitecross']`) → **Brevo**; else `emailConfig.email+appPassword` → Gmail; else Brevo. Brevo throws on: missing `BREVO_API_KEY` secret, `4xx` (bad address, quota, blocked sender). The error is logged as `[tenant] confirmationEmail error: …` and **nothing is stamped**.
+8. success → `console.log('[tenant] confirmationEmail: sent via brevo|gmail …')` + `confirmationEmailSentAt` stamp.
+
+**After the send:** delivery is Brevo's. `salownBrevoWebhook` writes `tenants/<id>/emailEvents/<emailKey>`
+(`blocked`/`hard_bounce`/`spam`/`unsubscribed`) and flips the client to `emailOptOut` — a customer who
+"never gets anything" may be suppressed there.
+
+**Known gap (2026-09-04):** the manual `salownSendBookingConfirmation` onCall sends via tenant **Gmail
+only** and answers `no_email_config` for a forced-Brevo tenant — there is no working manual resend for
+Whitecross. A resend routed through `_sendCustomerEmail` is the missing tool.
+
 ## Email Parser (IMAP)
 
 Booksy/Fresha/Treatwell emails are parsed via IMAP.

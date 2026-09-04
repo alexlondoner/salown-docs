@@ -35,6 +35,60 @@ Every incident opens with `## YYYY-MM-DD — short title`, immediately followed 
 
 **Tag dictionary (CANONICAL — only these; sprawl forbidden):** `#security` `#stripe` `#secrets` `#config` `#deploy` `#normalization` `#permission` `#race` `#timezone` `#parser` `#email` `#data-loss` `#shared-infra`. A new tag is added only if a genuinely new class emerges (e.g. twins like `#payment`+`#payments`+`#stripe-payment` are FORBIDDEN → all `#stripe`). Every entry carries a `**Tags:**` line.
 
+## 2026-09-04 — Owner report: "problem with confirmation emails" on BOTH Whitecross public surfaces — OPEN, cause not yet established
+
+**Severity:** 🟠 High *(provisional — if confirmed, every online customer of both public surfaces loses the one signal that says "your booking exists")* · **Owner:** owner report → `claude/confirmation-emails-issue-5h842c` (remote session, code reading only) · **Status:** 🟡 Open · **Affected area:** booking confirmation email — `salownBookingConfirmationTrigger` + `salownBookingConfirmedEmailTrigger` → `_salownSendConfirmationEmail` → Brevo
+
+**Discovery:** owner report, 2026-09-04, verbatim: *"problem with confirmation emails on salown online profile and whitecross site"*. No booking reference, time, customer, or symptom type (missing / wrong / spam) was given yet.
+**Impact:** unknown until pinned. The two named surfaces are `salown.com/book/whitecross` (the hosted online profile) and `whitecrossbarbers.com` (the premium site). Together they are **every** self-service booking channel Whitecross has.
+**Root Cause:** **not established.** The reporting session had no production access (no service account, no `firebase` CLI, no Brevo login) and therefore made **no** production read, **no** deploy and **no** data write. What follows is the chain analysis from source + the release record, ranked hypotheses with the check that separates them, and a read-only tool that runs the first check mechanically.
+**Bug Class:** TBD — the candidates below span Config (tenant toggle), Shared-infra (Brevo), and Deploy (producer/trigger drift).
+**Resolution:** none yet. Delivered on branch `claude/confirmation-emails-issue-5h842c`: `scripts/confirmation-email-audit.cjs` (+17 unit tests), the gate chain in [EMAIL_ARCHITECTURE.md](EMAIL_ARCHITECTURE.md), ROADMAP row `EMAIL-CONFIRM-2026-09` (`STATUS_UNKNOWN`).
+**Prevention:** TBD with the root cause. One gap is already visible regardless of cause — see *"No working manual resend for a forced-Brevo tenant"* below.
+**Regression Tests:** `salown-docs/scripts/confirmation-email-audit.test.cjs` (17) pins the verdict order against the trigger chain. Product-code pins wait for the cause.
+**Related:** INCIDENTS 2026-08-04 (panel `bookingType`), 2026-06-26 (Brevo secret + headers, 3 layers), 2026-06-24 (corrupt address → Brevo 400) · ROADMAP `EMAIL-CONFIRM-2026-09` · files `functions/src/emails/index.ts:98-114,160-275`, `functions/src/index.ts:4422-4475` (create trigger), `:4651-4700` (update trigger), `functions/src/bookings/createBooking.ts:1090-1150` (hosted payload), `src/pages/Settings.tsx:1737` (the toggle), `src/utils/hostedBookingCutover.ts` (`HOSTED_BOOKING_CREATE_MODE = 'callable'`)
+
+**Tags:** `#email` `#shared-infra` `#config`
+
+**What happened / Diagnosis / Fix:**
+
+**Why "both surfaces" is the most useful word in the report.** The two surfaces write bookings by *different* paths and are confirmed by *different* code, yet they share exactly one email chain. Anything that breaks both at once is, with high probability, in the shared part — the mirror image of the 2026-08-04 lesson ("works on one surface ⇒ the divergence is in the payload").
+
+| | salOWN online profile (`salown.com/book/whitecross`) | whitecrossbarbers.com |
+|---|---|---|
+| Booking write | `salownCreateBooking` callable (`HOSTED_BOOKING_CREATE_MODE = 'callable'`), Admin SDK, `source:'Salown'`; pay-at-venue ⇒ born **CONFIRMED** | **legacy** anonymous browser `addDoc`, `source:'Website'`, born **PENDING** — the `WCP-3` cutover to the callable is still **HELD** (live site is the REL-10 anchor, 2026-09-03) |
+| Confirmed by | the create itself | whitecross-codebase `stripeWebhook` (redeployed **2026-08-29/30** for BL-4 R1, `stripewebhook-00106-dof`) PENDING→CONFIRMED |
+| Email trigger | `salownBookingConfirmationTrigger` (onCreate) — rev `-00045-nac`, **2026-08-05** | `salownBookingConfirmedEmailTrigger` (onUpdate) — rev `-00043-luv`, **2026-08-05** |
+| Then, shared | `_salownSendConfirmationEmail` → reads `settings/settings.emailConfirmationEnabled` → `_sendCustomerEmail` → whitecross ∈ `FORCE_SALOWN_SENDER_TENANTS` ⇒ **Brevo**, `"Whitecross Barbers via salOWN" <noreply@salown.com>` → stamps `confirmationEmailSentAt` | same |
+
+Neither email trigger has been redeployed since 2026-08-05 (`DEPLOYMENT_STATUS.md` DPPP row; nothing later in `RELEASE_LEDGER.md` or `SYNC.md`). The rules releases of 08-27 (`bookingFlags`) and 08-30 (`autoRefundEnabled`) touched settings keys only, not `bookings`. The producers, however, both moved recently: `salowncreatebooking-00005-zer` (08-27, one guard added, payload byte-identical per the ledger) and whitecross `stripewebhook-00106-dof` (08-29/30, refund reconciliation). The hosted site was released 08-30, 09-03 and 09-04; the premium site 09-03 (REL-10, `script.js` changed).
+
+**Ranked hypotheses, each with the check that separates it from the others.**
+
+1. **Tenant toggle OFF** — Settings → Notifications → *"Booking confirmation + reschedule"* writes `settings/settings.emailConfirmationEnabled`; `_salownSendConfirmationEmail` returns before sending when it is `false` (`emails/index.ts:173`). One click, both surfaces, no log line, no error anywhere. *Check:* first line of the audit script, or open the Settings tab. Cheapest and the only single-click explanation, so it goes first.
+2. **Brevo route failing** — whitecross is forced to Brevo, so **all** its customer mail (confirmation, cancel, reschedule, **loyalty receipt**) rides one API key and one account. Failure modes seen or plausible: `BREVO_API_KEY` secret missing/rotated (2026-06-26 pattern), account suspended, **daily transactional quota exhausted** — marketing campaigns (`_sendCampaignEmail`) now also go out through Brevo, so one blast can starve the day's confirmations — or the address itself rejected (2026-06-24 pattern). *Check:* `functions:log` shows `[whitecross] confirmationEmail error: Brevo 4xx …`; and the discriminating question for the owner: **do checkout loyalty receipts still arrive?** (same route, `salownSendLoyaltyEmail`). If they do, Brevo is not the problem.
+3. **Trigger not reached / early return** — the write shape from a producer no longer satisfies a guard: `clientEmail` empty, `startTime` missing or in the past at create (create trigger only), status never flips to `CONFIRMED` (whitecross: the webhook after `-00106-dof`), source not `Website|Salown` and `bookingType` not `booking`. Silent by construction — every guard is a bare `return`. *Check:* the audit script's per-booking verdicts (`NO_CLIENT_EMAIL`, `PAST_AT_CREATE`, `STATUS_PENDING…`, `NOT_EMAILABLE`) name the guard directly; `MISSING_CHECK_LOGS` with **no** log line at all means the trigger did not run — then `firebase functions:list` for the two trigger revisions.
+4. **Sent but not arriving** — stamps present, customer has nothing: spam/blocked. `salownBrevoWebhook` writes `tenants/whitecross/emailEvents` (`blocked` / `hard_bounce` / `spam`) and flips the client to `emailOptOut`; a DNS change on `salown.com` (the inbound-parse work and the Cloudflare email worker both touch that zone) can break SPF/DKIM alignment for `noreply@salown.com`. *Check:* audit script `Brevo events` line + Brevo → Transactional → Logs for the address; ask for the spam folder.
+5. **Wrong content, not absence** — "problem with" may mean the email is wrong (day/time/price/barber/manage link). The 2026-09-02 inverted-hours incident produced bookings on the wrong DAY whose confirmations were then *correct for the wrong booking*. *Check:* ask the owner for a forward/screenshot of one offending email.
+
+**Diagnosis order (do these in this order — each step removes half the list).**
+
+1. **Pin the report** with the owner: which tenant(s) (Whitecross only? HeroHairs too?), which surface, one booking reference or customer + time, "never arrived" vs "arrived wrong" vs "in spam", and **whether loyalty receipts still arrive**.
+2. **Run the audit, read-only:** from a machine holding the service account,
+   `node salown-docs/scripts/confirmation-email-audit.cjs --tenant whitecross --days 14` (then `--tenant herohairs`). The `READING` line says one of four things: *toggle OFF* → H1; *nothing stamped in the window* → H2/H3 platform-level; *sends stopped at ⟨t₁⟩, first miss ⟨t₂⟩* → compare `RELEASE_LEDGER.md` between t₁ and t₂; *all stamped* → H4/H5.
+3. **For `MISSING_CHECK_LOGS` rows:** `firebase functions:log --project havuz-44f70 --only salownBookingConfirmationTrigger,salownBookingConfirmedEmailTrigger | grep -E "confirmationEmail|<docId>"`. A `Brevo 4xx` line is the root cause verbatim (2026-06-26 lesson: *"the error message gives the root cause directly — don't guess"*). No line ⇒ the trigger never reached the send ⇒ step 4.
+4. **Producer shape:** for one affected booking compare the stored fields against the guard list (status, `clientEmail`, `source`/`bookingType`, `startTime` vs `createdAt`, `stripeSessionId`). For the premium site specifically, confirm the webhook still flips PENDING→CONFIRMED in one write (the update trigger keys on `before.status ≠ CONFIRMED ∧ after.status = CONFIRMED`).
+5. **Only then** touch code — and per Quick Rule 6, one bug, changed-lines report, then the next.
+
+**No working manual resend for a forced-Brevo tenant (gap found while reading, independent of the cause).** The only manual path, `salownSendBookingConfirmation` (onCall, `functions/src/index.ts:489-510`), sends **via the tenant's Gmail only** and returns `{ sent:false, reason:'no_email_config' }` when `emailConfig` is empty — which for Whitecross it is by design (`EMAIL_ARCHITECTURE.md`: the Gmail is read for IMAP, never sends). So once a confirmation is missed there is **no button** that can resend it through the route the tenant actually uses; the owner's only workaround is to tell the customer verbally (the 2026-08-04 workaround, again). Whatever the root cause turns out to be, a resend that goes through `_sendCustomerEmail` (so it honours the FORCE list and stamps the booking) is the durable prevention.
+
+**Lessons Learned (provisional — to be rewritten when the cause is known):**
+- **Two surfaces failing together points at the shared chain, not at either surface.** The hosted profile and the premium site do not share a booking writer or a confirming writer; they share the toggle, the email module, the Brevo route and the two trigger deployments. Start there.
+- **Every guard in this chain is a bare `return`.** A missing confirmation leaves no error unless the send itself fails. The `confirmationEmailSentAt` stamp is the only data-side evidence, which is why the audit reads the stamp first and the logs second.
+- **A tenant that is forced onto Brevo has no second sender.** Loyalty, confirmation, cancellation and marketing all ride one key and one quota; a marketing blast and a missing confirmation on the same day are one story, not two.
+
+---
+
 ## 2026-09-02 — An impossible opening time moved every Tuesday customer to Wednesday, and nothing said so
 
 **Severity:** 🟠 High · **Owner:** `alish/wc-inverted-hours` · **Status:** ✅ Resolved 2026-09-03 — data repaired by the owner 2026-09-02 (read-back verified); **both prevention halves LIVE and verified on served bytes:** `hosting:whitecrossbarbers-saas` REL-10 **`6d01befc41c76b93`** (12:20Z, `verify.sh --live` 16/16, 58/58 byte-identical) and `hosting:salown` **`5e20920f37dd20fd`** (16:17Z, ledger `R-2026-09-03-A`, 55/55 byte-identical, guard markers 0→1) · **Affected area:** whitecrossbarbers.com booking form, opening-hours write path, inline reschedule
