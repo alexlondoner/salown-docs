@@ -1,6 +1,39 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
 
+## R-2026-09-05-A — `FIN-CONFIG-DATED-AUTHORITY-P0` flip + three SHIP-confirmed bystanders · 1-unit release (`hosting:salown`) from an isolated pinned workspace
+
+| Field | Value |
+|---|---|
+| **Work item** | `FIN-CONFIG-DATED-AUTHORITY-P0` — `FINANCE_COMP_AMOUNT_MODE` `'legacy'` → `'dated'`: a covered wage day now pays what Team Members ▸ Pay (`staffComp`) says, normalised to a day rate; `partnerConfig.wage` stays the fallback, never zero. Carried with it (each owner session answered SHIP over cross-session messages): `793a26a` SERVICES-UNCATEGORISED fix · `b3b6cb4` B7 WhatsApp Settings toggle (dormant, functions/secrets not deployed) · `a0f7c6d` folded-price mirror (2 comment lines in src) |
+| **Source SHA** | **`7be99c5`**, pinned, `[skip ci]`. Isolated `git archive` workspace under the session scratchpad in its own parent directory (`flipparent/rel-flip`), `node_modules` symlinked; not a git repo, outside `~/Desktop/alex` |
+| **Deployed unit** | `hosting:salown` ONLY → https://salown.com · `npx firebase deploy --only hosting:salown --project havuz-44f70 --non-interactive` run by the owner from the workspace · 120 files, 31 uploaded new · REL-1 staff predeploy hook ran inside the discarded workspace, main tree untouched |
+| **Live identity** | version `1852ab986768aeba` → **`f6e5633f847f8b9c`** · release **`1788604187427000`** · 2026-09-05T10:29:47.427Z · FINALIZED |
+| **Rollback identity** | **`1852ab986768aeba`** (R-2026-09-04-A, source `6fcfcf1`/`90e8ff7`). Rolling back also removes the three bystander commits from production. Code rollback of the flip alone = set the constant to `'legacy'` and release; `staffComp` records need no reverting |
+| **Precondition evidence (M1/M2)** | `scripts/compAmountParity.cjs --tenant=whitecross` **exit 0** before and after the release: Alex 212/212 covered Δ £0.00 · Arda 180 covered / 32 uncovered (post-departure, the `periods` gate excludes them) Δ £0.00 · Muhamed 89/89 Δ £0.00. Owner decisions that made it green: Muhamed `partnerConfig.wage` = 250/6 (2026-09-04) · Alex `{100, day}` via Pay (2026-09-04) + the seeded `{600, week}` corrected in place by the owner-run `scripts/correctAlexCompParams.cjs` (2026-09-05, dates untouched, audit `COMP_PARAMS_CORRECTED`) |
+| **Delta — measured against the live baseline** | Live source (`90e8ff7`) rebuilt the same way is byte-identical to what `salown.com` served (entry + Finance chunk checked). Against it the pinned build changes the entry chunk (+1,171 B: i18n strings, PanelLayout sort, OnboardingWizard contract, and the flip — `e\|\|\`legacy\`` → `e\|\|\`dated\``, exactly one occurrence), Services (+1,994 B), Settings (+630 B, the toggle), planLimits (+48 B); every other chunk is a hash-name / minifier-identifier cascade with no statement-level change (Finance chunk normalised diff: empty) |
+| **Verification — from the SERVED BYTES** | `salown.com/app` loads `/public-bundle/assets/index-M7jGW3WL.js`; served entry and served Finance chunk byte-equal to the pinned build · served entry markers: `fM=e=>e\|\|\`dated\`` ×1, `e\|\|\`legacy\`` ×0, `Kategoriye ata` ×1 · 8-site before/after version diff → only `salown` changed |
+| **Behaviour change** | Finance wage figures: **none by construction** — engine proof in the pinned tree: Alex and Muhamed weekly ledger + monthly wage cost identical under `dated` and `legacy`, and identical to the 2026-09-04 snapshot. Services: 7 previously invisible onboarding services become visible on 3 tenants (owner of `793a26a` verifies on production). Settings: a plan-gated WhatsApp opt-in toggle is visible and inert until the B7 functions deploy (`docs/WHATSAPP_PLAN.md` §6) |
+| **Deliberately NOT deployed** | `salown-staff` `c6df19884456d78b`, `salown-admin` `6376b019192dd6c6`, `whitecrossbarbers-saas` `6d01befc41c76b93`, the other 5 sites, all Functions, rules, indexes — unchanged before and after |
+| **Gates** | main tree full gate **178 files / 5245** · pinned workspace: `ops/deploy-policy` + `ops/rules-authority` + `ops/functions-ownership` + finance suites + i18n **298 passed, 4 skipped** · `tsc` 0 · `eslint` on the three changed files 0 |
+| **Production business-data writes** | **ZERO** in the release itself. The two data corrections that preceded it (Muhamed wage field, Alex staffComp params) were separate owner-run operations recorded in SYNC.md 2026-09-04/05 |
+| **Known latent weakness, documented not fixed** | `contractedDaysOf` normalises a weekly figure by the barber document's CURRENT `workingDays`, not the rota history for the date. Mitigation in force: wages entered per DAY (Alex), parity tool run before any further flip or tenant rollout |
+
+## R-2026-09-04-A — `FIN-PASSIVE-HIDE` · 1-unit release (`hosting:salown`) from an isolated pinned workspace · *row added retroactively 2026-09-05*
+
+| Field | Value |
+|---|---|
+| **Work item** | `FIN-PASSIVE-HIDE` — Finance hides Team-Members-passive staff from the NEW PAYMENT dropdown and the weekly STAFF WAGES table once their running balance is £0 (a non-zero balance keeps the row; the selected name is always kept). Display-only; accrual untouched |
+| **Source SHA** | **`6fcfcf1`** (workspace pinned at `90e8ff7` = `6fcfcf1` + another session's `[skip ci]` SYNC commit). Isolated `git archive` workspace under the session scratchpad. CI did not run — HEAD carried `[skip ci]` |
+| **Deployed unit** | `hosting:salown` ONLY → https://salown.com · deploy run by the owner from the workspace · 120 files, 28 uploaded new |
+| **Live identity** | version `5e20920f37dd20fd` → **`1852ab986768aeba`** · release **`1788518270199000`** · 2026-09-04T10:37:50.199Z |
+| **Rollback identity** | **`5e20920f37dd20fd`** (R-2026-09-03-A) |
+| **Delta** | live source `6925c00` rebuilt → served Finance chunk byte-identical; pinned build: 27 rename-only, **1 real** (Finance chunk +338 B) |
+| **Verification** | served `Finance-CZvl0Tds.js` byte-equal to build · 8-site diff → only `salown` · owner confirmed on production: Arda absent from the dropdown and the weekly table, Muhamed rows correct |
+| **Deliberately NOT deployed** | every other site, all Functions, rules, indexes |
+| **Gates** | `tsc` 0 · `eslint` 0 · 9 finance suites 447/447 |
+| **Production business-data writes** | **ZERO** |
+
 ## R-2026-09-03-A — `WC-INVERTED-HOURS` salOWN half · 1-unit release (`hosting:salown`) from an isolated pinned workspace
 
 | Field | Value |
