@@ -1,6 +1,23 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
 
+## R-2026-09-05-B — `FIN-ONLINE-TENDER` · 1-unit release (`hosting:salown`) from an isolated pinned workspace
+
+| Field | Value |
+|---|---|
+| **Work item** | `FIN-ONLINE-TENDER` — money settled before the visit through the booking rail (website Stripe, Booksy prepaid) becomes its own tender leg (`tenderFacts.online_p`, `'online'` filter) and is rendered by Finance (Daily Ledger column, Bank Balance, Bank Flow, filter), Reports (rows, totals, filter) and Sales (`ONLINE` method). INCIDENTS 2026-09-05 "Money paid online before the visit vanished from every tender view" |
+| **Source SHA** | **`815afed`**, pinned, `[skip ci]`. Isolated `git archive` workspace in its own parent (`onlineparent/rel-online`), `node_modules` symlinked. No bystander commits: nothing else Admin-shipped landed on main after R-2026-09-05-A |
+| **Deployed unit** | `hosting:salown` ONLY → https://salown.com · deploy run by the owner from the workspace · 120 files, 31 uploaded new · staff predeploy hook ran inside the discarded workspace, main tree porcelain 0 |
+| **Live identity** | version `f6e5633f847f8b9c` → **`ff183fbbb067b6b7`** · release **`1788621805894000`** · 2026-09-05T15:23:25.894Z · FINALIZED |
+| **Rollback identity** | **`f6e5633f847f8b9c`** (R-2026-09-05-A) |
+| **Delta — measured against the live baseline** | Live source `7be99c5` rebuilt the same way is byte-identical to what `salown.com` served (entry checked before the cut). Against it the pinned build changes five chunks at statement level — Finance +1,153 B (Online column, filter, bank lines), Reports +338 B, financeSummary +156 B (selection), entry +158 B (tenderFacts), Bookings +52 B (Sales `ONLINE`) — everything else is a hash-name / identifier cascade |
+| **Verification — from the SERVED BYTES** | `salown.com/app` loads `/public-bundle/assets/index-ChXRorUC.js`; served entry, Finance and Reports chunks byte-equal to the pinned build · served markers: Finance `Online (prepaid)` ×3 / `onlineRevenue` ×9, Reports `Online (prepaid)` ×3, entry `online_p` ×3 · 8-site before/after diff → only `salown` changed |
+| **Behaviour change** | Finance Day/Week/Month, Bank Balance and Monthly Summary now include online-prepaid money as a separate line (Aug +£130, Sep +£82 to date, exactly the measured gap); Day and Overview agree for the same month again. Reports gains an Online row/filter; Sales an `ONLINE` method. Legacy (pre-2026-08-15) rows unchanged. **Fees are NOT modelled** — gross, per `docs/PROCESSOR_FEES_PLAN.md` Phase 0 |
+| **Proof on live data (read-only)** | 309 checked-out rows since 2026-08-01 through the pinned modules: cash + card + online views reproduce `all` on every row; online by month = £130 (9) / £82 (6); 2026-09-05 = cash £42 · card £166.60 · online £32 |
+| **Deliberately NOT deployed** | `hosting:salown-staff` (`c6df19884456d78b`) — the Staff Sales `ONLINE` line ships with the next staff release; every other site, all Functions, rules, indexes |
+| **Gates** | full gate **178 files / 5258** (13 new) · pinned workspace: policy + tender + finance + i18n suites **358 passed, 4 skipped** · `tsc` 0 · `eslint` 0 · `vite build` OK |
+| **Production business-data writes** | **ZERO** — additive read-side projection; no booking, allocation, receipt or loyalty field touched |
+
 ## R-2026-09-05-A — `FIN-CONFIG-DATED-AUTHORITY-P0` flip + three SHIP-confirmed bystanders · 1-unit release (`hosting:salown`) from an isolated pinned workspace
 
 | Field | Value |
