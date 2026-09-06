@@ -233,6 +233,18 @@ here; commit and release identifiers are never renamed.
 ---
 
 
+### 4.0 Go-to-market gate — opened 2026-09-07 → [GTM_LAUNCH_GATE.md](GTM_LAUNCH_GATE.md)
+
+Owner decision 2026-09-07: **"let's go live" = start marketing salOWN to new salons.** The gate
+document is a *filter* over this table, not a second roadmap: it names, in order, the items that
+stand between today and the first marketing message, and every item keeps its Work ID and its
+status badge **here**. Headline: most P0 rows above (`FIN-*`, `ROTA-*`) are Whitecross correctness
+and do **not** gate marketing; what does is `LEG-1` (filed P2, **proposed P0**), the pricing /
+collection decision (§9.1 #9), `CHECKOUT-SERVER-AUTHORITY` (rules constraint, §5.0 option 2), the
+undeployed `hosting:salown-staff` checkout fix (§5.0), and `T-e` paths 3+4. Prompt seeds for each
+live in the gate doc §6 — Codex and any session preparing a task prompt start there. Nothing in
+this note changes a status; a closed gate item is flipped in this table first.
+
 ### `STAFF-IDENTITY-LINK` / `STAFF-SELF-BLOCK-ACCESS` — the measurement that produced them (2026-09-01)
 
 Both items came out of a READ-ONLY measurement, run to answer a product question — *would
@@ -558,6 +570,7 @@ that exists is `salownIcalFeed`, a one-way iCal feed OUT.
 | 6 | Schedule the **O1W F→D→E2E** coordinated activation | `WCP-3` phantom bookings |
 | 7 | ~~Choose the **WhatsApp sender number**~~ — **DECIDED 2026-09-05: a new number**, owner buys it 2026-09-06; the shop's live number is not migrated | `B7` — resolved |
 | 8 | ~~Choose the **Meta Business account owner** for WhatsApp~~ — **DECIDED 2026-09-05: salOWN** (reversed the same evening from "Whitecross"), and B7 ships as a **premium (plan-gated)** feature | `B7` — resolved |
+| 9 | **Price per tier + how the first paying salons pay** (invoice / Stripe Payment Link / nothing yet) and the **legal entity name + address** for ToS/Privacy — opened 2026-09-07 | `LEG-1`, landing copy, the whole [go-to-market gate](GTM_LAUNCH_GATE.md) §7 |
 
 ### 9.2 Technical dependency chains
 
