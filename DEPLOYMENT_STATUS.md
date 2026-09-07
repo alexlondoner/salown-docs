@@ -21,6 +21,32 @@
 
 ---
 
+## 💷 C1 — BOOKING-PRICE-EDIT-AUTHORITY · **PUSHED_NOT_LIVE** 2026-09-07 · ⚠️ **RELEASE ORDER IS LOAD-BEARING**
+
+**What is on `origin/main` (salown-app):** `f560646` (executor span/price parity) → `0b2ada6` (the two
+callables `salownPatchBookingDetails` + `salownEditBookingForm` exported from the entrypoint, ownership
+proven salown@europe-west2) → `65ad272` (BookingDetailPanel + BookingForm send INTENT; `patchBooking`
+refuses any price field; `editBooking` is the callable; no browser price write remains). All `[skip ci]`.
+
+**What is live:** nothing of it. No function revision exists for either callable; `hosting:salown` still
+serves `ff183fbbb067b6b7` (pre-cutover Admin), whose panel still writes prices directly.
+
+**⚠️ ORDER:** the Admin bundle now on `main` **calls functions that do not exist in production**. If any
+commit touching `src/**` lands on `main` WITHOUT `[skip ci]`, CI releases that bundle and every
+price-affecting inline edit (service/variation/add-on/product change, and the whole BookingForm edit
+save) fails with `not-found` until the functions are deployed. Required sequence, each step
+owner-approved: **(1)** `./scripts/deploy-functions.sh salownPatchBookingDetails salownEditBookingForm`
+from a pinned commit ≥ `65ad272` → verify a revision exists for both names → **(2)** isolated
+`hosting:salown` release → **(3)** live test of a service swap on a test booking (price/duration/endTime
+derived server-side, audit row `BOOKING_EDITED_SERVER`). Rollback = the previous hosting version; the
+functions may stay (nothing calls them from the old bundle).
+
+**Still open after C1:** C2 checkout writer closure (`checkoutBooking` / `saveUnpaidBooking` still
+direct), foreign/platform-deposit price correction policy (fail-closed today — affects the Booksy
+deposit correction operation), ambiguous fall-back DST hour (refused, no disambiguation UI).
+
+---
+
 ## 🎯 WHITECROSS CAMPAIGN CHAIN — `CAM-2` + `CAM-3` + `WCP-2` · **CLOSED END-TO-END** 2026-08-26 · **LIVE_VERIFIED**
 
 Three gates, three different kinds of artefact, all verified against production reads rather than
