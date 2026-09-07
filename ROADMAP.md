@@ -347,7 +347,18 @@ guard's own doc comment (`6e28ae8`).
 2. **Or, cheaper and sooner:** a Firestore rules constraint on the booking write, so a checkout
    that claims more than the sale is worth is rejected regardless of which bundle sent it.
 
-Until one of those exists, the honest statement is that **a till on an old bundle can still write
+**Option 2 is now in source — `PUSHED_NOT_LIVE` (2026-09-07, salown-app `edfa6e7`, GTM gate A3).**
+`coaNotOverAllocated()` sits above the principal branch of the bookings UPDATE rule and mirrors
+`resolveCheckoutOverAllocation` + `resolvePrePaidAmount` in pence, over-direction only, on the
+merged document — including the stored prepaid rails, which is what catches the 2026-08-30 shape.
+Proof: `test/rules/checkoutOverAllocation.emulator.test.js` 15/15 on the real emulator with a
+mutation control; rules gate 186/186; Codex cross-review's five stricter-than-writer shapes fixed
+and pinned. Known limit: a writer that sends no receipt columns at all (pre-2026-07-30 bundle) is
+not decidable there. **Nothing is deployed** — the ruleset release is a separate owner-approved
+step (rules last, salown-app authority, before/after ruleset ids into the ledger), and this item
+stays `CONFIRMED_OPEN` until the served ruleset carries the `coaNotOverAllocated` marker.
+
+Until that release, the honest statement is that **a till on an old bundle can still write
 a double-counted checkout, and the only mitigation is a reload.** Any release that changes what
 the desk charges must therefore be followed by an explicit "hard-refresh every till" instruction —
 recorded as a release step, not as folklore.

@@ -31,7 +31,7 @@ Stripe entirely in TEST mode · TR payment integrity hold active · 0 `checkoutR
 |---|---|---|---|---|
 | A1 | `LEG-1` | salOWN Terms of Service + Privacy pages; landing footer links are `href="#"` (`hosting/index.html:648-649`) | `PLANNED` (filed P2) | Ad platforms reject a site with dead legal links; GDPR requires a privacy notice before collecting sign-up data. **Proposed P0.** |
 | A2 | *(owner decision)* | Pricing + how the first paying salons pay. salOWN has **no subscription pipeline** (`M3` is vision); landing deliberately shows no price ("Request a demo") | — | You cannot market without knowing what you charge and how you collect. Manual invoice or a Stripe Payment Link needs **zero code**; `M1`/`M3` are not prerequisites. |
-| A3 | `CHECKOUT-SERVER-AUTHORITY` | Till arithmetic enforced only in the browser; a till on a stale bundle can still write a double-counted checkout | `CONFIRMED_OPEN` (P0) | A new salon's first double-charge is a lost customer. Cheapest closing move per ROADMAP §5.0 option 2: **a Firestore rules constraint on the booking write**. |
+| A3 | `CHECKOUT-SERVER-AUTHORITY` | Till arithmetic enforced only in the browser; a till on a stale bundle can still write a double-counted checkout | `CONFIRMED_OPEN` (P0) — rules constraint **`PUSHED_NOT_LIVE` `edfa6e7`**, deploy pending | A new salon's first double-charge is a lost customer. Cheapest closing move per ROADMAP §5.0 option 2: **a Firestore rules constraint on the booking write**. |
 | A4 | *(release)* | `hosting:salown-staff` carries the 2026-08-30 checkout fix in source but the **live staff bundle predates it** (`496e69c` → `6e28ae8`, +755 B) | not deployed | ROADMAP §5.0: *"the Staff App till must not be used until it is."* A prospect who installs the staff app hits the known fault. |
 | A5 | `T-e` paths 3 + 4 | `updateStaffRole` / `registerMeAsAdmin` in `Settings.tsx` write the staff doc, never the claim → **false success**; rules already block them for non-super-admins | open (Security theme) | The first thing a new owner does is add a colleague as admin. Today it reports "Saved" and changes nothing. Repoint at `setStaffRoleCore` (canonical writer `functions/src/staff/identity.ts`). |
 
@@ -152,4 +152,7 @@ production access. Ticks below are appended as items close in ROADMAP.*
 
 ## 8. Closure log
 
-- *(empty — nothing on this gate has closed yet)*
+- **2026-09-07 · A3 `CHECKOUT-SERVER-AUTHORITY` — source complete, `PUSHED_NOT_LIVE`** (salown-app
+  `edfa6e7`). Rules constraint + emulator suite 15/15 + mutation control; rules gate 186/186; Codex
+  cross-review findings fixed. **Not closed:** needs the owner-approved ruleset release (rules last),
+  then a read-only production observation of one refused over-allocation. ROADMAP §5.0 carries the detail.
