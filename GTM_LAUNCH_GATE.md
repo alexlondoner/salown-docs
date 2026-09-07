@@ -32,12 +32,12 @@ Stripe entirely in TEST mode · TR payment integrity hold active · 0 `checkoutR
 | A1 | `LEG-1` | salOWN Terms of Service + Privacy pages; landing footer links are `href="#"` (`hosting/index.html:648-649`) | `PLANNED` (filed P2) | Ad platforms reject a site with dead legal links; GDPR requires a privacy notice before collecting sign-up data. **Proposed P0.** |
 | A2 | *(owner decision)* | Pricing + how the first paying salons pay. salOWN has **no subscription pipeline** (`M3` is vision); landing deliberately shows no price ("Request a demo") | — | You cannot market without knowing what you charge and how you collect. Manual invoice or a Stripe Payment Link needs **zero code**; `M1`/`M3` are not prerequisites. |
 | A3 | `CHECKOUT-SERVER-AUTHORITY` | Till arithmetic enforced only in the browser; a till on a stale bundle can still write a double-counted checkout | `CONFIRMED_OPEN` (P0) — rules constraint **`PUSHED_NOT_LIVE` `edfa6e7`**, deploy pending | A new salon's first double-charge is a lost customer. Cheapest closing move per ROADMAP §5.0 option 2: **a Firestore rules constraint on the booking write**. |
-| A4 | *(release)* | `hosting:salown-staff` carries the 2026-08-30 checkout fix in source but the **live staff bundle predates it** (`496e69c` → `6e28ae8`, +755 B) | not deployed | ROADMAP §5.0: *"the Staff App till must not be used until it is."* A prospect who installs the staff app hits the known fault. |
+| A4 | *(release)* | ~~`hosting:salown-staff` carries the 2026-08-30 checkout fix in source but the live staff bundle predates it~~ | **CLOSED before this gate opened** — `R-2026-08-30-H`, `c6df19884456d78b`, served bytes verified | Listed here on 2026-09-07 from a stale ROADMAP §5.0 paragraph; the ledger proved it live the same evening it was written. Kept struck through so nobody re-opens it. |
 | A5 | `T-e` paths 3 + 4 | `updateStaffRole` / `registerMeAsAdmin` in `Settings.tsx` write the staff doc, never the claim → **false success**; rules already block them for non-super-admins | open (Security theme) | The first thing a new owner does is add a colleague as admin. Today it reports "Saved" and changes nothing. Repoint at `setStaffRoleCore` (canonical writer `functions/src/staff/identity.ts`). |
 
 **Gate A is done when:** legal pages are live and linked · the owner has written the price and the
 collection method into ROADMAP §9.1 · the rules constraint (or the executor cutover) is
-`LIVE_VERIFIED` · `hosting:salown-staff` is released and hash-verified · a non-super-admin owner
+`LIVE_VERIFIED` · a non-super-admin owner
 can promote staff → admin and the claim actually changes (read-only Auth proof).
 
 ---
@@ -84,11 +84,10 @@ salon needs in month one. A GTM sprint must not be spent on them.
 
 1. `LEG-1` legal pages — 1 day.
 2. `CHECKOUT-SERVER-AUTHORITY` rules constraint — 1 day, rules deployed **last**, emulator test first.
-3. `hosting:salown-staff` isolated release of the 2026-08-30 fix — half a day, hash-verified.
-4. `T-e` paths 3 + 4 → `setStaffRoleCore`, then `E1` Phase 2 owner team management — 2–3 days.
-5. `EV2` health-check + daily doc — 1 day.
-6. `B7` WhatsApp finish (secrets → targeted deploy → owner live test) — as soon as Meta approves.
-7. Owner in parallel: price + collection method · Stripe decision (Gate C) · confirm the funnel is the form.
+3. `T-e` paths 3 + 4 → `setStaffRoleCore`, then `E1` Phase 2 owner team management — 2–3 days.
+4. `EV2` health-check + daily doc — 1 day.
+5. `B7` WhatsApp finish (secrets → targeted deploy → owner live test) — as soon as Meta approves.
+6. Owner in parallel: price + collection method · Stripe decision (Gate C) · confirm the funnel is the form.
 
 **One change → deploy → owner live test → next** (memory: one-change-at-a-time mode). No bundle.
 
@@ -122,10 +121,6 @@ Seeds per Gate A item:
   byte-compared, then one real over-allocation attempt denied in prod (read-only observation).
   OUT: the UI cutover to `functions/src/checkout/executor.ts` (the "real fix", separate package).
   Rules are shared by every tenant — read [`feedback_firestore_rules_safety`] before touching.
-- **A4 staff release** — GOAL: `hosting:salown-staff` serves the `6e28ae8` staff bundle. SCOPE:
-  `hosting/staff-bundle/**` build + deploy only. PROOF: before/after version ids, served
-  `staff-*.js` sha256 == local build, previous entry 404. OUT: `hosting:salown` (REL-1 hook
-  hazard — build from the isolated workspace).
 - **A5 `T-e` 3+4** — GOAL: `Settings.tsx` role changes go through `setStaffRoleCore` so the claim
   and the staff doc move together. SCOPE: `src/pages/Settings.tsx` (two handlers) + the callable
   surface in `functions/src/index.ts` (check the B7 claim on that file first). PROOF: read-only
@@ -152,6 +147,8 @@ production access. Ticks below are appended as items close in ROADMAP.*
 
 ## 8. Closure log
 
+- **2026-09-07 · A4 struck** — already live as `R-2026-08-30-H` (`c6df19884456d78b`); the gate had copied a
+  stale ROADMAP paragraph. ROADMAP §5.0 corrected.
 - **2026-09-07 · A3 `CHECKOUT-SERVER-AUTHORITY` — source complete, `PUSHED_NOT_LIVE`** (salown-app
   `edfa6e7`). Rules constraint + emulator suite 15/15 + mutation control; rules gate 186/186; Codex
   cross-review findings fixed. **Not closed:** needs the owner-approved ruleset release (rules last),

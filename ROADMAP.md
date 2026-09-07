@@ -241,7 +241,8 @@ stand between today and the first marketing message, and every item keeps its Wo
 status badge **here**. Headline: most P0 rows above (`FIN-*`, `ROTA-*`) are Whitecross correctness
 and do **not** gate marketing; what does is `LEG-1` (filed P2, **proposed P0**), the pricing /
 collection decision (§9.1 #9), `CHECKOUT-SERVER-AUTHORITY` (rules constraint, §5.0 option 2), the
-undeployed `hosting:salown-staff` checkout fix (§5.0), and `T-e` paths 3+4. Prompt seeds for each
+and `T-e` paths 3+4. *(The gate's first draft also listed the `hosting:salown-staff`
+checkout fix as undeployed — that was stale: it went live in `R-2026-08-30-H`, see §5.0.)* Prompt seeds for each
 live in the gate doc §6 — Codex and any session preparing a task prompt start there. Nothing in
 this note changes a status; a closed gate item is flipped in this table first.
 
@@ -363,9 +364,13 @@ a double-counted checkout, and the only mitigation is a reload.** Any release th
 the desk charges must therefore be followed by an explicit "hard-refresh every till" instruction —
 recorded as a release step, not as folklore.
 
-**Related open item:** the Staff App half of the 2026-08-30 fix
-(`src/staff/lib/checkoutSheetPayload.ts`) is committed but **`hosting:salown-staff` is NOT
-deployed**; the Staff App till must not be used until it is. Measured delta since the live staff
+**Related item — CLOSED the same evening, this paragraph was stale (corrected 2026-09-07):** the
+Staff App half of the 2026-08-30 fix (`src/staff/lib/checkoutSheetPayload.ts`) went live in
+**`R-2026-08-30-H`** at 21:30Z — `hosting:salown-staff` `2f873efa339d544c` → **`c6df19884456d78b`**
+from source `59bd39a` (which contains `6e28ae8`), served bytes hash-verified, `CHECKOUT_OVER_ALLOCATED`
+marker 0 → 1. The Staff App till carries the browser guard. The only staff-bundle-closure change
+since is `815afed` (Staff Sales `ONLINE` tender line), deliberately held for the next staff release
+and not a GTM item. Measured delta since the live staff
 build (`496e69c`): `→ 0233019` **+231 B** (only `3326db8`, BL-4/BL-6 refund awareness) and
 `→ 6e28ae8` **+755 B** (this work). Nothing else reaches that bundle.
 
