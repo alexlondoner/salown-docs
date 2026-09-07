@@ -29,7 +29,7 @@ Stripe entirely in TEST mode · TR payment integrity hold active · 0 `checkoutR
 
 | # | Work ID | What | ROADMAP status (2026-09-07) | Why it gates marketing |
 |---|---|---|---|---|
-| A1 | `LEG-1` | salOWN Terms of Service + Privacy pages; landing footer links are `href="#"` (`hosting/index.html:648-649`) | `PLANNED` (filed P2) | Ad platforms reject a site with dead legal links; GDPR requires a privacy notice before collecting sign-up data. **Proposed P0.** |
+| A1 | `LEG-1` | salOWN Terms of Service + Privacy pages; landing footer links are `href="#"` (`hosting/index.html:652-653`) | `PLANNED` (filed P2) — **drafts written 2026-09-07:** [LEGAL_TERMS_DRAFT.md](LEGAL_TERMS_DRAFT.md) · [LEGAL_PRIVACY_DRAFT.md](LEGAL_PRIVACY_DRAFT.md), owner fields + solicitor pending | Ad platforms reject a site with dead legal links; GDPR requires a privacy notice before collecting sign-up data. **Proposed P0.** |
 | A2 | *(owner decision)* | Pricing + how the first paying salons pay. salOWN has **no subscription pipeline** (`M3` is vision); landing deliberately shows no price ("Request a demo") | — | You cannot market without knowing what you charge and how you collect. Manual invoice or a Stripe Payment Link needs **zero code**; `M1`/`M3` are not prerequisites. |
 | A3 | `CHECKOUT-SERVER-AUTHORITY` | Till arithmetic enforced only in the browser; a till on a stale bundle can still write a double-counted checkout | `CONFIRMED_OPEN` (P0) — rules constraint **`PUSHED_NOT_LIVE` `edfa6e7`**, deploy pending | A new salon's first double-charge is a lost customer. Cheapest closing move per ROADMAP §5.0 option 2: **a Firestore rules constraint on the booking write**. |
 | A4 | *(release)* | ~~`hosting:salown-staff` carries the 2026-08-30 checkout fix in source but the live staff bundle predates it~~ | **CLOSED before this gate opened** — `R-2026-08-30-H`, `c6df19884456d78b`, served bytes verified | Listed here on 2026-09-07 from a stale ROADMAP §5.0 paragraph; the ledger proved it live the same evening it was written. Kept struck through so nobody re-opens it. |
@@ -147,6 +147,9 @@ production access. Ticks below are appended as items close in ROADMAP.*
 
 ## 8. Closure log
 
+- **2026-09-07 · A1 drafts** — Terms + Privacy written from the code (sub-processors, region, consent gating,
+  unsubscribe, Connect model all checked). Blocked on the owner's entity name/address/ICO number and a
+  solicitor read; then one owner-approved `hosting:salown` release (footer links + two pages).
 - **2026-09-07 · A4 struck** — already live as `R-2026-08-30-H` (`c6df19884456d78b`); the gate had copied a
   stale ROADMAP paragraph. ROADMAP §5.0 corrected.
 - **2026-09-07 · A3 `CHECKOUT-SERVER-AUTHORITY` — source complete, `PUSHED_NOT_LIVE`** (salown-app
