@@ -21,7 +21,19 @@
 
 ---
 
-## 💷 C1 — BOOKING-PRICE-EDIT-AUTHORITY · **PUSHED_NOT_LIVE** 2026-09-07 · ⚠️ **RELEASE ORDER IS LOAD-BEARING**
+## 💷 C1 — BOOKING-PRICE-EDIT-AUTHORITY · **FUNCTIONS_LIVE / HOSTING_PENDING** 2026-09-08 · ⚠️ **HOSTING STILL PENDING**
+
+**2026-09-08 update — the two callables are DEPLOYED** (owner-approved, functions only, `R-2026-09-08-A`):
+`salownpatchbookingdetails-00001-yur` · `salowneditbookingform-00001-maq` · `salown` @ `europe-west2` · Node.js 22 / GCF v2 ·
+source `5026287` (functions tree byte-identical to `65ad272`) · inventory 118 → 120, `us-central1` 29 unchanged, no deletion ·
+archives pulled back from GCS 6/6 byte-identical · hosting unchanged (`salown` `ff183fbbb067b6b7`, `salown-staff` `c6df19884456d78b`) ·
+no callable invoked, no Firestore write. **Production behaviour unchanged:** the live Admin bundle does not call them.
+**Still NOT done:** Admin hosting release of the intent-sending bundle (separate approval), live booking test, C1 enforcement.
+The release-order hazard below is now HALF closed — the endpoints exist — but the bundle on `main` remains unreleased.
+
+*Original 2026-09-07 record follows.*
+
+## 💷 C1 — BOOKING-PRICE-EDIT-AUTHORITY · *(2026-09-07 record)* PUSHED_NOT_LIVE · release order
 
 **What is on `origin/main` (salown-app):** `f560646` (executor span/price parity) → `0b2ada6` (the two
 callables `salownPatchBookingDetails` + `salownEditBookingForm` exported from the entrypoint, ownership

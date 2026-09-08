@@ -1,6 +1,23 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
 
+## R-2026-09-08-A — `C1 BOOKING-PRICE-EDIT-AUTHORITY` · 2-function release (`functions:salown`) · **FUNCTIONS_LIVE / HOSTING_PENDING**
+
+| Field | Value |
+|---|---|
+| **Work item** | `C1 — BOOKING-PRICE-EDIT-AUTHORITY` (in-salon advance work, package C1). The two server-authoritative booking-edit callables that replace the browser price writers: `salownPatchBookingDetails` (BookingDetailPanel inline draft, `PATCH_BOOKING_DETAILS`) and `salownEditBookingForm` (BookingForm whole-form save, `EDIT_BOOKING_FORM`). Source chain `a07dffd → c44bbe9 → 1d74945 → f560646 → 0b2ada6 → 65ad272` |
+| **Source SHA** | **`5026287`** (canonical HEAD = `origin/main` at deploy time), `[skip ci]`. The deployed `functions/` tree is **byte-identical to `65ad272`** (`git diff 65ad272 5026287 -- functions firebase.json .firebaserc` empty; the two later commits are claim/SYNC only). Deployed from the canonical checkout — the documented functions method — with `functions/` porcelain-clean, no untracked files, single registered worktree |
+| **Deployed unit** | `functions:salown:salownPatchBookingDetails` + `functions:salown:salownEditBookingForm` ONLY · project `havuz-44f70` · codebase `salown` · region `europe-west2` · exact command `./scripts/deploy-functions.sh salownPatchBookingDetails salownEditBookingForm` (offline namespace guard PASS for both, then `firebase deploy --only functions:salown:salownPatchBookingDetails,functions:salown:salownEditBookingForm --project havuz-44f70`) · 2026-09-08 · both **create** operations, no update/delete proposed |
+| **Live identity** | `salownpatchbookingdetails-00001-yur` (srcGen `1788866366777917`, created 2026-09-08T11:20:04Z) · `salowneditbookingform-00001-maq` (srcGen `1788866404856088`, 2026-09-08T11:20:06Z) · both ACTIVE / Ready · Node.js 22 · GCF v2 (Cloud Run) · 256 MB |
+| **Rollback identity** | None needed: the live Admin bundle (`ff183fbbb067b6b7`) does not call either function, so they receive no traffic. Deleting the two functions would restore the exact pre-release inventory (118) — **deletion is NOT covered by this record and needs its own explicit approval** |
+| **Inventory — no unexpected deletion** | `firebase functions:list` before → after: **118 → 120** (`europe-west2` 89 → 91, `us-central1` **29 unchanged**) · DELETED = ∅ · ADDED = exactly the two names. WhatsApp B7 functions not deployed (absent before and after) |
+| **Artefact verification** | Both source archives pulled back from `gs://gcf-v2-sources-1050766582653-europe-west2/<fn>/function-source.zip#<srcGen>`: `lib/index.js`, `lib/bookings/priceEditCallable.js`, `priceEditExecutor.js`, `priceEditCore.js`, `lib/advances/advanceTx.js`, `advanceGuard.js` **6/6 SHA-256 identical** to the pinned local build · 222 files (= archive manifest) · no secret/env/debug file in the zip · deployed callable declares `region: 'europe-west2'` ×2 · the three `salownWhatsApp*` exports present in the deployed `lib/index.js` as source (not deployed as functions) |
+| **Hosting — unchanged** | `hosting:salown` **`ff183fbbb067b6b7`** (release `1788621805894000`) and `hosting:salown-staff` **`c6df19884456d78b`** identical before and after; no hosting command run; rules and indexes not deployed |
+| **Behaviour change in production** | **NONE for any user.** The served Admin bundle still writes booking prices from the browser; nothing calls the new endpoints. The endpoints exist so that the next Admin hosting release — whose bundle on `main` already calls them — cannot fail with `not-found`. **Not** "C1 live", **not** "production enforcement active" |
+| **Callable invocation / data writes** | **ZERO.** No callable was invoked (not even an unauthenticated probe); no production Firestore document was written; no migration, backfill, flag or secret changed |
+| **Gates (pinned tree)** | functions `npm run build` OK · `tsc --noEmit` 0 · focused priceEdit+advances **259/259** · functions full **2628 / 0 fail** (40 skipped by design) · archive manifest gate ✔ (222 files, digest `38a57aa8…`) · ownership matrix OK · `--check-only` PASS both names @ europe-west2 · `ops/deploy-policy` + `ops/functions-ownership` + `scripts/functionsArchiveManifest` vitest **102/102** |
+| **Still pending after this row** | Admin `hosting:salown` release of the intent-sending bundle (separate owner approval, with scope + behaviour statement) → live service-swap test on a test booking → only then `LIVE_VERIFIED`. Package C2 (checkout writers) untouched |
+
 ## R-2026-09-05-B — `FIN-ONLINE-TENDER` · 1-unit release (`hosting:salown`) from an isolated pinned workspace
 
 | Field | Value |
