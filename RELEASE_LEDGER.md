@@ -1,6 +1,21 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
 
+## R-2026-09-08-B — `WC-LOYALTY-SUCCESS-P1` · 1-unit release (`hosting:whitecrossbarbers-saas`) from an isolated pinned workspace · **LIVE_VERIFIED**
+
+| Field | Value |
+|---|---|
+| **Work item** | `WC-LOYALTY-SUCCESS-P1` — INCIDENTS 2026-09-08: the post-payment page's loyalty card told every customer they were new (auth-only `clients`/`settings` reads swallowed as "empty") and promised members a welcome discount checkout would not honour. Phase 1 = the page only; Phase 2 (`enrollLoyalty` PII trim + booking-scoped member lookup) is a separate functions release |
+| **Source SHA** | whitecross-site **`43eafa5e`** (fix, one file `success.html`) · anchor `310ddf3d` (`ops/rel11/`, `[skip ci]`) · both on `origin/main` before the deploy |
+| **Deployed unit** | `hosting:whitecrossbarbers-saas` ONLY · project `havuz-44f70` · from `ops/rel11/assemble.sh` workspace (58 published files, workspace `firebase.json` names the single site, no functions/rules/indexes block) · `npx firebase-tools@15.15.0 deploy --only hosting --project havuz-44f70` · **run by the owner** after a written scope review (auto-mode classifier blocked the assistant's invocation twice) · 2026-09-08T12:43:33Z |
+| **Live identity** | hosting version **`675b41f466de5d45`** (config `{}`) · pre-deploy verify **22/22 PASS**, post-deploy `./ops/rel11/verify.sh --live` **21/21 PASS** — all 58 served files byte-identical to `RELEASE.manifest.tsv`, 57 identical to REL-10, `/success.html` 50,708 → 49,170 bytes |
+| **Rollback identity** | hosting version **`6d01befc41c76b93`** (REL-10, 2026-09-03) — `firebase hosting:clone whitecrossbarbers-saas@6d01befc41c76b93 whitecrossbarbers-saas:live` or Console → Hosting → Rollback |
+| **Deliberately NOT deployed, measured before AND after** | The other **9 hosting sites** unchanged: `salown` `ff183fbbb067b6b7` · `salown-staff` `c6df19884456d78b` · `salown-admin` `6376b019192dd6c6` · `whitecrossbarbers-admin` `545d6de1513a552c` · `-owner` `3e305825c3e9d4fd` · `-app` `e652bfac69724b22` · `havuz-44f70` `fc2060d20fec5e3e` · `-admin` `ba5dc2c9a86ce300` · `-mobile` `b7bfafec015d869f` (same identities as the R-2026-09-03-A row). No Functions, rules or indexes command run. `whitecross-site/functions/index.js` (dirty, another session's `FIN-B1-SETTLEMENTS` claim) structurally cannot enter a hosting workspace |
+| **Behaviour change in production** | `whitecrossbarbers.com/success.html` after payment: loyalty card is member-agnostic (note for existing members + join CTA), `alreadyEnrolled` renders "You're already a member" (no false 10% promise), copy matches the T&C (3 months, from the second visit; 20 pts = £1), double-points banner reads `public/campaign` via the shared resolver (currently inactive → no banner). No other page, no e-mail, no data changed |
+| **Callable invocation / data writes** | ZERO production Firestore writes; `enrollLoyalty` not invoked; read-only Admin-SDK reads for diagnosis only |
+| **Gates** | module ESM parse ✔ · local render (synthetic sessionStorage booking) ✔ · resolver null on the live inactive campaign, correct multiplier/date on a synthetic active one ✔ · no console errors ✔ · `ops/rel11/verify.sh` §4 15 content assertions ✔ |
+| **Still pending after this row** | Phase 2 (functions): trim `enrollLoyalty`'s `alreadyEnrolled` response (currently returns the whole client doc to an anonymous caller) + booking-scoped member lookup callable to restore the balance/progress view. Blocked on the `functions/index.js` claim held by `FIN-B1-SETTLEMENTS` |
+
 ## R-2026-09-08-A — `C1 BOOKING-PRICE-EDIT-AUTHORITY` · 2-function release (`functions:salown`) · **FUNCTIONS_LIVE / HOSTING_PENDING**
 
 | Field | Value |
