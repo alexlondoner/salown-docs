@@ -21,7 +21,15 @@
 
 ---
 
-## 💷 C1 — BOOKING-PRICE-EDIT-AUTHORITY · **LIVE (bytes verified) 2026-09-08** · production behaviour test NOT run
+## 💷 C1 — BOOKING-PRICE-EDIT-AUTHORITY · **PARTIALLY_LIVE_VERIFIED 2026-09-08** — patch callable + panel proven live; form callable + form adapter LIVE_UNPROVEN
+
+**2026-09-08 19:54 UK — controlled live test done** (owner-approved, `tr-demo` synthetic fixture `wOaEGPu0LBUtXCU1wkG4`, two service
+edits, restored): `salownPatchBookingDetails` + BookingDetailPanel adapter **LIVE_VERIFIED** (server derived price/duration/endTime,
+`BOOKING_EDITED_SERVER` audit, idempotency record, `-00001-yur` POST 200 ×2). `salownEditBookingForm` + BookingForm adapter remain
+**LIVE_UNPROVEN** — a separate synthetic fixture with `date`/`time` strings on a 15-minute slot is needed (plan pending, own approval).
+Debt: three audit rows per server edit (server + two client) → audit-cleanup review. Details `R-2026-09-08-C`.
+
+*(superseded header)* LIVE (bytes verified) 2026-09-08 · production behaviour test NOT run
 
 **2026-09-08 19:05 UK — Admin hosting released** (`R-2026-09-08-C`): `hosting:salown` `ff183fbbb067b6b7` → **`cde349264ff973c8`**
 (release `1788890579296000`) from pinned `65ad272` in an isolated workspace, owner ran the deploy. Served `index-Cx4FM9P8.js` = pinned
