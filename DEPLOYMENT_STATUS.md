@@ -21,7 +21,17 @@
 
 ---
 
-## 💷 C1 — BOOKING-PRICE-EDIT-AUTHORITY · **FUNCTIONS_LIVE / HOSTING_PENDING** 2026-09-08 · ⚠️ **HOSTING STILL PENDING**
+## 💷 C1 — BOOKING-PRICE-EDIT-AUTHORITY · **LIVE (bytes verified) 2026-09-08** · production behaviour test NOT run
+
+**2026-09-08 19:05 UK — Admin hosting released** (`R-2026-09-08-C`): `hosting:salown` `ff183fbbb067b6b7` → **`cde349264ff973c8`**
+(release `1788890579296000`) from pinned `65ad272` in an isolated workspace, owner ran the deploy. Served `index-Cx4FM9P8.js` = pinned
+build byte-for-byte; only `salown` changed among 10 sites; both callables still ACTIVE (`-00001-yur`, `-00001-maq`). The browser now
+sends price-affecting edits to the server; the release-order hazard below is CLOSED. **Not yet done:** a real price-affecting edit on a
+production booking (needs its own data-mutation approval) → only then `LIVE_VERIFIED` for behaviour. Rollback `ff183fbbb067b6b7`.
+
+*Earlier records follow.*
+
+### (superseded) FUNCTIONS_LIVE / HOSTING_PENDING record, 2026-09-08 12:40 UK
 
 **2026-09-08 update — the two callables are DEPLOYED** (owner-approved, functions only, `R-2026-09-08-A`):
 `salownpatchbookingdetails-00001-yur` · `salowneditbookingform-00001-maq` · `salown` @ `europe-west2` · Node.js 22 / GCF v2 ·
