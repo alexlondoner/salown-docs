@@ -1,9 +1,7 @@
-# salOWN staging project — setup plan (proposal, nothing executed)
+# salOWN staging project — setup plan and execution record
 
-*Written 2026-09-08 under FIN-B1, revised the same day after owner review. This is a **test-environment
-preparation plan**. It is not a production release approval. **No approval for creating resources or linking
-billing has been given yet**, and none of it has been executed: no project created, no API enabled, no
-billing linked, nothing deployed, nothing written.*
+*Written 2026-09-08 under FIN-B1, revised after owner review; **executed the same evening under the owner's B-package
+approval — see §10 for what actually happened.** It is not a production release approval; production was not touched.*
 
 ## 0. Why a separate project
 
@@ -218,3 +216,33 @@ Setup step A only (no rehearsal yet):
 
 Unknowns left open on purpose: final project id availability; which billing account; whether the empty project
 is kept after cleanup.
+
+## 10. Execution record — 2026-09-08 (owner-approved B package; no production change)
+
+| Item | Result |
+|---|---|
+| Project | `salown-staging` (number `902365366985`), display "salOWN staging", created 18:31Z; id was available; "My First Project" untouched |
+| Billing | linked to `01B741-62F1F4-49A88C` ("My Billing Account", GBP); budget alert "salown-staging monthly alert" £5 at 50/90/100 % — **a notification, not a cap** |
+| Firestore | `(default)` europe-west2 Native; 3 composite indexes deployed from the pinned salown-app workspace (`9a9547a`) → all `READY` (B1 index + the two live production definitions) |
+| Rehearsal B (index) | 3 synthetic `pending` bookings + 1 `done`; the sweeper's due-pass query (`settlementSync.state == pending` orderBy `nextAttemptAt` limit 25) returned `idx_a, idx_b, idx_c` in order, no `FAILED_PRECONDITION` |
+| Deploy | `stripeWebhook` + `wcSettlementSweeper` only, from the pinned whitecross-site workspace (`8137711b`), us-central1, Node 22 gen2; secrets: 4 names (2 test-mode Stripe values, 1 staging endpoint secret, 1 placeholder); `.env.salown-staging` in the workspace only (`WC_NONPROD_TEST_MODE=1`, account, `WC_STRIPE_LIVEMODE=false`, `WC_SETTLEMENT_START_ISO=2026-09-08T18:00:00Z`) |
+| Rehearsal C3/C4 (real GCP HTTP) | Stripe test-mode endpoint `we_1UDTqt…` → `https://us-central1-salown-staging.cloudfunctions.net/stripeWebhook`. Payment `pi_3UDTz3…` (£32.00): Stripe delivered `charge.succeeded` + `charge.updated` (Cloud Logging: 3 × `200`, user-agent `Stripe/1.0`); booking `done` after 8 s with CAPTURED + FEE_ACTUAL, projection `gross_m 3200 / fee_m 124 / actual`, = Stripe balance transaction (net 3076). Real redelivery via `stripe events resend` → `200`, no duplicate entry. Log shows `stripeWebhook[B1] settlement recorded`; the `PAY-2 MODE INVARIANT BLOCKED a confirmation` line is the confirmation path refusing a synthetic booking without checkout metadata — expected and unrelated |
+| Rehearsal C5 (scheduler) | endpoint disabled, payment `pi_3UDU0S…` made 18:44:59Z with no webhook; first scheduled pass 19:00:05Z recorded it (`recordedBy: wcSettlementSweeper:scan`, scan `listed 2 / applied 1 / noop 1`); 16 further passes to 22:46Z all `listed 0`, cursor advancing, no unmatched |
+| Rehearsal C6 (kill switch) | `settlementLedgerEnabled=false` at 22:54:57Z; pass 23:01:06Z logged `enabled: false, reason: 'DISABLED'`, scan `null`, `scannedUntil` unchanged, bookings untouched |
+| Cleanup D | Stripe endpoint deleted (0 staging endpoints remain); both functions + scheduler job deleted; 4 secrets deleted; 8 synthetic documents deleted (0 bookings left); `gcf-artifacts` repository, `gcf-v2-sources-*` and `gcf-v2-uploads-*` buckets deleted; Cloud Run services 0, Pub/Sub topics 0, Eventarc triggers 0 |
+| Kept (free) | the empty project, the Firestore database with its 3 READY indexes, the budget alert, the Firebase link. Enabled APIs stay enabled (no cost by themselves) |
+| Untouched | `havuz-44f70` (no deploy, no rules/index/data change); `.firebaserc` defaults and `gcloud` default project (`havuz-44f70`) unchanged; both source trees clean |
+
+Corrections during execution (recorded so they are not repeated): the first attempt to capture the Stripe
+endpoint's signing secret also captured stdout, so `STRIPE_TEST_WEBHOOK_SECRET` version 1 was corrupt — the
+endpoint was deleted and recreated, version 2 stored, version 1 destroyed before any deploy. The Admin SDK
+refuses a custom access-token credential for Firestore, so staging reads/writes used the Firestore REST API with
+the operator's gcloud user token (no key file, no ADC). `--only functions:whitecross:stripeWebhook,…` (codebase
+prefix) is the working deploy filter for this repo.
+
+**Remaining before production (unchanged in kind, now all local to the release itself):** the ordered release in
+`PROCESSOR_FEES_PLAN.md` §8 — production indexes deploy (drift closed in `9a9547a`, so no deletion prompt is
+expected; still answer *no* to any), production env values (`WC_SETTLEMENT_START_ISO` chosen once), live
+`charge.updated` subscription, targeted functions deploy with the flag absent, rules release last with the owner's
+separate approval, then the flag. Also open: the sweeper reads only `WC_STRIPE_SECRET_KEY` (correct for
+production, noted for any future non-production deploy).
