@@ -17,6 +17,19 @@
 
 ---
 
+## 0-C. Suite baselines — measured 2026-09-09
+
+| Suite | Command | Result | Notes |
+|---|---|---|---|
+| salown-app **functions** | `cd functions && npm test` | **2,628 / 2,588 pass / 0 fail / 40 skipped** | node:test; asserts against the compiled `lib/`, so run `npm run build` first |
+| salown-app **frontend** | `npx vitest run` | **5,360 / 5,360 pass**, 180 files, 45.7 s | `--reporter=basic` is not available in vitest 4.1.9 — it fails to load; use the default reporter |
+| whitecross-site **functions** | `cd whitecross-site/functions && npm test` | **182 / 182 pass** | B1 166 + loyalty 16 |
+| salown-app **rules emulator** | `ops/test-rules-emulator.sh` | **221 / 221** at `9a9547a` | 10 suites registered, incl. `settlementLedgerFlag` and `checkoutOverAllocation` — **not re-run 2026-09-09** (needs the emulator) |
+
+**None of these is a release.** Three of the four suites are green on code that is not in production.
+
+---
+
 ## 0-A. FIN-B1 settlement ledger + COA rules ceiling — where their test records are (2026-09-09)
 
 *Added because this file claimed to be the single source and carried no pointer to either.*
@@ -37,8 +50,11 @@ Green unit tests + a passed staging rehearsal read like a release and are not on
 ## 0-B. ⭐ Email audience rules — who is offered loyalty points (2026-08-04)
 
 **Automated · `functions/src/emails/reviewCtaAudience.test.js` · 5/5 green.** Run with the Functions
-suite (`cd functions && npm test`; **snapshot 2026-08-04: 932 tests / 911 pass / 0 fail / 21 skipped** —
-not re-measured since, treat as of that date). Requires
+suite (`cd functions && npm test`). **Suite snapshots — both re-measured 2026-09-09 at `ffe53f9`:**
+**functions 2,628 tests / 2,588 pass / 0 fail / 40 skipped** · **frontend (`npx vitest run`)
+5,360 / 5,360 pass, 180 files, 46 s**. *(Superseded: the 2026-08-04 snapshot of 932 / 911 / 21 — the
+functions suite has since roughly tripled.)* This section's own 5 audience tests were re-run
+separately on 2026-09-09: **5 / 5 pass**. Requires
 `npm run build` first — these tests assert against the COMPILED `lib/`, so a build or import
 regression fails them too.
 

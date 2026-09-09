@@ -27,8 +27,25 @@ tenants/
 
 ## Booking Model — Critical Quirks
 
-- Walk-in bookings (`createWalkIn`): NO `date` field — only `startTime` (Firestore Timestamp).
-  **Never query by the `date` field** — use a `startTime` range.
+- **`date` is present on SOME bookings of EVERY source — never query by it.** The rule is unchanged and
+  the reason is now stronger than the old one. *Measured 2026-09-09 on a 1,200-document sample of
+  `tenants/whitecross/bookings`:*
+
+  | source | has `date` | no `date` |
+  |---|---|---|
+  | `Walk-in` | 383 | **619** |
+  | `Booksy` | 56 | 8 |
+  | `Fresha` | 9 | 1 |
+  | `Website` / `website` / `Salown` / `Admin` / `Treatwell` / `Manual` | all | — |
+  | `Product Sale` / `block` | — | all |
+
+  The old text said walk-ins have **no** `date` field. That is **not true any more** — they are *mixed*,
+  and so is Booksy, and so is Fresha. That makes the rule **more** important, not less: a query filtered
+  on `date` silently drops ~62 % of walk-ins and a slice of the aggregator rows, with no error.
+  **Always use a `startTime` range.**
+
+- ⚠️ **`source` casing is not canonical in live data:** the same sample holds both `Website` (78) and
+  `website` (8). Compare case-insensitively; do not add a third spelling.
 
 - `barberId` is inconsistent:
   - Walk-ins: lowercase barber NAME
@@ -43,11 +60,17 @@ tenants/
   - Bookings.jsx / Clients.jsx: raw Timestamp
   - `conflictUtils.getExistingRangeMinutes` handles both — keep this
 
-- `bookingId`: `WCB-{ts}-{rand}` (walk-ins), `SALE-`, `BLOCKED-` prefixes.
-  **It is NOT the Firestore doc id.** Email cancel/reschedule links carry this field.
+- `bookingId`: **NOT the Firestore doc id.** Email cancel/reschedule links carry this field.
+  The prefix list in this file used to name three; the live data has at least **eight**
+  (same 1,200-document sample, 2026-09-09): `WCB-` 705 · `HIST-` 368 · `BOOKSY-` 64 · `WEB-` 18 ·
+  **`walkin-` 13 (lower case)** · `FRESHA-` 10 · `SALE-` 8 · `TREATWELL-` 8 — plus `BLOCKED-`.
+  **Never branch on the prefix as if the set were closed**, and match it case-insensitively.
 
 - Status normalize: via `normalizeBookingStatus`. Blocking: `CONFIRMED`, `PENDING`, `UNPAID`, `BLOCKED`.
   Non-blocking: `CANCELLED`, `NO_SHOW`, `DELETED`, `CHECKED_OUT`, `COMPLETED`.
+  *Checked 2026-09-09: **zero** lower-case `status` / `paymentState` / `paymentType` values in a
+  1,200-document sample. That is a sample, not a proof over the whole collection — **keep normalising
+  on read**; the guard costs nothing and one legacy import would defeat the sample.*
   ⚠️ Imports may bring lowercase 'checked_out' — normalize on load.
 
 ## Client Identity — Critical Rules

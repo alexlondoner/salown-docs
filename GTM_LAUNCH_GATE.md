@@ -28,6 +28,16 @@ Stripe entirely in TEST mode · TR payment integrity hold active · 0 `checkoutR
 > (`stripeConnectMode: 'test'`), which is what "entirely in TEST mode" means. `features.stripe` is
 > `false` on **every** tenant, and that flag — not any code fix — is what currently prevents the
 > `C-1`/`C-2` money defects from firing. Do not flip it on a tenant before those are fixed.
+>
+> **"0 `checkoutReceipt` docs in TRY" — re-measured, and it is stronger than written.** `checkoutReceipt`
+> is a **field on a booking**, not a collection. Across 2,686 sampled bookings (whitecross 1,500 ·
+> demo 772 · herohairs 405 · tr-demo 9) there are **0 `checkoutReceipt` fields in ANY currency on ANY
+> tenant** — the TR-D1 server executor has never run in production, exactly as `TR_CHECKOUT_ARCHITECTURE.md`
+> says ("deployed, deliberately unreachable").
+> **But TRY money HAS been taken:** two tr-demo bookings are `CHECKED_OUT` with `saleCurrency: 'TRY'`,
+> `paidAmount 300`, sources `Panel` and `Staff App` — i.e. through the **legacy browser path**, with no
+> receipt snapshot. So "no receipts" must not be read as "no TRY sales"; it means those sales carry no
+> currency-explicit snapshot. Relevant to the TR payment integrity hold, not a new defect.
 
 ---
 
