@@ -58,7 +58,33 @@
 
 ---
 
-## 💷 C1 — BOOKING-PRICE-EDIT-AUTHORITY · **LIVE_VERIFIED for every reachable path** (2026-09-09) · form callable DEPLOYED_UNREACHABLE
+## 💷 C1 — BOOKING-PRICE-EDIT-AUTHORITY · **PARTIALLY_LIVE_VERIFIED** (2026-09-10) · panel service/price path LIVE_VERIFIED · panel date/time intent LIVE_UNPROVEN · form callable DEPLOYED_UNREACHABLE
+
+**2026-09-10 — evidence-level correction (narrowing only; nothing below is withdrawn).** The 2026-09-09 18:00 header read
+*"LIVE_VERIFIED for every reachable path"*. That is too broad, and it is narrowed here rather than rewritten below, because the
+underlying facts in each dated block are correct — only the summary they were rolled up into was not. Two behaviours are reachable in
+the live UI and have **not** been exercised against production:
+
+1. **The panel's date/time-carrying intent, after the tenant-timezone adapter** — `LIVE_UNPROVEN`. The adapter itself is
+   `HOSTING_LIVE`: `2c8cc94f29a0ccad` serves `index-DpGhxvDe.js`, sha `196cb27e87abf063` = pinned `4882d56` (`R-2026-09-09-D`), which is a
+   served-byte fact and stays one. But the only production mutation ever run on this work — `R-2026-09-08-C`, 2026-09-08 19:52–19:54 UK on
+   `tr-demo` — was a **service** change, and that ledger row states in its own words that service-only panel edits *"send no date/time"*.
+   So the exact wire representation `4882d56` changed has never been committed by a real operator action. Serving the bytes is not
+   exercising the path.
+2. **The refusal paths** (over-allocation / foreign-rail / ambiguous DST) — proven **in suite only**, as `R-2026-09-08-C` already records.
+   A suite-only refusal is not written up as `LIVE_VERIFIED` here or anywhere else.
+
+**What IS live-verified stays live-verified:** the reachable **service/price** edit path, BookingDetailPanel →
+`salownPatchBookingDetails`, proven on production 2026-09-08 (`R-2026-09-08-C`). **What is unreachable stays unreachable:**
+`salownEditBookingForm` (`-00001-maq`) and the BookingForm edit adapter are `DEPLOYED_UNREACHABLE` — deployed, no live UI entry point,
+and **not** scheduled for deletion on that basis alone (a usage inventory across UI imports, callable wrappers, tests, external clients,
+audit/idempotency records and rollback dependencies is a separate package; rollback to `cde349264ff973c8` still assumes the callable is
+deployed).
+
+**The honest one-line status of C1's writer closure:** the reachable *service/price* route is closed and live-verified; its
+*timezone* and *refusal* behaviours are not. C1 is therefore `PARTIALLY_LIVE_VERIFIED`, not fully verified.
+
+*(previous header)* LIVE_VERIFIED for every reachable path (2026-09-09) · form callable DEPLOYED_UNREACHABLE
 
 **2026-09-09 18:00 UK — correction of record.** The BookingForm EDIT mode has **no entry point in the live UI**: Dashboard's
 `openNewBooking` opens the form only for a new booking (`setSelectedBooking(null)`), Bookings.tsx never calls `setShowForm(true)`, and
