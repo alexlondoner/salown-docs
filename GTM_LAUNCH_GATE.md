@@ -23,6 +23,12 @@ items, several of which are filed as P2 today. This gate promotes them in *order
 **Business facts at opening:** 2 live salons · 7 tenant documents (never a customer count) ·
 Stripe entirely in TEST mode · TR payment integrity hold active · 0 `checkoutReceipt` docs in TRY.
 
+> **Re-verified 2026-09-09.** All still true, with one number corrected: whitecross **does** have a
+> connected Stripe account (`acct_1TpIWBRkKlXdPojN`, charges + payouts enabled) — in **test** mode
+> (`stripeConnectMode: 'test'`), which is what "entirely in TEST mode" means. `features.stripe` is
+> `false` on **every** tenant, and that flag — not any code fix — is what currently prevents the
+> `C-1`/`C-2` money defects from firing. Do not flip it on a tenant before those are fixed.
+
 ---
 
 ## 1. Gate A — must close BEFORE the first marketing message goes out
@@ -33,7 +39,7 @@ Stripe entirely in TEST mode · TR payment integrity hold active · 0 `checkoutR
 | A2 | *(owner decision)* | Pricing + how the first paying salons pay. salOWN has **no subscription pipeline** (`M3` is vision); landing deliberately shows no price ("Request a demo") | — | You cannot market without knowing what you charge and how you collect. Manual invoice or a Stripe Payment Link needs **zero code**; `M1`/`M3` are not prerequisites. |
 | A3 | `CHECKOUT-SERVER-AUTHORITY` | Till arithmetic enforced only in the browser; a till on a stale bundle can still write a double-counted checkout | `CONFIRMED_OPEN` (P0) — rules constraint **`PUSHED_NOT_LIVE` `edfa6e7`**, deploy pending | A new salon's first double-charge is a lost customer. Cheapest closing move per ROADMAP §5.0 option 2: **a Firestore rules constraint on the booking write**. |
 | A4 | *(release)* | ~~`hosting:salown-staff` carries the 2026-08-30 checkout fix in source but the live staff bundle predates it~~ | **CLOSED before this gate opened** — `R-2026-08-30-H`, `c6df19884456d78b`, served bytes verified | Listed here on 2026-09-07 from a stale ROADMAP §5.0 paragraph; the ledger proved it live the same evening it was written. Kept struck through so nobody re-opens it. |
-| A5 | `T-e` paths 3 + 4 | `updateStaffRole` / `registerMeAsAdmin` in `Settings.tsx` write the staff doc, never the claim → **false success**; rules already block them for non-super-admins | open (Security theme) | The first thing a new owner does is add a colleague as admin. Today it reports "Saved" and changes nothing. Repoint at `setStaffRoleCore` (canonical writer `functions/src/staff/identity.ts`). |
+| A5 | `T-e` paths 3 + 4 | `updateStaffRole` / `registerMeAsAdmin` in `Settings.tsx` write the staff doc, never the claim. **Re-measured 2026-09-09 — two failures, and the gating one is (a):** **(a)** live rules make `staff/{uid}` writes **super-admin only**, so a non-super-admin owner is **hard-denied** and just sees `alert('Error: …')` — they cannot promote or register staff at all; **(b)** a super-admin's write succeeds doc-only → claim drift (the false success). `setStaffRoleCore` is written and tested but **not exposed as a callable and not deployed** | **`CONFIRMED_OPEN`** (Security theme) | The first thing a new owner does is add a colleague as admin. Today it reports "Saved" and changes nothing. Repoint at `setStaffRoleCore` (canonical writer `functions/src/staff/identity.ts`). |
 
 **Gate A is done when:** legal pages are live and linked · the owner has written the price and the
 collection method into ROADMAP §9.1 · the rules constraint (or the executor cutover) is
