@@ -53,8 +53,8 @@ name.
 
 ## 4. The approval package (one decision; production release not yet approved)
 
-**Sources (pinned):** whitecross-site **`a5da93d4`** (functions), salown-app **`8bb05ad`** (indexes, rules).
-Both are origin/main today; if either moves before release, re-run §1's byte checks against the new head.
+**Sources (pinned, as of the latest §6 re-check):** whitecross-site **`d7c5822a`** (functions), salown-app **`f6b869a`** (indexes, rules).
+Both are origin/main at the time of the re-check; if either moves before release, re-run §1's byte checks against the new head (§6 records each re-pin).
 
 **Workspaces:** `git archive` of each SHA into a scratchpad directory; whitecross-site needs `.firebaserc`
 (gitignored — copy from the repo) and `functions/node_modules` (symlink) for the CLI to load the code, plus the
@@ -98,3 +98,22 @@ Only these two, read-only:
    commits; live `index.js` still `== 8137711b~1`). No new rehearsal unless those checks fail.
 
 Hosting is out of scope. No production deploy is approved by this page.
+
+## 6. Re-check log
+
+### 2026-09-09 (after alish-83 closed; COA still not released)
+- **Live ruleset unchanged:** `a0a10819-…` == `5a3ecdd`; COA absent; `autoRefundEnabled` 5; `settlementLedgerEnabled` 0.
+  No COA release row in the ledger. R-a precondition not met — B1's rules step (and therefore the flag) stays blocked.
+- **Source heads moved; candidates re-pinned (read-only byte checks):**
+  - whitecross-site origin/main **`d7c5822a`** (was `a5da93d4`). In between: WC-LOYALTY-ENROLL-PII (`21b51b9e`,
+    `e40f2f32`, **live** as `enrollloyalty-00063-qil` / `wcloyaltylookup-00002-pec`, R-2026-09-09-A) and the
+    REL-12 hosting anchor. `functions/index.js` hunks `a5da93d4→d7c5822a` lie only in `sendLoyaltyCardEmail` /
+    `enrollLoyalty` (lines ~2426–2477) plus new `loyaltyEnroll.js`. The `stripeWebhook` body (642 lines), the
+    `wcSettlementSweeper` body (24 lines), `settlements.js`, `externalCheckout.js`, `refunds.js`, `package.json` are
+    **byte-identical** between `8137711b` and `d7c5822a`. The live `stripeWebhook` bundle is still the `6817356f`
+    one (updateTime 2026-08-28T23:50Z). Functions suite at `d7c5822a`: **182/182** (B1 166 + loyalty 16).
+    → **New functions candidate: `d7c5822a`.** `a5da93d4` is retired: it predates the live loyalty fix, so a bundle
+    built from it would no longer match the code that is live in the other functions of this codebase.
+  - salown-app origin/main **`f6b869a`** (was `8bb05ad`): `firestore.rules` and `firestore.indexes.json` unchanged
+    since `9a9547a`. → **New indexes/rules candidate: `f6b869a`** (same files as before).
+- Everything else in §3/§4 stands. Before release, repeat this §5 check once more against the heads of that day.
