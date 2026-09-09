@@ -16,14 +16,21 @@
 >
 > | Unit | Live now | Gap |
 > |---|---|---|
-> | `hosting:whitecrossbarbers-saas` | **`d310366f2e97bbfc`** (REL-12) | none — line closed |
-> | `hosting:salown` | `cde349264ff973c8` | ⚠️ `4882d56` (C1 tenant-timezone adapter) **pushed, not live** |
+> | `hosting:whitecrossbarbers-saas` | **`c8eb6464e423073e`** (REL-13, `R-2026-09-09-C`, released 2026-09-09T15:38:30Z) | none — supersedes `d310366f2e97bbfc` (REL-12, 14:43:31Z) |
+> | `hosting:salown` | **`2c8cc94f29a0ccad`** (released 2026-09-09T16:13:54Z) | 🟠 **DEPLOYED BUT NOT YET RECORDED.** This is the `C1-TENANT-TZ-ADAPTER` (`4882d56`) release by the `alish/c1-tz-release` session. At 17:2x it had **no `RELEASE_LEDGER.md` row and no claim release**. **Its rollback anchor is the previous live version `cde349264ff973c8`** — written down here because a rollback identity cannot be reconstructed after the fact. The ledger row itself belongs to that session; this line is a state snapshot, not a substitute for it |
 > | `functions:whitecross` (us-central1, 30) | `enrollloyalty-00063-qil`, `wcloyaltylookup-00002-pec` current | ⚠️ **FIN-B1 entirely absent** — no `wcSettlementSweeper`; `stripeWebhook` bundle still 2026-08-28 |
 > | `functions:salown` (europe-west2, 91) | current | ⚠️ B7 WhatsApp source on main, never deployed |
 > | Firestore **rules** | ruleset **`a0a10819-…`** (2026-08-30) | ⚠️ **`[COA]` `edfa6e7` and the B1 flag arms are both PUSHED_NOT_LIVE** |
 > | Firestore **indexes** | 2, both `READY` | ⚠️ B1 `settlementSync` index in file, not deployed |
 >
-> *Every row re-verified read-only on 2026-09-09 against the live project APIs.*
+> *Rows re-verified read-only against the live project APIs on 2026-09-09; the two hosting rows were
+> re-read at 17:2x after both moved during the afternoon — **`hosting:salown` changed within an hour of
+> this table first being written**, which is the standing reason not to trust any hosting id here without
+> re-reading it.*
+>
+> ⚠️ **`salown-app/SYNC.md` is NOT fully reconciled** as of 2026-09-09 17:2x: it is missing a row for
+> **REL-13** (its owner is holding off because `SYNC.md` sits inside the open `C1-TZ-RELEASE` claim) and a
+> row for the `hosting:salown` release above. Do not read that file as complete until both land.
 > **The single most consequential gap is the rules one** — COA is GTM gate A3 *and* FIN-B1's precondition.
 >
 > ---
