@@ -85,6 +85,23 @@ People/roles/emails → [PEOPLE](PEOPLE.md).
 | **salown-panel** | Old CRA panel | ⛔ legacy |
 | **barber-panel / barber-mobile** | Whitecross old panels (FCM disabled) | ⛔ legacy |
 
+## ⚠️ Ambiguous Work IDs — read before writing "C1" anywhere
+
+*Added 2026-09-09. **Three unrelated pieces of work are all called some form of "C1".** A sentence like
+"C1 is done" is unreadable, and in a release context it is dangerous. Always write the full id.*
+
+| Written as | Which work | Where it lives | Status source |
+|---|---|---|---|
+| **`C1 — BOOKING-PRICE-EDIT-AUTHORITY`** | Price-affecting booking edits go through `salownPatchBookingDetails` / `salownEditBookingForm` instead of a browser write | `salown-app` | [DEPLOYMENT_STATUS](DEPLOYMENT_STATUS.md) §C1 · ledger `R-2026-09-08-C`. Sub-task `C1-TENANT-TZ-ADAPTER` (`4882d56`) is a *different thing again* — the tenant-timezone fix inside it |
+| **`C1`** (bare, in the `W1`/`BSP-W1` family) | The **Whitecross website** booking cutover to `salownCreateBooking` + external checkout | `whitecross-site` | [ROADMAP](ROADMAP.md) — the `W1` / `C1` / `BSP-W1` / `PAY-CHANNELS-A` row, **HELD** |
+| **`C-1`** (hyphen) | A **Stripe Connect defect**: a Connect FULL payment reads £0 at the till → double charge. Sibling `C-2` = a refunded deposit still counted as prepaid | `salown-app` resolver | [ROADMAP](ROADMAP.md) — the `SALOWN_CONNECT` block |
+
+**Rule:** in ROADMAP, PROGRESS, ledger rows and commit messages, never use a bare `C1`. Write
+`C1 — BOOKING-PRICE-EDIT-AUTHORITY`, `C1 (whitecross website cutover)` or `C-1 (Connect)`.
+The same care applies to `C5` (lapsed dedup) versus any future `C`-prefixed id.
+
+---
+
 ## 📐 Process & Documentation terms
 
 | Term | Meaning | Detail |
