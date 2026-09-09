@@ -21,7 +21,15 @@
 
 ---
 
-## 💷 C1 — BOOKING-PRICE-EDIT-AUTHORITY · **PARTIALLY_LIVE_VERIFIED 2026-09-08** — patch callable + panel proven live; form callable + form adapter LIVE_UNPROVEN
+## 💷 C1 — BOOKING-PRICE-EDIT-AUTHORITY · **PARTIALLY_LIVE_VERIFIED** · ⚠️ tenant-timezone adapter fix `4882d56` PUSHED_NOT_LIVE (2026-09-09)
+
+**2026-09-09 00:55 UK — C1-TENANT-TZ-ADAPTER on `main`, NOT deployed.** The live Admin bundle (`cde349264ff973c8`) forwards the
+DEVICE-local date/time label to the executor, which reads it in the TENANT zone: a TR tenant (demo, tr-demo) edited from a UK device
+moves the appointment by the offset on every BookingForm save (and on a panel date/time change). UK tenants unaffected. `4882d56`
+converts through the instant with the presentation contract's zone. **Do not run the BookingForm live test until this is released**
+(separate `hosting:salown` approval; candidate `4882d56`, rollback `cde349264ff973c8`).
+
+*(previous header)* PARTIALLY_LIVE_VERIFIED 2026-09-08 — patch callable + panel proven live; form callable + form adapter LIVE_UNPROVEN
 
 **2026-09-08 19:54 UK — controlled live test done** (owner-approved, `tr-demo` synthetic fixture `wOaEGPu0LBUtXCU1wkG4`, two service
 edits, restored): `salownPatchBookingDetails` + BookingDetailPanel adapter **LIVE_VERIFIED** (server derived price/duration/endTime,
