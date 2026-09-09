@@ -50,7 +50,14 @@
 
 ---
 
-## 💷 C1 — BOOKING-PRICE-EDIT-AUTHORITY · **PARTIALLY_LIVE_VERIFIED** · ⚠️ tenant-timezone adapter fix `4882d56` PUSHED_NOT_LIVE (2026-09-09)
+## 💷 C1 — BOOKING-PRICE-EDIT-AUTHORITY · **PARTIALLY_LIVE_VERIFIED** · tenant-timezone adapter fix **LIVE** `2c8cc94f29a0ccad` (2026-09-09 16:14Z, `R-2026-09-09-D`)
+
+**2026-09-09 17:20 UK — `4882d56` released** (`hosting:salown` `cde349264ff973c8` → `2c8cc94f29a0ccad`, owner-run from the isolated
+workspace, served `index-DpGhxvDe.js` = pinned, only `salown` changed among the sites this unit touches). The TR-from-UK-device shift is
+closed in production. Callables unchanged/ACTIVE. **Still pending:** BookingForm / `salownEditBookingForm` controlled live test on tr-demo
+(own approval) → C1 fully LIVE_VERIFIED. Rollback `cde349264ff973c8`.
+
+*(previous header)* tenant-timezone adapter fix `4882d56` PUSHED_NOT_LIVE (2026-09-09)
 
 **2026-09-09 00:55 UK — C1-TENANT-TZ-ADAPTER on `main`, NOT deployed.** The live Admin bundle (`cde349264ff973c8`) forwards the
 DEVICE-local date/time label to the executor, which reads it in the TENANT zone: a TR tenant (demo, tr-demo) edited from a UK device
