@@ -28,9 +28,11 @@
 > this table first being written**, which is the standing reason not to trust any hosting id here without
 > re-reading it.*
 >
-> ⚠️ **`salown-app/SYNC.md` reconciliation, 2026-09-09 17:2x:** the `hosting:salown` row landed (`49e6528`)
-> and the `C1-TZ-RELEASE` claim is released. **Still missing: the REL-13 row**, whose owner deliberately
-> held it back while that claim locked the file and will write it now the lock is gone.
+> ✅ **`salown-app/SYNC.md` is fully reconciled** as of 2026-09-09 17:24. Both afternoon releases have
+> rows — `hosting:salown` / R-2026-09-09-D at `49e6528`, REL-13 / R-2026-09-09-C at `1a5ae66` — and no
+> claim is held on the file. *The REL-13 row carries a ~2 h lag between the 15:38 release and its 17:23
+> entry: its owner deliberately waited out another session's claim on the file. That is the coordination
+> rule working, not a lapse — do not "fix" the timestamp.*
 > **The single most consequential gap is the rules one** — COA is GTM gate A3 *and* FIN-B1's precondition.
 >
 > ---
