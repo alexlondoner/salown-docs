@@ -17,7 +17,7 @@
 > | Unit | Live now | Gap |
 > |---|---|---|
 > | `hosting:whitecrossbarbers-saas` | **`c8eb6464e423073e`** (REL-13, `R-2026-09-09-C`, released 2026-09-09T15:38:30Z) | none — supersedes `d310366f2e97bbfc` (REL-12, 14:43:31Z) |
-> | `hosting:salown` | **`2c8cc94f29a0ccad`** (released 2026-09-09T16:13:54Z) | 🟠 **DEPLOYED BUT NOT YET RECORDED.** This is the `C1-TENANT-TZ-ADAPTER` (`4882d56`) release by the `alish/c1-tz-release` session. At 17:2x it had **no `RELEASE_LEDGER.md` row and no claim release**. **Previous live version: `cde349264ff973c8`** (2026-09-08T18:02:59Z), per the Hosting API release chain (`ff183fbbb067b6b7` → `cde349264ff973c8` → `2c8cc94f29a0ccad`). Under this project's convention that is also the rollback identity — but the owning session's own rollback record is the authority. **This is an observation, not a substitute for its ledger row**, which belongs to that session |
+> | `hosting:salown` | **`2c8cc94f29a0ccad`** (released 2026-09-09T16:13:54Z) | ✅ **RECORDED** — `C1-TENANT-TZ-ADAPTER` from pinned `4882d56`, ledger **`R-2026-09-09-D`**, `LIVE_VERIFIED (bytes)`, released and recorded by the `alish/c1-tz-release` session; its claim is released. Previous live version `cde349264ff973c8`. ⚠️ Still open in that lane: the **BookingForm behaviour test has not been run** — bytes are verified, behaviour is not |
 > | `functions:whitecross` (us-central1, 30) | `enrollloyalty-00063-qil`, `wcloyaltylookup-00002-pec` current | ⚠️ **FIN-B1 entirely absent** — no `wcSettlementSweeper`; `stripeWebhook` bundle still 2026-08-28 |
 > | `functions:salown` (europe-west2, 91) | current | ⚠️ B7 WhatsApp source on main, never deployed |
 > | Firestore **rules** | ruleset **`a0a10819-…`** (2026-08-30) | ⚠️ **`[COA]` `edfa6e7` and the B1 flag arms are both PUSHED_NOT_LIVE** |
@@ -28,9 +28,9 @@
 > this table first being written**, which is the standing reason not to trust any hosting id here without
 > re-reading it.*
 >
-> ⚠️ **`salown-app/SYNC.md` is NOT fully reconciled** as of 2026-09-09 17:2x: it is missing a row for
-> **REL-13** (its owner is holding off because `SYNC.md` sits inside the open `C1-TZ-RELEASE` claim) and a
-> row for the `hosting:salown` release above. Do not read that file as complete until both land.
+> ⚠️ **`salown-app/SYNC.md` reconciliation, 2026-09-09 17:2x:** the `hosting:salown` row landed (`49e6528`)
+> and the `C1-TZ-RELEASE` claim is released. **Still missing: the REL-13 row**, whose owner deliberately
+> held it back while that claim locked the file and will write it now the lock is gone.
 > **The single most consequential gap is the rules one** — COA is GTM gate A3 *and* FIN-B1's precondition.
 >
 > ---
