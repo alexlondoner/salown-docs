@@ -19,7 +19,11 @@ tenants/
     emailOptOuts/        ← GDPR: opt-out records for unknown clients
     auditLogs/           ← booking audit trail
     parserTombstones/    ← deduplication guard (e.g.: SLOT-Booksy-{date}-{time})
+    platform/settlementScan  ← FIN-B1 scan cursor — SOURCE ONLY, not in production
 ```
+
+> ⚠️ This map is **partial** — it lists the collections a session most often gets wrong, not every
+> collection on the platform. When it disagrees with the live database, the database wins.
 
 ## Booking Model — Critical Quirks
 
@@ -93,3 +97,26 @@ Full contract: [STAFF_ACCESS_CONTROL.md](STAFF_ACCESS_CONTROL.md).
 
 `parseBooksyForTenant`: on every successful import writes `parserTombstones/SLOT-Booksy-{date}-{time}`.
 Two different emails for the same booking → different externalId → this tombstone prevents the duplication.
+
+
+## FIN-B1 settlement ledger — ⚠️ **SOURCE ONLY, NOT IN PRODUCTION** (2026-09-09)
+
+**Do not read these as live shapes.** The code exists (`whitecross-site/functions/settlements.js`,
+commit `8137711b`) and passed 182/182 tests and the `salown-staging` rehearsals, but **nothing of it
+is deployed**: no `wcSettlementSweeper` among the 121 live functions, `settlementLedgerEnabled` absent
+from the live ruleset, and the supporting index absent from production (all three re-verified read-only
+2026-09-09). The **contract lives in [`PROCESSOR_FEES_PLAN.md`](PROCESSOR_FEES_PLAN.md) §2** — it is not
+restated here, because two descriptions of one contract is how they drift. This is the *location* map only.
+
+| Path / field | What it is |
+|---|---|
+| `tenants/{tid}/bookings/{docId}/settlements/{entryId}` | The **append-only ledger**. `entryId` = the provider object id, so a redelivery writes the same document (create-if-absent → no-op). Never edited, never deleted; a correction is a `COMPENSATION` entry |
+| `bookings/{docId}.settlementProjection` | **DERIVED**, recomputed from *all* entries inside the appending transaction — never incremented. Rebuildable at any time. Readers read only this |
+| `bookings/{docId}.settlementSync` | **Operational marker**, not money: `state` (`pending`/`done`/`failed`/`unresolvable`), `attempts`, `nextAttemptAt`, `lastError` |
+| `tenants/{tid}/platform/settlementScan` | The provider-scan cursor (`scannedUntil`, page cursor). Advances only after a page is fully applied |
+| `tenants/{tid}/platform/settlementScan/unmatched/{id}` | Charges that could not be bound to a booking — persisted with backoff so they are **visible**, never dropped |
+| `settings/settings.settlementLedgerEnabled` | **The kill switch.** Absent or `false` ⇒ every writer is inert (no marker, no entry). Owner-only in the *candidate* rules; those arms are not live yet |
+
+**Index it needs:** `bookings` COLLECTION on `settlementSync.state` + `settlementSync.nextAttemptAt` —
+in `salown-app/firestore.indexes.json`, **not deployed**.
+**Release gate:** [`FIN_B1_RELEASE_PREFLIGHT.md`](FIN_B1_RELEASE_PREFLIGHT.md).

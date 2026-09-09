@@ -41,7 +41,7 @@ All tenant data lives under `tenants/{tenantId}/...`.
 | [PARSER_NOTES.md](docs/PARSER_NOTES.md) | Booksy/Fresha/Treatwell parser architecture, dedup system, recurring bug patterns |
 | [TREATMENT_PACKAGE_SYSTEM.md](docs/TREATMENT_PACKAGE_SYSTEM.md) | **TR-B session packages** (LIVE): immutable commercial snapshot, append-only `packageLedger`, entitlement consumed exactly once (derived doc ids), owner-only Payment settings, and WHY package payments earn no loyalty (`price: 0` at link time — no checkout code changed) |
 | [TR_CHECKOUT_ARCHITECTURE.md](docs/TR_CHECKOUT_ARCHITECTURE.md) | **TR-D1 in-salon checkout** (server executor DEPLOYED 2026-08-02, deliberately unreachable): one transaction over booking + tenders + receivable + package entitlement + loyalty + receipt, the read-before-write ordering rule and WHY a refusal may never follow the package seam, idempotent intent/result recovery, and the explicit `stockQty` deferral |
-| [PAYMENT_SETTINGS.md](docs/PAYMENT_SETTINGS.md) | **The three payment settings contracts** — PAY-1 `paymentSettings` (public, online) vs TR-B `packageSettings` vs TR-D1 `checkoutSettings` (both private): what each owns, why `enabled: false` is load-bearing, three-level capability resolution, and the owner-only rules gap still open on `checkoutSettings` |
+| [PAYMENT_SETTINGS.md](docs/PAYMENT_SETTINGS.md) | **The three payment settings contracts** — PAY-1 `paymentSettings` (public, online) vs TR-B `packageSettings` vs TR-D1 `checkoutSettings` (both private): what each owns, why `enabled: false` is load-bearing, three-level capability resolution, and the owner-only rules gap on `checkoutSettings` — **CLOSED** in TR-D1 Phase 3 and live: `checkoutSettings` sits on all four owner-gated arms of the live ruleset `a0a10819-…` (verified read-only 2026-09-09; see the §"Payment settings" block below) |
 | [PAYMENT_PLAN_ENGINE.md](docs/PAYMENT_PLAN_ENGINE.md) | **TR-B arithmetic**: instalment split (remainder on the first payment, and why), oldest-first allocation, overdue + grace, admissibility gates, why overpayment is refused, TR/UK money-input parsing, idempotency (incl. the UI half people lose) |
 | [WHATSAPP_PLAN.md](docs/WHATSAPP_PLAN.md) | **B7 WhatsApp booking confirmations** (Meta Cloud API, premium, salOWN's Meta Business account): what landed in `functions/src/whatsapp/`, the gate order, the booking stamps, the owner's Meta checklist, the verbatim template text, secrets + targeted deploy order, live test |
 | [STRIPE_CONNECT_PLAN.md](docs/STRIPE_CONNECT_PLAN.md) | DESIGN: salOWN payment = Stripe Connect Standard + Checkout Session; fixed £ deposit; per-tenant policy; disabled/future |
@@ -223,8 +223,9 @@ it is not a data migration, and nothing about TR-C's lifecycle or continuity eng
 > [TR_CHECKOUT_ARCHITECTURE.md](docs/TR_CHECKOUT_ARCHITECTURE.md). **Nothing calls the executor yet:**
 > a salon can now configure this checkout, but the Admin and Staff checkout screens are unchanged.
 >
-> **`checkoutSettings` is owner-only in `firestore.rules` as of Phase 3** (ruleset `b30abf64…`) — the
-> gap Phase 1 recorded is closed. **The stored `schemaVersion` is now the monotonic settings version**
+> **`checkoutSettings` is owner-only in `firestore.rules` as of Phase 3** (released then as ruleset `b30abf64…`;
+> still true in the ruleset live today, `a0a10819-3b62-46d5-9f95-9ea048701c59`, verified read-only 2026-09-09 —
+> `checkoutSettings` on all four owner-gated arms) — the gap Phase 1 recorded is closed. **The stored `schemaVersion` is now the monotonic settings version**
 > (contract version moved to `contractVersion`), because the deployed executor compares exactly that
 > field; every owner save increments it, so a till opened before a change cannot commit under it.
 

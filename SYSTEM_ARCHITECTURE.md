@@ -2,22 +2,49 @@
 
 ## Repo Map
 
+*Verified against the working tree and the live project on 2026-09-09.*
+
 ```
 ~/Desktop/alex/
-├── salown-panel/       ← Barber/admin React panel (CRA, legacy — phased out)
-├── salown-site/        ← DELETED 2026-06-29 (everything deploys from salown-app/hosting/)
-├── salown-app/         ← MAIN ACTIVE REPO — Vite + .jsx, all new work goes here
-├── super-admin/        ← SaaS super-admin panel (Vite)
-├── eekurtbarbers/      ← EeKurt legacy site (tenant INACTIVE 2026-07-18 — folder remains)
-└── whitecross-site/    ← Being phased out incrementally
+├── salown-app/         ← MAIN ACTIVE REPO — Vite + React, 100 % TypeScript (.ts/.tsx).
+│                         Panel, landing, public booking, public salon site, staff app,
+│                         the `salown` Functions codebase (europe-west2), rules + indexes.
+├── whitecross-site/    ← ACTIVE, SEPARATE REPO — Whitecross's premium public site
+│                         (hosting `whitecrossbarbers-saas`) and the `whitecross` Functions
+│                         codebase in us-central1: Stripe, refunds, loyalty, receipts.
+│                         Still released regularly (REL-12 went live 2026-09-09). NOT legacy.
+│   └── barber-panel/   ← LEGACY panel — do not develop
+├── super-admin/        ← SaaS super-admin console (Vite) → hosting `salown-admin`
+├── salown-panel/       ← LEGACY CRA panel, NOT a git repo, served by nothing.
+│                         ⛔ Never run a deploy from this directory (see the warning below).
+├── salown-marketplace/ ← marketplace work
+└── whitecross2/        ← scratch copy
 ```
+
+**Gone:** `salown-site/` (deleted 2026-06-29 — everything deploys from `salown-app/hosting/`) and
+`eekurtbarbers/` (the folder is no longer on disk; **there is no `eekurt` tenant in Firestore either**).
+
+### The four repos in one sentence each
+
+- **`salown-app`** — the product. Everything new goes here.
+- **`whitecross-site`** — one premium tenant's own website **plus** the money functions that serve it.
+  Whitecross is a salOWN **tenant**, not a separate product; its *panel* is salOWN, its *site* is here.
+- **`super-admin`** — the platform operator's console.
+- **`salown-panel`** — history. Read-only reference at most.
 
 ## Firebase
 
 - Project: `havuz-44f70`, region `europe-west2`
 - Storage bucket: `havuz-44f70.firebasestorage.app`
 - All tenant data lives under `tenants/{tenantId}/...`
-- Admin panel hosting target: `whitecross-admin` → `admin.whitecrossbarbers.com`
+- **10 Hosting sites exist on the project** (read 2026-09-09). The four that matter:
+  `salown` → salown.com (landing + panel + `/book/**` + `/s/**`) ·
+  `salown-admin` → admin.salown.com (**super-admin console, served from `super-admin/dist`**) ·
+  `salown-staff` → staff.salown.com (mobile staff app) ·
+  `whitecrossbarbers-saas` → the Whitecross premium site.
+  Also live but secondary: `whitecrossbarbers-admin` / `whitecrossbarbers-owner` (the legacy premium
+  barber panel, two targets, byte-identical) and `whitecrossbarbers-app`, `havuz-44f70*` (unused).
+- **121 Cloud Functions live**: 91 `europe-west2` (codebase `salown`) + 30 `us-central1` (codebase `whitecross`).
 
 ### Deploy ownership — which repo owns which Firebase product
 
@@ -27,7 +54,7 @@ not owning a product.** Only the config listed here may deploy the product besid
 | Product | Sole authority | Config → target | Enforced by |
 |---|---|---|---|
 | **Firestore rules** | **`salown-app/`** | `firebase.json` → `firestore.rules` | `salown-app/ops/rules-authority.test.js`; every other `firebase.json` has **no** `firestore` block, so a rules deploy there fails at config parse |
-| **Firestore indexes** | **`salown-app/`** | `firebase.json` → `firestore.indexes.json` | same test. ⚠️ Do not deploy indexes at all yet — ROADMAP `TEC-6` |
+| **Firestore indexes** | **`salown-app/`** | `firebase.json` → `firestore.indexes.json` | same test. `TEC-6` (the file/live drift) is **closed** in `9a9547a`: file 3 vs live 2, live-not-in-file = none, so a deploy creates the B1 index and offers no deletion. ⚠️ Still don't run it outside the FIN-B1 release sequence, and answer *no* to any deletion prompt |
 | **Storage rules** | `whitecross-site/` | `firebase.json` → `storage.rules` | sole declaration in the workspace (unreviewed by this package — it is the only copy, not a verified one) |
 | Hosting `salown`, `salown-staff` | `salown-app/` | CI (`hosting:salown`) / `npm run deploy:staff` | `ops/deploy-policy.test.js` |
 | Hosting `whitecrossbarbers-*` | `whitecross-site/` | `firebase.admin.json` (CI) · `firebase.json` (`./deploy.sh`) · `firebase.saas.json` (public site) | `scripts/check-rules-authority.sh` (rules only) |
@@ -43,19 +70,23 @@ repo's `FIRESTORE_RULES_AUTHORITY.md`. Full command + rollback procedure: [DEPLO
 
 ## Tech Stack
 
-- **salown-app**: Vite + React (.jsx), Firebase Auth + Firestore + Functions
-- **salown-panel**: CRA (.js) — legacy, being phased out (see ROADMAP.md)
-- **salown-site**: DELETED (2026-06-29) — deploy is now ONLY from `salown-app/hosting/`
-- **whitecross-site**: Legacy, some functions still active (see MULTI_TENANT_NOTES.md)
+- **salown-app**: Vite + React, **strict TypeScript throughout** — `src/` is 297 `.ts` + 124 `.tsx`
+  and **zero** `.js`/`.jsx` (counted 2026-09-09). Firebase Auth + Firestore + Functions.
+  The TS migration closed 2026-07-13 at v1.0.0; **new code is `.ts`/`.tsx`, a `.js` file is never added.**
+  `functions/src` is mixed by design: `.ts` for source, `.js` for the node-test files next to it.
+- **whitecross-site**: **active**, plain JS Functions (`us-central1`) + the premium static site.
+  Released independently and manually — see `MULTI_TENANT_NOTES.md` and `DEPLOY.md`.
+- **salown-panel**: CRA (.js) — legacy, developed by nobody, served by nothing.
+- **salown-site**: DELETED (2026-06-29) — deploy is now ONLY from `salown-app/hosting/`.
 
-## Migration Decision: salown-panel → salown-app
+## ~~Migration Decision: salown-panel → salown-app~~ — ✅ **FINISHED** (historical)
 
-All pages are being moved step by step from salown-panel (CRA, .js) → salown-app (Vite, .jsx).
-Hardcoded `whitecross` references → dynamic `tenantId` (Firebase custom claims).
+*This migration is over.* Every page named in the old order — Dashboard, Bookings, Calendar, Finance,
+Reports, Clients and the rest — lives in `salown-app/src/pages` as `.tsx`, and hardcoded `whitecross`
+references were replaced by `tenantId` from Firebase custom claims. The separate TypeScript migration
+closed on top of it (v1.0.0, 2026-07-13). **Nothing is pending here.**
 
-Migration order: ~~Dashboard~~ ✅ → Bookings → Calendar → Finance → Reports → Clients → others
-
-**Don't add new features to salown-panel — for a page that will be migrated, write the .jsx first.**
+The rule that survives: **never add anything to `salown-panel`**, and never deploy from it.
 
 > ⚠️ **`~/Desktop/alex/salown-panel/` is NOT A GIT REPOSITORY**, is in no claim registry, and its
 > `firebase.json` deploys to hosting target `salown-admin`. It holds a byte-identical copy of the
@@ -75,32 +106,40 @@ Migration order: ~~Dashboard~~ ✅ → Bookings → Calendar → Finance → Rep
 
 **Brand:** Purple `#534AB7` / `#7B72E8`, Inter font. Gold `#d4af37` checkout/loyalty UI only.
 
+*All paths below verified on disk 2026-09-09 — every one of them is TypeScript.*
+
 **Theme system:**
-- `src/context/ThemeContext.jsx` — reads/writes `localStorage('salown-theme')`, applies `data-theme` to `<html>`
+- `src/context/ThemeContext.tsx` — reads/writes `localStorage('salown-theme')`, applies `data-theme` to `<html>`
 - `src/index.css` — `[data-theme="dark"]` + `[data-theme="light"]` CSS variables
 - Key vars: `--bg`, `--surface`, `--surface2`, `--card`, `--card2`, `--border`, `--text`, `--muted`, `--input-bg`
 
 **Shared components:**
-- `Drawer.jsx` — right-side slide-in panel (540px forms, 400px tools)
-- `Toast.jsx` — success/error/info, auto-dismiss 3.2s, top-center
-- `AddClientModal.jsx` — always use this, never inline add-client forms
+- `src/components/Drawer.tsx` — right-side slide-in panel (540px forms, 400px tools)
+- `src/components/Toast.tsx` — success/error/info, auto-dismiss 3.2s, top-center
+- `src/components/AddClientModal.tsx` — always use this, never inline add-client forms
 
 **Pages (salown-app/src/pages/):**
-- `Dashboard.jsx` — 15-min slot grid, FAB with Walk-in/Booking/Block Time/Product Sale
-- `Settings.jsx` — 6-tab layout (General, Opening Hours, Integrations, Notifications, Staff, Danger Zone).
+- `Dashboard.tsx` — 15-min slot grid, FAB with Walk-in/Booking/Block Time/Product Sale
+- `Settings.tsx` — 6-tab layout (General, Opening Hours, Integrations, Notifications, Staff, Danger Zone).
   Opening Hours writes the salon's own hours ONLY — it has written no barber document since R2c.
-- `Finance.jsx` — Whitecross-only (NOT multi-tenant). Never mix Finance logic into Reports.
-- `Reports.jsx` — platform-wide, multi-tenant. Never hardcode tenant-specific names here.
-- `Login.jsx` — uses `window.location.replace('/app')` (not href) to avoid back-button
+- `Finance.tsx` — Whitecross-only (NOT multi-tenant). Never mix Finance logic into Reports.
+- `Reports.tsx` — platform-wide, multi-tenant. Never hardcode tenant-specific names here.
+- `Login.tsx` — uses `window.location.replace('/app')` (not href) to avoid back-button
 
 **Key logic files:**
-- `firestoreActions.js` — `setActiveTenant(tenantId)` must be called before any action
-- `PanelLayout.jsx` — loads tenant config, popstate guard
-- `AppRouter.jsx` — lazy loads all pages, checks onboarding status
-- `src/utils/timeUtils.js` — `toDateKey()` for UK dates (never use `.toISOString().split('T')[0]`)
-- `conflictUtils.js` — `hasTimeConflict()`, `getExistingRangeMinutes()`
+- `src/firestoreActions.ts` — `setActiveTenant(tenantId)` must be called before any action
+- `src/PanelLayout.tsx` — loads tenant config, popstate guard
+- `src/pages/AppRouter.tsx` — lazy loads all pages, checks onboarding status
+- `src/utils/timeUtils.ts` — `toDateKey()` for UK dates (never use `.toISOString().split('T')[0]`)
+- `src/utils/conflictUtils.ts` — `hasTimeConflict()`, `getExistingRangeMinutes()`
 
-## Staff rota — who may write it (FIN-DATED-ROTA, R2/R2b/R2c · `PUSHED_NOT_LIVE`)
+## Staff rota — who may write it (FIN-DATED-ROTA, R2/R2b/R2c · **LIVE**)
+
+> **Status corrected 2026-09-09.** This section used to be headed `PUSHED_NOT_LIVE`. It is deployed:
+> `salownRotaTransaction` runs in production (`-00003-gov`, release `R-2026-08-20-A`) and the `[R2b]` and
+> `[R2c]` rules bodies are in the live ruleset `a0a10819-…` (read-only verification 2026-09-09).
+> **`FIN-DATED-ROTA-R2d` — the activator — is still `PLANNED`**, so everything below about future-dated
+> rotas and `ROTA_END` being refused remains exactly true in production.
 
 A staff rota is a **HISTORY**, not a setting. `barbers/{id}.workingDays` / `.dayHours` / `.hours`
 are the **published projection** of an append-only dated log, and after R2c they have exactly one
@@ -171,8 +210,8 @@ Full record: [`FIN_DATED_ROTA_R2C_DESIGN.md`](FIN_DATED_ROTA_R2C_DESIGN.md).
 ## Loyalty System (per-tenant)
 
 - Settings: `loyalty.enabled`, `loyalty.earnRate` (pts/£1, default 1), `loyalty.cashbackPct` (%, default 5)
-- `CheckoutPanel.jsx` derives `LOYALTY_REDEEM_RATE = 100 / cashbackPct` (default 20 = 5% back)
-- `firestoreActions.js` reads on checkout — default = legacy whitecross behavior
+- `src/components/CheckoutPanel.tsx` derives `LOYALTY_REDEEM_RATE = 100 / cashbackPct` (default 20 = 5% back)
+- `src/firestoreActions.ts` reads on checkout — default = legacy whitecross behavior
 
 ## Security Rules
 

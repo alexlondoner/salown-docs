@@ -1,5 +1,11 @@
 # FIN-B1 — production release preflight (2026-09-09, read-only; NOT a release)
 
+> **Candidates re-pinned 2026-09-09 (2nd pass, after REL-12 shipped).** The approval package in §1 below now
+> carries the CURRENT candidates. Earlier candidates `a5da93d4` / `8bb05ad` are superseded — they are kept only in
+> the §6 log as historical rows. B1's payload did not change: `whitecross-site/functions/` at `101c3c2d` is
+> **byte-identical to `d7c5822a`** (empty diff, verified), and `salown-app`'s `firestore.rules` +
+> `firestore.indexes.json` at `e0fd2e8` are **byte-identical to `9a9547a`** (empty diff, verified).
+
 *Prepared after the staging rehearsals (`STAGING_PROJECT_PLAN.md` §10). Nothing was deployed, no setting,
 subscription or production document was changed. This page fixes the release candidates and the approval
 package; the release itself needs the owner's separate approval.*
@@ -8,10 +14,10 @@ package; the release itself needs the owner's separate approval.*
 
 | Unit | Live today (verified read-only) | Tested on staging | Candidate | Delta candidate − live |
 |---|---|---|---|---|
-| `stripeWebhook` (us-central1, gen2) | bundle `gcf-v2-sources-…/stripeWebhook/function-source.zip`, updated 2026-08-28T23:50Z; its `index.js`, `externalCheckout.js`, `refunds.js`, `emailParsers.js`, `package.json` are **byte-identical to commit `6817356f`** (BL-4/BL-5) — so the BL-5 R1 refund branch is already live | whitecross-site `8137711b` | **whitecross-site `a5da93d4`** (= origin/main; `functions/` byte-identical to `8137711b`, the two later commits touch only a claim file) | `index.js` +99 lines in 3 hunks (require, settlement branch, sweeper) + new `settlements.js`. **Live `index.js` == `8137711b~1`**, so the deploy carries B1 and nothing else from any session |
+| `stripeWebhook` (us-central1, gen2) | bundle `gcf-v2-sources-…/stripeWebhook/function-source.zip`, updated 2026-08-28T23:50Z; its `index.js`, `externalCheckout.js`, `refunds.js`, `emailParsers.js`, `package.json` are **byte-identical to commit `6817356f`** (BL-4/BL-5) — so the BL-5 R1 refund branch is already live | whitecross-site `8137711b` | **whitecross-site `101c3c2d`** (= origin/main 2026-09-09; `functions/` byte-identical to `d7c5822a`, verified empty diff) | ⚠️ **RE-DERIVE BEFORE RELEASE — no longer B1-only.** `6817356f`→`101c3c2d` over `functions/` is 7 files, +2457/−50, and it is **two lanes**: B1 (`settlements.js`, `settlements.fakes.js`, `settlements.test.js`, `stripeWebhook.integration.test.js`, the `index.js` webhook branch, `8137711b`) **plus** the loyalty lane (`loyaltyEnroll.js`, `loyaltyEnroll.test.js`, `index.js` — `21b51b9e` + `e40f2f32`). The loyalty lane is **already live** in `enrollLoyalty` / `wcLoyaltyLookup` (deployed 2026-09-09, R-2026-09-09-A), but `stripeWebhook`'s bundle predates it, so a targeted `stripeWebhook` deploy from this candidate also republishes that source into `stripeWebhook`'s own bundle. Confirm that is intended and record it in the ledger row |99 lines in 3 hunks (require, settlement branch, sweeper) + new `settlements.js`. **Live `index.js` == `8137711b~1`**, so the deploy carries B1 and nothing else from any session |
 | `wcSettlementSweeper` (new) | does not exist | same | same | new function + Cloud Scheduler job `every 15 minutes` |
-| Firestore indexes | 2 composite indexes (`barberId+startTime`; CG `source+status+expiresAt`) | salown-app `9a9547a` | **salown-app `8bb05ad`** (= origin/main; `firestore.indexes.json` and `firestore.rules` identical to `9a9547a`) | **+1** index (`settlementSync.state ASC, settlementSync.nextAttemptAt ASC`); live-not-in-file = none → no deletion is offered |
-| Firestore rules | ruleset `a0a10819-3b62-46d5-9f95-9ea048701c59` (released 2026-08-30T01:27Z) — **byte-identical to commit `5a3ecdd`** | `9a9547a` (rules emulator 221/221 incl. B1 35) | file at `8bb05ad` | live→candidate: **0 lines removed, 153 added** = `edfa6e7` (+138, `[COA] CHECKOUT-OVER-ALLOCATION`, GTM gate A3, **another session's change, `PUSHED_NOT_LIVE`**) + `9a9547a` (B1: 4 arms extended with `settlementLedgerEnabled`, +11 comment lines). `autoRefundEnabled` arms: live 5 → candidate 6 (comment), all four arms intact |
+| Firestore indexes | 2 composite indexes (`barberId+startTime`; CG `source+status+expiresAt`) — re-verified read-only 2026-09-09 via the Firestore Admin API, both `READY` | salown-app `9a9547a` | **salown-app `e0fd2e8`** (= origin/main 2026-09-09; `firestore.indexes.json` and `firestore.rules` byte-identical to `9a9547a`, verified empty diff) | **+1** index (`settlementSync.state ASC, settlementSync.nextAttemptAt ASC`); live-not-in-file = none → no deletion is offered |
+| Firestore rules | ruleset `a0a10819-3b62-46d5-9f95-9ea048701c59` (released 2026-08-30T01:27Z) — **byte-identical to commit `5a3ecdd`**; still the live release on 2026-09-09 (fetched read-only: `settlementLedgerEnabled` ×0, `[COA]` ×0) | `9a9547a` (rules emulator 221/221 incl. B1 35) | file at `e0fd2e8` | live→candidate: **0 lines removed, 153 added** = `edfa6e7` (+138, `[COA] CHECKOUT-OVER-ALLOCATION`, GTM gate A3, **another session's change, `PUSHED_NOT_LIVE`**) + `9a9547a` (B1: 4 arms extended with `settlementLedgerEnabled`, +11 comment lines). `autoRefundEnabled` arms: live 5 → candidate 6 (comment), all four arms intact |
 
 No source change is required for the tested B1 behaviour: staging ran the same bytes that `a5da93d4` carries.
 
@@ -93,9 +99,10 @@ Only these two, read-only:
 1. **Rules delta** — fetch the live ruleset (must match the COA owner's released commit byte-for-byte), diff it
    against `firestore.rules` at the B1 candidate SHA: expected **exactly** the B1 delta (4 arms extended with
    `settlementLedgerEnabled` + comment lines, 0 lines removed). Anything else ⇒ stop and re-select the candidate.
-2. **Source state** — `origin/main` heads of both repos versus the pinned candidates (`a5da93d4`, `8bb05ad`): if
-   either moved, repeat §1's byte checks (`functions/` and `firestore.indexes.json` identical to the tested
-   commits; live `index.js` still `== 8137711b~1`). No new rehearsal unless those checks fail.
+2. **Source state** — `origin/main` heads of both repos versus the candidates pinned in §1 (currently
+   `101c3c2d`, `e0fd2e8`): if either moved, repeat §1's byte checks (`functions/` identical to the tested commit;
+   `firestore.rules` + `firestore.indexes.json` identical to `9a9547a`). No new rehearsal unless those checks fail.
+   **Re-pin §1's table, not just this log** — the approval package is what a releaser reads.
 
 Hosting is out of scope. No production deploy is approved by this page.
 
@@ -117,3 +124,21 @@ Hosting is out of scope. No production deploy is approved by this page.
   - salown-app origin/main **`f6b869a`** (was `8bb05ad`): `firestore.rules` and `firestore.indexes.json` unchanged
     since `9a9547a`. → **New indexes/rules candidate: `f6b869a`** (same files as before).
 - Everything else in §3/§4 stands. Before release, repeat this §5 check once more against the heads of that day.
+
+### 2026-09-09, 2nd pass (after REL-12 went live; doc-truth sweep)
+- **Live ruleset still `a0a10819-3b62-46d5-9f95-9ea048701c59`** (released 2026-08-30T01:27:43Z), fetched read-only
+  from the Rules API: `settlementLedgerEnabled` ×0, `COA`/`CHECKOUT-OVER-ALLOCATION` ×0, `SEC-CATCHALL-1` ×7,
+  `FIN-PERIOD-CLOSE-B` ×2, `ROTA-SSOT-2` ×3. **COA still not released — R-a precondition still unmet.**
+- **Production indexes** (Firestore Admin API, `collectionGroups/bookings/indexes`): exactly **2**, both `READY`
+  (`barberId+startTime` COLLECTION; `source+status+expiresAt` COLLECTION_GROUP). `settlementSync` absent.
+  Repo declares 3 → the index deploy creates one and deletes nothing.
+- **Production functions**: 121 enumerated (91 `europe-west2`, 30 `us-central1`). **No** `wcSettlementSweeper`,
+  no settlement function of any name. `stripeWebhook` updateTime still 2026-08-28.
+- **Source heads moved again (REL-12 release commits), payload unchanged:** whitecross-site `d7c5822a`→**`101c3c2d`**
+  with `functions/` diff **empty**; salown-app `f6b869a`→**`e0fd2e8`** with `firestore.rules` +
+  `firestore.indexes.json` diff **empty**. Functions suite re-run at `101c3c2d`: **182/182 pass**.
+  → §1's candidate cells re-pinned to `101c3c2d` / `e0fd2e8`; `d7c5822a` / `f6b869a` retired to this log.
+- **New finding, not previously recorded:** the `stripeWebhook` deploy delta is no longer B1-only. Measured
+  `6817356f`→`101c3c2d` over `functions/`: 7 files, +2457/−50, spanning **two lanes** (B1 + the already-live
+  loyalty lane `21b51b9e`/`e40f2f32`). See the ⚠️ cell in §1 — this must be acknowledged in the release ledger row.
+- Everything else in §3/§4 stands.

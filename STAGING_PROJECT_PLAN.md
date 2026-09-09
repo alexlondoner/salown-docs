@@ -3,6 +3,23 @@
 *Written 2026-09-08 under FIN-B1, revised after owner review; **executed the same evening under the owner's B-package
 approval — see §10 for what actually happened.** It is not a production release approval; production was not touched.*
 
+> ## Read this first — state on 2026-09-09
+>
+> **This plan is FINISHED. §7, §8 and §9 are a historical record; nothing in them is waiting on the owner.**
+> The approval in §9 was requested, **granted and spent** on 2026-09-08; setup, both rehearsals and the full
+> cleanup all ran (§10). The `FIN-B1-INDEX-DRIFT` blocker in §8 is **closed** (commit `9a9547a`; re-verified
+> read-only 2026-09-09 — production carries 2 composite `bookings` indexes, the repo file declares those 2 plus
+> the undeployed B1 index, live-not-in-file = none).
+>
+> **What still exists on `salown-staging`:** the empty project, its europe-west2 Firestore with 3 READY indexes,
+> the budget alert and the Firebase link. **What was torn down:** both functions, the scheduler job, the Stripe
+> test endpoint, 4 secrets, all synthetic documents, the artifact/source buckets.
+> **So a NEXT rehearsal is not free** — it must redo: 4 secrets, `.env.salown-staging`, the targeted functions
+> deploy, a new Stripe test-mode endpoint, and the synthetic seed. The indexes and the project itself are reusable.
+>
+> **What FIN-B1 is actually waiting on is not here** — it is the production release, gated by
+> `FIN_B1_RELEASE_PREFLIGHT.md` (COA rules release first, path R-a) and `PROCESSOR_FEES_PLAN.md` §8.
+
 ## 0. Why a separate project
 
 Firebase's guidance: "Firebase recommends using a *separate* Firebase project for *each* environment in your
@@ -144,7 +161,7 @@ documented and no leftover is forgotten. An empty project itself costs nothing.
 
 ## 7. Order of operations
 
-### A. Setup (one-time, needs the owner's explicit approval — not given yet)
+### A. Setup (one-time) — ✅ **EXECUTED 2026-09-08** under the granted B-package approval; see §10
 1. Create the project (`salown-staging` or the owner's variant), add Firebase, link the billing account the owner names (Blaze), set a budget alert (notification only).
 2. Create Firestore `(default)` in **europe-west2**, Native mode.
 3. Enable Secret Manager and Cloud Scheduler APIs (the rest is enabled by the first functions deploy).
@@ -152,13 +169,13 @@ documented and no leftover is forgotten. An empty project itself costs nothing.
 5. Set the four secrets on staging (`firebase functions:secrets:set <NAME> --project <staging-id>`), contents as described in §3.
 6. Write `whitecross-site/functions/.env.<staging-id>` locally (never committed).
 
-### B. Rehearsal 1 — real composite index
+### B. Rehearsal 1 — real composite index — ✅ **EXECUTED 2026-09-08**, passed (§10)
 1. Precondition: `FIN-B1-INDEX-DRIFT` (§8) is closed, i.e. the canonical file also carries the two live production indexes. Otherwise the staging deploy proves the B1 index but the same command would later threaten production.
 2. `firebase deploy --only firestore:indexes --project <staging-id>` from `salown-app/`.
 3. Wait for `READY` (`gcloud firestore indexes composite list --project <staging-id>`); "the minimum build time for an index is a few minutes, even for an empty database".
 4. Seed 3 synthetic bookings with `settlementSync.state = 'pending'` and different `nextAttemptAt`; run the exact sweeper query (`where state == 'pending' orderBy nextAttemptAt limit 25`) through the Admin SDK — ordered results, no `FAILED_PRECONDITION`.
 
-### C. Rehearsal 2 — real GCP HTTP delivery
+### C. Rehearsal 2 — real GCP HTTP delivery — ✅ **EXECUTED 2026-09-08**, passed (§10)
 1. `firebase deploy --only functions:stripeWebhook,functions:wcSettlementSweeper --project <staging-id>` from `whitecross-site/` (pinned commit; the B1 files must be committed first — this is the moment the local B1 work is committed to a branch; still no production deploy).
 2. Create the Stripe test-mode endpoint with the staging `stripeWebhook` URL; store its signing secret as `STRIPE_TEST_WEBHOOK_SECRET` (redeploy if the secret version was created after step C1).
 3. Seed one booking + `settlementLedgerEnabled=true`; one test payment (unconfirmed PI → seed → confirm, as in the local rehearsal).
@@ -166,7 +183,7 @@ documented and no leftover is forgotten. An empty project itself costs nothing.
 5. Withhold the webhook for a second booking (temporarily disable the endpoint), pay, wait ≤15 min: the scheduler-driven sweeper must record it (`wcSettlementSweeper: pass complete`).
 6. Flip `settlementLedgerEnabled=false`; the next sweeper pass must log the disabled reason and write nothing.
 
-### D. Cleanup
+### D. Cleanup — ✅ **EXECUTED 2026-09-08**, complete (§10)
 1. Delete the Stripe test-mode endpoint.
 2. `firebase functions:delete stripeWebhook wcSettlementSweeper --project <staging-id>`; confirm the scheduler job is gone.
 3. `functions:secrets:destroy` ×4 (verify no active versions remain); delete the synthetic `tenants/whitecross` subtree.
@@ -174,7 +191,12 @@ documented and no leftover is forgotten. An empty project itself costs nothing.
 5. Delete the local `.env.<staging-id>` or keep it for the next rehearsal (it holds no secrets).
 6. Keep the empty project (free) or delete it — owner's call.
 
-## 8. Separate release blocker — `FIN-B1-INDEX-DRIFT` (production, not this rehearsal)
+## 8. ~~Separate release blocker~~ — `FIN-B1-INDEX-DRIFT`: ✅ **CLOSED** (historical finding below)
+
+> **Closed 2026-09-08 in `9a9547a`**: the two live definitions were written into `salown-app/firestore.indexes.json`
+> alongside the B1 index. Re-verified read-only 2026-09-09 — live 2 (`READY`), file 3, live-not-in-file = none, so
+> an indexes deploy now **creates** the B1 index and offers no deletion. The finding below is kept as the record of
+> what the drift was; it no longer blocks anything.
 
 **Finding (read-only, 2026-09-08).** Production `havuz-44f70` has two composite indexes that are **absent from the
 canonical `salown-app/firestore.indexes.json`**. They pre-date B1: on `origin/main` the file has `"indexes": []`
@@ -196,14 +218,18 @@ indexes and break whatever queries depend on them (barber-day booking lists; the
 `source/status/expiresAt`) until they rebuild. So production step (1) of the B1 release order in
 `PROCESSOR_FEES_PLAN.md` §8 is blocked until this is closed.
 
-**Closing it (a separate, owner-approved change — not done in this round):** add the two definitions above to
-`firestore.indexes.json` (without the implicit `__name__`), commit under its own claim, and only then run the
-indexes deploy — answering *no* to any deletion prompt regardless. **Nothing was changed and no index was
-deleted in this round**; the canonical file is untouched by this plan.
+**How it was closed:** the two definitions above were added to `firestore.indexes.json` (without the implicit
+`__name__`) under the `FIN-B1-INDEX` claim and committed as `9a9547a` — **source only, not deployed**. The indexes
+deploy itself is still ahead, inside the B1 release sequence; answer *no* to any deletion prompt regardless.
+*(Historical: nothing was changed and no index was deleted during the 2026-09-08 rehearsal round itself.)*
 
-## 9. Approval that will be requested (not yet granted)
+## 9. ~~Approval that will be requested~~ — ✅ **GRANTED AND SPENT 2026-09-08** (historical)
 
-Setup step A only (no rehearsal yet):
+> Do not re-request this. It was asked, approved as the "B package", and fully executed; §10 is the outcome.
+> A *future* rehearsal needs a fresh, narrower approval (the project already exists — see the box at the top for
+> what has to be rebuilt).
+
+The package as it was put to the owner — setup step A:
 
 | What | Value |
 |---|---|
@@ -214,8 +240,9 @@ Setup step A only (no rehearsal yet):
 | Actions | create project → add Firebase → link named billing account + budget alert → create Firestore → enable 2 APIs → ADC login → set 4 secrets → write local `.env.<staging-id>` |
 | Explicitly excluded | touching `project-0b7d3005-bf45-41ea-84b`; any command without `--project`; any production deploy, rules, index, data or Dashboard change; committing the env file; pushing claim files (separate permission) |
 
-Unknowns left open on purpose: final project id availability; which billing account; whether the empty project
-is kept after cleanup.
+~~Unknowns left open on purpose: final project id availability; which billing account; whether the empty project
+is kept after cleanup.~~ **All three were answered on the day:** id `salown-staging` was available; billing account
+`01B741-62F1F4-49A88C`; the empty project was **kept** (free).
 
 ## 10. Execution record — 2026-09-08 (owner-approved B package; no production change)
 

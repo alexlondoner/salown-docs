@@ -6,13 +6,39 @@
 >
 > **Categories:** 1) Firestore Rules (automated) · 2) Security gate manual · 3) Stripe live ·
 > 4) Staff App · 5) Post-Class-A migration · 6) Busy-slot v2 (separate doc).
+>
+> **Every suite count in this file is a DATED SNAPSHOT, never "currently".** A number without a date is
+> a bug in this document. And a green suite is **not** a release: this file records what was *exercised*,
+> `ROADMAP.md` records what is *live*, and the two are routinely different.
+>
+> **Record format for a new entry** — work id · source SHA · date run · which layer
+> (unit / rules emulator / staging / production live-verify) · result · where the durable evidence is ·
+> **and what the run did NOT exercise.** The last field is the one people skip and later misread as coverage.
+
+---
+
+## 0-A. FIN-B1 settlement ledger + COA rules ceiling — where their test records are (2026-09-09)
+
+*Added because this file claimed to be the single source and carried no pointer to either.*
+
+| Work | Layer | Run | Result | Evidence | NOT exercised |
+|---|---|---|---|---|---|
+| **FIN-B1** | unit (node:test) | `cd whitecross-site/functions && npm test` at `101c3c2d` — **re-run 2026-09-09** | **182 / 182 pass** (B1 166 + loyalty 16) | the run itself; suite files `settlements.test.js`, `stripeWebhook.integration.test.js`, `settlements.fakes.js` | anything in production — see below |
+| **FIN-B1** | rules emulator | `ops/test-rules-emulator.sh` at `9a9547a` | **221 / 221**, incl. 35 for the flag | `salown-app/test/rules/settlementLedgerFlag.emulator.test.js` (registered in the runner) | — |
+| **FIN-B1** | **staging, real GCP + real Stripe test mode** | `salown-staging`, 2026-09-08 | **all rehearsals passed** — real composite index, real HTTP webhook delivery + redelivery, scheduler-driven sweeper recovery, kill-switch drain | [`STAGING_PROJECT_PLAN.md`](STAGING_PROJECT_PLAN.md) §10, the durable execution record | live mode; live keys; production data; any production deploy |
+| **FIN-B1** | production live-verify | — | **NEVER RUN.** Nothing is deployed | read-only checks 2026-09-09: no `wcSettlementSweeper` among 121 live functions · `settlementLedgerEnabled` ×0 in live ruleset · `settlementSync` index absent | everything |
+| **COA** (`CHECKOUT-OVER-ALLOCATION`, GTM gate A3) | rules emulator | at `edfa6e7` | suite registered and green | `salown-app/test/rules/checkoutOverAllocation.emulator.test.js`, line 103 of `ops/test-rules-emulator.sh` | production — `[COA]` appears **0 times** in the live ruleset; it is `PUSHED_NOT_LIVE` |
+
+**The trap this table exists to prevent:** B1 is the most heavily tested unreleased thing in the repo.
+Green unit tests + a passed staging rehearsal read like a release and are not one.
 
 ---
 
 ## 0-B. ⭐ Email audience rules — who is offered loyalty points (2026-08-04)
 
 **Automated · `functions/src/emails/reviewCtaAudience.test.js` · 5/5 green.** Run with the Functions
-suite (`cd functions && npm test`, currently **932 tests / 911 pass / 0 fail / 21 skipped**). Requires
+suite (`cd functions && npm test`; **snapshot 2026-08-04: 932 tests / 911 pass / 0 fail / 21 skipped** —
+not re-measured since, treat as of that date). Requires
 `npm run build` first — these tests assert against the COMPILED `lib/`, so a build or import
 regression fails them too.
 
