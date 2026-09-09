@@ -58,7 +58,17 @@
 
 ---
 
-## 💷 C1 — BOOKING-PRICE-EDIT-AUTHORITY · **PARTIALLY_LIVE_VERIFIED** · tenant-timezone adapter fix **LIVE** `2c8cc94f29a0ccad` (2026-09-09 16:14Z, `R-2026-09-09-D`)
+## 💷 C1 — BOOKING-PRICE-EDIT-AUTHORITY · **LIVE_VERIFIED for every reachable path** (2026-09-09) · form callable DEPLOYED_UNREACHABLE
+
+**2026-09-09 18:00 UK — correction of record.** The BookingForm EDIT mode has **no entry point in the live UI**: Dashboard's
+`openNewBooking` opens the form only for a new booking (`setSelectedBooking(null)`), Bookings.tsx never calls `setShowForm(true)`, and
+`formPreset.booking` is never set. The only booking-edit surface is BookingDetailPanel → `salownPatchBookingDetails`, which was proven
+on production 2026-09-08 (`R-2026-09-08-C`). `salownEditBookingForm` (`-00001-maq`) and the BookingForm adapter are therefore
+**DEPLOYED_UNREACHABLE** — not testable from the UI and not affecting any operator. C1's earlier "form edit refused on a paid/deposit
+booking" consequence is moot for the same reason. Open decision (owner): keep the form-edit code as inert, or remove it in a cleanup
+package. The pending "BookingForm live test" is withdrawn.
+
+*(previous header)* PARTIALLY_LIVE_VERIFIED · tenant-timezone adapter fix LIVE `2c8cc94f29a0ccad` (2026-09-09 16:14Z, `R-2026-09-09-D`)
 
 **2026-09-09 17:20 UK — `4882d56` released** (`hosting:salown` `cde349264ff973c8` → `2c8cc94f29a0ccad`, owner-run from the isolated
 workspace, served `index-DpGhxvDe.js` = pinned, only `salown` changed among the sites this unit touches). The TR-from-UK-device shift is
