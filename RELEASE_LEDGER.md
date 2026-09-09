@@ -20,6 +20,21 @@
 | **What this proves / does not prove** | ✅ `salownPatchBookingDetails` LIVE_VERIFIED · ✅ BookingDetailPanel adapter LIVE_VERIFIED · ❌ `salownEditBookingForm` LIVE_UNPROVEN (functions live, hosting live, never invoked) · ❌ BookingForm adapter LIVE_UNPROVEN · refusal paths (overfunded / foreign rail / DST) proven in suite only. **C1 overall = PARTIALLY_LIVE_VERIFIED** |
 | **Technical debt recorded (not fixed)** | Each server-routed edit writes THREE audit rows — server `BOOKING_EDITED_SERVER` + client `BOOKING_PATCHED` (`firestoreActions.log`) + client `BOOKING_INLINE_EDITED` (panel `logAudit`) — for one event. Needs an audit-cleanup review; none were deleted in the test. The tr-demo tenant also carries 9 leftover synthetic bookings from earlier TR checkout tests despite "restored after every run" |
 
+## R-2026-09-09-B — `WC-LOYALTY-SUCCESS-P2` · 1-unit release (`hosting:whitecrossbarbers-saas`) from an isolated pinned workspace · **LIVE_VERIFIED**
+
+| Field | Value |
+|---|---|
+| **Work item** | `WC-LOYALTY-SUCCESS-P2` — the post-payment loyalty card's member view returns, through the booking-scoped `wcLoyaltyLookup` shipped in R-2026-09-09-A. Closes the loyalty line opened by INCIDENTS 2026-09-08 |
+| **Source SHA** | whitecross-site **`eb98cff1`** (one file, `success.html`) · anchor `46b01758` (`ops/rel12/`) · both on `origin/main` before the deploy |
+| **Deployed unit** | `hosting:whitecrossbarbers-saas` ONLY · project `havuz-44f70` · `ops/rel12/assemble.sh` workspace (58 files, single-site `firebase.json`) · `npx firebase-tools@15.15.0 deploy --only hosting --project havuz-44f70` · **run by the owner** (assistant invocation classifier-blocked, 3rd time) · 2026-09-09T14:43:31Z |
+| **Live identity** | hosting version **`d310366f2e97bbfc`** (config `{}`) · pre-deploy verify **22/22**, `verify.sh --live` **21/21** — 58 served files byte-identical to `RELEASE.manifest.tsv`, 57 identical to REL-11; served `/success.html` calls `wcLoyaltyLookup` |
+| **Rollback identity** | hosting version **`675b41f466de5d45`** (REL-11, 2026-09-08) |
+| **Deliberately NOT deployed, measured after** | `salown-staff` `c6df19884456d78b` · `salown-admin` `6376b019192dd6c6` · `whitecrossbarbers-admin` `545d6de1513a552c` · `-owner` `3e305825c3e9d4fd` · `-app` `e652bfac69724b22` · `havuz-44f70` `fc2060d20fec5e3e` · `-admin` `ba5dc2c9a86ce300` · `-mobile` `b7bfafec015d869f` unchanged. **`hosting:salown` is `cde349264ff973c8`** — changed today by the C1 Admin release (another session, its own ledger row), not by this deploy. No Functions, rules or indexes command run |
+| **Behaviour change in production** | After payment, a member sees balance, welcome-back line, active welcome offer (server-filtered), progress to the next tier and the tiers; a non-member sees the plain join card; if the lookup cannot answer, the REL-11 both-cases card. Membership is never inferred from an absent answer. Nothing else on the page, no e-mail, no data changed |
+| **Callable invocation / data writes** | ZERO production writes. `wcLoyaltyLookup` is now called by real customers' page loads (rate-limited 30/ip · 10/booking per hour) |
+| **Gates** | headless WebKit, four scenarios (member+offer, member+deposit, not-a-member, lookup-failed) against a scratch copy with stubbed lookup/Firestore ✔ · name escaping ✔ · module ESM parse ✔ · `ops/rel12/verify.sh` §4 15 assertions ✔ |
+| **Still pending after this row** | None for this line. Known pre-existing gap, separate item: the `sessionStorage` fallback carries no `price`/`paymentType`, so the deposit points preview never renders on the public page |
+
 ## R-2026-09-09-A — `WC-LOYALTY-ENROLL-PII` · 2-function release (`functions:whitecross`) · **LIVE_VERIFIED**
 
 | Field | Value |
