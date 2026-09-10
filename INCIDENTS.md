@@ -35,6 +35,23 @@ Every incident opens with `## YYYY-MM-DD — short title`, immediately followed 
 
 **Tag dictionary (CANONICAL — only these; sprawl forbidden):** `#security` `#stripe` `#secrets` `#config` `#deploy` `#normalization` `#permission` `#race` `#timezone` `#parser` `#email` `#data-loss` `#shared-infra`. A new tag is added only if a genuinely new class emerges (e.g. twins like `#payment`+`#payments`+`#stripe-payment` are FORBIDDEN → all `#stripe`). Every entry carries a `**Tags:**` line.
 
+## 2026-09-10 — An emulator rehearsal sent two real invitation e-mails, because the Functions emulator loads the machine's live secrets
+
+**Severity:** 🟢 Low · **Owner:** `alish/connect-profile` (PROFILE-PUBLISH-P1) · **Status:** ✅ Resolved — guard in `ops/rehearsals/newSalonReadiness.mjs`, source-only, nothing deployed · **Affected area:** local emulator rehearsals; Brevo sending reputation
+
+**Discovery:** during the rehearsal itself — stage 6 reported `emailSent: true` from `approveApplication` in an environment that was supposed to have no credentials at all. That one word is the whole detection; nothing else would have shown it.
+**Impact:** two invitation e-mails were genuinely POSTed to Brevo, addressed to synthetic `@rehearsal.invalid` recipients, so both can only hard-bounce. No customer was contacted, no production document was written and no money moved; the cost is two bounces against the salOWN sending domain and two junk addresses on Brevo's blocked list.
+**Root Cause:** `firebase emulators:exec` isolates the DATABASE, not the outside world. The Functions emulator loads `functions/.secret.local` into the runtime, so a function declaring `secrets: ['BREVO_API_KEY']` finds a real key and calls the real API. The rehearsal was designed around "demo project ⇒ nothing can escape", which is true of Firestore and false of every outbound HTTP call the code makes.
+**Bug Class:** Legacy compatibility / environment assumption — an isolation boundary assumed to be wider than it is.
+**Resolution:** the rehearsal now refuses to start when `functions/.secret.local` carries any of `BREVO_API_KEY`, `GMAIL_PASS`, `STRIPE_SECRET_KEY`, `WHATSAPP_ACCESS_TOKEN` or a Telegram token, printing the move-aside command; `--allow-outbound-secrets` is a deliberate override. Re-run with the file moved aside: 34/34, `emailSent: false`. The `.secret.local` file was restored byte-identical afterwards.
+**Prevention:** permanent rule — before ANY emulator rehearsal that can reach an e-mail, payment or messaging path, move `functions/.secret.local` aside, and never accept a callable's own "sent" reply as proof of isolation. A `.invalid` recipient is not a safety measure: the API call still happens and the bounce is still recorded.
+**Regression Tests:** yok — the guard is startup logic in the rehearsal script itself and is exercised every time it runs; it was verified by running the script with the file in place (refused) and moved aside (34/34).
+**Related:** commits `0c006de` (salown-app) · roadmap `DOC-CONNECT-PROFILE` continuation package B · files `ops/rehearsals/newSalonReadiness.mjs` `functions/.secret.local` · tags `#secrets` `#email`
+
+**Lessons Learned:**
+- **"Emulator" means the database.** Every other dependency a function reaches — Brevo, Stripe, Meta, Telegram — is the real one unless you removed the credential.
+- **A success flag is a claim, not evidence.** `emailSent: true` was the only signal that anything had left the machine; a rehearsal that had not reported it would have looked perfectly clean.
+
 ## 2026-09-08 — The booking success page told every customer they were new, and promised members a welcome discount they could not get
 
 **Severity:** 🟡 Medium · **Owner:** `alish/loyalty-success` · **Status:** ✅ Resolved — live on `hosting:whitecrossbarbers-saas` version **`675b41f466de5d45`** (2026-09-08T12:43Z, owner-run deploy from the `ops/rel11/` workspace, `verify.sh --live` 21/21 PASS, ledger `R-2026-09-08-B`); Phase 2 `WC-LOYALTY-ENROLL-PII` ✅ live 2026-09-09 (`enrollloyalty-00063-qil` · `wcloyaltylookup-00002-pec`, R-2026-09-09-A); only the success.html member view (REL-12) remains · **Affected area:** whitecrossbarbers.com `success.html` (post-payment page): loyalty card, double-points banner
