@@ -108,12 +108,55 @@ and a cancelled booking cannot be checked out), so the live shape to worry about
 **Production incidence is unmeasured** — this is a reachability proof from shipped
 source, not a count of affected bookings.
 
+### D5 (new) — the provider field is mostly ABSENT, so a provider-only gate misses most of it
+
+> **Status: fixed, `PUSHED_NOT_LIVE` (salown-app `c10be71`).**
+
+Read-only census of `tenants/whitecross/bookings`, 2026-09-10 (positive controls run on
+the same query path, so the zeros are real):
+
+| population | count |
+|---|---|
+| bookings with `paidAmount > 0` | 1749 |
+| bookings with `stripeAmountPaid > 0` (the external Stripe rail) | 88 — 63 `FULL/PAID`, 25 `DEPOSIT` |
+| `paymentType: 'DEPOSIT'` overall | 85 — 58 Booksy (aggregator branch), 27 Website |
+| …of those, carrying `paymentProvider` | **5** |
+| bookings with `refundedAmount` set | **0** |
+
+So `isWebhookVerifiedRail`, which tests `paymentProvider`, reached **5 of the 25** exposed
+deposits. The other 20 are Website deposits holding a webhook-written `stripeAmountPaid`
+with no provider field at all — including the shape D3 exists for. BL-6 had the identical
+hole; D3 inherited rather than introduced it.
+
+The fix takes `stripeAmountPaid` as the evidence — the webhook writes it and a browser
+never does — and is **confined to the refund path**. It is deliberately NOT used to widen
+rail 2, because on those same 20 rows `paidAmount` is the desk remainder rather than the
+deposit (measured: differs from `stripeAmountPaid` on 20 of 20, one row by £38), so
+widening rail 2 would silently restate settled sales. On the refund path the blast radius
+is provably zero — nothing carries `refundedAmount` today. An explicit non-verified
+provider (`PAY_AT_VENUE`) is still refused even with a charge mirror; only *absence* is
+treated as unknown.
+
 ### D4 (new) — a second refund-blind copy outside this repo
 
 `whitecross-site/barber-mobile/app.js:47` carries the same rule
 (`platformDepositAmount || (paymentType === 'DEPOSIT' && status !== 'CHECKED_OUT' ? paidAmount : 0)`)
 with no refund term at all. It is a separate deploy unit and no change in salown-app
 reaches it.
+
+> **Status: fixed, `PUSHED_NOT_LIVE` (whitecross-site `dacefe56`). No deploy requested.**
+>
+> It is **not display-only**: `app.js:1141` uses it as
+> `billable = max(0, basePrice − deposit) + …` in a checkout that WRITES, so a refunded
+> deposit under-charged the sale there exactly as it did at the salOWN till. It now mirrors
+> `hasAuthoritativeRefund`, verified by driving the real extracted source over a 9-row
+> matrix including the aggregator, `CHECKED_OUT`, `PAY_AT_VENUE` and no-charge-mirror
+> guards.
+>
+> ⚠️ The hosting target `whitecrossbarbers-app` is live infrastructure but its actual staff
+> usage is **unverified** — FCM was disabled for it 2026-06-19 and staff moved to the salOWN
+> staff app. Fixed for correctness; not a release candidate on its own.
+
 
 ## 3. The two defects, as arithmetic
 

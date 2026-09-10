@@ -1595,5 +1595,22 @@ bookings confirmed D1/D2 and changed the plan twice.
   while all 35 regression guards pass in both states. A test pins `SALOWN_CONNECT` as deliberately
   unchanged so A+ cannot land as a side effect. **Needs its own hosting release and live
   verification** — see [INCIDENTS.md](INCIDENTS.md) 2026-09-10.
-- **D4 — recorded, not fixed.** `whitecross-site/barber-mobile/app.js:47` carries a second
-  refund-blind copy of the same rule in a separate deploy unit; no salown-app change reaches it.
+- **D5 — a coverage hole in D3/A+ that only production could show. `PUSHED_NOT_LIVE`**
+  (salown-app `c10be71`). A read-only census found `paymentProvider` is mostly absent: of 25
+  DEPOSIT bookings holding a webhook-written `stripeAmountPaid`, only **5** carry it, so the
+  provider-based gate reached one fifth of the exposed population. BL-6 had the same hole.
+  `stripeAmountPaid` is now the evidence, confined to the REFUND path — deliberately NOT used
+  to widen rail 2, because on those rows `paidAmount` is the desk remainder (differs on 20 of
+  20, one by £38). Blast radius provably zero: no booking carries `refundedAmount` today.
+  Gates: frontend 5417/5417 · functions 2700 (0 fail). Negative control: 4 frontend + 1
+  functions row.
+- **D4 — fixed. `PUSHED_NOT_LIVE`** (whitecross-site `dacefe56`), no deploy requested.
+  `barber-mobile/app.js` carried a second refund-blind copy in a separate deploy unit, and it
+  is not display-only — it feeds `billable = max(0, basePrice − deposit)` in a checkout that
+  writes. Now mirrors `hasAuthoritativeRefund`, proven by driving the real extracted source
+  over a 9-row matrix. ⚠️ That target's actual staff usage is UNVERIFIED (FCM disabled
+  2026-06-19, staff moved to the salOWN staff app).
+- **D3 live measurement.** 0 bookings carry `refundedAmount` today, but refunds DO happen: a
+  real £10 `charge.refunded` landed 2026-08-30 (`REFUND_MANUAL_DETECTED`, origin
+  `STRIPE_DASHBOARD`) and the booking was deleted afterwards. Severity corrected 🟠 → 🟡
+  latent-but-not-dormant. See [INCIDENTS.md](INCIDENTS.md) 2026-09-10.
