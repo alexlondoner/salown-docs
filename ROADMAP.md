@@ -352,16 +352,16 @@ guard's own doc comment (`6e28ae8`).
 2. **Or, cheaper and sooner:** a Firestore rules constraint on the booking write, so a checkout
    that claims more than the sale is worth is rejected regardless of which bundle sent it.
 
-**Option 2 is now in source — `PUSHED_NOT_LIVE` (2026-09-07, salown-app `edfa6e7`, GTM gate A3).**
+**Option 2 is LIVE — released 2026-09-10 as `R-2026-09-10-C`, ruleset `5e102dd4-e7e7-4950-b12a-14a74daa82e8` (was `a0a10819-…`), published source byte-identical to `34f64af`'s `firestore.rules`. Status `ARTIFACT_VERIFIED` — the served ruleset carries the `coaNotOverAllocated` marker, which is the condition this item set for itself; it becomes `LIVE_VERIFIED` on the first observed production refusal.** (Source landed 2026-09-07, salown-app `edfa6e7`, GTM gate A3.)
 `coaNotOverAllocated()` sits above the principal branch of the bookings UPDATE rule and mirrors
 `resolveCheckoutOverAllocation` + `resolvePrePaidAmount` in pence, over-direction only, on the
 merged document — including the stored prepaid rails, which is what catches the 2026-08-30 shape.
 Proof: `test/rules/checkoutOverAllocation.emulator.test.js` 15/15 on the real emulator with a
 mutation control; rules gate 186/186; Codex cross-review's five stricter-than-writer shapes fixed
 and pinned. Known limit: a writer that sends no receipt columns at all (pre-2026-07-30 bundle) is
-not decidable there. **Nothing is deployed** — the ruleset release is a separate owner-approved
-step (rules last, salown-app authority, before/after ruleset ids into the ledger), and this item
-stays `CONFIRMED_OPEN` until the served ruleset carries the `coaNotOverAllocated` marker.
+not decidable there. The ruleset release happened on 2026-09-10 with owner approval (rules last, salown-app authority,
+before/after ruleset ids in `RELEASE_LEDGER.md` `R-2026-09-10-C`), and the served ruleset now
+carries the `coaNotOverAllocated` marker — the condition this paragraph named.
 
 **AMENDED 2026-09-10 — the rule was mirroring a writer that had moved, and would have REFUSED THE
 FIX (`673c036` + `975431c`, still `PUSHED_NOT_LIVE`).** A mirror is only correct against the thing
@@ -399,8 +399,11 @@ target, and nothing in the toolchain fails when the target moves. The emulator s
 throughout — it pinned the OLD writer's shapes. Only running the candidate ruleset against the
 population the other session had just measured exposed it.
 
-Until that release, the honest statement is that **a till on an old bundle can still write
-a double-counted checkout, and the only mitigation is a reload.** Any release that changes what
+Before that release the honest statement was that **a till on an old bundle could still write
+a double-counted checkout, with a reload as the only mitigation.** That is now closed for every
+writer the rules evaluate. Two things it does NOT close, and neither should be assumed away:
+`whitecross-site/barber-mobile/app.js:47` holds a second refund-blind copy of the same rule in a
+SEPARATE deploy unit, and a writer sending no receipt columns at all remains undecidable in rules. Any release that changes what
 the desk charges must therefore be followed by an explicit "hard-refresh every till" instruction —
 recorded as a release step, not as folklore.
 
