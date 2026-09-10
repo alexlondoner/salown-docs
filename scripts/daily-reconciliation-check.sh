@@ -80,9 +80,24 @@ for dir in "$WORKSPACE"/*/; do
   [[ "$ahead"  -gt 0 ]] && note "$repo has $ahead unpushed commit(s)"
   [[ "$behind" -gt 0 ]] && note "$repo is $behind behind origin — pull --rebase before claiming"
 
-  # release-shaped commits today (heuristic, deliberately loose)
-  if git log --since="${TODAY}T00:00:00Z" --format='%s' 2>/dev/null \
-       | grep -qiE 'deploy|release|LIVE|hosting:'; then
+  # release-shaped commits today (heuristic, deliberately loose).
+  #
+  # The subjects are captured FIRST and matched second, deliberately. The obvious
+  # form — `git log --format=%s | grep -qiE ...` — is broken under this script's
+  # `set -o pipefail`: `grep -q` exits on its FIRST match, `git log` is still
+  # writing, and the closed pipe kills it with SIGPIPE (141). pipefail then reports
+  # the whole pipeline as FAILED even though the match succeeded.
+  #
+  # The failure is backwards, which is why it survived: a repo with ONE matching
+  # commit usually finishes writing before grep leaves, and is detected; a repo
+  # with MANY is cut off and is not. Measured on 2026-09-10 — docs rc=141 with 11
+  # matching subjects, salown-app rc=141 with 11, whitecross-site rc=0 with 1 — so
+  # the check reported "no release-shaped commit today" on a day carrying THREE
+  # ledger rows, including a platform-wide ruleset release. A control that goes
+  # blind precisely when the day is busy is worse than no control, because its
+  # green is read as an all-clear.
+  subjects_today="$(git log --since="${TODAY}T00:00:00Z" --format='%s' 2>/dev/null || true)"
+  if printf '%s\n' "$subjects_today" | grep -qiE 'deploy|release|LIVE|hosting:'; then
     release_shaped=1
     printf '        ↳ release-shaped commit(s) today in %s\n' "$repo"
   fi
