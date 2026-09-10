@@ -163,10 +163,35 @@ Verified independently, 2026-09-10, on the live ruleset
 `refundedAmount`, `stripeAmountPaid`, `platformDepositAmount` — **all absent**. No COA
 constraint is live, so nothing at the till can be denied by it today.
 
-### 8c. Scope limit on the census — stated because a second party now depends on it
+### 8c. Scope of the census — first stated as a limit, then closed
 
-The 20-of-25 figure is **tenant-scoped to whitecross**. The query was
-`tenants/whitecross/bookings` and nothing else. herohairs and any other tenant were **not
-measured**, and the ratio is not verified platform-wide. The rules half is platform-wide,
-so "the provider field is usually absent" is a demonstrated property of whitecross and an
-unmeasured assumption elsewhere.
+The 20-of-25 figure was originally measured on `tenants/whitecross/bookings` alone and was
+flagged as tenant-scoped, because the rules half is platform-wide. **That limit is now
+closed by measurement** across all 8 tenants (2969 bookings), read-only:
+
+| tenant | bookings | `stripeAmountPaid` | `refundedAmount` | `paymentProvider` |
+|---|---|---|---|---|
+| dayi-barbers | 2 | 0 | 0 | 0 |
+| demo | 772 | 0 | 0 | 0 |
+| herohairs | 407 | 0 | 0 | 1 |
+| kathleen-birch | 0 | 0 | 0 | 0 |
+| the-hair-lab | 1 | 0 | 0 | 0 |
+| tr-demo | 9 | 0 | 0 | 0 |
+| **whitecross** | 1778 | **88** | **0** | **25** |
+| yusufo | 0 | 0 | 0 | 0 |
+| **total** | **2969** | **88** | **0** | **26** |
+
+Three consequences:
+
+- **The zero-blast-radius claim is platform-wide, not whitecross-only.** No booking in any
+  tenant carries `refundedAmount`, so this release changed no existing answer anywhere.
+- **whitecross is currently the entire population of the online rail** — 88 of 88. The
+  20-of-25 ratio therefore has no competing sample; it is not a local quirk another tenant
+  might contradict. herohairs' single `paymentProvider` row is `PAY_AT_VENUE` on a booking
+  with no `paymentType` or `paymentState`.
+- ⚠️ **A tenant with no history will not resemble whitecross.** kathleen-birch (approved
+  2026-09-09) and yusufo have no bookings at all. Their first online payment goes through
+  the current `createBooking`, which **does** stamp `paymentProvider` — so the provider-less
+  population is a legacy artefact that stops growing, and the verified-rail limb is the one
+  that matters going forward. The provider-less limb must not be deleted as dead code: it
+  covers 20 live bookings that can still be checked out.
