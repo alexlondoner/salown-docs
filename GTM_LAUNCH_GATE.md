@@ -49,7 +49,7 @@ Stripe entirely in TEST mode · TR payment integrity hold active · 0 `checkoutR
 | A2 | *(owner decision)* | Pricing + how the first paying salons pay. salOWN has **no subscription pipeline** (`M3` is vision); landing deliberately shows no price ("Request a demo") | — | You cannot market without knowing what you charge and how you collect. Manual invoice or a Stripe Payment Link needs **zero code**; `M1`/`M3` are not prerequisites. |
 | A3 | `CHECKOUT-SERVER-AUTHORITY` | Till arithmetic enforced only in the browser; a till on a stale bundle can still write a double-counted checkout | **CLOSED 2026-09-10** — rules constraint LIVE, ruleset `5e102dd4-…`, ledger `R-2026-09-10-C`, published source byte-identical to `34f64af`. `ARTIFACT_VERIFIED`; promotes to `LIVE_VERIFIED` on the first observed production refusal | A new salon's first double-charge is a lost customer. Cheapest closing move per ROADMAP §5.0 option 2: **a Firestore rules constraint on the booking write**. |
 | A4 | *(release)* | ~~`hosting:salown-staff` carries the 2026-08-30 checkout fix in source but the live staff bundle predates it~~ | **CLOSED before this gate opened** — `R-2026-08-30-H`, `c6df19884456d78b`, served bytes verified | Listed here on 2026-09-07 from a stale ROADMAP §5.0 paragraph; the ledger proved it live the same evening it was written. Kept struck through so nobody re-opens it. |
-| A5 | `T-e` paths 3 + 4 | `updateStaffRole` / `registerMeAsAdmin` in `Settings.tsx` write the staff doc, never the claim. **Re-measured 2026-09-09 — two failures, and the gating one is (a):** **(a)** live rules make `staff/{uid}` writes **super-admin only**, so a non-super-admin owner is **hard-denied** and just sees `alert('Error: …')` — they cannot promote or register staff at all; **(b)** a super-admin's write succeeds doc-only → claim drift (the false success). `setStaffRoleCore` is written and tested but **not exposed as a callable and not deployed** | **`CONFIRMED_OPEN`** (Security theme) | The first thing a new owner does is add a colleague as admin. Today it reports "Saved" and changes nothing. Repoint at `setStaffRoleCore` (canonical writer `functions/src/staff/identity.ts`). |
+| A5 | `T-e` paths 3 + 4 | `updateStaffRole` / `registerMeAsAdmin` in `Settings.tsx` write the staff doc, never the claim. **Re-measured 2026-09-09 — two failures, and the gating one is (a):** **(a)** live rules make `staff/{uid}` writes **super-admin only**, so a non-super-admin owner is **hard-denied** and just sees `alert('Error: …')` — they cannot promote or register staff at all; **(b)** a super-admin's write succeeds doc-only → claim drift (the false success). `setStaffRoleCore` is written and tested but **not exposed as a callable and not deployed** | **`PUSHED_NOT_LIVE`** (Security theme) — source complete 2026-09-10, `0732f2f` + `649192b` | The first thing a new owner does is add a colleague as admin. Written: `salownSetStaffRole` (thin onCall over `setStaffRoleCore`, canonical writer `functions/src/staff/identity.ts`) plus the Staff tab opening to `tenantRole === 'owner'` — **the tab itself was `isSuperAdmin`-gated, so the owner never reached the control the rule would have refused.** `firestore.rules` unchanged. **Not closed:** needs the owner-approved `salownSetStaffRole` deploy, then the panel, then one live role change observed in an Auth listing. Path 4 (`registerMeAsAdmin`) is deliberately NOT in this slice — see ROADMAP `SEC-TE`. |
 
 **Gate A is done when:** legal pages are live and linked · the owner has written the price and the
 collection method into ROADMAP §9.1 · the rules constraint (or the executor cutover) is
@@ -195,6 +195,28 @@ production access. Ticks below are appended as items close in ROADMAP.*
   **What the release still will NOT close:** `whitecross-site/barber-mobile/app.js` is a separate
   deploy unit, and a writer that sends no receipt columns at all remains undecidable in rules. "A3
   is live" will not mean "the till can no longer double-count".
+
+- **2026-09-10 · A5 `T-e` 3+4 — path 3 source complete, `PUSHED_NOT_LIVE`.** No deploy. salown-app
+  `0732f2f` (the callable boundary, 13 tests) + `649192b` (the panel cutover). Functions typecheck 0,
+  frontend typecheck 0, `ops/` deploy + rules-authority guards 142/142.
+  **The measurement this slice corrected:** the gate and the ROADMAP both recorded (a) as a rules
+  refusal an owner would see as `alert('Error: …')`. There is a UI door in front of the rules door —
+  `Settings.tsx` hid the ENTIRE Staff tab behind `isSuperAdmin` — so the owner never reached the
+  control at all. That is why the report from the field was "that button isn't there", not "it fails".
+  Opening the tab and writing the callable are therefore ONE change; either alone trades a hidden
+  control for a denied one.
+  **`firestore.rules` is not touched.** `tenants/{tid}/staff/{uid}` stays super-admin-only for
+  browsers; the Admin SDK does not consult rules, so the authorization moved into
+  `setStaffRoleCore`'s transaction rather than into a widened rule. No ruleset release is implied by
+  this item.
+  **Read-only production check, 2026-09-10:** herohairs is not a claim-drift victim — `durvezek@` and
+  `alex2ayyildiz3@` both hold `tenantRole: owner` with matching staff documents, which is exactly why
+  the owner could see the team and change nothing. The tenant root's `ownerUID` still names the
+  account that stopped being used; nothing authorizes on that field.
+  **Two things this will NOT close:** path 4 (`registerMeAsAdmin`) is a super-admin-only button whose
+  canonical core would bind the PLATFORM account's claims to a salon — owner decision, not code; and
+  `saveStaffPerms` is a third bare writer on the same super-admin-only path, narrowed in the UI here
+  and owed its own server writer.
 
 - **2026-09-10 · A3 `CHECKOUT-SERVER-AUTHORITY` — RELEASED, gate item closed.** Owner-approved
   `firestore:rules` deploy from `34f64af`; ruleset `a0a10819-…` → **`5e102dd4-e7e7-4950-b12a-14a74daa82e8`**

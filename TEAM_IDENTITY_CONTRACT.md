@@ -67,7 +67,7 @@ Each has a named test. If you change this module, these are what must not move.
 | `planOwnerStaffDoc(existing, input, nowTs)` | **pure** | `create` / **upgrade-only** `repair` / `noop`. Fills gaps; **never renames**. |
 | `ensureOwnerIdentityCore(db, input, opts)` | write | Idempotent owner create/repair. **Both refusals happen before ANY write.** |
 | `reconcileStaffClaimsCore(db, {tenantId, uid}, opts)` | write | The **repair primitive** — rebuild the claim from the document. The one place `allowDowngrade: true` is correct by default: the document is authority, so if it says `staff` the claim must say `staff`, even though that lowers the account. Refusing would leave the escalation in place. |
-| `setStaffRoleCore(db, input, actor, opts)` | write | Authorized role change. **NOT EXPOSED** — no `onCall` wrapper in this slice (S4A precedent: prove the authorization contract by test first). |
+| `setStaffRoleCore(db, input, actor, opts)` | write | Authorized role change. **EXPOSED 2026-09-10** as `salownSetStaffRole` (`functions/src/staff/identityCallable.ts`, salown-app `0732f2f`) — `PUSHED_NOT_LIVE` until the owner approves the deploy. The boundary is thin by contract: it re-decides nothing here, and owns exactly one judgement the core cannot make — WHICH TENANT. A super-admin carries no `tenantId` claim, so for a super-admin ONLY the body's `tenantId` is a SELECTOR and the `superAdmin` claim is the authority; for a salon user that field is refused BY NAME, before the tenant is resolved, and is stripped before the core sees the payload so `SET_ROLE_ALLOWED_KEYS` stays the single allowlist. |
 
 ### `setStaffRoleCore` authorization, all re-read server-side inside the transaction
 
