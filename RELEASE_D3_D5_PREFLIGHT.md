@@ -1,6 +1,9 @@
 # Release preflight — D3 + D5 (refunded deposits at the till)
 
-Status: **assembled and awaiting the owner's decision. NOTHING HAS BEEN DEPLOYED.**
+Status: **RELEASED 2026-09-10 with the owner's explicit approval.** `hosting:salown`
+version `2c8cc94f29a0ccad` → **`e2b8af15cd701ba4`**. Live bytes byte-verified against the
+pinned build. **Behaviour is LIVE_UNPROVEN** — see §7; there is no production booking
+carrying a refund to exercise it.
 Prepared by `alish/connect-prepaid-d`, 2026-09-10. This document does not authorise
 anything; it exists so the decision can be made on measured facts rather than on a
 summary.
@@ -92,7 +95,11 @@ so `grep`-ing the live bundle for a function name proves nothing. Verify these t
    until the next real refund, or create and refund a test booking deliberately. **Do not
    claim live verification without one of those.**
 
-## 8. Sequencing against the GTM A3 rules release
+## 8. Sequencing against the GTM A3 rules release — ⚠️ NOW ONE-WAY
+
+**This section was written before the release and its conclusion has since been
+overturned by measurement. Read all of it; the first half is still true and the second
+half is why it no longer decides anything.**
 
 `alish-8a` holds `CHECKOUT-SERVER-AUTHORITY` and is awaiting owner approval for a
 `firestore:rules` deploy carrying `coaNotOverAllocated`. It warned that landing rules
@@ -118,3 +125,48 @@ has been asked to run the same four rows against the rules suite.
   capture ordering, `paidAmount + prepaid == sale total` — are untouched, and no
   connected-account test-mode rehearsal has run.
 - It does not enable Stripe anywhere.
+
+### 8b. The hazard is on the OTHER side of the fix (measured by `alish-8a`, 2026-09-10)
+
+My correction above was right and incomplete. A *pre*-fix till is never denied — COA is
+over-direction only. But the **corrected** writer can be, and on exactly the population
+D5 exists for. `alish-8a` ran the four rows against the live-candidate ruleset on a real
+emulator, before amending anything:
+
+| row | document | writer | verdict |
+|---|---|---|---|
+| A | provider ABSENT + `stripeAmountPaid`, fully refunded | pre-D5 | ALLOWED |
+| B | same document | **post-D5** | **DENIED** |
+| C | same, partial refund | **post-D5** | **DENIED** |
+| D | provider `EXTERNAL_CHECKOUT`, fully refunded | post-D3 | ALLOWED |
+| E | provider ABSENT, no refund | any | ALLOWED |
+| F | provider ABSENT, refunded, no `platformDepositAmount` | post-D5 | **DENIED** |
+
+Cause: the rule's `coaStoredPrepaid_p` mirrored `resolvePrePaidAmount` as of 2026-09-07,
+whose refund branch keyed on `paymentProvider == 'EXTERNAL_CHECKOUT'`. With the provider
+absent it falls through to the stored `platformDepositAmount` and credits the refunded
+£10. The corrected writer nets it to 0 and collects the full £40, so
+`paidToday 4000 + rule-derived prepaid 1000 = 5000 > 4000` — over-allocated, denied.
+It is the D5 census hole one layer down: not the rule missing a defect, **the rule
+refusing the fix**.
+
+**Because the hosting half is now LIVE, this is no longer a sequencing choice.** An
+unamended `firestore.rules` deploy would go straight into the DENY state for every
+checkout of a refunded provider-less deposit. `alish-8a` has amended the rule inside its
+own claim (`coaAuthoritativeRefund` mirroring `hasAuthoritativeRefund`, `coaVerifiedRail`
+carrying both rails, refund branch only, `PAY_AT_VENUE` still refused) with 22/22 pinned
+including a mutation control that reproduces the DENY. **Nothing rules-side is deployed.**
+
+Verified independently, 2026-09-10, on the live ruleset
+`projects/havuz-44f70/rulesets/a0a10819-3b62-46d5-9f95-9ea048701c59` (updated 2026-08-30):
+`coaNotOverAllocated`, `coaStoredPrepaid`, `coaVerifiedRail`, `OverAlloc`,
+`refundedAmount`, `stripeAmountPaid`, `platformDepositAmount` — **all absent**. No COA
+constraint is live, so nothing at the till can be denied by it today.
+
+### 8c. Scope limit on the census — stated because a second party now depends on it
+
+The 20-of-25 figure is **tenant-scoped to whitecross**. The query was
+`tenants/whitecross/bookings` and nothing else. herohairs and any other tenant were **not
+measured**, and the ratio is not verified platform-wide. The rules half is platform-wide,
+so "the provider field is usually absent" is a demonstrated property of whitecross and an
+unmeasured assumption elsewhere.
