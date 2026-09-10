@@ -19,7 +19,7 @@
 > | `hosting:whitecrossbarbers-saas` | **`c8eb6464e423073e`** (REL-13, `R-2026-09-09-C`, released 2026-09-09T15:38:30Z) | none — supersedes `d310366f2e97bbfc` (REL-12, 14:43:31Z) |
 > | `hosting:salown` | **`2c8cc94f29a0ccad`** (released 2026-09-09T16:13:54Z) | ✅ **RECORDED** — `C1-TENANT-TZ-ADAPTER` from pinned `4882d56`, ledger **`R-2026-09-09-D`**, `LIVE_VERIFIED (bytes)`, released and recorded by the `alish/c1-tz-release` session; its claim is released. Previous live version `cde349264ff973c8`. ⚠️ Still open in that lane: the **BookingForm behaviour test has not been run** — bytes are verified, behaviour is not |
 > | `functions:whitecross` (us-central1, 30) | `enrollloyalty-00063-qil`, `wcloyaltylookup-00002-pec` current | ⚠️ **FIN-B1 entirely absent** — no `wcSettlementSweeper`; `stripeWebhook` bundle still 2026-08-28 |
-> | `functions:salown` (europe-west2, 91) | current | ⚠️ B7 WhatsApp source on main, never deployed |
+> | `functions:salown` (europe-west2, 91) | `approveApplication` **`-00016-nen`** (2026-09-10T00:15:44Z, `R-2026-09-10-A`, from `4c90d60`) | ⚠️ B7 WhatsApp source on main, never deployed. `ONB-INVITE` welcome-email copy is **ARTIFACT_VERIFIED** (new text confirmed inside the deployed source zip) but **BEHAVIOUR_UNPROVEN** — no approval has run since. Rollback `-00015-suy` |
 > | Firestore **rules** | ruleset **`a0a10819-…`** (2026-08-30) | ⚠️ **`[COA]` `edfa6e7` and the B1 flag arms are both PUSHED_NOT_LIVE** |
 > | Firestore **indexes** | 2, both `READY` | ⚠️ B1 `settlementSync` index in file, not deployed |
 >

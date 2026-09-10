@@ -1,6 +1,21 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
 
+## R-2026-09-10-A — `ONB-INVITE` onboarding welcome-email copy · 1-unit release (`functions:salown:approveApplication`) · **ARTIFACT_VERIFIED, BEHAVIOUR_UNPROVEN**
+
+| Field | Value |
+|---|---|
+| **Work item** | `ONB-INVITE` — the welcome email `approveApplication` sends to a newly approved salon carried a Firebase password-reset link as its only call to action. That TTL is fixed at one hour and is not ours to set, and the email is **sender-initiated**: nobody is waiting for it. The first real customer (Kathleen Birch, approved 2026-09-09T16:43:54Z) had still not opened it six hours later, by which time the button led to Firebase's raw error page. Copy-only fix: state the expiry honestly and give the self-serve route that never expires — `salown.com/login` → Forgot password, served by the already-deployed `sendPasswordResetPublic`. The link itself is UNCHANGED |
+| **Source SHA** | **`4c90d60`**, `[skip ci]`, pushed to `origin/main` before the deploy. Working tree clean (`0` porcelain) at deploy time and still at that commit after it. Predeploy `tsc -p tsconfig.build.json` ran from that tree |
+| **Deployed unit** | `functions:salown:approveApplication` (europe-west2) ONLY · `./scripts/deploy-functions.sh approveApplication`, run by the owner (the classifier blocked it for the agent; the allow rule `Bash(./scripts/deploy-functions.sh salown *)` does not match the script's real signature, which takes a bare function name). Namespace guard passed offline first via `--check-only` |
+| **Live identity** | Cloud Run revision `approveapplication-00015-suy` → **`approveapplication-00016-nen`** · 2026-09-10T00:15:44Z · ACTIVE · function `updateTime` 2026-09-10T00:15:56Z (was 2026-08-14T22:35:15Z) |
+| **Rollback identity** | **`approveapplication-00015-suy`** (2026-08-14T22:35:05Z) |
+| **Verification — from the DEPLOYED ARTIFACT** | Source zip pulled back out of `gs://gcf-v2-sources-1050766582653-europe-west2/approveApplication/function-source.zip#1788999299629696`; `lib/index.js` inside it contains the new line (`The button above expires one hour after this email was sent …` / `Forgot password`). The two other `expires in 1 hour` strings in that bundle belong to `sendPasswordResetPublic` (3315) and `sendStaffPasswordReset` (4404) — both **user-requested** reset emails, where a one-hour TTL is correct and was deliberately left alone |
+| **Blast radius — measured** | europe-west2: `approveApplication` is the only function whose `updateTime` moved (next most recent 2026-09-08T11:20Z). us-central1 legacy functions: **30 present**, none deleted |
+| **Why NOT `LIVE_VERIFIED`** | No application has been approved since the deploy, so the email has not been observed by a human end to end. The artifact is proven; the behaviour is not. Promote to `LIVE_VERIFIED` on the next real approval |
+| **Deliberately NOT deployed** | Every other function, hosting, rules, indexes. The three remaining onboarding defects found in the same audit (Step 3 iCal URL written to the world-readable root doc and never read + `features.treatwellIcalSync` never set; Step 2 hours never written to the canonical `settings/settings` and written to the mirror in the wrong key casing, with a `merge:false` data-loss path; owner `barbers/{uid}.dayHours` always beating salon hours, which makes Step 2 inert for a solo salon) are **untouched and unapproved** |
+| **Follow-up** | The copy fix is a mitigation of the symptom. The cause is a sender-initiated email depending on a user-requested mechanism; option (A) — drop the link entirely and send people to Forgot password — was agreed as the next step |
+
 ## R-2026-09-08-C — `C1 BOOKING-PRICE-EDIT-AUTHORITY` browser cutover · 1-unit release (`hosting:salown`) from an isolated pinned workspace · **PARTIALLY_LIVE_VERIFIED** (patch callable + panel adapter proven on production; form callable + form adapter LIVE_UNPROVEN)
 
 | Field | Value |
