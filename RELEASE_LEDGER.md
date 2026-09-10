@@ -1,6 +1,21 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
 
+## R-2026-09-10-E — `A5 T-e` path 3, `salownSetStaffRole` callable · 1-unit release (`functions:salown`) · **ARTIFACT_VERIFIED, BEHAVIOUR_UNPROVEN, INERT BY FLAG**
+
+| Field | Value |
+|---|---|
+| **Work item** | ROADMAP T-e path 3. `Settings.tsx`'s `updateStaffRole` was a bare `updateDoc` on `tenants/{tid}/staff/{uid}`; live rules make that path super-admin-only, so a tenant owner trying to promote a colleague was HARD-DENIED and saw "Saved" with nothing changed. Exposes the reviewed core `setStaffRoleCore` (canonical writer `functions/src/staff/identity.ts`) behind a new callable boundary (`functions/src/staff/identityCallable.ts`, `index.ts` only re-exports — the `priceEditCallable` precedent) |
+| **Source SHA** | **`304c036`** (`HEAD`, `[skip ci]`), pushed to `origin/main` before the deploy. Working tree was 0/0 clean; deployed directly (functions deploys are not subject to the REL-1 staff-bundle contamination that forces `git archive` isolation for `hosting:salown`) |
+| **Deployed unit** | `functions:salown:salownSetStaffRole` ONLY (project `havuz-44f70`, europe-west2). Targeted via `./scripts/deploy-functions.sh salownSetStaffRole` — namespace guard confirmed 1 target owned by codebase `salown` before upload |
+| **Live identity** | **new create** — Cloud Run revision `salownsetstaffrole-00001-wam`. `functions:salown` europe-west2 count **91 → 92** |
+| **Rollback identity** | Function did not exist before this release — rollback is deletion (`firebase functions:delete salownSetStaffRole --project havuz-44f70`), not a revision roll-back. No existing caller depends on it |
+| **Verification — from the DEPLOYED ARTIFACT** | `firebase functions:list --project havuz-44f70` re-read post-deploy: europe-west2 row count 91→92, `salownSetStaffRole` present as `v2 callable europe-west2`. `us-central1` count unchanged by this action (targeted single-function deploy, namespace guard confirmed no other target touched) |
+| **Blast radius — measured** | Additive only. No existing function's revision changed. No hosting, rules, or indexes touched. **The flag that gates the owner-facing Staff tab (`649192b`) is still OFF in the deployed panel** (`hosting:salown` was NOT redeployed today after this), so no live UI calls this endpoint yet |
+| **Why NOT `LIVE_VERIFIED`** | No caller has exercised it — the owner-facing Settings → Staff control is still dark pending the panel release. Correction of record from the pre-deploy framing: the callable is **not** "unreachable" — a direct authenticated call can invoke it right now; the UI being dark is not the security boundary. Security is server-side auth checks inside `setStaffRoleCore` (canonical writer identity contract), independent of whether any UI calls it |
+| **Deliberately NOT deployed** | `hosting:salown` (the panel half of A5 path 3, `649192b`) — stays queued behind this. Path 4 (`registerMeAsAdmin` → `ensureOwnerIdentityCore`) is explicitly parked: routing it through the core would let a `superAdmin` claim merge `{tenantId, tenantRole:'owner'}` onto the caller's own account on first use, binding a super-admin identity to one tenant and breaking the "super-admin claim never becomes a tenant owner" invariant. Owner decision 2026-09-10: resolve that binding question before touching path 4 |
+| **Follow-up** | Panel release (`hosting:salown`) to surface path 3 in the owner-facing Settings UI · path 4 design decision · claim `A5-TE-ROLE` stays `working` until both land |
+
 ## R-2026-09-10-D — `STAFF-CLIENT-CREATE` P1–P4 · 1-site release (`hosting:salown-staff`) · **ARTIFACT_VERIFIED (byte-identical), BEHAVIOUR_UNPROVEN**
 
 | Field | Value |
