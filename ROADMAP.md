@@ -1595,7 +1595,15 @@ bookings confirmed D1/D2 and changed the plan twice.
   while all 35 regression guards pass in both states. A test pins `SALOWN_CONNECT` as deliberately
   unchanged so A+ cannot land as a side effect. **Needs its own hosting release and live
   verification** — see [INCIDENTS.md](INCIDENTS.md) 2026-09-10.
-- **D5 — a coverage hole in D3/A+ that only production could show. `PUSHED_NOT_LIVE`**
+- **D3 + D5 — RELEASED 2026-09-10, `hosting:salown` `2c8cc94f29a0ccad` → `e2b8af15cd701ba4`.**
+  Owner-approved, built from an isolated pinned workspace, live bytes byte-verified against
+  the local build. **ARTIFACT_VERIFIED, BEHAVIOUR_UNPROVEN** — zero production bookings carry
+  `refundedAmount`, so there is nothing to exercise it against; promote on the next real
+  refund. Ledger row `R-2026-09-10-B`. ⚠️ Creates a one-way constraint on the GTM A3 rules
+  release: an unamended `firestore.rules` would now DENY the corrected write on the
+  provider-less population (`alish-8a` has amended it; nothing rules-side is deployed, and the
+  live ruleset carries no COA constraint).
+- **D5 — a coverage hole in D3/A+ that only production could show.**
   (salown-app `c10be71`). A read-only census found `paymentProvider` is mostly absent: of 25
   DEPOSIT bookings holding a webhook-written `stripeAmountPaid`, only **5** carry it, so the
   provider-based gate reached one fifth of the exposed population. BL-6 had the same hole.
