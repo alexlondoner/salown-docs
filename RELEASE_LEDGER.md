@@ -1,6 +1,22 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
 
+## R-2026-09-10-D — `STAFF-CLIENT-CREATE` P1–P4 · 1-site release (`hosting:salown-staff`) · **ARTIFACT_VERIFIED (byte-identical), BEHAVIOUR_UNPROVEN**
+
+| Field | Value |
+|---|---|
+| **Work item** | The client document had no owner. It was born only as a side effect of `checkoutBooking`, behind `hasLinkedClientDoc \|\| phone \|\| email` — and the Staff App's two create sheets write a booking and nothing else, a walk-in writing `phone: ''`/`email: ''`, so a person served in the shop and **paid for** never became a client: no visit, no spend, no loyalty point, no address for a receipt. P1 made `src/lib/clientWriter.ts` the one writer (name · phone OR email · canonical stamps · duplicate REFUSED, owner decision). P2 gave the Staff App the create path it never had and wired the panel's dead `onUseExisting` offer. P3 gave the walk-in cart optional contact **without touching the anonymous walk-in**. P4 stopped both Staff surfaces offering merged-away (`hidden`) clients |
+| **Source SHA** | **`e5dcfb0`**, `[skip ci]` throughout, pushed to `origin/main` before the deploy. Built and deployed from an isolated `git archive` workspace pinned to that commit — the shared repo stayed 0/0 and the tracked `hosting/staff-bundle/**` was never dirtied (REL-1) |
+| **Deployed unit** | `hosting:salown-staff` ONLY (project `havuz-44f70`) |
+| **Live identity** | site `salown-staff` version `c6df19884456d78b` → **`d0ec217095bdda67`** · 2026-09-10T15:23:02Z |
+| **Rollback identity** | **`c6df19884456d78b`** (2026-08-30T21:30:45Z). Console → Hosting → site `salown-staff` → Release history → that version → ⋮ → Roll back |
+| **Verification — from the DEPLOYED ARTIFACT** | The path the page actually loads was read first (`curl https://staff.salown.com/` → `/assets/staff-DAWV2esI.js`, replacing `/assets/staff-zEIEw5ok.js`), then hashed: live sha256 `d36efdbf0da41a0a638af043737ccb8da8f2c68f612db97a4ef754a807f551b1` **== the locally built file**. Unlike D3/D5 this change *does* carry string markers, and all four are live where the previous bundle had **zero**: `New client: ` · `Yeni müşteri: ` · `this sale joins their record` · `Use this client`. Served size 1.077.258 B → 1.115.704 B |
+| **Blast radius — measured** | One site. `hosting:salown` version UNCHANGED — no accidental second target, and the panel bundle was not rebuilt. No Functions, no rules, no indexes, no whitecross target. Firestore is untouched by the release itself: nothing migrates, and the new writer only runs when an operator submits the new sheet. Full frontend suite green at the deployed commit (186 files / 5493 tests), tsc 0, eslint 0 |
+| **Why NOT `LIVE_VERIFIED`** | Nobody has created a client on the live Staff App yet. The artifact is proven byte-for-byte and by marker; the behaviour is not. Promote after the owner's live pass: create from the Clients tab · type a number that already exists and confirm the refusal offers **that person** · ring a walk-in with an email and confirm the client appears at checkout |
+| **Deliberately NOT deployed** | `hosting:salown` (the panel). Its own half of this work — the duplicate guard on Add Client and the `onUseExisting` wiring — therefore stays dark. The reason is coupling, not caution: a panel deploy would also carry A5's `649192b`, which opens the Settings → Staff tab to the owner while `salownSetStaffRole` is undeployed, i.e. it would ship a button that can only fail. Owner decision 2026-09-10: staff only |
+| **⚠️ Risk carried into production** | `matchClientCandidate` deliberately MIRRORS `checkoutBooking`'s client lookup so that a client the writer refuses is exactly one checkout would find. **Nothing enforces that agreement.** If the resolver widens and this does not, the guard starts letting duplicates through and no test turns red — the duplicate simply appears in the list a week later. Extracting the resolver into a shared pure function is the real fix and is its own slice (`firestoreActions.ts` is a hot shared file) |
+| **Follow-up** | Panel release once A5's callable ships · owner live pass to promote this row · `ClientSearch` still loads the ENTIRE clients collection with an unbounded `getDocs` on every open (scale, not correctness) · the panel's three inline `!m.hidden` copies should adopt `src/lib/clientVisibility.ts` when those files are next claimed |
+
 ## R-2026-09-10-B — `CONNECT-PREPAID-D` refunded deposits at the till · 1-site release (`hosting:salown`) · **ARTIFACT_VERIFIED, BEHAVIOUR_UNPROVEN**
 
 | Field | Value |
