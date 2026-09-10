@@ -1560,6 +1560,31 @@ rules or Stripe account was touched by any of them.**
   production callback. 13 unit + 8 emulator tests; negative control — the race test finds BOTH
   consumers winning against the old read-then-delete, i.e. a genuine double-spend of one nonce.
 - **D · Connect capture/refund → desk contract — `CONFIRMED_OPEN`, deliberately not implemented.**
-  The arithmetic, the two candidate shapes and the 12-row test matrix are pinned in
-  [CONNECT_PAYMENT_CONTRACT.md](CONNECT_PAYMENT_CONTRACT.md). It needs one agreed contract with the
-  C2b parity owner; a compatibility field stamped at capture cannot close the refund half.
+  The arithmetic, the candidate shapes and the (now 16-row) test matrix are pinned in
+  [CONNECT_PAYMENT_CONTRACT.md](CONNECT_PAYMENT_CONTRACT.md). A compatibility field stamped at
+  capture cannot close the refund half. The C2b owner's own `SYNC.md` entry of 2026-09-10 places
+  "C-1 Connect prepaid" outside their package, so the boundary is drawn; claim
+  `CONNECT-PREPAID-D`.
+
+### D measurement, 2026-09-10 — `CONNECT-PREPAID-D`
+
+Driving the **real** `resolvePrePaidAmount` and the **real** `resolveDeskPrePaid` over the same
+bookings confirmed D1/D2 and changed the plan twice.
+
+- **Shape A is necessary but not sufficient.** `resolveDeskPrePaid` short-circuits on
+  `paymentType === 'DEPOSIT'` and returns `paidAmount` *before* the shared resolver is consulted,
+  so a resolver-only change cannot reach the Admin till for a DEPOSIT-typed booking: it closes D1
+  and leaves D2 open. **Shape A+** (A, plus the presenter's DEPOSIT branch deferring to the
+  resolver) is now the agreed shape — owner decision 2026-09-10. Still `PLANNED`; not started.
+- **D3 — the same defect was already live on `EXTERNAL_CHECKOUT`, Whitecross's own rail, and has
+  nothing to do with Connect. `PUSHED_NOT_LIVE`** (salown-app `3a02620`). A refunded web deposit
+  was credited in full at the till, under-charging the sale by the refund; the Staff app was never
+  affected because it calls the resolver directly, so the two surfaces had disagreed since BL-6.
+  Fixed by owner decision as its own package rather than inside the Connect work. Gated on a
+  recorded refund so only wrong rows move. Gates: frontend 5389/5389 · typecheck 0 · functions 2693
+  (0 fail) · parity 64/64. Negative control: the 4 defect tests fail against the pre-fix presenter
+  while all 35 regression guards pass in both states. A test pins `SALOWN_CONNECT` as deliberately
+  unchanged so A+ cannot land as a side effect. **Needs its own hosting release and live
+  verification** — see [INCIDENTS.md](INCIDENTS.md) 2026-09-10.
+- **D4 — recorded, not fixed.** `whitecross-site/barber-mobile/app.js:47` carries a second
+  refund-blind copy of the same rule in a separate deploy unit; no salown-app change reaches it.

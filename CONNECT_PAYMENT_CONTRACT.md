@@ -80,6 +80,14 @@ on a refunded DEPOSIT booking today.
 
 ### D3 (new) — the same defect is already live on EXTERNAL_CHECKOUT
 
+> **Status 2026-09-10: fixed in source, `PUSHED_NOT_LIVE` (salown-app `3a02620`).** By owner
+> decision D3 was released from this package and fixed on its own, ahead of any Connect work,
+> because it is a live money defect and Connect is switched off. It still needs its own hosting
+> release and live verification. `SALOWN_CONNECT` was deliberately left unchanged by that fix and
+> is pinned by a test, so shape A+ below cannot land as a side effect of it. The rows in the §2a
+> table marked ❌ for the Admin till on the EXTERNAL rail now read correctly.
+
+
 This is not a Connect-only problem, and it is on the rail Whitecross runs on. The chain
 is complete in shipped code:
 
