@@ -1,7 +1,8 @@
 # Connect capture/refund → desk checkout: the payment contract
 
-Status: **source analysis and a proposed contract + test matrix. NOT IMPLEMENTED, not
-deployed, no production payment touched.** This is package D of
+Status: **the reader half is IMPLEMENTED and `PUSHED_NOT_LIVE` (salown-app `d9329a2`,
+shape A+); the writer-level matrix rows and a connected-account rehearsal remain open.
+Nothing is deployed and no production payment has been touched.** This is package D of
 [`CONNECT_PROFILE_READINESS.md`](CONNECT_PROFILE_READINESS.md) §C1, written so the C2b
 projection-parity owner and the Connect owner can pin ONE contract before either writes code.
 
@@ -217,16 +218,29 @@ display.
 
 Rows 10, 11 and 15 decide releasability; rows 13, 14 and 16 are what §2a added.
 
-1. **Owner decision required — D3 is a live defect on Whitecross's rail and Connect is
-   not.** It can be fixed on its own schedule, ahead of and independently of any Connect
-   work, or deliberately deferred. It should not be bundled into a Connect activation
-   package by default.
-2. Agree **A+** (or B) as the shape. The C2b owner's 2026-09-10 `SYNC.md` entry states
-   "C-1 Connect prepaid, untouched and explicitly NOT closed by this package", so the
-   boundary is already drawn; what still needs their sign-off is that the presenter
-   change lands in `checkoutDeskPrePaid.ts`, which their scope item 1 names as a
-   gate-free raw scalar consumer.
-3. Implement against the 16-row matrix, driving real writer output into real readers,
-   with the current behaviour pinned first as the negative control.
-4. Only then a connected-account **test-mode** rehearsal in an explicitly authorised
-   isolated environment, before any production activation is requested.
+**Done, 2026-09-10 — owner decisions taken, reader half implemented.**
+
+1. ✅ **D3 fixed on its own** (salown-app `3a02620`), ahead of and separately from the
+   Connect work, by owner decision: it is a live money defect and Connect is switched
+   off. `PUSHED_NOT_LIVE`.
+2. ✅ **Shape A+ agreed and implemented** (salown-app `d9329a2`). One predicate,
+   `isWebhookVerifiedRail`, widened from an equality test to set membership, in the
+   browser resolver and its hand-mirrored functions twin. The till needed no second
+   decision tree — D3 had already taught its DEPOSIT branch to defer. Rows 1-5, 7, 8,
+   11-16 of the matrix are covered by tests on both sides. Negative control: 8 frontend
+   and 3 functions rows fail against the un-widened predicate while every
+   EXTERNAL/legacy/`PAY_AT_VENUE` guard passes in **both** states.
+
+**Still open before any activation is requested.**
+
+3. The **writer-level** matrix rows, which no reader change can close: row 6 (the same
+   `stripeEventId` delivered twice), row 9 (`paidAmount + prepaid` equals the sale total
+   through `checkoutBooking`), row 10's end-to-end form — real webhook output driven into
+   real readers rather than fixtures shaped by hand.
+4. A connected-account **test-mode** rehearsal in an explicitly authorised isolated
+   environment, with `SALOWN_CONNECT_REDIRECT_URI` set explicitly there and unset in
+   production. Whitecross's own Stripe account is not a Connect rehearsal.
+5. **D4 is not closed by any of this.** `whitecross-site/barber-mobile/app.js:47` is a
+   separate deploy unit carrying its own refund-blind copy of the rule.
+6. A hosting release for D3 + A+ with live verification. D3 changes a live answer on
+   purpose; A+ changes nothing live while `features.stripe` is off for every tenant.

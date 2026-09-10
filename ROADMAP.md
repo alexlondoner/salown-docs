@@ -1575,7 +1575,16 @@ bookings confirmed D1/D2 and changed the plan twice.
   `paymentType === 'DEPOSIT'` and returns `paidAmount` *before* the shared resolver is consulted,
   so a resolver-only change cannot reach the Admin till for a DEPOSIT-typed booking: it closes D1
   and leaves D2 open. **Shape A+** (A, plus the presenter's DEPOSIT branch deferring to the
-  resolver) is now the agreed shape — owner decision 2026-09-10. Still `PLANNED`; not started.
+  resolver) was agreed by owner decision 2026-09-10 and is now **`PUSHED_NOT_LIVE`**
+  (salown-app `d9329a2`): `isWebhookVerifiedRail` widened from an equality test to set
+  membership in the browser resolver AND its hand-mirrored functions twin, so D1 and D2 are
+  closed at the resolver, the executor and the till at once. Gates: frontend 5406/5406 ·
+  functions 2697 (0 fail) · both typechecks 0. Negative control: 8 frontend + 3 functions
+  rows fail against the un-widened predicate while every EXTERNAL/legacy/`PAY_AT_VENUE`
+  guard passes in both states. Two tests that had PINNED the defect were rewritten, not
+  deleted. **Still open before activation:** the writer-level matrix rows (webhook
+  idempotency, out-of-order refunds, re-checkout totals), a connected-account test-mode
+  rehearsal, and a hosting release with live verification.
 - **D3 — the same defect was already live on `EXTERNAL_CHECKOUT`, Whitecross's own rail, and has
   nothing to do with Connect. `PUSHED_NOT_LIVE`** (salown-app `3a02620`). A refunded web deposit
   was credited in full at the till, under-charging the sale by the refund; the Staff app was never
