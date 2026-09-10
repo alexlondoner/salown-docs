@@ -4,6 +4,29 @@ Source audit: 2026-09-10. Status: **local corrections and source findings; no pr
 
 This is a handoff for the interrupted documentation/readiness task. Source evidence is from salown-app `1455ca2` plus claim-only commits, before the narrow onboarding correction below. Live identities in the linked release documents are dated measurements, not newly verified live state. No real customer booking, Stripe connection or public profile was created by this audit.
 
+## 0. Continuation status — 2026-09-10, `PROFILE-PUBLISH-P1` / `CONNECT-OAUTH-C2`
+
+The §4 packages were executed in the order given below. **No deploy, no production tenant,
+profile, rules or Stripe account was touched.** Statuses use the ROADMAP vocabulary and the
+detail lives in [ROADMAP.md](ROADMAP.md) §DOC-CONNECT-PROFILE.
+
+| Package | Status | Evidence |
+|---|---|---|
+| P1 profile publication | `PUSHED_NOT_LIVE` (salown-app `9c0ae88`) | `functions/src/tenants/publishProfile.emulator.test.js` — 15 emulator tests, live snapshot listener, negative control 9/15 fail against the pre-fix code |
+| B new-salon readiness | `IMPLEMENTED_VERIFIED` (`0c006de`) | `ops/rehearsals/newSalonReadiness.mjs` — 34/34 on `demo-c1`; **booking ready YES · profile after wizard DRAFT · published ONLY after approval** |
+| C2 OAuth boundary | `PUSHED_NOT_LIVE` | `functions/src/payments/connectOauth.{test,emulator.test}.js` — 13 unit + 8 emulator; negative control: the old read-then-delete lets BOTH racers consume one nonce |
+| C1 payment contract | `CONFIRMED_OPEN`, not implemented | [CONNECT_PAYMENT_CONTRACT.md](CONNECT_PAYMENT_CONTRACT.md) — arithmetic, two candidate shapes, 12-row matrix; needs one agreed contract with the C2b owner |
+
+Two things this continuation learned that the audit could not have known:
+
+- The `public/profile` exposure was **transient and observable**: a real snapshot listener attached
+  for the duration of a standard submission sees the document appear and disappear against the
+  pre-fix code. It is not an inference from source ordering.
+- `firebase emulators:exec` isolates the database, **not outbound calls**. The Functions emulator
+  loads `functions/.secret.local`, so the first two rehearsal runs sent real Brevo invitation
+  e-mails to synthetic addresses. Recorded in [INCIDENTS.md](INCIDENTS.md) 2026-09-10; the
+  rehearsal now refuses to start with live outbound credentials present.
+
 ## 1. Answers and evidence
 
 **Is a new member's Online Profile immediately ready and published? No.** Both tenant creation paths initialise `profileStatus: 'draft'`, `profileSelfManaged: false` and `onboardingComplete: false` (`functions/src/index.ts`, `provisionTenant` around 340 and `approveApplication` around 3594). The wizard completion only changes `onboardingComplete`. It neither publishes the profile nor demonstrates a successful anonymous booking.
