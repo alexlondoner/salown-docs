@@ -35,6 +35,42 @@ Every incident opens with `## YYYY-MM-DD — short title`, immediately followed 
 
 **Tag dictionary (CANONICAL — only these; sprawl forbidden):** `#security` `#stripe` `#secrets` `#config` `#deploy` `#normalization` `#permission` `#race` `#timezone` `#parser` `#email` `#data-loss` `#shared-infra`. A new tag is added only if a genuinely new class emerges (e.g. twins like `#payment`+`#payments`+`#stripe-payment` are FORBIDDEN → all `#stripe`). Every entry carries a `**Tags:**` line.
 
+## 2026-09-10 — The till credited a refunded web deposit in full, because the presenter answers before the resolver
+
+**Severity:** 🟠 High · **Owner:** `alish/connect-prepaid-d` (CONNECT-PREPAID-D) · **Status:** 🟡 Open — fixed in source (`3a02620`), **NOT deployed**, no live verification · **Affected area:** Admin checkout till (CheckoutPanel), whitecross EXTERNAL_CHECKOUT rail
+
+**Discovery:** during refactor — found while scoping package D (the Stripe **Connect** prepaid contract) by driving the real `resolvePrePaidAmount` and the real `resolveDeskPrePaid` over the same bookings. Nobody reported it; no customer complaint and no owner test found it. It is not the defect the package went looking for.
+**Impact:** a customer whose online deposit had been refunded (in full or in part) was credited the **original** deposit at the desk, so the sale was UNDER-charged by the refunded amount. **Production incidence is unmeasured** — reachability is proven from shipped source, not from a count of affected bookings.
+**Root Cause:** not the arithmetic — the arithmetic was already right. `resolveDeskPrePaid` returns `paidAmount` on `paymentType === 'DEPOSIT'` and only *falls through* to the shared resolver when that test fails, so BL-6's refund netting (shipped 2026-08-30) was **unreachable from the till**. The refund writer deliberately never lowers `paidAmount` (`whitecross-site/functions/refunds.js`), which is correct for its own purposes and makes that field a stale answer for anyone reading it after a refund. A fix that lands in a shared resolver is not shipped until every presenter actually reaches it.
+**Bug Class:** Legacy compatibility / SSOT violation — a second, older decision tree sitting in front of the single source of truth. Same class as the 2026-08-30 incident this module was created to close, one branch further in.
+**Resolution:** the DEPOSIT branch now defers to `resolvePrePaidAmount` when the booking is on a webhook-verified rail **and** carries a recorded refund. Gated on the refund rather than on the rail alone so that only wrong rows move: a booking with no refund, and one whose `stripeAmountPaid` was never written, keep the legacy reading byte-for-byte. `isWebhookVerifiedRail` is now the one definition of that rail, shared by the resolver and the till. **Pushed, not deployed** — it changes a live answer on purpose and needs its own hosting release.
+**Prevention:** the negative control is the guard: the 4 defect tests fail against the pre-fix presenter while the 35 regression tests pass in **both** states, so the fix is proven to move only the defective rows. A test also pins `SALOWN_CONNECT` as deliberately UNCHANGED, so package D's shape A+ cannot land as a silent side effect of this fix.
+**Regression Tests:** `src/components/checkoutDeskPrePaid.test.ts::D3 — a refunded web deposit is no longer credited in full` (5 cases) + `::D3 regression guard — nothing without a recorded refund may move` (6 cases)
+**Related:** commits `3a02620` (fix) · `5a6dfbf` (docs, salown-docs) · roadmap DOC-CONNECT-PROFILE package D · files `src/components/checkoutDeskPrePaid.ts`, `src/firestoreActions.ts`, `docs/CONNECT_PAYMENT_CONTRACT.md` §2a
+
+**What happened / Diagnosis / Fix:**
+
+Package D was scoped to answer a **Connect** question: `salownConnectWebhook` writes `stripeAmountPaid` but never `platformDepositAmount`, so a fully prepaid Connect booking resolves to £0 at the desk and a refunded Connect deposit still resolves to its original amount. The contract document proposed generalising the resolver's "verified rail" test to cover both providers (shape A).
+
+Driving the two real functions over a fixed set of bookings — rather than reading them — showed shape A could not work as written. The till answered `10` on a fully refunded deposit where the resolver answered `0`; the two are independent, so no change confined to the resolver could ever move the till. Reading the presenter explained why: the `paymentType === 'DEPOSIT'` branch returns before the resolver is consulted.
+
+The same probe showed the branch is not Connect-specific. `EXTERNAL_CHECKOUT` — Whitecross's live rail — takes the identical path, and the chain is complete in shipped code: `whitecross-site/script.js:2468` writes `paymentType: 'DEPOSIT'` with a £10 `paidAmount` on a Website booking, `functions/refunds.js` records the refund without touching `paidAmount`, and the till then credits the full £10.
+
+Full refunds are largely self-limiting, because a refunded booking is usually cancelled and a cancelled booking cannot be checked out. The live shape to worry about is a **partial** refund on a booking that stays `CONFIRMED` and is then attended. The Staff app was never affected: `checkoutSheetPayload.ts` calls the resolver directly, which means the two surfaces have quietly disagreed on the same booking since BL-6 shipped.
+
+A second refund-blind copy of the same rule lives at `whitecross-site/barber-mobile/app.js:47`, in a separate deploy unit that no change in `salown-app` reaches. It is recorded, not fixed.
+
+**Lessons Learned:**
+- A fix that lands in a shared resolver is not shipped until every **presenter** reaches it. This is the second incident in six weeks caused by a hand-rolled tree sitting in front of this exact resolver; the first one created the module the second one hid in.
+- When two surfaces answer the same question, pin them to each other by test. Staff and Admin disagreed for weeks and nothing failed.
+- Driving the real functions over fixed inputs found in minutes what two careful source reads had written up as a Connect-only problem. Source reading produced the right arithmetic and the wrong blast radius.
+- A field one writer deliberately never updates (`paidAmount` after a refund) is a trap for every other reader. That intent belongs in a shared predicate, not in each reader's memory.
+- Scoping a package is a legitimate way to find live defects — and the defect found while scoping deserves its own release, not a seat on the package that found it.
+
+**Tags:** `#stripe` `#normalization`
+
+---
+
 ## 2026-09-10 — An emulator rehearsal sent two real invitation e-mails, because the Functions emulator loads the machine's live secrets
 
 **Severity:** 🟢 Low · **Owner:** `alish/connect-profile` (PROFILE-PUBLISH-P1) · **Status:** ✅ Resolved — guard in `ops/rehearsals/newSalonReadiness.mjs`, source-only, nothing deployed · **Affected area:** local emulator rehearsals; Brevo sending reputation
