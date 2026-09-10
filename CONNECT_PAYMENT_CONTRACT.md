@@ -280,6 +280,43 @@ Rows 10, 11 and 15 decide releasability; rows 13, 14 and 16 are what §2a added.
    `stripeEventId` delivered twice), row 9 (`paidAmount + prepaid` equals the sale total
    through `checkoutBooking`), row 10's end-to-end form — real webhook output driven into
    real readers rather than fixtures shaped by hand.
+
+   **Row 9 — done for the BROWSER writer, 2026-09-10** (salown-app `2628bf4`,
+   `src/firestoreActions.totalsClosure.test.ts`, `D-MATRIX-ROW9`, test-only, nothing
+   deployed). `checkoutBooking` runs end to end against a mocked Firestore; the
+   `updateDoc` payload is merged back onto the stored booking and the prepaid is
+   **re-resolved from that document** by the real `resolvePrePaidAmount`. That round
+   trip is the test: `computeReceipt` sets `transactionTotal = paidToday + paidEarlier`,
+   so I2 holds by construction at write time and constrains nothing afterwards, and the
+   over-allocation guard refuses only the OVER direction — so the settled case, which is
+   every normal checkout, had nothing holding it. Nine rail rows close (Connect
+   FULL/DEPOSIT, `EXTERNAL_CHECKOUT`, a partial refund, the provider-less D5 population
+   and its refund, legacy rail 3, a walk-in control, a `PENDING` row), plus the
+   full-column sale and two corrections — one re-priced upward, one where
+   `charge.refunded` lands after the first checkout and must beat the stamp that checkout
+   wrote. 18/18; frontend 5462/5463 (the single failure is the pre-existing `i18n.test.ts`
+   5-second timeout, unrelated). **Row 6 was deliberately not taken** — the webhook body
+   is inline in `functions/src/index.ts:4151-4290`, which was locked by another session's
+   claim. The server executor's twin of row 9 is still owed.
+
+3a. **Found by row 9 and NOT fixed — `CHECKOUT-ZERO-PREPAID-RAIL3`.** A `paymentType:
+   'DEPOSIT'` booking that resolves to **zero** pre-desk money reads its own desk takings
+   back as pre-paid, the moment it is checked out. `checkoutBooking` writes
+   `paidAmount: total` (after a checkout that is the desk REMAINDER) and stamps
+   `platformDepositAmount` — rail 1, which would otherwise win and is stable — **only when
+   `prePaid > 0`**. With no stamp, `resolvePrePaidAmount` rail 3 ("a DEPOSIT-typed booking
+   carries the deposit in `paidAmount`") answers with what the till just collected. Every
+   rail that carries money is protected: rail 1 by its stamp, rail 0 by preceding both,
+   rail 2 by reading the webhook figure and never `paidAmount`. **Zero is the unguarded
+   case.** Reachable by `PAY_AT_VENUE` DEPOSIT and by a provider-less DEPOSIT row whose
+   deposit was never recorded — not a Connect-only shape, and older than every rail above
+   it. The first checkout is correct; the damage is on the second read, where a correction
+   is told the sale is already settled and collects nothing. Pinned by three assertions in
+   the file above, which go red when it is fixed. **Production reach is UNMEASURED** — no
+   census has been run for `status: CHECKED_OUT` + `paymentType: DEPOSIT` +
+   `platformDepositAmount` absent. The fix (an explicit zero stamp, a `status`-aware rail 3,
+   or neutralising `paymentType` at checkout) is a writer/resolver decision and needs its
+   own authorisation.
 4. A connected-account **test-mode** rehearsal in an explicitly authorised isolated
    environment, with `SALOWN_CONNECT_REDIRECT_URI` set explicitly there and unset in
    production. Whitecross's own Stripe account is not a Connect rehearsal.
