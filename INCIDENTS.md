@@ -79,22 +79,34 @@ A second refund-blind copy of the same rule lives at `whitecross-site/barber-mob
 
 ---
 
-## 2026-09-10 — An emulator rehearsal sent two real invitation e-mails, because the Functions emulator loads the machine's live secrets
+## 2026-09-10 — An emulator rehearsal sent five real e-mails, two of them into the founder's own inbox, because the Functions emulator loads the machine's live secrets
 
 **Severity:** 🟢 Low · **Owner:** `alish/connect-profile` (PROFILE-PUBLISH-P1) · **Status:** ✅ Resolved — guard in `ops/rehearsals/newSalonReadiness.mjs`, source-only, nothing deployed · **Affected area:** local emulator rehearsals; Brevo sending reputation
 
-**Discovery:** during the rehearsal itself — stage 6 reported `emailSent: true` from `approveApplication` in an environment that was supposed to have no credentials at all. That one word is the whole detection; nothing else would have shown it.
-**Impact:** two invitation e-mails were genuinely POSTed to Brevo, addressed to synthetic `@rehearsal.invalid` recipients, so both can only hard-bounce. No customer was contacted, no production document was written and no money moved; the cost is two bounces against the salOWN sending domain and two junk addresses on Brevo's blocked list.
+**Discovery:** two independent detections, and the second one is the one that measured the blast radius. (1) During the rehearsal itself — stage 6 reported `emailSent: true` from `approveApplication` in an environment that was supposed to have no credentials at all. (2) Later the same day the owner found unrecognised "Applied Salon mtvdta2y" demo-request and booking-confirmation mail in the salOWN mailbox and asked how a salon had been approved without appearing in the super-admin panel. Detection (1) saw ONE path (the invitation) and undercounted the incident by three messages; only (2) exposed that `addToWaitlist`'s founder notification had been delivered to a real human inbox.
+**Impact — MEASURED, corrected upward on 2026-09-10 (Brevo events API, `startDate=endDate=2026-09-10`):** **five** messages left the machine across the two runs, not two, because THREE separate e-mail paths were exercised (`addToWaitlist` §6, `salownCreateBooking` §4, `approveApplication` §6) and the first record counted only the last one:
+
+| UK time | recipient | subject | Brevo events |
+|---|---|---|---|
+| 11:24:35 | `info@salown.com` | New salOWN demo request — Applied Salon mtvdqw46 | requests, **delivered** |
+| 11:24:36 | `customer-mtvdqw46@rehearsal.invalid` | Booking Confirmed — Skin Fade | requests, softBounces |
+| 11:24:42 | `applicant-mtvdqw46@rehearsal.invalid` | Welcome to salOWN … is ready | requests, softBounces |
+| 11:26:22 | `info@salown.com` | New salOWN demo request — Applied Salon mtvdta2y | requests, **delivered** |
+| 11:26:27 | `applicant-mtvdta2y@rehearsal.invalid` | Welcome to salOWN … is ready | requests, softBounces |
+
+No customer was contacted, no production document was written and no money moved — verified read-only on 2026-09-10 12:09: `superAdmin/waitlist/entries` holds 8 entries, none synthetic, newest 2026-09-09; `tenants` holds 8 ids with no `rehearsal-salon-*`; Identity Toolkit `accounts:lookup` returns nothing for any of the three `@rehearsal.invalid` addresses. Two other first-record claims were also wrong: the bounces were **soft**, not hard, and `GET /v3/smtp/blockedContacts` (30 addresses) carries **no** `rehearsal.invalid` entry — nothing was permanently blocked. The real residue is two junk e-mails in the founder's own inbox, which cost operator attention rather than sending reputation.
 **Root Cause:** `firebase emulators:exec` isolates the DATABASE, not the outside world. The Functions emulator loads `functions/.secret.local` into the runtime, so a function declaring `secrets: ['BREVO_API_KEY']` finds a real key and calls the real API. The rehearsal was designed around "demo project ⇒ nothing can escape", which is true of Firestore and false of every outbound HTTP call the code makes.
 **Bug Class:** Legacy compatibility / environment assumption — an isolation boundary assumed to be wider than it is.
 **Resolution:** the rehearsal now refuses to start when `functions/.secret.local` carries any of `BREVO_API_KEY`, `GMAIL_PASS`, `STRIPE_SECRET_KEY`, `WHATSAPP_ACCESS_TOKEN` or a Telegram token, printing the move-aside command; `--allow-outbound-secrets` is a deliberate override. Re-run with the file moved aside: 34/34, `emailSent: false`. The `.secret.local` file was restored byte-identical afterwards.
-**Prevention:** permanent rule — before ANY emulator rehearsal that can reach an e-mail, payment or messaging path, move `functions/.secret.local` aside, and never accept a callable's own "sent" reply as proof of isolation. A `.invalid` recipient is not a safety measure: the API call still happens and the bounce is still recorded.
+**Prevention:** permanent rule — before ANY emulator rehearsal that can reach an e-mail, payment or messaging path, move `functions/.secret.local` aside, and never accept a callable's own "sent" reply as proof of isolation. A `.invalid` recipient is not a safety measure: the API call still happens and the bounce is still recorded. And when outbound has escaped, do not count the escape from the stage that reported it — enumerate every e-mail path the run touched and reconcile against the provider's own event log, because a rehearsal's synthetic recipients do not cover the addresses the CODE chooses (`WAITLIST_NOTIFY_EMAIL = info@salown.com`, `functions/src/index.ts:3452`) — those are real.
 **Regression Tests:** yok — the guard is startup logic in the rehearsal script itself and is exercised every time it runs; it was verified by running the script with the file in place (refused) and moved aside (34/34).
-**Related:** commits `0c006de` (salown-app) · roadmap `DOC-CONNECT-PROFILE` continuation package B · files `ops/rehearsals/newSalonReadiness.mjs` `functions/.secret.local` · tags `#secrets` `#email`
+**Related:** commits `0c006de` (salown-app) · roadmap `DOC-CONNECT-PROFILE` continuation package B · files `ops/rehearsals/newSalonReadiness.mjs` `functions/.secret.local` `functions/src/index.ts` (`WAITLIST_NOTIFY_EMAIL`) · tags `#secrets` `#email`
 
 **Lessons Learned:**
 - **"Emulator" means the database.** Every other dependency a function reaches — Brevo, Stripe, Meta, Telegram — is the real one unless you removed the credential.
 - **A success flag is a claim, not evidence.** `emailSent: true` was the only signal that anything had left the machine; a rehearsal that had not reported it would have looked perfectly clean.
+- **A synthetic address list is not the recipient list.** The rehearsal chose `@rehearsal.invalid` for everyone it invented, but `addToWaitlist` mails a hard-coded real address of its own. Any "all recipients are fake" argument only covers the addresses the TEST supplies, never the ones the code supplies.
+- **An escape has to be counted from the provider, not from the code.** The first record said two, the Brevo event log said five and said two of those were delivered. The stage that noticed the leak saw one path out of three.
 
 ## 2026-09-08 — The booking success page told every customer they were new, and promised members a welcome discount they could not get
 
