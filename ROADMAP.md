@@ -363,6 +363,42 @@ not decidable there. **Nothing is deployed** — the ruleset release is a separa
 step (rules last, salown-app authority, before/after ruleset ids into the ledger), and this item
 stays `CONFIRMED_OPEN` until the served ruleset carries the `coaNotOverAllocated` marker.
 
+**AMENDED 2026-09-10 — the rule was mirroring a writer that had moved, and would have REFUSED THE
+FIX (`673c036` + `975431c`, still `PUSHED_NOT_LIVE`).** A mirror is only correct against the thing
+it mirrors on the day it ships. Package D corrected `resolvePrePaidAmount` the same morning — shape
+A+ (`d9329a2`) and D5 (`c10be71`) — and the rule still keyed its refund branch on
+`paymentProvider == 'EXTERNAL_CHECKOUT'`. Driving the live-candidate ruleset over the real
+population before requesting the release found the failure, and it is not the one anybody was
+looking for: **the rule does not miss a defect, it refuses the corrected write.** Measured on a real
+emulator, £40 sale / £10 deposit / recorded refund — `provider ABSENT, POST-D5 writer` DENIED,
+`PARTIAL refund, POST-D5 writer` DENIED, `no platformDepositAmount` DENIED; the three pre-fix rows
+ALLOWED. Cause: with the provider absent the rule fell through to the stored
+`platformDepositAmount` and kept crediting a deposit the salon had already sent back, so the
+corrected till's `paidToday 4000 + rule-derived prepaid 1000 > column 4000` read as an
+over-allocation that never happened. D5's census is why this matters at scale: `paymentProvider` is
+ABSENT on 20 of the 25 whitecross DEPOSIT bookings carrying a webhook-written `stripeAmountPaid`.
+**The hazard sat on the FAR SIDE of the fix**, which is why the first sequencing analysis (would a
+STALE till be denied? no — COA is over-direction only and D3/D5 are under-collection defects) came
+back clean from both sessions and was still asking the wrong question. Fixed by mirroring the
+writer's own `hasAuthoritativeRefund` (`coaAuthoritativeRefund`) and by giving the rule BOTH
+platform rails (`coaVerifiedRail`, shape A+); scoped to the refund branch and NOT used to widen rail
+2, for the writer's reason — `paidAmount` is the desk remainder on those rows. Pinned as §8: 7 tests
+incl. the SALOWN_CONNECT rail-2 refusal, the PAY_AT_VENUE non-rescue, proof the 2026-08-30 double
+count is STILL refused on a provider-less booking, and a mutation control that drops the
+provider-less limb and reproduces the DENY. Suite 22/22, rules gate **228/228**.
+**Ordering, now one-way:** `hosting:salown` released D3+D5 at 12:56Z (`R-2026-09-10-B`), so the
+corrected writer is LIVE and the rule is not — the safe quadrant. The amendment is therefore no
+longer a sequencing preference but a **precondition**: an older `firestore.rules` reaching
+production would take every checkout of a refunded provider-less deposit to `permission-denied` at
+the desk. Blast radius today is nil in both directions — a platform-wide read-only census (8
+tenants, 2969 bookings) found `refundedAmount` on not one booking anywhere — but that column is
+empty by accident, not by design: `refunds.js` fired for real on 2026-08-30 and the booking was
+deleted afterwards.
+**Lesson worth more than the fix:** a rule written as a mirror acquires a dependency on a moving
+target, and nothing in the toolchain fails when the target moves. The emulator suite stayed green
+throughout — it pinned the OLD writer's shapes. Only running the candidate ruleset against the
+population the other session had just measured exposed it.
+
 Until that release, the honest statement is that **a till on an old bundle can still write
 a double-counted checkout, and the only mitigation is a reload.** Any release that changes what
 the desk charges must therefore be followed by an explicit "hard-refresh every till" instruction —

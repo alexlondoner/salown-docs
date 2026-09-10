@@ -47,7 +47,7 @@ Stripe entirely in TEST mode · TR payment integrity hold active · 0 `checkoutR
 |---|---|---|---|---|
 | A1 | `LEG-1` | salOWN Terms of Service + Privacy pages; landing footer links are `href="#"` (`hosting/index.html:652-653`) | `PLANNED` (filed P2) — **drafts written 2026-09-07:** [LEGAL_TERMS_DRAFT.md](LEGAL_TERMS_DRAFT.md) · [LEGAL_PRIVACY_DRAFT.md](LEGAL_PRIVACY_DRAFT.md), owner fields + solicitor pending | Ad platforms reject a site with dead legal links; GDPR requires a privacy notice before collecting sign-up data. **Proposed P0.** |
 | A2 | *(owner decision)* | Pricing + how the first paying salons pay. salOWN has **no subscription pipeline** (`M3` is vision); landing deliberately shows no price ("Request a demo") | — | You cannot market without knowing what you charge and how you collect. Manual invoice or a Stripe Payment Link needs **zero code**; `M1`/`M3` are not prerequisites. |
-| A3 | `CHECKOUT-SERVER-AUTHORITY` | Till arithmetic enforced only in the browser; a till on a stale bundle can still write a double-counted checkout | `CONFIRMED_OPEN` (P0) — rules constraint **`PUSHED_NOT_LIVE` `edfa6e7`**, deploy pending | A new salon's first double-charge is a lost customer. Cheapest closing move per ROADMAP §5.0 option 2: **a Firestore rules constraint on the booking write**. |
+| A3 | `CHECKOUT-SERVER-AUTHORITY` | Till arithmetic enforced only in the browser; a till on a stale bundle can still write a double-counted checkout | `CONFIRMED_OPEN` (P0) — rules constraint **`PUSHED_NOT_LIVE` `edfa6e7`+`673c036`+`975431c`**, gate 228/228, deploy awaiting owner approval | A new salon's first double-charge is a lost customer. Cheapest closing move per ROADMAP §5.0 option 2: **a Firestore rules constraint on the booking write**. |
 | A4 | *(release)* | ~~`hosting:salown-staff` carries the 2026-08-30 checkout fix in source but the live staff bundle predates it~~ | **CLOSED before this gate opened** — `R-2026-08-30-H`, `c6df19884456d78b`, served bytes verified | Listed here on 2026-09-07 from a stale ROADMAP §5.0 paragraph; the ledger proved it live the same evening it was written. Kept struck through so nobody re-opens it. |
 | A5 | `T-e` paths 3 + 4 | `updateStaffRole` / `registerMeAsAdmin` in `Settings.tsx` write the staff doc, never the claim. **Re-measured 2026-09-09 — two failures, and the gating one is (a):** **(a)** live rules make `staff/{uid}` writes **super-admin only**, so a non-super-admin owner is **hard-denied** and just sees `alert('Error: …')` — they cannot promote or register staff at all; **(b)** a super-admin's write succeeds doc-only → claim drift (the false success). `setStaffRoleCore` is written and tested but **not exposed as a callable and not deployed** | **`CONFIRMED_OPEN`** (Security theme) | The first thing a new owner does is add a colleague as admin. Today it reports "Saved" and changes nothing. Repoint at `setStaffRoleCore` (canonical writer `functions/src/staff/identity.ts`). |
 
@@ -172,3 +172,26 @@ production access. Ticks below are appended as items close in ROADMAP.*
   `edfa6e7`). Rules constraint + emulator suite 15/15 + mutation control; rules gate 186/186; Codex
   cross-review findings fixed. **Not closed:** needs the owner-approved ruleset release (rules last),
   then a read-only production observation of one refused over-allocation. ROADMAP §5.0 carries the detail.
+
+- **2026-09-10 · A3 — release preparation found the rule would have REFUSED THE FIX; amended, still
+  `PUSHED_NOT_LIVE`.** Gate work only, no deploy. Rules emulator gate re-run green on the day
+  (221/221 before the amendment, **228/228** after); `ops/rules-authority.test.js` +
+  `ops/deploy-policy.test.js` 58/58, so `salown-app/firestore.rules` is still the single deployable
+  rules configuration; the LIVE ruleset was fetched from the API and diffed against the tree, and
+  the delta is exactly the two intended work items with no console-side drift.
+  **The finding:** the constraint mirrors `resolvePrePaidAmount`, and package D corrected that
+  writer the same morning (`d9329a2` shape A+, `c10be71` D5). The rule still keyed its refund branch
+  on `paymentProvider == 'EXTERNAL_CHECKOUT'`, a field ABSENT on 20 of the 25 exposed whitecross
+  DEPOSIT bookings. Driven over the real population, the live-candidate ruleset DENIED the corrected
+  till write on exactly those rows — not a missed defect, a refused fix. Amended to mirror
+  `hasAuthoritativeRefund` and to carry both platform rails; pinned as §8 with a mutation control.
+  **Ordering is now one-way:** `hosting:salown` released D3+D5 at 12:56Z, so the corrected writer is
+  live and the rule is not. Deploying an older `firestore.rules` would take those checkouts to
+  `permission-denied` at the desk. The amendment is a precondition of the release, not an
+  improvement to it.
+  **This release carries a second work item and it cannot be separated** — one file, one ruleset:
+  FIN-B1's `settlementLedgerEnabled` owner-authority guard (`9a9547a`) landed in `firestore.rules`
+  after `edfa6e7`. It must be presented for approval alongside A3.
+  **What the release still will NOT close:** `whitecross-site/barber-mobile/app.js` is a separate
+  deploy unit, and a writer that sends no receipt columns at all remains undecidable in rules. "A3
+  is live" will not mean "the till can no longer double-count".
