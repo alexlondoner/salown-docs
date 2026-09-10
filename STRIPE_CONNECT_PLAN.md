@@ -232,6 +232,27 @@ checkout (`salownCreateCheckoutSession` server-side amount), webhook (`salownCon
 **mode-mismatch guard** — test `acct_` under a live key → a clear "reconnect" message instead of a cryptic Stripe error
 (`salownCreateCheckoutSession`; `salownConnectStatus` returns a `modeMismatch` flag).
 
+### 0. Precondition added 2026-09-10 — the OAuth boundary and the prepaid contract
+
+Before any live key is deployed, two things from
+[CONNECT_PROFILE_READINESS.md](CONNECT_PROFILE_READINESS.md) must be settled. The first is done,
+the second is not:
+
+- **OAuth callback hardening — done in source, `PUSHED_NOT_LIVE`** (`functions/src/payments/connectOauth.ts`,
+  2026-09-10). The callback no longer reflects the raw `error` query parameter into its HTML, validates
+  `code`/`state` strictly, and consumes the state nonce in ONE transaction — the previous read-then-delete
+  let two callbacks racing the same nonce BOTH win (proven against the emulator). It ships with the next
+  targeted `salownConnectCallback` / `salownConnectStart` deploy; until then the live callback is the old one.
+- **A rehearsal must name its own redirect.** `salownConnectStart` now resolves the redirect URI from
+  `SALOWN_CONNECT_REDIRECT_URI` and falls back to production only when nothing is set. An override must be
+  `https` and must end in `/salownConnectCallback`, and an invalid one is REFUSED rather than silently
+  ignored — a staging rehearsal cannot drift onto the production callback. Set it in the rehearsal
+  environment; leave it unset in production.
+- **The capture/refund → desk contract is still open** ([CONNECT_PAYMENT_CONTRACT.md](CONNECT_PAYMENT_CONTRACT.md)):
+  a Connect FULL payment still resolves to £0 prepaid at the till and a refunded Connect deposit still
+  resolves to its original amount. Both must be closed and proven with the 12-row matrix before the first
+  live Connect booking — not after.
+
 ### 1. Precondition — owner in Stripe Dashboard (LIVE mode)
 1. Put the Dashboard in **live mode**; activate Connect in live.
 2. Connect application → get **live `client_id`** (`ca_…`) (the test one is `ca_Uov4x…` sandbox "Turquoise Swing").
