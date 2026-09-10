@@ -12,9 +12,9 @@ package; the release itself needs the owner's separate approval.*
 
 ## 1. Source selection — what is live, what is tested, what would ship
 
-| Unit | Live today (verified read-only) | Tested on staging | Candidate | Delta candidate − live |
+| Unit | Live snapshot (verified 2026-09-09; refresh before release) | Tested on staging | Candidate | Delta candidate − live |
 |---|---|---|---|---|
-| `stripeWebhook` (us-central1, gen2) | bundle `gcf-v2-sources-…/stripeWebhook/function-source.zip`, updated 2026-08-28T23:50Z; its `index.js`, `externalCheckout.js`, `refunds.js`, `emailParsers.js`, `package.json` are **byte-identical to commit `6817356f`** (BL-4/BL-5) — so the BL-5 R1 refund branch is already live | whitecross-site `8137711b` | **whitecross-site `101c3c2d`** (= origin/main 2026-09-09; `functions/` byte-identical to `d7c5822a`, verified empty diff) | ⚠️ **RE-DERIVE BEFORE RELEASE — no longer B1-only.** `6817356f`→`101c3c2d` over `functions/` is 7 files, +2457/−50, and it is **two lanes**: B1 (`settlements.js`, `settlements.fakes.js`, `settlements.test.js`, `stripeWebhook.integration.test.js`, the `index.js` webhook branch, `8137711b`) **plus** the loyalty lane (`loyaltyEnroll.js`, `loyaltyEnroll.test.js`, `index.js` — `21b51b9e` + `e40f2f32`). The loyalty lane is **already live** in `enrollLoyalty` / `wcLoyaltyLookup` (deployed 2026-09-09, R-2026-09-09-A), but `stripeWebhook`'s bundle predates it, so a targeted `stripeWebhook` deploy from this candidate also republishes that source into `stripeWebhook`'s own bundle. Confirm that is intended and record it in the ledger row |99 lines in 3 hunks (require, settlement branch, sweeper) + new `settlements.js`. **Live `index.js` == `8137711b~1`**, so the deploy carries B1 and nothing else from any session |
+| `stripeWebhook` (us-central1, gen2) | bundle `gcf-v2-sources-…/stripeWebhook/function-source.zip`, updated 2026-08-28T23:50Z; its `index.js`, `externalCheckout.js`, `refunds.js`, `emailParsers.js`, `package.json` are **byte-identical to commit `6817356f`** (BL-4/BL-5) — so the BL-5 R1 refund branch is already live | whitecross-site `8137711b` | **whitecross-site `101c3c2d`** (= origin/main 2026-09-09; `functions/` byte-identical to `d7c5822a`, verified empty diff) | ⚠️ **RE-DERIVE BEFORE RELEASE — no longer B1-only.** `6817356f`→`101c3c2d` over `functions/` is 7 files, +2457/−50, and it is **two lanes**: B1 (`settlements.js`, `settlements.fakes.js`, `settlements.test.js`, `stripeWebhook.integration.test.js`, the `index.js` webhook branch, `8137711b`) **plus** the loyalty lane (`loyaltyEnroll.js`, `loyaltyEnroll.test.js`, `index.js` — `21b51b9e` + `e40f2f32`). The loyalty lane is **already live** in `enrollLoyalty` / `wcLoyaltyLookup` (deployed 2026-09-09, R-2026-09-09-A), but `stripeWebhook`'s bundle predates it, so a targeted `stripeWebhook` deploy from this candidate also republishes that source into `stripeWebhook`'s own bundle. Confirm that is intended and record it in the ledger row. |
 | `wcSettlementSweeper` (new) | does not exist | same | same | new function + Cloud Scheduler job `every 15 minutes` |
 | Firestore indexes | 2 composite indexes (`barberId+startTime`; CG `source+status+expiresAt`) — re-verified read-only 2026-09-09 via the Firestore Admin API, both `READY` | salown-app `9a9547a` | **salown-app `e0fd2e8`** (= origin/main 2026-09-09; `firestore.indexes.json` and `firestore.rules` byte-identical to `9a9547a`, verified empty diff) | **+1** index (`settlementSync.state ASC, settlementSync.nextAttemptAt ASC`); live-not-in-file = none → no deletion is offered |
 | Firestore rules | ruleset `a0a10819-3b62-46d5-9f95-9ea048701c59` (released 2026-08-30T01:27Z) — **byte-identical to commit `5a3ecdd`**; still the live release on 2026-09-09 (fetched read-only: `settlementLedgerEnabled` ×0, `[COA]` ×0) | `9a9547a` (rules emulator 221/221 incl. B1 35) | file at `e0fd2e8` | live→candidate: **0 lines removed, 153 added** = `edfa6e7` (+138, `[COA] CHECKOUT-OVER-ALLOCATION`, GTM gate A3, **another session's change, `PUSHED_NOT_LIVE`**) + `9a9547a` (B1: 4 arms extended with `settlementLedgerEnabled`, +11 comment lines). `autoRefundEnabled` arms: live 5 → candidate 6 (comment), all four arms intact |
@@ -27,7 +27,7 @@ No source change is required for the tested B1 behaviour: staging ran the same b
 B1's deploy does not start before that. This decision is not a release approval for COA either. The alternatives
 considered were:
 - **(R-a) COA first, by its owner** — release rules from `edfa6e7` (their own release, their own ledger row),
-  then B1's rules release from `8bb05ad` is a pure B1 delta (4 arms + comments). **Chosen.**
+  then B1's rules release from the verified §1 candidate is a pure B1 delta (4 arms + comments). **Chosen.**
 - **(R-b) Joint release** from `8bb05ad`, recorded as one ruleset release carrying both, with the COA owner's
   explicit acknowledgment in the ledger row. COA is additive (0 lines removed), has its own emulator suite
   (`checkoutOverAllocation.emulator.test.js`, registered) and ROADMAP already lists it as `PUSHED_NOT_LIVE`.
@@ -59,7 +59,7 @@ name.
 
 ## 4. The approval package (one decision; production release not yet approved)
 
-**Sources (pinned, as of the latest §6 re-check):** whitecross-site **`d7c5822a`** (functions), salown-app **`f6b869a`** (indexes, rules).
+**Sources:** use the candidate cells in §1 only. They are the last verified candidates, not an assertion that HEAD is unchanged. Run §5 before any release; record any replacement in §1 and preserve the prior snapshot in §6.
 Both are origin/main at the time of the re-check; if either moves before release, re-run §1's byte checks against the new head (§6 records each re-pin).
 
 **Workspaces:** `git archive` of each SHA into a scratchpad directory; whitecross-site needs `.firebaserc`

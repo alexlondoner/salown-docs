@@ -2,7 +2,7 @@
 
 ## Active Tenants
 
-> **Currently 2 tenants LIVE in use:** `whitecross` + `herohairs` (2026-07-18). `eekurt` no longer uses the platform (inactive) — its record is kept below, Firestore data was not deleted.
+> **Currently 2 tenants LIVE in use:** `whitecross` + `herohairs` (2026-07-18). `eekurt` no longer uses the platform (inactive) — the historical roster is kept below. A 2026-09-09 operator query reported no `tenants/eekurt` document; the time and cause of that difference are not established.
 >
 > This table is **real salons only**. `demo` and `tr-demo` are not real salons and are not listed here — see [Demo & verification tenants](#demo--verification-tenants) for what each one is for and how each is configured.
 
@@ -10,7 +10,7 @@
 |-------------|---------------------------|------------------------------|---------------------------------------|-------|
 | `whitecross` | I CUT Whitecross Barbers  | aerulas@gmail.com            | CsktIKNC0wRaP2eK8DECVMWPD0m1          | Premium pilot — every feature ships here first |
 | `herohairs`  | HeroHairs (Hairdresser)   | alex2ayyildiz3@gmail.com     | BRk26AmRLXUMjLNIoBRLJB11o3o1          | Pilot client — full access, trial never ends |
-| `eekurt`     | EeKurt Barbers            | eekurtbookings@gmail.com     | L6wsBgQmBYXIVBt3RYHS2LATsxH2          | ❌ Inactive (left the platform 2026-07-18) — data still in Firestore, rules/data not deleted |
+| `eekurt`     | EeKurt Barbers            | eekurtbookings@gmail.com     | L6wsBgQmBYXIVBt3RYHS2LATsxH2          | ❌ Inactive (left the platform 2026-07-18) — historical record; 2026-09-09 query reported the tenant document absent (cause/time unverified) |
 
 **Super Admin:** durvezek@gmail.com (Dursun Kahraman)
 
@@ -99,6 +99,6 @@ tenants/{tenantId}/
 
 ## Onboarding Note
 
-Self-signup onboarding does not exist yet — tenants are added manually.
+Self-signup exists at `/signup`; the separate application approval/invite flow also exists. Source implementation is not proof of successful provisioning for every account. See `CONNECT_PROFILE_READINESS.md` for the draft/public-profile distinction.
 Custom claims are set in Firebase Auth: e.g. `{ tenantId: 'whitecross' }`.
 Each tenant panel blocks cross-tenant login.
