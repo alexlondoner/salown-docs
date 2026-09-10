@@ -1,6 +1,20 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
 
+## R-2026-09-10-F — panel release: `A5 T-e` path 3 + `STAFF-CLIENT-CREATE` panel half · 1-site release (`hosting:salown`) · **ARTIFACT_VERIFIED (byte-identical), BEHAVIOUR_UNPROVEN**
+
+| Field | Value |
+|---|---|
+| **Work item** | Two items land together because they were coupled by design (owner decision 2026-09-10, see `R-2026-09-10-D`/`-E`). **(1) A5 T-e path 3, panel half** (`649192b`): Settings → Staff tab now opens to `tenantRole === 'owner'` (was hidden behind `isSuperAdmin`) and its role control calls the now-deployed `salownSetStaffRole` callable instead of a bare `updateDoc` the rules would deny. **(2) `STAFF-CLIENT-CREATE`, panel half**: `AddClientModal` cut over to the shared writer `src/lib/clientWriter.ts` (P1, name · phone-or-email · canonical stamps · duplicate REFUSED) and the panel's dead `onUseExisting` prop is finally wired to a caller (P2 `abd29e4`), so `BookingForm`/`WalkInForm` can accept the writer's duplicate offer instead of only erroring |
+| **Source SHA** | **`3c2603f`** (`HEAD` at deploy time, `[skip ci]` throughout), built and deployed from an **isolated `git archive` workspace** (`/private/.../scratchpad/salown-panel-release-1789060003`) by the owner directly — the shared repo tree stayed untouched, `hosting/staff-bundle/**` was rebuilt as a REL-1 predeploy side effect inside that same isolated workspace and never touched the tracked repo |
+| **Deployed unit** | `hosting:salown` ONLY (project `havuz-44f70`) |
+| **Live identity** | site `salown` version `e2b8af15cd701ba4` → **`066e59717514985f`** · release `1789060094479000` |
+| **Rollback identity** | **`e2b8af15cd701ba4`** (2026-09-10, `R-2026-09-10-B`). Console → Hosting → site `salown` → Release history → that version → ⋮ → Roll back |
+| **Verification — from the DEPLOYED ARTIFACT** | Path actually loaded read first (`curl https://salown.com/app` → `/public-bundle/assets/index-BB3opXmC.js`), 200 confirmed as a separate step, then hashed: live sha256 `1673739cede79ed1eee257ad93b7ba8d43e0d44e164c4ce8e9e9b6be4dff65ff` **== the isolated-workspace build**. `hosting:salown-staff` version confirmed UNCHANGED at `d0ec217095bdda67` — the REL-1 side-build did not leak a second deploy |
+| **Blast radius — measured** | One site. Also carries two test/diagnostic-only commits with no behaviour change: `2628bf4` (`D-MATRIX-ROW9`, found and pinned `CHECKOUT-ZERO-PREPAID-RAIL3` as `CONFIRMED_OPEN`, no fix) and `d2ee33e` (C2b-B0 projection-matrix tests, codex's work landed unchanged). No functions, rules, or indexes touched by this release |
+| **Why NOT `LIVE_VERIFIED`** | Neither surfaced behaviour has been exercised in production yet. Promote A5 path 3 after an owner role-change at herohairs through Settings → Staff; promote the panel's `STAFF-CLIENT-CREATE` half after an Add Client duplicate is tried against an existing number and the `onUseExisting` offer is accepted from BookingForm/WalkInForm |
+| **Follow-up** | `STAFF-CLIENT-CREATE` P4's `hidden` filter unification (`src/lib/clientVisibility.ts`) was deliberately **not** adopted by the panel's three inline `!m.hidden` copies — still open, separate slice. A5 path 4 (`registerMeAsAdmin`) stays parked on the owner's super-admin/tenant-binding decision |
+
 ## R-2026-09-10-E — `A5 T-e` path 3, `salownSetStaffRole` callable · 1-unit release (`functions:salown`) · **ARTIFACT_VERIFIED, BEHAVIOUR_UNPROVEN, INERT BY FLAG**
 
 | Field | Value |
