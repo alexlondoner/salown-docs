@@ -1,6 +1,20 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
 
+## R-2026-09-11-A — panel release: `A5 T-e` path 3, flag flip · 1-site release (`hosting:salown`) · **ARTIFACT_VERIFIED (byte-identical), BEHAVIOUR_UNPROVEN**
+
+| Field | Value |
+|---|---|
+| **Work item** | Live testing of `R-2026-09-10-F` found `Settings.tsx`'s `SET_STAFF_ROLE_CALLABLE_DEPLOYED` flag was still `false` in production. The flag was a deliberate kill-switch (commit `304c036`) meant to be flipped to `true` in a follow-up one-line commit once `salownSetStaffRole` was confirmed deployed (`R-2026-09-10-E`) — that follow-up commit never happened, so `canManageTeam` kept requiring `isSuperAdmin` regardless of `tenantRole`. Confirmed via live browser session (`durvezek@gmail.com`, herohairs owner, non-super-admin): Settings showed no "Staff accounts" tab. `R-2026-09-10-F`'s claim that "Settings → Staff tab is now live-reachable by a tenant owner" was **incorrect** — the byte-verification in that row was real, but it verified the wrong thing (the tab code existed; the flag gating it was never live-flipped) |
+| **Source SHA** | **`3b0c7ee`** (one-line flag flip, `false` → `true`), rebased onto a concurrent unrelated release (`STAFF-NOTIF-CLICK-FIX`, different files, no conflict) → pushed as `ccb1f42` is the SYNC-only follow-up, not part of this build. Built and deployed from an isolated `git archive` workspace pinned to `3b0c7ee` — shared repo tree stayed 0/0 |
+| **Deployed unit** | `hosting:salown` ONLY (project `havuz-44f70`) |
+| **Live identity** | site `salown` version `066e59717514985f` → **`8a2c104476128bf3`** |
+| **Rollback identity** | **`066e59717514985f`** (`R-2026-09-10-F`). Console → Hosting → site `salown` → Release history → that version → ⋮ → Roll back |
+| **Verification — from the DEPLOYED ARTIFACT** | Path read first (`curl salown.com/app` → `/public-bundle/assets/index-DmlMstvM.js`), 200 confirmed, then hashed: live sha256 `9cedfbb0…` == isolated-workspace build. `Settings-UZnt5f1J.js` chunk sha256 `3e90c160…` == isolated-workspace build (this is the chunk carrying the flipped flag). `hosting:salown-staff` confirmed UNCHANGED at `76a2a7b98eeb9b78` |
+| **Blast radius — measured** | One site, one boolean. No functions, rules, or indexes touched. Concurrent `STAFF-NOTIF-CLICK-FIX` release on `hosting:salown-staff` from another device did not interfere (different target) |
+| **Why NOT `LIVE_VERIFIED`** | The Staff tab is now reachable, but no actual role-change write has been exercised through it yet — pending a live test with a throwaway staff account (not a real employee, not `durvezek@`/`alex2ayyildiz3@`) |
+| **Follow-up** | Live-verify one role change at herohairs through Settings → Staff with a disposable test account, then promote |
+
 ## R-2026-09-10-F — panel release: `A5 T-e` path 3 + `STAFF-CLIENT-CREATE` panel half · 1-site release (`hosting:salown`) · **ARTIFACT_VERIFIED (byte-identical), BEHAVIOUR_UNPROVEN**
 
 | Field | Value |
