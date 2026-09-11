@@ -105,7 +105,8 @@ and the caller is entitled to know that.
 | `createStaffUser` (europe-west2, codebase `salown`) | ✅ **LIVE** `createstaffuser-00058-kur` (rollback `-00057-doq`) |
 | `approveApplication` (europe-west2, codebase `salown`) | ✅ **LIVE** `approveapplication-00013-yob` (rollback `-00012-kix`) |
 | `provisionTenant` (europe-west2, codebase `salown`) | ✅ **LIVE since 2026-08-11 22:54Z** `provisiontenant-00137-bij` (rollback `-00136-taj`). The name was taken from codebase `whitecross` during the intake repair (INCIDENTS 2026-08-11); artifact verified as the `lib/` TS build carrying `ensureOwnerIdentityCore`, so self-signup now mints a `tenantRole` owner. ⚠️ Its welcome email still sends from `hello@salown.com`, **a mailbox that does not exist** (`index.ts:321,324`) |
-| `updateStaffRole` / `registerMeAsAdmin` (`Settings.tsx`) | 🔵 **O2** — client-side writes that `firestore.rules:203` already blocks for non-super-admins, so they fail *and* report success |
+| `updateStaffRole` (`Settings.tsx`) | ✅ **LIVE** — calls `salownSetStaffRole` → `setStaffRoleCore`; owner role round-trip observed in doc + claim 2026-09-11 (`R-2026-09-11-A`) |
+| ~~`registerMeAsAdmin` (`Settings.tsx`)~~ | ⛔ **REMOVED 2026-09-11** (`819b0a9`, `R-2026-09-11-B`) — owner decision: a platform super-admin manages salons through the super-admin authority + tenant selector and is never given a tenant owner record or claim from Settings. It was a bare doc-only `setDoc(role:'owner')` on the caller's uid in the viewed tenant. No replacement writer |
 | `setTenantClaim` (whitecross-site, super-admin) | 🔵 **O2** — merges correctly, but its only caller never sends a role |
 
 > ⚠️ **Superseded 2026-08-12 — this warning described the world before `-00137-bij`.** It used to
