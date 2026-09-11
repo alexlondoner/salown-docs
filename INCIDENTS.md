@@ -35,9 +35,30 @@ Every incident opens with `## YYYY-MM-DD — short title`, immediately followed 
 
 **Tag dictionary (CANONICAL — only these; sprawl forbidden):** `#security` `#stripe` `#secrets` `#config` `#deploy` `#normalization` `#permission` `#race` `#timezone` `#parser` `#email` `#data-loss` `#shared-infra`. A new tag is added only if a genuinely new class emerges (e.g. twins like `#payment`+`#payments`+`#stripe-payment` are FORBIDDEN → all `#stripe`). Every entry carries a `**Tags:**` line.
 
+## 2026-09-11 — A release's own byte-verification proved the code shipped, not that its kill-switch was on
+
+**Severity:** 🟠 High — gated the entire GTM A5 rollout; every real tenant owner was still locked out of Settings → Staff · **Owner:** alish · **Status:** ✅ Resolved, deployed and `LIVE_VERIFIED` 2026-09-11 · **Affected area:** Settings.tsx Staff tab visibility (`SEC-TE` / A5 T-e path 3)
+
+**Discovery:** live browser testing — logged in as `durvezek@gmail.com` (herohairs owner, non-super-admin, explicitly not a super-admin session per the test's own rule) and found Settings had no "Staff accounts" tab at all, contradicting `RELEASE_LEDGER.md` `R-2026-09-10-F`'s recorded claim that "Settings → Staff tab is now live-reachable by a tenant owner."
+**Impact:** every real salon owner remained unable to reach Settings → Staff after two releases (`R-2026-09-10-E` deployed the callable, `R-2026-09-10-F` was supposed to open the door) — functionally unchanged from before either release, despite both being recorded as shipped and byte-verified.
+**Root Cause:** `src/pages/Settings.tsx:363` carried `const SET_STAFF_ROLE_CALLABLE_DEPLOYED = false` — a deliberate kill-switch (commit `304c036`) written with an explicit code-comment instruction: flip it to `true` in a one-line follow-up commit once the callable was confirmed deployed. That follow-up commit never happened. `R-2026-09-10-F`'s SHA-256 verification was real and passed — it proved the live artifact matched the built source byte-for-byte — but it verified the wrong claim: that the *code* shipped, not that the *flag inside the code* was in the position that made the feature reachable.
+**Bug Class:** Verification-target mismatch — a release's evidence (byte-identity) answered "did this code ship" when the actual question was "is this feature live," and a boolean gate inside the shipped code silently swallowed the difference.
+**Resolution:** one-line flag flip (`false` → `true`, commit `3b0c7ee`), rebuilt in an isolated `git archive` workspace, deployed (`hosting:salown` `066e59717514985f` → `8a2c104476128bf3`, `R-2026-09-11-A`), byte-verified again, then genuinely exercised end-to-end with a throwaway staff account (role promoted staff→admin→staff, both the Firestore staff doc and the Auth custom claim confirmed in sync each time).
+**Prevention:** when a release's own code contains a feature flag or kill-switch, byte-verification must also assert the flag's *value*, not just the surrounding code's presence — grep the live chunk for the flag's literal state (`SET_STAFF_ROLE_CALLABLE_DEPLOYED = true`), not just for marker strings that exist regardless of the flag's position. A marker string proves the code path exists; it does not prove the gate in front of it is open.
+**Regression Tests:** none dedicated — the gate is a hand-written boolean, not a tested code path. Covered going forward by the release checklist above.
+**Related:** commits `3b0c7ee` (fix) · `304c036` (original kill-switch) · `649192b` (the tab logic it gates) · roadmap `SEC-TE` · ledger `R-2026-09-11-A` · files `src/pages/Settings.tsx`
+
+**Lessons Learned:**
+- A kill-switch with a code comment saying "flip this later" is a promise with no enforcement. If a flag must flip before a feature is real, the flip should be part of the SAME commit/release as the deploy it depends on, or tracked as an explicit open item in the release record itself — not left to a human remembering a comment three commits later.
+- Byte-identical verification is necessary but not sufficient when the artifact contains a runtime conditional. Verify the conditional's live value, not just the artifact's identity.
+
+---
+
 ## 2026-09-10 — A customer could be served, paid for, and still not exist in Clients
 
-**Severity:** 🟠 High — the whole in-shop channel; every Staff App walk-in ever rung up · **Owner:** alish · **Status:** 🟡 Open — fix is on `main` (P1–P4), **NOT deployed** · **Affected area:** client identity — Staff App create sheets, panel Add Client, checkout's client resolve
+**Severity:** 🟠 High — the whole in-shop channel; every Staff App walk-in ever rung up · **Owner:** alish · **Status:** ✅ Resolved — deployed and `LIVE_VERIFIED` 2026-09-11 (all three behaviours: create-from-Clients-tab, panel duplicate refusal, walk-in-with-email→checkout) · **Affected area:** client identity — Staff App create sheets, panel Add Client, checkout's client resolve
+
+**Live verification, 2026-09-11:** rang up a walk-in on staff.salown.com (herohairs) with only a contact email, no name — checkout created `clients/0o0uuKuKRd4s1E09hKRa` with correct `email`/`emailCanonical` stamps, `totalVisits: 1`, `totalSpent: 40`, matching the checkout timestamp (name fell back to `"Walk-in"`, since only a name-AND-contact-less walk-in stays anonymous). Separately, the panel's Add Client form was fed an existing client's real phone number under a different name and correctly refused, naming the existing person, with no client doc created for the attempt.
 
 **Discovery:** owner report — "a new client cannot be created in the Staff App" — which turned out to be the visible corner of a wider identity gap found by reading the writers.
 **Impact:** a person served in the shop and paid for did not become a client: no visit, no spend, no loyalty point, no address to send a receipt to, and nothing in the CRM the salon runs on. Separately, the panel's own Add Client form created clients that later visits could not find, and the Staff App would happily attach today's visit to a client record a merge had already folded away.
