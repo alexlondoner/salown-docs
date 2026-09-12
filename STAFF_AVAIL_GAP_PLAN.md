@@ -297,6 +297,245 @@ Per the owner's explicit instruction: **Phase 0 may proceed now on this basis. P
 callable/rules change) requires a separate, later approval and its own claim — it is not
 pre-authorized by this document.**
 
+### 7.1 Phase 0 findings — posted 2026-09-12 (read-only verification; no source file touched)
+
+**Item 1 — does `createBookingCore` accept any override for `SLOT_CONFLICT`/`OUTSIDE_EFFECTIVE_SHIFT` today?**
+**No, definitively.** The full input contract — `ALLOWED_ADMIN_INPUT_KEYS` (`createBooking.ts:144-150`)
+and the server-built `CoreOpts`/`PrivilegedContext` (`:578-591`, `:180-191`) — carries no
+`force`/`override`/`allowConflict`/`bypassHours` field of any kind, and the deny logic
+(`:992-1033`) is unconditional on role: being a privileged (Admin/Staff-App) caller changes *which*
+policy applies (skips same-day/notice/advance rules), never whether the shift-fit or busy-slot test
+itself can be skipped. **Admin's client-side conflict `window.confirm`
+(`src/components/BookingForm.tsx:340-344`) is confirmed misleading, not a real override**: the
+payload it sends (`:364-378`) carries no flag derived from that confirm, and a rejected server call
+always lands in the generic `saveFailed` catch (`:410-419`) regardless of what the operator clicked
+through. This resolves §3.1's open question: the confirm dialog implies a choice that does not
+exist server-side today. **Also newly confirmed**: Admin's outside-hours check is not even a soft
+confirm — it is a hard **client-side** `alert()` that aborts before any server call
+(`BookingForm.tsx:327`), stricter in practice than the conflict path even on the client.
+→ **Consequence for Phase 1**: D3/D4's server-side reject-by-default is not a behavior change for
+Admin at all (the server already always rejects); it *is* a behavior change for Staff App, whose
+client never calls this core today.
+
+**Item 2 — does Walk-in's Save path gate on leave today?**
+**Client-side warning only; server-side: no check at all.** `WalkInFlow.tsx:289-292`'s
+`confirmIfOffToday()` pops one dismissable `window.confirm` for any barber outside
+`availableTodayIds` (which excludes leave-within-window barbers per `bookingUtils.ts:510`), then
+`handleSave` (`:396-411`) proceeds straight to `createSaleBooking`/`salownCreateWalkIn` on
+confirmation. Server-side, `assertAssignableStaff` → `staffEligibility.ts:128-150` checks only
+`status === 'passive'` and `availabilityFrom` — **no `leave`/`leaveFrom`/`leaveUntil` reference
+anywhere in that function.** So today, any staff member can click through and book a leave-status
+barber with zero server-side resistance. → **Consequence for Phase 1**: Walk-in's leave-gap is not
+"needs verification," it is a confirmed, currently-open gap identical in shape to New Booking's —
+Phase 2 (§7, Walk-in) must add the same server-side leave evaluation this plan already scopes for
+New Booking/Reschedule under D6, not just the conflict query originally scoped for that phase.
+
+**Item 3 — is there an existing "owner-only, `admin` excluded, `superAdmin` does not bypass" helper?**
+**No such helper exists; every current precedent does the opposite of at least one half.**
+`blocks.ts:84-85`'s `PRIVILEGED_ROLES = {owner, admin}` and `identity.ts:437,468-470`'s
+`setStaffRoleCore` both treat `admin` as equal to `owner` for the gate, and both let
+`superAdmin === true` bypass the check entirely ("break-glass," `identity.ts:411` comment).
+`packagePlan.ts:1097-1133`'s `canPerform` does the same (superAdmin bypasses everything, every
+action resolves to `owner || admin`). The **one** partial precedent that is genuinely owner-only
+— `index.ts:3216`'s "only an owner can create another owner" check inside `createStaffUser`
+(`callerRole !== 'owner'` rejects `admin` too) — **still explicitly carves out `!callerIsSuper`**,
+i.e. `superAdmin` bypasses even this one owner-only gate.
+
+**⚠️ New open question surfaced by this finding — needs an explicit owner decision, not an
+assumption, before Phase 1 writes the D3/D4 authorization check:**
+Should a `superAdmin` claim bypass the new conflict/hours override gate the way it bypasses every
+other privileged check in this codebase, or should this be the **first** gate in salOWN where
+`superAdmin` does **not** automatically grant access and the caller must additionally hold tenant
+`owner`? Per §6.5's existing instruction ("never silently treated as equivalent to tenant owner")
+and `[[feedback_delete_superadmin_only]]`'s adjacent precedent (superAdmin authorized independently
+of tenant-owner status for deletion), **the recommendation is: superAdmin may use the override, but
+only via the documented super-admin console/tenant-selector path (same pattern as
+`[[project_superadmin_tenant_selector]]`), never as a silent bypass reachable from the ordinary
+Staff/Admin UI** — but this is a genuine departure from every existing convention in the codebase
+and must be confirmed, not inferred, before Phase 1 implements the check.
+
+**Item 3 (design note) — the BLOCKED-exclusion branch, exact shape:**
+In the new conflict-scan loop (mirroring `blocks.ts:286-299`), before any override path is
+considered, check whether **any** doc in the scanned range has `status === 'BLOCKED'`
+(`blocks.ts:308` field). If so, return a distinct deny reason — e.g. `BLOCKED_TIME_CONFLICT`, not
+`SLOT_CONFLICT` — and the authorization branch must refuse to accept an override request when the
+reason is `BLOCKED_TIME_CONFLICT`, for **every** role including `owner`, with no code path that
+converts it back to an overridable `SLOT_CONFLICT`. **Corrected finding on labeling:** `blocks.ts`'s
+`blockKind` field has exactly two values, `'block'` and `'busy'` (`blocks.ts:191-194`,
+`BLOCK_KINDS`) — **neither means "mola"/break; the data model has no field that distinguishes a
+personal break from any other block today.** §5.1's instruction ("don't label as mola unless the
+data says so") therefore resolves to: **never assert "mola" in the user-facing message** — use the
+generic wording already drafted in §5.1 ("mola veya bloke edilmiş zaman"), since no structured field
+currently supports a more specific claim. The free-text `note` field on a block is not a reliable
+signal to pattern-match on.
+
+**Item 4 (design note) — audit-entry shape for a D3/D4 override, on the `reassignBooking.ts:359-376`
+pattern (atomic, same transaction, not fire-and-forget):**
+```
+tx.set(auditRef, {
+  ...buildServerAuditEntry({
+    action: 'BOOKING_CONFLICT_OVERRIDE' /* or 'BOOKING_HOURS_OVERRIDE' */,
+    source: 'function',
+    actor: { uid: actor.uid, email: actor.email || '', role: actorRole },
+    target: { collection: 'bookings', docId: newBookingDocId, label: bookingId },
+    meta: {
+      dimension: 'conflict' /* or 'hours' */,
+      reason: input.overrideReason,               // required, non-empty — "kayıtlı" means a reason exists
+      barberId, barberName,
+      requestedStartMs, requestedEndMs,
+      conflictingRecordIds: [...matchedDocIds],    // every record the override actually overrode
+    },
+  }),
+  timestamp: Timestamp.now(),
+});
+```
+Written in the **same** transaction as the booking write (the row is the deliverable, per
+`reassignBooking.ts:350-358`'s own rationale) — never fire-and-forget for this action, since a lost
+audit write would mean an unrecorded override, which §5's "kayıtlı" requirement forbids.
+
+### 7.2 Phase 0 — consolidated report (owner-requested structure, 2026-09-12)
+
+**Correction to the draft's framing:** §2.1/§3.2 originally read as "mostly wiring already-built
+pieces." That characterization is **not fully accurate** and is corrected here with an itemized
+reuse-vs-new inventory (below) — several pieces are genuinely new engineering, not integration.
+
+**1) Where the approved D1-D7 decisions differ from what the code does today**
+
+| Dimension | Approved decision | Code today |
+|---|---|---|
+| Passive | HARD everywhere, no override | HARD only for Walk-in/Block Time/Admin; New Booking/Reschedule have none (§3) |
+| Conflict | Reject-by-default, `owner`-only logged override | Admin: always hard-rejects server-side already, client confirm is inert/misleading (§7.1 item 1); Staff App: soft client confirm only, no server check at all except Block Time |
+| Hours | Reject-by-default, `owner`-only override, effective-shift-based | Admin: hard client `alert()`, server already unconditionally rejects (§7.1 item 1); Staff New Booking: display-only warning, doesn't block submit; Walk-in/Reschedule: nothing |
+| Leave | Dated-override contract, applies to New Booking/Walk-in/Reschedule, excludes Block Time | New Booking: one ungated `window.confirm` conflating passive+leave (§5.2); Walk-in: one dismissable `window.confirm`, **zero server check** (§7.1 item 2, newly confirmed — was "evidence insufficient" in the draft); Reschedule: nothing; the actual dated contract exists only in `staffEligibility.ts`'s `rescheduleStaffGate`, wired only to the public-link path |
+| Mola/`BLOCKED` override-denial | Never overridable, explicit message, no "mola" label without data | Does not exist in any form — `blocks.ts`'s scan doesn't even distinguish `BLOCKED` today (§5.1) |
+| `owner`-only auth (no `admin`, no silent `superAdmin` bypass) | Required | **No such helper exists anywhere in the codebase** — every precedent conflates `admin`=`owner` or lets `superAdmin` bypass (§7.1 item 3) |
+| Race safety | Per-pair cross-flow proof | Only Block Time is race-safe; no cross-flow test of any kind exists today (§4.1, §8) |
+
+**2) Reusable infrastructure vs. genuinely missing pieces — itemized, not assumed**
+
+*Genuinely reusable, verified this pass:*
+- `resolveBarberRef`/`matchesBarber` (read-time legacy-name resolution) — proven, already live for other writers (§2.1).
+- `createBookingCore`'s candidate-selection **already supports a single pre-selected barber**: when
+  a `barberId` is passed, `candidates` collapses to one entry (`createBooking.ts:775,782`), so New
+  Booking's explicit-barber-pick UX maps onto a single-target check, not the multi-candidate
+  auto-assign path — this is a real, usable seam, confirmed by reading the candidate-construction
+  code (not assumed from the `surface:'staffApp'` comment alone).
+- `rescheduleStaffGate` (`staffEligibility.ts:163`) is a **pure function** — `(barberDoc, dayKey,
+  hasShiftOverride) → gate` — with no coupling to the public-link caller beyond being invoked from
+  one call site (`index.ts:1943`). It is genuinely callable from a new staff-facing Reschedule path
+  without modification — confirmed by reading its signature and its one call site, not inferred.
+- `buildServerAuditEntry`/the `reassignBooking.ts` atomic-audit pattern — reusable as a template (§7.1 item 4).
+
+*Genuinely new — not wiring, not reuse, and not previously scoped this precisely:*
+- **The conflict-scan itself is not a shared function.** `createBooking.ts:992-1033`'s scan is
+  inline inside `createBookingCore`, shaped around multi-candidate auto-assign (`belongsTo`,
+  `busyDocs`, least-busy-first ordering) — structurally different from `blocks.ts:286-299`'s
+  simpler single-target range scan, and `createWalkIn.ts` has neither. There is **no single
+  conflict-check utility three writers can call** — Phase 1-3 either duplicate the check per-writer
+  (as today's three writers already do, independently) or a shared extraction becomes its own
+  precursor task. This plan does not resolve that choice; it is flagged for Phase 1 planning.
+- **BLOCKED-exclusion branch** (§5.1/§7.1 item 3 design note) — zero precedent, net-new logic.
+- **Server-side leave enforcement for Walk-in** — confirmed **absent entirely** (§7.1 item 2), not
+  merely "not yet verified" as the draft table said. Phase 2's scope (§7) must grow from
+  "conflict-only" to "conflict + leave," since passive was already the only dimension actually closed there.
+- **The `owner`-only, no-`superAdmin`-bypass authorization check** — confirmed novel, and a
+  deliberate departure from every existing convention in the codebase (§7.1 item 3), including a
+  **new open question** (superAdmin bypass or not) that needs owner sign-off before it's written.
+- **Override-capture UI** — a new interaction entirely: showing the specific conflicting record(s),
+  collecting a mandatory reason from `owner`, and visibly differentiating "hard block, no dialog at
+  all" (passive, mola) from "override available" (conflict, hours) from "dated-exception-only, no
+  generic confirm" (leave). Nothing in the current four sheets has this shape; the existing
+  `window.confirm`s are being removed, not extended (§5.2).
+- **Cross-flow race tests** (§7.1 item 6 design note, §8) — no such test exists for any pair today.
+
+**3) Race-condition avoidance across the four flows; other non-participating writers**
+
+Full detail in §4/§4.1/§8. Summary: only `blocks.ts` is transactional+conflict-checked+race-safe
+today; `createBooking.ts` (Admin) is transactional+conflict-checked; `createWalkIn.ts` is
+transactional but explicitly skips the conflict query; Staff New Booking and Reschedule are raw,
+non-transactional client writes. **Cross-flow safety is not established by any of the above being
+individually race-safe** — Firestore transaction isolation only protects reads/writes *within* the
+same transaction's read set; two *different* writers racing each other are only mutually safe if
+both query and both write inside transactions over overlapping data, which today only
+`blocks.ts`-vs-`blocks.ts` is proven to do. §8 now requires this proven per named pair
+(New-Booking↔Walk-in, New-Booking↔Block-Time, Walk-in↔Reschedule, Reschedule↔Block-Time) rather than
+inferred from each flow individually adopting "the `blocks.ts` pattern." **Parsers/aggregators
+(`functions/src/parsers/{booksy,fresha,treatwell,ical}.ts`) do not participate in this coordination
+at all** (no `runTransaction`, no `SLOT_CONFLICT` in that directory, §4.1) — named as an explicit,
+out-of-scope, un-hidden gap.
+
+**4) Owner-only override, approval validity, and audit design**
+
+Decided (§5, D3/D4): `owner`-only in v1, not `admin` (despite `admin` holding `PRIVILEGED_ROLES`
+parity with `owner` elsewhere, e.g. Block Time creation — that parity does not transfer here, by
+explicit owner instruction). **New open question from Phase 0** (§7.1 item 3): whether `superAdmin`
+bypasses this gate the way it bypasses every other privileged check in the codebase — recommendation
+given, decision still owed before Phase 1 writes the check. Approval validity: scoped to *the
+specific transaction and the specific conflicting record IDs shown at approval time* — re-running
+the write after new conflicts appear requires a fresh approval, not a carried-forward one (§5, D3).
+Audit: atomic (same transaction), on the `reassignBooking.ts:359-376` pattern, with actor/reason/
+target/conflicting-record-ids — exact shape in §7.1 item 4.
+
+**5) Canonical staff identity and legacy-record compatibility**
+
+Unchanged from §2/§2.1, re-confirmed, not re-litigated this pass: `barbers`/`staff` remain two
+separate identity systems (assignee schedulability vs. caller's login identity), and no
+write-migration is needed because `resolveBarberRef` (server) and `matchesBarber` (client) already
+resolve legacy name-keyed `barberId` values at read time, in production use today by
+`createWalkIn.ts`/`reassignBooking.ts`. Any new server enforcement for New Booking/Reschedule
+resolves through the same functions — this claim carries file:line evidence from the original pass
+and was not contradicted by anything found in Phase 0.
+
+**6) Phased implementation, meaningful acceptance tests, and release order**
+
+Revised from §7's original phase list given the above (order unchanged, content per-phase updated):
+
+- **Phase 1 — New Booking.** Carries the **full weight** of every new mechanism for the first time:
+  wire `surface:'staffApp'` with an explicit `barberId` (reuse, confirmed single-candidate-safe);
+  port (not call) a conflict-scan shaped like `blocks.ts`'s, with the new BLOCKED-exclusion branch;
+  wire leave via `rescheduleStaffGate`'s logic (reuse the pure function, new call site) replacing the
+  2026-06-29 guard per §5.2; write the novel `owner`-only auth check (pending the `superAdmin`
+  decision); write the audit entry; build the override-capture UI; remove the old dual
+  `window.confirm`. **Acceptance:** passive → hard refuse for every role incl. `owner`, no dialog;
+  leave outside a dated override → refuse for every role incl. `owner` (no generic confirm exists to
+  click through); leave inside a dated override → allowed; conflict/hours → refused by default,
+  `owner` override succeeds only with a reason and produces the exact audit shape from §7.1 item 4;
+  conflict against a `BLOCKED` record → refused for every role incl. `owner`, correct message, no
+  "mola" claim unless justified; legacy name-keyed `barberId` on the conflicting record still
+  resolves via `resolveBarberRef` (regression guard, §2.1); New-Booking-vs-New-Booking and
+  New-Booking-vs-Block-Time cross-flow race tests both pass.
+- **Phase 2 — Walk-in.** Reuses Phase 1's ported conflict-scan/BLOCKED-exclusion/leave-wiring/audit/
+  UI mechanisms once built (do not re-invent). **Grows in scope from the original "conflict-only"**
+  to **conflict + leave**, since §7.1 item 2 confirmed leave is entirely unenforced server-side here
+  today — passive was already the only dimension actually closed. **Acceptance:** same battery as
+  Phase 1, plus Walk-in-vs-New-Booking and Walk-in-vs-Reschedule cross-flow race tests.
+- **Phase 3 — Reschedule.** New callable (no existing staff-facing precedent), re-validating the
+  *already-assigned* barber's current passive/leave status (doesn't reassign) plus conflict/hours at
+  the new time — reuses `rescheduleStaffGate` for leave and Phase 1's conflict-scan port.
+  **Acceptance:** same battery, applied to a reschedule of an existing booking (own booking excluded
+  from its own conflict scan, per §5, D3's note); Reschedule-vs-Walk-in and Reschedule-vs-Block-Time
+  cross-flow race tests. Whether this callable also serves Admin's identically-gapped
+  `BookingDetailPanel` reschedule (§3.1) is a scope call for whoever owns Admin panel work, not
+  decided here.
+- **Phase 4 — Block Time.** Already correct for passive/conflict/race-safety; only change is
+  confirming D6's explicit leave-exclusion (no new check needed, verify no accidental leave-gate
+  gets added here). **Acceptance:** existing Block Time tests stay green; a targeted test confirms a
+  block CAN be added on a leave day (negative-of-the-other-three-flows regression guard).
+
+**Release order stays New Booking → Walk-in → Reschedule → Block Time** (smallest-precedented-first,
+per §6's original reasoning) — each phase is its own claim, its own deploy, its own owner
+verification, per the workspace's one-change-at-a-time discipline; this plan does not bundle them.
+
+**Item 6 (design note) — cross-flow race test harness, for §8's required pairs:**
+One parameterized emulator helper: given two `(callableName, payloadBuilder)` pairs targeting the
+same `barberId` and an overlapping `[startMs, endMs)` window, fire both via `Promise.all` against a
+running emulator, then assert exactly one resolves with a real `bookingId`/block id and the other
+resolves with `SLOT_CONFLICT` (or `BLOCKED_TIME_CONFLICT` where applicable). Parameterize the pair
+list with the four named pairs (§8) plus same-flow races already covered by existing tests (don't
+re-derive those). Reuse whatever harness `blocks.ts`'s own existing race test already uses for
+emulator setup/teardown rather than building a second one — Phase 1's implementer should locate that
+test file first (not located in this pass; a `find` for `blocks*.emulator.test` at Phase 1 start
+will locate it).
 **Phase 1 — New Booking → wire the existing engine (smallest, most precedented change)**
 - Point `NewBookingSheet.tsx` at a callable built on `createBookingCore` with `surface: 'staffApp'`
   instead of the legacy `createWalkInInner`/raw `addDoc`. This alone closes passive (D2) for New
