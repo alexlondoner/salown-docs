@@ -633,9 +633,15 @@ separate, not-yet-granted approval** and nothing in this section has been releas
    test) and proven race-safe **against a concurrently-created Block Time** for the same
    barber/slot (new cross-flow test, §9.2 #22) — genuine Firestore transaction contention, not two
    independent writes. It is explicitly **not** claimed race-safe against Walk-in or Reschedule
-   (neither is wired to this coordination yet — Phases 2-3) nor against parser/aggregator writers
-   (§4.1, permanently out of scope). §7.2's per-phase acceptance table is the source of record for
-   which pairs are proven and which remain open.
+   (neither is wired to this coordination yet — Phases 2-3). Parser/aggregator writers
+   (`functions/src/parsers/{booksy,fresha,treatwell,ical}.ts`, §4.1) are **not migrated onto this
+   coordination within this plan's scope — this is a residual, standing race risk, not a
+   permanent architectural exemption.** Concretely: a parser import and a Staff App write for the
+   same barber/instant can still both land, because the parser side never reads the conflict query
+   inside a transaction. No system-wide conflict-freedom guarantee is made or implied while this
+   gap stands; closing it (or accepting it by an explicit, named product decision) is undecided and
+   out of this plan's phases, not resolved by omission. §7.2's per-phase acceptance table is the
+   source of record for which pairs are proven and which remain open.
 5. **The callable-bypass gap is real, measured, and NOT closed this session.**
    `firestore.rules:510-514` (`match /bookings/{docId}`, `allow create`) lets **any authenticated
    member of the tenant** (`isTenantAny(tenantId)`) write a booking document directly via the
@@ -672,34 +678,116 @@ separate, not-yet-granted approval** and nothing in this section has been releas
 
 | Suite | Result |
 |---|---|
-| Functions emulator gate (`ops/test-emulator.sh`, both phases) | **656/656 pass** |
+| Functions emulator gate (`ops/test-emulator.sh`, both phases) | **660/660 pass** |
 | Functions unit tests (`functions && npm test`, no emulator) | **2683/2683 pass** |
 | Frontend vitest (`npm test`) | **5530/5530 pass** |
 | `tsc --noEmit` (functions + frontend) | **0 errors** |
 | `eslint` (changed files) | **0 errors** |
-| Local Chrome / live UI walk-through | **NOT DONE — see below, not fabricated** |
+| Local Chrome / live UI walk-through | **DONE — §9.6, full round** |
+| Real Auth-token → HTTP → Firestore document verification | **DONE — §9.6, 26/26 checks** |
 
-**Why no browser verification:** `salownCreateStaffBooking` is not deployed to `havuz-44f70`.
-A local dev server (`npm run dev:staff`) talks to the LIVE Firebase project (no
-emulator-connection wiring exists in `src/firebase.js`), so calling this callable from a real
-browser session today would 404 — there is nothing to click through yet. The codebase's own
-precedent for exactly this situation (`STAFF-SLOT-INTERVAL`'s Reschedule off-grid behaviour, this
-document's own handoff history) is emulator-integration + source-scan verification instead of a
-live click-through, which is what §9.3's other rows are. Live/Chrome verification is owed **after**
-a Phase 1 deploy is approved and executed, not before.
+Live/Chrome and real-Auth-token verification were completed in a follow-up round after this
+document's own review flagged that trigger-log evidence alone does not prove booking/audit
+*content*, and that a hand-built `PrivilegedContext` in a unit test does not exercise the real
+Auth → callable → role-re-read chain. See §9.6 for what was actually run and what it proved.
+
+### 9.6 Round-2 verification — real Auth tokens, real Firestore documents, real Chrome (2026-09-12)
+
+Owner review after §9.1-§9.5 identified two evidence gaps: trigger-log firing proves a write
+happened, not that it wrote the *right* content; and a hand-built `PrivilegedContext` object
+(the unit/emulator test style) proves the core's transaction logic, not the real
+`request.auth` → verified-ID-token → `token.tenantId` → role-re-read chain a browser actually
+exercises. Both are closed here, plus the Chrome UI checks §9.3 previously could not complete.
+
+**Track A — no browser, three emulators (firestore+auth+functions), a throwaway rehearsal script
+(seeded, run, deleted, not committed) driving REAL HTTP calls with REAL Auth-emulator ID tokens:**
+
+| # | Check | Result |
+|---|---|---|
+| 1 | Bare `superAdmin` claim, no staff doc under the acting tenant, real ID token → override attempt | `PERMISSION_DENIED` before override logic is ever reached |
+| 2 | Non-owner `staff` real token, non-owner `admin` real token → override attempt | both `OVERRIDE_REQUIRES_OWNER` — confirms `admin` ≠ `owner` for this gate via the real HTTP wrapper, not just the core |
+| 3 | Genuine owner (real token, `staff/{uid}.role==='owner'`) vs a `BLOCKED` record | `BLOCKED_TIME_CONFLICT`; **zero** audit docs written for the refusal |
+| 4 | Conflict-changed re-approval, two real sequential HTTP calls with a genuine Firestore write in between | stale ack → `CONFLICT_ACK_REQUIRED` with the real current ids; fresh ack with those ids → succeeds |
+| 5 | Owner override success — **booking + audit DOCUMENT CONTENT**, not trigger logs | booking: correct `barberId`/`barberName`/`status`/`source`/exact `startTime`; audit: `actor.uid` is the real owner uid from the verified token, `actor.role==='owner'`, `meta.reason` is the exact typed text, `meta.dimensions.conflictingRecordIds` matches exactly what was acknowledged, `target.docId` points at the exact booking |
+
+26/26 checks passed. This is the auth-chain + document-content evidence §9.1's original claims
+lacked — verified, not merely asserted.
+
+**Track B — real Chrome, real Vite dev server, the SAME three emulators, `src/firebase.ts`
+temporarily pointed at them (reverted before this session ended, never committed), driving the
+ACTUAL `NewBookingSheet.tsx` through the ACTUAL `salownCreateStaffBooking` callable:**
+
+| # | Check | How proven |
+|---|---|---|
+| 1 | `BLOCKED` collision → **no override offered**, for owner | `window.prompt` was stubbed to *record* calls, not suppress them — zero calls recorded (`window.__promptCalls === []`); Firestore confirms no booking was created |
+| 2 | **Form data preserved after a refused submit** | the SAME screenshot proving (1) also shows client name/phone/date/time/service/barber all still populated — the sheet does not clear or close on a denial |
+| 3 | Conflict-changed re-approval, live in the browser | the prompt stub injected a genuinely NEW conflicting booking (via a synchronous Firestore REST write) between the first prompt and the resubmission; the app's own `tryOverride` correctly caught `CONFLICT_ACK_REQUIRED` and re-prompted with the exact second message string (`"The conflict just changed. Enter a reason to try again:"`); the resulting booking's audit doc records `conflictingRecordIds` for **both** the original and the newly-injected record |
+| 4 | Non-owner (`staff`) denial, live in the browser | prompt was shown (any role sees it, by design) with the exact `overrideConflictPrompt` text; after resubmission the sheet stayed open, form data intact, Firestore confirms no booking was created |
+
+Admin-in-Chrome specifically was not re-run as a fifth Chrome pass — Track A already proved
+`admin` real-token denial via the real HTTP wrapper (item 2 above), and the Staff Chrome pass
+(item 4) already exercises the identical non-owner code path and prompt/denial UI; repeating the
+same UI behaviour a second time for a second non-owner role was judged low marginal value against
+this machine's memory constraints (below).
+
+**A note on the environment, not the feature:** getting Track B running took several failed
+attempts, entirely due to Chrome-automation/environment issues, not the product code:
+`src/firebase.ts` originally pointed the emulator wiring at the wrong Firestore *project id*
+(`havuz-44f70` instead of `demo-c1`, so the seeded data was invisible); the on-screen
+"Alex" chip resolved, via naive DOM text search, to a **hidden duplicate** rendered by the
+always-mounted Walk-in tab, not the visible Appointment tab's own chip (fixed by filtering for
+`getBoundingClientRect().width > 0`); and the machine ran out of memory once, killing the
+Functions+Auth+Firestore emulator trio and the Vite dev server mid-session (66-75MB free,
+`vm_stat`/`top`-confirmed) — cleanly restarted afterward rather than retried blindly. None of
+this reflects on `createBooking.ts`/`NewBookingSheet.tsx`; it is recorded so a future session does
+not waste time rediscovering the same three traps.
+
+**Cleanup confirmed:** `src/firebase.ts` reverted (`git status` clean), both throwaway rehearsal
+scripts deleted (not committed), `functions/.secret.local` restored, all emulator/dev-server
+processes stopped. Nothing from this round was deployed.
 
 ### 9.4 Remaining gaps — named, not hidden
 
-- **`firestore.rules` callable-bypass** (§9.1 item 5) — open, needs its own review + deploy, in the
-  migration order stated there.
+- **`firestore.rules` callable-bypass — owner review 2026-09-12: this is now a STATED CLOSING
+  CRITERION of STAFF-AVAIL-GAP, not an out-of-scope footnote.** STAFF-AVAIL-GAP is not considered
+  fully enforced — regardless of how many of Phases 1-4 ship — while `isTenantAny(tenantId)` still
+  lets any authenticated tenant member bypass every callable this plan builds. Measured, not
+  assumed: the SAME bypass exists on **both** rule branches that matter here —
+  `match /bookings/{docId}` `allow create` (`firestore.rules:512`, relevant to New Booking/Walk-in)
+  **and** `allow update` (`firestore.rules:533`, relevant to Reschedule) — so Reschedule's eventual
+  Phase 3 callable is exposed to the identical gap New Booking has today, and Admin's own
+  `BookingDetailPanel` reschedule (§3.1, platform-wide, still raw `updateDoc`) is exposed to it too.
+  **Migration plan (stated, not executed — rules are not touched by this plan until every step below
+  is true):**
+  1. Confirm every legitimate CLIENT-SDK writer to `bookings` create/update is on a
+     D1-D7-enforcing callable: New Booking ✅ (this Phase 1), Walk-in (Phase 2, conflict+leave),
+     Reschedule — **both** Staff App's and Admin's (Phase 3 would need to cover both, or Admin's
+     stays a named, accepted exception, decided explicitly, never left ambiguous).
+  2. Confirm no OTHER client still calls the old raw-write path (a cached old bundle is the
+     realistic risk, not a new caller — Staff/Admin hosting versions should be checked, not
+     assumed, before narrowing).
+  3. Only then does `isTenantAny(tenantId)` on these two branches become a rules-review task —
+     its own, separately-approved, separately-deployed change (§9.5 step 3), sequenced LAST because
+     a rules deploy has no partial-apply: narrowing it while any legitimate client still uses the
+     old path breaks that client outright.
+  **Out of this plan's scope, confirmed separately:** the SAME `allow create` rule's *anonymous*
+  branch (public/customer bookings) is a **different, already-planned** effort
+  (`STAFF-START-AUTHORITY-A1`, `docs/RELEASE_MANIFEST_A1.md` phase 1) — that manifest's Firestore
+  rules phase touches the same file for a different branch of the same rule block. Whoever
+  sequences either rules change should read both plans first; this plan does not merge into that
+  one or vice versa.
 - **Walk-in, Reschedule, Block Time** (Phases 2-4) — untouched. Walk-in in particular now has a
   **confirmed** (not just suspected) zero server-side leave check (§7.1 item 2) that Phase 2 must
   close alongside its originally-scoped conflict gap.
-- **Parser/aggregator writers** — still outside all of this coordination (§4.1), permanently
-  out of scope for this plan, named so it is never silently assumed covered.
+- **Parser/aggregator writers are NOT migrated onto this coordination within this plan's scope —
+  a standing, residual race risk, not a permanent exemption.** (§4.1/§9.1 item 4). A parser import
+  and a Staff App write for the same barber/instant can both still land. No claim of system-wide
+  conflict-freedom is made while this stands; whether/when to close it is an undecided, separate
+  product question, not resolved by this plan.
 - **Cross-flow race proof is partial** — New-Booking-vs-New-Booking and New-Booking-vs-Block-Time
   are proven; New-Booking-vs-Walk-in and New-Booking-vs-Reschedule cannot be tested until those
-  flows exist on the same coordination (Phases 2-3).
+  flows exist on the same coordination (Phases 2-3); the parser/aggregator gap above is a third,
+  separate axis not covered by any phase's acceptance criteria.
 - **Unrelated cross-cutting finding:** `salownCreateStaffBooking` is now an eighth consumer of
   `createBookingCore`, an entry point `docs/RELEASE_MANIFEST_A1.md` (`STAFF-START-AUTHORITY-A1`,
   hash-pinned 2026-08-14, a **separate, already-planned release this task did not open**) tracks as
