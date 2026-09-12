@@ -1,6 +1,21 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
 
+## R-2026-09-11-F — `STAFF-NOTIF-IOS-PWA-P2`: title/body moved into `webpush.notification` · 1-unit release (`functions:salown`, 2 functions) · **ARTIFACT_VERIFIED (revision identity only) · DEVICE-UNPROVEN**
+
+| Field | Value |
+|---|---|
+| **Recorded** | **Retroactively on 2026-09-12**, by a different session than the one that deployed, from commit + `SYNC.md` + Hosting/Functions/Cloud Run API evidence. The letter suffix is the RECORDING order, not the chronological one: this release is the LAST of 2026-09-11 (after `R-2026-09-11-C`). Fields that the deploying session did not record and that cannot be reconstructed read-only are marked `UNKNOWN` |
+| **Work item** | The same-day `STAFF-NOTIF-IOS-PWA` fix (`R-2026-09-11-E`) set a top-level `notification: { title, body }` but its sibling `webpush.notification` block carried only `icon/tag/renotify`. Per the Firebase Admin SDK Messaging contract, for Web Push clients `webpush.notification` **overrides** the top-level `notification` — so the payload delivered to the Safari PWA had no title and no body, and iOS rendered nothing. Matches the observed `successCount=1` + silent-device pattern across three bookings (10:58, 11:55, 12:00 UTC) |
+| **Source SHA** | **`dc0f6ae`** (`functions/src/notifications/index.ts` + `functions/src/notifications/fcmPush.test.js`; claim `2e6418b`, claim release + SYNC `5b0c5b9`, all `[skip ci]`). Deployed by the **macbook** session (`macbook/ios-webpush-title`) |
+| **Deployed unit** | `functions:salown` ONLY, two functions, via `./scripts/deploy-functions.sh salownNotifyBookingPush salownNotifyBookingConfirmedPush` (namespace guard confirmed a single target). No hosting, rules, indexes or Storage |
+| **Live identity** | `salownNotifyBookingPush` revision `salownnotifybookingpush-00039-wum` → **`-00040-qit`** · `salownNotifyBookingConfirmedPush` revision `-00039-nev` → **`-00040-jil`**. Both europe-west2, gen2, state `ACTIVE`, function `updateTime` `2026-09-11T14:08:23.438Z` / `…471Z` (revision createTime `14:08:08.973Z` / `14:08:12.961Z`) |
+| **⚠️ Timestamp correction** | `SYNC.md`'s heading for this release reads "14:20 UK". The API is authoritative: `14:08:23Z` = **15:08 UK**. The SYNC heading is wrong in both directions (neither the UTC nor the UK reading matches it) |
+| **Rollback identity** | **No useful rollback.** The previous revisions (`-00039-*`) are the ones that shipped the empty-payload bug, and the revision before that (`e4ac115` lineage) was data-only, which iOS also refuses to display. Rolling back does not restore a working iOS state — the only path is forward. The Cloud Run revisions exist (`-00039-wum`, `-00039-nev`) if a traffic-level revert is ever wanted, but the team's practice for functions is a code-based redeploy |
+| **Verification — from the DEPLOYED ARTIFACT** | Revision identity + `ACTIVE` state, re-read from the API on 2026-09-12 (above). **The payload shape itself is NOT verified in production** — proving it would require sending a real push. Source-level evidence only: `fcmPush.test.js` now asserts `webpush.notification.title` AND `.body` are present (deploying session reported 22/22 green at `dc0f6ae`) |
+| **Blast radius — measured at recording time** | `hosting:salown` `c389253b23bb981b` and `hosting:salown-staff` `48282d9b843c630b` unchanged · Firestore ruleset `5e102dd4-…` unchanged · Storage ruleset `4c00eef7-…` unchanged · 122 functions total, only these two moved (next most recent `updateTime` is `salownSetStaffRole`, 2026-09-10) |
+| **Why NOT `LIVE_VERIFIED`** | No device test has happened. Promotion requires the HeroHairs owner to take a real booking push on the iPhone (iOS 18.7 PWA) and see title + body on the OS notification shelf |
+
 ## R-2026-09-11-C — `STAFF-SLOT-INTERVAL`: all 4 Staff manual time pickers unified to 5-min steps · 1-site release (`hosting:salown-staff`) · **LIVE_VERIFIED (bytes + live picker inspection)**
 
 | Field | Value |
@@ -34,6 +49,20 @@
 | **Gates** | Main tree: `tsc --noEmit` 0 · `eslint src/pages/Settings.tsx` 0 · vitest 5492/5493 — the single failure is `src/staff/lib/staffTimeContract.test.ts`, carrying another session's UNCOMMITTED edits (it passes on a clean `HEAD` archive). Repo-wide `eslint .` is red and was equally red before the change (identical output with and without it). `npm run build` + `build:staff` 0 |
 | **Read-only production check** | Staff docs across all 8 tenants: the super-admin's uid holds an owner staff doc **only** in `whitecross` (created 2026-05-12). No stray owner record from this button in any other salon. Nothing changed |
 
+## R-2026-09-11-E — `STAFF-NOTIF-IOS-PWA`: hybrid notification+data push so iOS Safari PWAs display at all · 2-unit release (`hosting:salown-staff` + `functions:salown`) · **ARTIFACT_VERIFIED · DEVICE-UNPROVEN · partly superseded by `R-2026-09-11-F`**
+
+| Field | Value |
+|---|---|
+| **Recorded** | **Retroactively on 2026-09-12**, by a different session than the one that deployed, from commit + `SYNC.md` + Hosting/Cloud Run API evidence. Letter suffix = recording order; chronologically this release sits between `R-2026-09-11-A` (09:39Z) and `R-2026-09-11-B` (11:42Z) |
+| **Work item** | Every `salownNotifyBookingPush` call reported `successCount=1` while the HeroHairs owner's iPhone (iOS 18.7, PWA) showed nothing. Cause: `e4ac115` (INC 2026-07-30 push recovery) had deliberately made the payload **data-only** on the principle "the SW is the single display source" — correct for Chrome, but the Apple Web Push spec will not display a push that has no `notification` block. New contract: hybrid payload (`notification` + `data` + `webpush.notification.tag`) plus a service-worker dedup so Chrome does not double-render |
+| **Source SHA** | **`1b46e3a`** (server `sendFcmPush` + `public-staff/sw.js`; claim `77aba3e`, claim release + SYNC `f2b6b84`, all `[skip ci]`). Deployed by the **macbook** session (`macbook/staff-notif-ios-pwa`) |
+| **Deployed units** | (1) `hosting:salown-staff` via `firebase deploy --only hosting:salown-staff`; (2) `functions:salown` two functions via `./scripts/deploy-functions.sh salownNotifyBookingPush salownNotifyBookingConfirmedPush`. **Deploy order was deliberate: SW first** (it can handle both payload shapes), **server second** |
+| **Live identity** | site `salown-staff` `76a2a7b98eeb9b78` → **`f00f44ac77279b98`** · release `1789119967751000`, releaseTime `2026-09-11T09:46:07.751Z` (version createTime `09:46:02.035Z`) · functions `salownnotifybookingpush-00038-qar` → **`-00039-wum`** (`09:47:55.307Z`) and `salownnotifybookingconfirmedpush-00038-xil` → **`-00039-nev`** (`09:47:58.761Z`) |
+| **Rollback identity** | Hosting: **`76a2a7b98eeb9b78`** (`R-2026-09-11-D`), one console operation. Functions: **code-based redeploy only** — and see `R-2026-09-11-F`: rolling these functions back does not restore a working iOS state |
+| **Verification — from the DEPLOYED ARTIFACT** | Deploying session: `salown-staff.web.app/sw.js` served the dedup guard; the staff JS bundle was unchanged (only `sw.js` swapped), `staff-CLriqZe3.js` still served; functions listed post-deploy as europe-west2 gen2 `Successful update operation`. **Re-verified independently 2026-09-12:** `staff.salown.com/sw.js` carries `if (payload.notification) return` (line 25) and the per-booking `tag: new-booking-${bookingId}` (line 34), sha256 `a3e63fb492f3ac4600972b55b644de08d85c3178f520467f90996c5a51b7218f`. ⚠️ Scope of that re-read: the live site is now version `48282d9b843c630b` (`R-2026-09-11-C`), which **preserved** this `sw.js` — so it evidences the SW contract surviving, not the `f00f44ac…` bytes themselves, which are no longer served |
+| **Blast radius** | `UNKNOWN` — the deploying session recorded no pre/post snapshot of the other hosting sites, rules or indexes. What is known: `hosting:salown` was independently re-read as unmoved during `R-2026-09-11-B` two hours later, and the JS bundle on the staff site did not change in this release |
+| **Why NOT `LIVE_VERIFIED`** | No device test. And the fix was **incomplete**: `webpush.notification` silently overrode the top-level block, so the iOS payload still had no title or body until `R-2026-09-11-F`. The SW half (`sw.js` dedup) remains live and correct |
+
 ## R-2026-09-11-A — panel release: `A5 T-e` path 3, flag flip · 1-site release (`hosting:salown`) · **ARTIFACT_VERIFIED (byte-identical), BEHAVIOUR_UNPROVEN**
 
 | Field | Value |
@@ -47,6 +76,20 @@
 | **Blast radius — measured** | One site, one boolean. No functions, rules, or indexes touched. Concurrent `STAFF-NOTIF-CLICK-FIX` release on `hosting:salown-staff` from another device did not interfere (different target) |
 | **Why NOT `LIVE_VERIFIED`** | The Staff tab is now reachable, but no actual role-change write has been exercised through it yet — pending a live test with a throwaway staff account (not a real employee, not `durvezek@`/`alex2ayyildiz3@`) |
 | **Follow-up** | Live-verify one role change at herohairs through Settings → Staff with a disposable test account, then promote |
+
+## R-2026-09-11-D — `STAFF-NOTIF-CLICK-FIX`: notification tap opens the tapped booking · 1-site release (`hosting:salown-staff`) · **ARTIFACT_VERIFIED (as recorded by the deploying session) · BEHAVIOUR_UNPROVEN**
+
+| Field | Value |
+|---|---|
+| **Recorded** | **Retroactively on 2026-09-12**, by a different session than the one that deployed, from commit + `SYNC.md` + Hosting API evidence. Letter suffix = recording order; chronologically this is the **first** release of 2026-09-11, before `R-2026-09-11-A` |
+| **Work item** | Tapping a push notification brought the Staff App to the foreground but did not open the tapped booking. The foreground `OPEN_BOOKING` handler listened on `window.addEventListener('message', …)`; a service worker's `Client.postMessage` is delivered to `ServiceWorkerContainer`, so the listener never fired. Fix: listen on `navigator.serviceWorker` |
+| **Source SHA** | **`362535f`** (claim `ef928ec`, claim release + SYNC `ecc3e89`, all `[skip ci]`). Deployed by the **macbook** session (`macbook/staff-notif-click-fix`), with owner approval recorded in `SYNC.md` |
+| **Deployed unit** | `hosting:salown-staff` ONLY, via `firebase deploy --only hosting:salown-staff --project havuz-44f70` |
+| **Live identity** | site `salown-staff` `d0ec217095bdda67` → **`76a2a7b98eeb9b78`** · release `1789116541222000`, releaseTime `2026-09-11T08:49:01.222Z` (version createTime `08:48:55.084Z`) |
+| **Rollback identity** | **`d0ec217095bdda67`** (`R-2026-09-10-D`, released 2026-09-10T15:23:02.978Z). Console → Hosting → site `salown-staff` → Release history → that version → ⋮ → Roll back |
+| **Verification — from the DEPLOYED ARTIFACT** | As recorded by the deploying session: `salown-staff.web.app` served `/assets/staff-CLriqZe3.js`, hash-identical to its local build. **Not independently re-verifiable now** — two later releases (`E`, `C`) have replaced that version; the live bundle today is `/assets/staff-DoJ4t4_o.js`. Also recorded: the tracked `hosting/staff-bundle/` artefact was reconciled in the same commit (stale since 2026-08-28 `REL-R2-A`) — a partial payment on the REL-1 debt |
+| **Blast radius** | `UNKNOWN` — no pre/post snapshot of other sites, functions, rules or indexes was recorded. A concurrent `hosting:salown` release (`R-2026-09-11-A`) that morning independently confirmed this site sitting at `76a2a7b98eeb9b78`, which corroborates the target was correctly scoped |
+| **Why NOT `LIVE_VERIFIED`** | No owner tap test. It is also gated by a second defect: until `R-2026-09-11-F`, iOS displayed no notification at all, so there was nothing to tap on the device where this was reported |
 
 ## R-2026-09-10-F — panel release: `A5 T-e` path 3 + `STAFF-CLIENT-CREATE` panel half · 1-site release (`hosting:salown`) · **ARTIFACT_VERIFIED (byte-identical), BEHAVIOUR_UNPROVEN**
 
