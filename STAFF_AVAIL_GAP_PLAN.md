@@ -1,8 +1,10 @@
 # STAFF_AVAIL_GAP_PLAN.md — availability/conflict enforcement decision + plan
 
-> Work ID `STAFF-AVAIL-GAP` (ROADMAP.md §4, `CONFIRMED_OPEN`). Surfaced 2026-09-11 while auditing
-> `STAFF-SLOT-INTERVAL`'s save chains — **not caused, not fixed, by that release.** This document is
-> research + a decision proposal only. **No code changed, nothing deployed, as of this writing.**
+> Work ID `STAFF-AVAIL-GAP` (ROADMAP.md §4). Surfaced 2026-09-11 while auditing
+> `STAFF-SLOT-INTERVAL`'s save chains — **not caused, not fixed, by that release.** Sections 1-4
+> are research; **§5's D1-D7 decision table was FINALIZED by the owner on 2026-09-12** (see §5-§5.2
+> for the decisions and §7 for what Phase 0 covers). **No code changed, nothing deployed, as of this
+> writing — implementation and deploy are separate approvals, not granted by this document.**
 > Out of scope: WhatsApp (B7), Path 4 (`A5 T-e`, owner decision on binding a `superAdmin` claim to a
 > tenant — its completion report is not in this document and is **not assumed closed** here).
 
@@ -137,49 +139,163 @@ write lands.
 existing, working, deployed implementation in this codebase**, and it already has a partial start
 inside `createWalkIn.ts`.
 
+### 4.1 Which writers actually participate in this coordination today — measured, not assumed
+
+`grep -rl 'runTransaction'`/`grep -rl 'SLOT_CONFLICT'` across `functions/src/bookings/`:
+
+| Writer | Transactional? | Conflict-checked? |
+|---|---|---|
+| `createBooking.ts` (Admin New Booking, `createBookingCore`) | Yes | Yes (`SLOT_CONFLICT`) |
+| `blocks.ts` (Block Time) | Yes | Yes (`SLOT_CONFLICT`) |
+| `createWalkIn.ts` (Staff Walk-in) | Yes (skeleton exists) | **No** — explicitly skipped, "legacy parity" (§4) |
+| `reassignBooking.ts` | Yes | Not verified this pass — out of scope for this plan, flagged only |
+| Staff New Booking (`NewBookingSheet.tsx` → `createWalkInInner`) | No — raw client write | No (client soft-confirm only) |
+| Staff Reschedule (`RescheduleSheet.tsx`) | No — raw `updateDoc` | No |
+| **Parsers** (`functions/src/parsers/{booksy,fresha,treatwell,ical}.ts`) | **No** — no `runTransaction` anywhere in this directory | **No** — no `SLOT_CONFLICT` anywhere in this directory |
+
+**The parser gap is real and out of this plan's scope, but must be named, not hidden.** Every one
+of D1/D3/D7's new transactions will still correctly see an already-written parser-imported booking
+(the conflict query scans the whole `bookings` collection by time range, regardless of who wrote
+it) — so a *Staff App* write racing against an *existing* parser import is caught. What is **not**
+caught: two concurrent parser imports for the same slot (aggregator-side dedup is assumed, not
+verified here), and a parser import racing against an *in-flight* Staff App transaction landing in
+the same instant (the parser write itself never reads the conflict query, so it cannot be blocked
+by, or itself detect, a same-instant Staff App write). This plan does not propose fixing the parser
+side — it is a materially different writer (webhook/poll-driven, no interactive user to show a
+conflict dialog to) — but Phase 0's acceptance criteria (§7) require this table to be published so
+"race-safe" is never reported as platform-wide when it is Staff-App-and-Admin-only.
+
 ---
 
-## 5. Decision table
+## 5. Decision table — FINALIZED 2026-09-12 (owner decisions below; no code/deploy yet)
 
-| # | Question | Current state | Proposed direction | Type |
+| # | Question | Current state | **Final decision** | Type |
 |---|---|---|---|---|
-| D1 | Should New Booking and Reschedule get server-side enforcement at all? | Neither has any (raw Firestore writes, no callable) | Yes — route both through `createBookingCore`-family logic (New Booking: wire the existing `surface:'staffApp'` path; Reschedule: needs new work, since no reschedule-guard is reachable from any staff-facing surface today) | **Gap → decision needed** |
-| D2 | Passive barber — absolute stop everywhere? | Already the documented principle (PASSIVE-AUTHORITY-R3, "nothing overrides it"); already enforced HARD server-side for Walk-in, Block Time, Admin New Booking; **not** enforced anywhere for Staff New Booking/Reschedule | Close the gap so R3 actually holds everywhere it claims to — this is finishing a decision already made, not making a new one | **Gap, not a new decision** |
-| D3 | Conflict — reject by default, or stay staff-overridable? | Comment convention across Admin+Staff says overlaps "can be legitimate" (soft, overridable) — **except** Block Time (hard, no override) and, apparently, Admin's own server layer (hard, per `createBookingCore`'s codes, contradicting its own client's soft confirm — needs verification, §3.1) | Adopt "reject by default; an authorized, logged override is a separate, explicit action" — this is a **real behavior change** from today's default-overridable client confirm, not a gap-close. Directly relevant: `[[project_squeeze_in_origin]]` — controlled overlap ("squeeze-in") is an intentional, evolving product feature, so a blanket hard-reject with no override path would regress it. The override must be a real designed feature, not the removal of squeeze-in | **New decision, with a named product dependency** |
-| D4 | Outside working hours — warn or block? | Least decided dimension: Admin soft-confirms server-hard-rejects (per §3.1's open question); Staff New Booking shows a display-only warning that doesn't even block submit; Walk-in/Reschedule have nothing | Needs an explicit choice; recommend matching whatever D2/D3 lands on for consistency, but this is genuinely open, not a "finish the existing decision" case like D2 | **New decision** |
-| D5 | Break (mola) | Not a separate mechanism — already unified with conflict via `BLOCKED`-status bookings | No separate decision needed — whatever D3 decides for conflict automatically covers breaks, since they're the same document type | **Resolved by D3** |
-| D6 | Leave (izin) | Existing soft/explicit-ask pattern for New Booking (2026-06-29 incident fix); nothing for Reschedule/Block Time; Walk-in evidence insufficient | Recommend preserving the existing soft/explicit-ask contract (it was a deliberate incident fix, not an oversight) rather than tightening to hard — unless the owner wants to revisit that 2026-06-29 decision itself | **Preserve existing decision, extend its reach** |
-| D7 | Race safety | Only Block Time is race-safe today | Close for whichever of New Booking/Walk-in/Reschedule gets server enforcement under D1, using the `blocks.ts` pattern | **Gap, mechanical once D1 is decided** |
+| D1 | Should New Booking and Reschedule get server-side enforcement at all? | Neither has any (raw Firestore writes, no callable) | **Yes.** Route both through `createBookingCore`-family logic (New Booking: wire the existing `surface:'staffApp'` path; Reschedule: needs new work). Deciding D1 does **not** pre-approve D3/D4's policy — those are decided independently below, not implied by "moving server-side" | **DECIDED** |
+| D2 | Passive barber — absolute stop everywhere? | Already the documented principle (PASSIVE-AUTHORITY-R3); HARD for Walk-in/Block Time/Admin New Booking; **not** enforced for Staff New Booking/Reschedule | **HARD, everywhere, no override — ever.** Closes as part of D1's implementation | **DECIDED** |
+| D3 | Conflict — reject by default, or stay staff-overridable? | Client soft-confirm today, no role gate, no record (§3.1) | **Reject by default.** `owner`-only override in v1 (see §5.2 — not `admin`, no new role/permission system). Override is scoped to *that specific transaction and the specific conflicting records shown* — it does not carry forward, and does not extend to passivity, leave, working-hours, or a `BLOCKED` (mola/Block Time) record (see §5.1). Actor/reason/target/conflicting-record-ids audited in the same transaction, on the `reassignBooking.ts:359-376` pattern | **DECIDED** |
+| D4 | Outside working hours — warn or block? | Admin soft-confirms, server hard-rejects (contradiction, §3.1, still unverified); Staff New Booking shows a display-only warning that doesn't block submit; Walk-in/Reschedule have nothing | **Reject by default**, independent of D3 (a staff member taking one more client past shift end is not the same failure as double-booking one slot). `owner`-only override, same audit shape as D3. Hours computed from the barber's **effective shift**, not a blanket salon closing time; the existing 15-minute controlled-overflow allowance is preserved and does not itself require an override. An hours override does **not** cross into passivity, mola, or leave — each dimension needs its own separate approval if more than one is violated | **DECIDED** |
+| D5 | Break (mola) | Not a separate mechanism — unified with conflict via `BLOCKED`-status bookings; today's conflict scan (`blocks.ts:286-299`) does not distinguish a `BLOCKED` record from a real booking | D3's override **must not** reach a `BLOCKED` record — see §5.1 for the required behavior and why this needs new logic, not just D3's transaction reused as-is | **Resolved by D3, with a named implementation requirement (§5.1)** |
+| D6 | Leave (izin) | 2026-06-29's `NewBookingSheet.tsx` guard conflates passive+leave in one ungated `window.confirm` (§3.1, §5.2); the actual dated-window leave contract (`status:'leave'` + `leaveFrom/leaveUntil` + "explicit shift override beats leave", owner 2026-07-14) already exists in `staffEligibility.ts` but is wired only to the public-link reschedule gate | Apply the **existing** dated-leave contract — unchanged in its own terms — to **New Booking, Walk-in, and Reschedule only**. **Block Time is excluded**: creating a block is not a customer booking, so adding a block on a leave day is not automatically forbidden, and Block Time's existing passive/conflict protections are untouched. A plain booking confirmation must never itself alter the leave record or the shift; only the existing explicit, dated shift-override can beat leave | **DECIDED — corrects the draft table's earlier over-broad wording** |
+| D7 | Race safety | Only Block Time is race-safe today (§4.1) | Each flow that gets server enforcement under D1 must **prove** — via a cross-flow concurrency test, not by inspection — that it shares transaction coordination with the other flows for the same barber/time (§8). "Uses the `blocks.ts` pattern" is necessary but not sufficient; parser/aggregator writers do not participate and that gap is named, not hidden (§4.1) | **DECIDED — with a proof obligation, not a mechanical close** |
+
+### 5.1 Mola / Block Time conflict — required behavior (new logic, does not exist today)
+
+Per D3/D5: an override must never let a New Booking/Walk-in/Reschedule write land on top of an
+existing `BLOCKED` record (a mola or an admin/staff Block Time). Today's `blocks.ts:286-299` scan
+does not distinguish `BLOCKED` from a real booking, so this is **new branching logic**, not a reuse
+of the existing query as-is.
+
+- If **any** conflicting record in the scanned range has `status === 'BLOCKED'`, the write is
+  **refused outright, with no override path offered at all** — not even to `owner`. The UI must
+  show an explicit message, not a silent rejection:
+  *"Seçilen saat mola veya bloke edilmiş zamanla çakışıyor. Başka bir saat seçin."*
+- **Mixed conflict** (the scanned range contains both a real booking and a `BLOCKED` record):
+  no override either — the presence of any `BLOCKED` record voids the override path for the whole
+  request, not just for that one record.
+- **Do not label a `BLOCKED` record as "mola" unless the data actually says so.** `blocks.ts:303-315`
+  writes `blockKind` on every block; only surface "mola" in the user-facing message when the
+  colliding record's `blockKind` (or equivalent field) indicates a break. A `BLOCKED` record without
+  that signal should read as a generic blocked/reserved time, not be asserted as a break the data
+  doesn't confirm.
+- Block Time's own creation path keeps its existing hard, non-overridable passive+conflict
+  protection unchanged — D3's override never applies to Block Time as the *actor*, only concerns
+  whether Block Time (or a break) can be the *target* an override tries to write over.
+
+### 5.2 What this changes about the 2026-06-29 decision — scope of the update
+
+`NewBookingSheet.tsx:260-283`'s existing guard is a **single** `window.confirm`, reached by any
+staff member, gating an **"off-day"** concept that today conflates at least passive and leave (§3.1
+already flagged this imprecision; this pass confirms it in the actual code, not just by inference),
+plus a **separate** second `window.confirm` for time conflict, also ungated and unrecorded.
+
+That single mechanism is being **replaced by two independent, differently-governed checks**, not
+tightened uniformly:
+- **Passive** → HARD, no override, no dialog at all (D2). This is a real behavior change from
+  today: a passive barber currently can be booked past with one click; after this change, no staff
+  member — including `owner` — can.
+- **Leave** → governed **only** by the existing dated shift-override contract (D6, §5.2 above),
+  evaluated server-side. The generic `window.confirm` that lets *any* staff member click through a
+  leave day disappears; a leave day can now only be booked if the specific date already has an
+  explicit shift override on record. This is a real behavior change: today's "ask and let the person
+  booking decide" becomes "only a pre-existing, dated exception decides."
+- **Conflict** (the second, separate `window.confirm` in the same file) → replaced by D3's
+  reject-by-default + `owner`-only logged override.
+
+**Net effect for staff (non-owner) users:** three things that a plain confirm click can do today —
+override an off/passive day, override a leave day, override a time conflict — will do none of them
+after this ships. Only `owner` retains a path through conflict/hours, and no one retains a path
+through passive or (without a pre-existing dated override) leave. This must be communicated to the
+owner as a **staff-facing behavior change**, not an invisible hardening, before Phase 1 ships.
 
 ---
 
 ## 6. Recommendation
 
-1. **D2 (passive) and D7 (race safety) are not really open questions** — they're unfinished
+1. **D2 (passive) and D7 (race safety) are not open policy questions** — they are unfinished
    application of principles already on record (R3; the working `blocks.ts` transaction pattern).
-   Close them as part of D1's implementation, not as a separate debate.
-2. **D3 (conflict) is the one genuine policy change**, and it should be presented to the owner as
-   exactly that: moving from "staff can always click through an overlap" to "overlap is refused by
-   default; a real, separately-designed, logged override exists for legitimate cases (squeeze-in and
-   similar)." Do not build the override as an afterthought inside this work — it is its own design
-   with its own audit trail, per the owner's own framing ("yetkili ve kayıtlı override ayrı
-   tasarlanır").
-3. **D4 (hours) and D6 (leave)** are lower-stakes and can follow whatever precedent D2/D3 set, but
-   name them explicitly to the owner rather than silently picking a side while implementing D1-D3.
-4. **Do not touch Admin's flows in this pass** — but D1's platform-wide reschedule gap (§3.1) and the
+   D7 additionally carries a **proof obligation** (§8): "mechanically closed" is not an acceptable
+   report for this item; a cross-flow race test is.
+2. **D3 (conflict) and D4 (hours) are the two genuine policy changes**, both **decided**:
+   reject-by-default, `owner`-only override in v1, with an audit trail on the existing
+   `reassignBooking.ts`-style pattern. Neither override crosses into the other's dimension, nor into
+   passivity/leave/mola — each violated dimension needs its own separate authorization.
+3. **D6 (leave)** is decided as a **scope correction**, not a preservation: the existing dated-leave
+   contract now applies to New Booking/Walk-in/Reschedule, explicitly **excluding** Block Time, and
+   explicitly replacing the old ungated `window.confirm` (§5.2) — this is a staff-facing behavior
+   change that must be flagged to the owner before ship, not silently rolled out.
+4. **D5 (mola)** requires new branching logic (§5.1) that does not exist in `blocks.ts` today —
+   budget real implementation time for this, it is not "covered for free" by D3's transaction.
+5. **`owner`-only is the authorization boundary for v1, by explicit owner instruction** — `admin`
+   holding `PRIVILEGED_ROLES` parity with `owner` for Block Time creation does **not** transfer to
+   booking-policy overrides; that would require a new, separately-decided permission, which is out
+   of scope here. If a `superAdmin` claim can reach this code path at all, that is a distinct,
+   platform-level authority (`[[project_superadmin_tenant_selector]]`-style) and must be documented
+   explicitly wherever it applies — **never silently treated as equivalent to tenant `owner`**.
+6. **Do not touch Admin's flows in this pass** — but D1's platform-wide reschedule gap (§3.1) and the
    possible Admin conflict/hours client-vs-server mismatch (§3.1) should go on record as their own
    items once verified, since a Staff-only fix leaves Admin's reschedule equally open.
 
 ---
 
-## 7. Phased implementation plan (not started — awaiting the D1-D4 decisions above)
+## 7. Phased implementation plan — D1-D7 decided (§5); **Phase 0 is documentation/analysis only,
+implementation/deploy for Phase 1+ is a separate, not-yet-granted approval**
 
-**Phase 0 — verification, before writing any server logic**
-- Confirm precisely whether `createBookingCore`'s `SLOT_CONFLICT`/`OUTSIDE_EFFECTIVE_SHIFT` accept
-  any override parameter today, and reconcile that against Admin's client-side soft confirm (§3.1).
-  This changes what D3/D4's "already decided" baseline actually is.
-- Confirm whether Walk-in's Save path gates on `availableTodayIds`/leave today (§3, İzin row,
-  evidence insufficient) before assuming it needs new leave-checking work.
+### Phase 0 — scope and acceptance criteria (analysis only; no server logic, no callable, no UI change)
+
+**Scope — Phase 0 produces answers and a design note, nothing runnable in production:**
+1. Confirm precisely whether `createBookingCore`'s `SLOT_CONFLICT`/`OUTSIDE_EFFECTIVE_SHIFT` accept
+   any override parameter today, and reconcile that against Admin's client-side soft confirm (§3.1).
+   This changes what D3/D4's implementation has to build vs. reuse in Admin's own engine.
+2. Confirm whether Walk-in's Save path gates on `availableTodayIds`/leave today (§3, İzin row,
+   evidence was insufficient this pass) before assuming Phase 2 needs new leave-checking work there.
+3. Write the exact `BLOCKED`-exclusion branch design for §5.1 (field(s) checked, where in the
+   transaction it runs relative to the existing conflict scan, exact refusal error code) — a design
+   note, not code.
+4. Write the exact audit-entry shape for D3/D4 overrides (fields, which existing helper from
+   `utils/audit.ts` or the in-transaction `reassignBooking.ts`-style write it follows) — a design
+   note, not code.
+5. Name, for each of D3/D4's override, the precise authorization check to be used (`actor.role ===
+   'owner'` at which call site / claim) and confirm no `superAdmin`-vs-tenant-`owner` conflation
+   exists in that check (§6.5) — read-only verification against `identity.ts`, no code change.
+6. Design the cross-flow race test harness required by D7/§8 (which flows it drives concurrently,
+   what shared fixture proves shared coordination) — a test plan, not a written test yet.
+
+**Acceptance criteria — Phase 0 is done when:**
+- Items 1-2 above are answered with file:line evidence, not assumption, and posted to this document.
+- Items 3-5 exist as reviewable design notes in this document (or a linked doc), not as diffs.
+- Item 6's test plan is written into §8 with enough detail that Phase 1's implementer does not have
+  to re-derive it.
+- **No file under `functions/src/`, `src/staff/`, or `firestore.rules` has changed.** Phase 0 is
+  read/design-only; if any of the above cannot be answered without writing throwaway code to probe
+  behavior, that code is written in an isolated scratch location, never committed, and the finding
+  is what gets recorded here — not the probe code itself.
+- This document is updated with Phase 0's findings and re-shared for owner sign-off **before Phase 1
+  opens a claim or touches a source file.**
+
+Per the owner's explicit instruction: **Phase 0 may proceed now on this basis. Phase 1 (or any code/
+callable/rules change) requires a separate, later approval and its own claim — it is not
+pre-authorized by this document.**
 
 **Phase 1 — New Booking → wire the existing engine (smallest, most precedented change)**
 - Point `NewBookingSheet.tsx` at a callable built on `createBookingCore` with `surface: 'staffApp'`
@@ -208,17 +324,37 @@ inside `createWalkIn.ts`.
 
 ---
 
-## 8. Test plan (to be written alongside each phase, not written yet)
+## 8. Test plan (design due in Phase 0 per §7; tests themselves written alongside each phase)
 
 - **Emulator, per phase**: a `@firebase/rules-unit-testing`-style suite (matching the existing
-  `test/rules/availabilityFrom.emulator.test.js` pattern) asserting: passive barber → refused;
-  active barber, no conflict → allowed; the specific name-keyed-`barberId` legacy shape still resolves
-  correctly through `resolveBarberRef` (a direct regression guard for §2.1's claim).
+  `test/rules/availabilityFrom.emulator.test.js` pattern) asserting: passive barber → refused, no
+  override, for any role including `owner`; active barber, no conflict → allowed; the specific
+  name-keyed-`barberId` legacy shape still resolves correctly through `resolveBarberRef` (a direct
+  regression guard for §2.1's claim).
 - **Race-condition test, per phase that gets a conflict transaction**: fire two concurrent
   create/reschedule calls for the same barber and overlapping range (Node's `Promise.all` against the
   emulator, or two callable invocations racing) and assert exactly one succeeds and the other receives
   `SLOT_CONFLICT` — mirroring however `blocks.ts` itself is tested today (check for an existing
   `blocks` race test first and reuse its harness rather than inventing a new one).
-- **Override path (once D3 is designed)**: assert the override requires whatever authorization D3
-  specifies, is refused for an unauthorized caller, and is recorded (audit log / booking field) when
-  used — an override with no record is not what "kayıtlı" means.
+- **Cross-flow race tests — required for D7, not optional (§5, §6.1):** a single-flow race test
+  (e.g. two `createWalkIn` calls racing each other) does **not** prove D7. At minimum:
+  New-Booking-vs-Walk-in, New-Booking-vs-Block-Time, Walk-in-vs-Reschedule, and
+  Reschedule-vs-Block-Time, each pair racing for the same barber and an overlapping time range,
+  asserting exactly one write lands and the other receives `SLOT_CONFLICT`. Record the result as a
+  table (pair × pass/fail) in this document once run — "race-safe" is a claim about the *set* of
+  flows, and must be reported per-pair, not as one aggregate pass.
+- **Parser-writer gap (§4.1) — explicitly NOT covered by the above.** Do not write a parser-vs-Staff
+  cross-flow test and report it as closing D7; record instead, once, that this remains an open,
+  named, out-of-scope gap per §4.1's table.
+- **Passive/leave — no-override regression tests:** attempt the old client-only override path
+  (whatever UI affordance remains, if any) against a passive barber and against a barber on leave
+  outside any dated shift-override window, for **every** role including `owner`, and assert refusal
+  in both cases — this is the regression guard for §5.2's "no one retains a path through passive or
+  undated leave" claim.
+- **Mola/`BLOCKED` override-denial test (§5.1):** attempt a `owner`-authorized conflict override
+  against a slot that collides with a `BLOCKED` record, and against a mixed booking+`BLOCKED`
+  collision, and assert both are refused with no override path offered — not merely warned.
+- **Override path (D3/D4, now designed in §5):** assert the override requires `owner` specifically
+  (not `admin`, not any other role), is refused for every non-`owner` caller including `admin`, and
+  is recorded (audit log, `reassignBooking.ts`-style, in the same transaction) with actor, reason,
+  target, and the conflicting record id(s) — an override with no record is not what "kayıtlı" means.
