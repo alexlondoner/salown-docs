@@ -35,6 +35,41 @@ Every incident opens with `## YYYY-MM-DD — short title`, immediately followed 
 
 **Tag dictionary (CANONICAL — only these; sprawl forbidden):** `#security` `#stripe` `#secrets` `#config` `#deploy` `#normalization` `#permission` `#race` `#timezone` `#parser` `#email` `#data-loss` `#shared-infra`. A new tag is added only if a genuinely new class emerges (e.g. twins like `#payment`+`#payments`+`#stripe-payment` are FORBIDDEN → all `#stripe`). Every entry carries a `**Tags:**` line.
 
+## 2026-09-12 — One `language` field served two audiences, so a Turkish-speaking owner's London clients were emailed in Turkish
+
+**Severity:** 🟠 High — every customer-facing surface of a live UK salon was in a language its clients do not read; booking abandonment and inbound "what is this?" calls are the business cost · **Owner:** alish · **Status:** ✅ Resolved — booking page `LIVE_VERIFIED`, emails `ARTIFACT_VERIFIED` (end-to-end send still unproven, see below) · **Affected area:** TR-A presentation contract → public booking page, public profile, all transactional emails
+
+**Tags:** `#config` `#email` `#normalization`
+
+**Discovery:** owner test — he opened HeroHairs' own booking page and the confirmation email in Gmail, screenshotted both, and reported it. No monitoring, test or alert would have caught it: every one of those strings was rendering exactly as the code intended.
+**Impact:** HeroHairs (London, `289 City Rd`) showed its English-speaking clients a Turkish booking flow ("Hizmet seçin", "Başlangıç £35.00", "Lütfen bir seçim yapın") and emailed them Turkish confirmations/cancellations/reschedules/receipts ("Randevunuz Onaylandı", "HİZMET / KONUM / ÜCRET", "Takvime ekle"). Live since the owner switched his panel to Turkish (`presentation.language` written 2026-09-03) — roughly 9 days.
+**Root Cause:** not a tenant misconfiguration. `tenants/herohairs` legitimately carries `presentation = { language: 'tr' }` and nothing else, and the platform legitimately defaults the rest to the UK. The defect is that **`language` was a single field answering two different questions** — "what language does the person RUNNING this salon read?" and "what language do this salon's CUSTOMERS read?" — so the panel's language preference was also the dictionary key for `/book/*`, `/s/*` and `emailPresentation()`. TR-A's own design note ("an owner in a UK browser sees a Turkish tenant as Turkish") is correct for the panel and was silently inherited by surfaces where it is wrong.
+**Bug Class:** Contract/SSOT violation — one field, two meanings (audience conflation). Not a translation bug: the translation worked perfectly, on the wrong screen.
+**Resolution:** audience split in the presentation parity core (`c8a64d6`, both twins, core still byte-identical): `customerLanguage()` resolves a customer's language from the salon's MARKET — `countryCode` → `locale` (only for a language we actually ship) → `'en'` — and `language` is deliberately NOT a layer in that chain. `customerPresentation()` swaps only that field; currency, timezone, clock and locale are facts about the salon and stay. Public pages build their locale with `buildCustomerLocaleValue`; `emailPresentation()` became the CUSTOMER seam (all 7 call sites are customer mail) with a separate explicit `ownerEmailPresentation()` for owner-facing mail. Deployed 2026-09-12 as `R-2026-09-12-A` (8 functions + `hosting:salown`), both from an isolated pinned workspace.
+**Prevention:** (1) `emailPresentation()` is now customer-safe BY DEFAULT, so a newly written customer email inherits the right language without anyone remembering to — the owner-facing seam is the one you have to ask for by name. (2) `src/i18n/customerAudience.test.ts` is a SOURCE guard: it fails if a customer-facing page reaches for an admin locale seam (`buildLocaleValue`, `useLocale(`, `useT(`), because the real future failure mode is "a NEW public page uses the wrong builder", which no rendering test of today's pages would catch. (3) The clock-invariance tests below stop a translation from reformatting anything.
+**Regression Tests:** `src/utils/presentation.test.ts::audience split — the owner's panel language never reaches a customer` (8 cases incl. the exact herohairs shape + "switching audience changes WORDS ONLY — every formatter output is identical") · `functions/src/utils/presentation.test.js::customerLanguage: owner language is NOT a layer` · `functions/src/emails/i18n.test.js::AUDIENCE: a UK salon run in Turkish emails its clients in English` + `…: translating the email does NOT reformat the appointment time` + `…: an en-language salon keeps its historic 12-hour rendering` · `src/i18n/customerAudience.test.ts` (source guard).
+**Related:** commits `1ae9b14` (audience split) · `c8a64d6` (clock decoupling) · claim `e9947b4` · ledger `R-2026-09-12-A` · files `src/utils/presentation.ts`, `functions/src/utils/presentation.ts`, `src/i18n/LocaleProvider.tsx`, `src/pages/BookingPage.tsx`, `src/pages/SalonSitePage.tsx`, `functions/src/emails/i18n.ts`
+
+**What happened / Diagnosis / Fix:**
+
+The owner's report was precise ("the man is in England and only uses the system in Turkish; his online profile and the customer email formats have to be English"), so the diagnosis started from the stored data rather than the code: both the canonical `settings/settings.presentation` and the world-readable root-doc mirror hold exactly `{ language: 'tr' }`. That is what made "the region never changed" literally true — and what made the bug a contract bug rather than a settings bug.
+
+Two near-misses worth recording:
+
+* **The first live verification proved nothing.** A test email was sent to the owner's own address through the `salownSendBookingConfirmation` callable, which returned `{sent:true}` on the new revision. That callable is a LEGACY path that never passed `et`/`presentation` to the template and hardcodes an English subject (`✅ Booking Confirmed — …`), so it was already English before the fix and its success said nothing about the trigger path the owner had screenshotted. Recorded here because "the deploy responded" reads like verification and is not.
+* **The fix nearly reformatted every appointment time.** `formatEmailDateTime` keeps a legacy en-US 12-hour rendering for English tenants, and that branch read `language` — the very field being re-resolved. HeroHairs renders `· 11:30`; translating its emails would have silently made it `· 11:30 AM`. The owner caught the contradiction in the pre-release report and blocked on it. `EmailPresentation.clockLanguage` now carries the SALON's own stored language for that single decision.
+
+A third finding, left open: at deploy time the shared repo tree contained another session's uncommitted, un-approved Phase-1 work in `functions/src/bookings/createBooking.ts`. A Functions deploy ships the working directory, so deploying from the shared tree would have released it. The isolated `git archive` workspace is what kept it out (`grep -c O1S-OVERRIDE` on the built artifact = 0).
+
+**Lessons Learned:**
+- A field name that says *what* ("language") and not *whose* is a latent audience bug. The question to ask of every display setting is "which side of the counter is this for?"
+- "The translation is correct" and "the translation belongs here" are different claims. Only the second one is a product statement.
+- A deploy that returns success on the path you can reach is not evidence about the path the customer uses. Check which code the reachable path actually runs before calling it verification.
+- Changing a language must change words only. If the language field is also an input to formatting, the localisation change carries a silent reformat with it.
+- In a repo shared by concurrent sessions, an isolated pinned workspace is not ceremony — on this release it was the only thing standing between an approved fix and someone else's unapproved feature going live.
+
+---
+
 ## 2026-09-11 — A release's own byte-verification proved the code shipped, not that its kill-switch was on
 
 **Severity:** 🟠 High — gated the entire GTM A5 rollout; every real tenant owner was still locked out of Settings → Staff · **Owner:** alish · **Status:** ✅ Resolved, deployed and `LIVE_VERIFIED` 2026-09-11 · **Affected area:** Settings.tsx Staff tab visibility (`SEC-TE` / A5 T-e path 3)
