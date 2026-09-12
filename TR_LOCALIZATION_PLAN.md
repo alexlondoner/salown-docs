@@ -150,3 +150,77 @@ All hand-authored landing pages (`index.html`, `features.html`, `vs-*.html`, …
 **Minimum viable TR pilot:** items 1 + 2 + Turkish translation of customer-facing surfaces (booking SPA + transactional emails). The admin panel can stay English for a pilot — the salon customer never sees it.
 
 **Effort ballpark:** items 1–2 are a few focused days; item 3 (string extraction + translation of ~1,500+ strings) is by far the largest line item.
+
+---
+
+## 5. Audience split — `CUST-LANG-AUDIENCE` (2026-09-12) and what it left OPEN
+
+**Shipped and live** (ledger `R-2026-09-12-A`, source `c8a64d6`): `presentation.language` is now the
+language of the person RUNNING the salon only. Customer-facing surfaces — public booking page,
+public profile, and the booking-lifecycle emails listed in §3.1 — resolve their language from the
+salon's MARKET via `customerLanguage()` (`countryCode` → `locale`, only for a language we actually
+ship → `'en'`). `language` is deliberately not a layer in that chain. Owner product rule: customer
+communication and public platform text follow the business's country; the panel language is
+independent. The trigger was `herohairs` — a London salon, panel in Turkish, no region set —
+emailing "Randevunuz Onaylandı" to London clients (INCIDENTS 2026-09-12).
+
+### 5.1 OPEN — the emails §3.1 never localised are still hardcoded English
+
+The audience split only reaches emails that go through the TR-A catalogue. These do not, and a
+**TR-market salon's client therefore receives English from them**:
+
+| Path | Why it is English |
+|---|---|
+| `salownSendBookingConfirmation` (panel "resend confirmation") | Legacy builder; hardcoded subject `✅ Booking Confirmed — …`, never passes `et`/`presentation` to the template. **A TR salon resending a confirmation sends English.** |
+| `salownSendReminder` | Hardcoded `Reminder — …` subject + `buildReminderHtml` |
+| `sendAbandonedCart` | Hardcoded `Your spot is still warm — …` + English reassurance copy |
+| campaign / bulk marketing (`marketing/index.ts`) | English chrome ("Special offer", "Valid until"); body is owner-authored |
+
+This is the **same defect class as the original incident, on the other side**: for `herohairs` the
+result is now accidentally consistent (English everywhere), so the bug is invisible on the tenant
+that exposed it. It becomes visible the moment a TR tenant uses any of these paths. Closing it means
+routing these four through `emailStrings`/`emailPresentation` like the lifecycle emails — not a new
+mechanism, just the remaining call sites.
+
+### 5.2 OPEN — there is NO clock-format contract independent of the panel language
+
+`EmailPresentation.clockLanguage` is a **compatibility shim, not a design**. It exists because the
+legacy 12-hour rendering in `formatEmailDateTime` was keyed on `language`, so re-resolving that field
+for customers would have silently reformatted every appointment time (`· 11:30` → `· 11:30 AM`).
+`clockLanguage` carries the SALON's stored language for that one decision, which preserves every
+tenant's existing rendering byte-for-byte — and that is the whole of its ambition.
+
+What it does NOT do: make the clock independent of the panel language. Today a salon's email clock is
+still decided by `timeFormat === '12h' || <salon's own language> === 'en'`. So an owner who switches
+his panel from English to Turkish still moves his customers' emails from 12-hour to 24-hour, which is
+the same audience conflation in a narrower place.
+
+A real contract would make **`timeFormat` the sole authority** and drop the language term. That is a
+deliberate behaviour change, not a refactor: `whitecross` and `dayi-barbers` resolve `timeFormat`
+`'24h'` by default while rendering 12-hour today, so every UK tenant's emails would move to `14:05`
+unless the migration writes an explicit `timeFormat: '12h'` for them first. **Needs an owner
+decision before any code.**
+
+### 5.3 OPEN — end-to-end email verification
+
+`R-2026-09-12-A` is `ARTIFACT_VERIFIED` for emails: the deployed build, required with `herohairs`'
+real stored presentation, renders the English subject/labels and an unchanged `· 11:30` / `£35.00`.
+It is **not** end-to-end verified — that needs one real booking on a live salon with an
+owner-controlled client email. The owner is running that test himself; until he reports it, the
+lifecycle-email half of this work stays open. (A live send through
+`salownSendBookingConfirmation` is **not** that proof — see §5.1: that path was already English.)
+
+### 5.4 OPEN (Phase 2, not started) — explicit per-tenant customer-language override
+
+Country-derived language has no escape hatch for the real case of a Turkish-speaking clientele in a
+non-TR country (a Turkish barber in London whose clients are Turkish). The intended shape is an
+optional `presentation.customerLanguage`, resolved AHEAD of `countryCode`. No `firestore.rules`
+change is needed (the whole `presentation` map is already owner-gated); it needs the strict
+write-path validator, a Regional Settings control, and tests.
+
+### 5.5 NOT part of this work
+
+`/s/{tenant}` renders `Powered by salown` in its footer — a brand-casing bug on a customer-facing
+surface (`salOWN` is the only correct spelling). Found while verifying this release; it is
+**explicitly not a completion condition of `R-2026-09-12-A`** (owner, 2026-09-12) and belongs to
+branding, not localisation.
