@@ -597,3 +597,134 @@ will locate it).
   (not `admin`, not any other role), is refused for every non-`owner` caller including `admin`, and
   is recorded (audit log, `reassignBooking.ts`-style, in the same transaction) with actor, reason,
   target, and the conflicting record id(s) — an override with no record is not what "kayıtlı" means.
+
+---
+
+## 9. Phase 1 — New Booking implementation status (2026-09-12) — **CODE WRITTEN + TESTED, NOT DEPLOYED**
+
+Owner approved Phase 1 implementation + tests on the corrections below; **deploy remains a
+separate, not-yet-granted approval** and nothing in this section has been released.
+
+### 9.1 Corrections applied (owner review, verbatim intent preserved)
+
+1. **"BLOCKED-hariç-tutma" terminology fixed.** A `BLOCKED` record was already, and remains,
+   INCLUDED in the conflict scan (unchanged — `blocks.ts`'s shape). The only thing excluded is
+   the *override*: if even one matching record has `status==='BLOCKED'`, the write is refused
+   outright (`BLOCKED_TIME_CONFLICT`) with **no override path offered to any role, including
+   `owner`** — never silently converted back to an overridable `SLOT_CONFLICT`.
+2. **Admin isolation, verified not assumed.** Every new branch is gated on `isStaffApp`
+   (`priv.surface === 'staffApp'`); the `else`/non-`isStaffApp` code paths are byte-identical to
+   before. Confirmed three ways: (a) the full pre-existing test suite — including
+   `createAdminBooking.emulator.test.js` and the public `createBooking.emulator.test.js` — passes
+   unmodified; (b) a dedicated new test proves the Admin surface sending
+   `overrideConflict`/`overrideReason` gets `INVALID_INPUT` ("override fields require the Staff App
+   surface"), not silent ignoring; (c) `ALLOWED_ADMIN_INPUT_KEYS`' three new keys are validated
+   closed for any non-staffApp `priv` inside `normalizeInput`, before the transaction ever runs.
+3. **Authorization is never taken from the payload.** `overrideConflict`/`overrideReason`/
+   `acknowledgedConflictIds` carry intent + reason only; eligibility is decided from `adminRole`,
+   already re-read server-side from `staff/{actorUid}` inside the transaction (the pre-existing
+   O1AB pattern, untouched). Approval is scoped to the *exact* conflicting record ids present at
+   decision time — resubmitting after the conflict set has changed without a fresh, matching
+   `acknowledgedConflictIds` is refused with `CONFLICT_ACK_REQUIRED`, not silently honored against
+   stale ids. Audit is written with `tx.set` in the *same* transaction as the booking
+   (`reassignBooking.ts`-style, deliberately diverging from this file's own fire-and-forget
+   `STAFF_BOOKING_CREATED` audit for exactly the reason §5's "kayıtlı" requirement demands).
+4. **Race-safety claimed only where tested.** New Booking is proven self-race-safe (pre-existing
+   test) and proven race-safe **against a concurrently-created Block Time** for the same
+   barber/slot (new cross-flow test, §9.2 #22) — genuine Firestore transaction contention, not two
+   independent writes. It is explicitly **not** claimed race-safe against Walk-in or Reschedule
+   (neither is wired to this coordination yet — Phases 2-3) nor against parser/aggregator writers
+   (§4.1, permanently out of scope). §7.2's per-phase acceptance table is the source of record for
+   which pairs are proven and which remain open.
+5. **The callable-bypass gap is real, measured, and NOT closed this session.**
+   `firestore.rules:510-514` (`match /bookings/{docId}`, `allow create`) lets **any authenticated
+   member of the tenant** (`isTenantAny(tenantId)`) write a booking document directly via the
+   client SDK, past `a1WithinWindow` and the anonymized-field ban only — passive/conflict/hours/
+   leave/`BLOCKED` are enforced **only** by the callable Phase 1 just built, and a client that
+   still calls `addDoc` (an old cached bundle, a compromised session, a devtools write) bypasses
+   all of it. **This is not fixed here** — a rules change is its own review + its own deploy
+   target (§9.3) — but it means Phase 1 is "the callable is now correct," not "the enforcement is
+   airtight." The migration order that closes this: ship the callable (this phase) → verify no
+   legitimate caller still uses the old path → THEN narrow `firestore.rules`' `bookings` `create`
+   rule for authenticated writes (a separate, security-reviewed change). Shipping the rules change
+   before every legitimate client is migrated would break any caller still on the old write path.
+6. **"Tek deploy" varsayımı kaldırıldı.** See §9.3 — Functions, Staff hosting, and (later, separately)
+   `firestore.rules` are three different deployable units with three different rollback identities;
+   none was deployed this session.
+
+### 9.2 Files changed (12; none deployed)
+
+| File | What changed |
+|---|---|
+| `functions/src/bookings/createBooking.ts` | New override state machine in the per-candidate loop (`isStaffApp`-gated), `BLOCKED_TIME_CONFLICT`/`OVERRIDE_REQUIRES_OWNER`/`CONFLICT_ACK_REQUIRED` reasons, in-transaction audit write, 3 new allowlisted input fields, `_docId` on scanned day-docs, `CreateBookingResult` deny-detail fields |
+| `functions/src/index.ts` | New `salownCreateStaffBooking` callable (mirrors `salownCreateAdminBooking`, `surface:'staffApp'`) |
+| `functions/src/bookings/createStaffBooking.emulator.test.js` | +12 tests (11 override/BLOCKED/audit/Admin-isolation cases + 1 cross-flow race vs Block Time) |
+| `functions/src/utils/deployableExports.test.js` | `RELEASE_PLAN` gained `salownCreateStaffBooking` (see §9.1 item 6 / §9.4 for the unrelated A1 cross-cutting note) |
+| `src/utils/bookingCallables.ts` | New `callSalownCreateStaffBooking` + `StaffBookingInput`/`StaffBookingDenyDetails`/`staffBookingDenyDetails` |
+| `src/staff/lib/staffBookingReason.ts` | **New file** — reason-code → i18n-key mapping for this callable (mirrors `staffCreateReason.ts`'s established pattern for `salownCreateWalkIn`) |
+| `src/staff/sheets/NewBookingSheet.tsx` | Appointment-tab save routed through `callSalownCreateStaffBooking`; both legacy `window.confirm` dialogs removed; owner-only override reason-capture flow added |
+| `src/i18n/dictionaries/{en,tr}/staffApp.ts` | Removed `offOnDateConfirm`/this tab's `conflictConfirm`; added override-prompt strings + a `bookingReason.*` table |
+| `src/staff/sheets/staffBookingType.test.ts` | Updated stale "NewBookingSheet is not cut over" assertions to match the actual cutover |
+| `src/staff/sheets/staffCreateCutover.test.ts` | Corrected a stale scope-note comment (no assertion change) |
+| `src/utils/a2ServiceIdentity.test.ts` | Updated two assertions that pinned "NewBookingSheet stays untouched" |
+
+### 9.3 Test results (all green; last run 2026-09-12)
+
+| Suite | Result |
+|---|---|
+| Functions emulator gate (`ops/test-emulator.sh`, both phases) | **656/656 pass** |
+| Functions unit tests (`functions && npm test`, no emulator) | **2683/2683 pass** |
+| Frontend vitest (`npm test`) | **5530/5530 pass** |
+| `tsc --noEmit` (functions + frontend) | **0 errors** |
+| `eslint` (changed files) | **0 errors** |
+| Local Chrome / live UI walk-through | **NOT DONE — see below, not fabricated** |
+
+**Why no browser verification:** `salownCreateStaffBooking` is not deployed to `havuz-44f70`.
+A local dev server (`npm run dev:staff`) talks to the LIVE Firebase project (no
+emulator-connection wiring exists in `src/firebase.js`), so calling this callable from a real
+browser session today would 404 — there is nothing to click through yet. The codebase's own
+precedent for exactly this situation (`STAFF-SLOT-INTERVAL`'s Reschedule off-grid behaviour, this
+document's own handoff history) is emulator-integration + source-scan verification instead of a
+live click-through, which is what §9.3's other rows are. Live/Chrome verification is owed **after**
+a Phase 1 deploy is approved and executed, not before.
+
+### 9.4 Remaining gaps — named, not hidden
+
+- **`firestore.rules` callable-bypass** (§9.1 item 5) — open, needs its own review + deploy, in the
+  migration order stated there.
+- **Walk-in, Reschedule, Block Time** (Phases 2-4) — untouched. Walk-in in particular now has a
+  **confirmed** (not just suspected) zero server-side leave check (§7.1 item 2) that Phase 2 must
+  close alongside its originally-scoped conflict gap.
+- **Parser/aggregator writers** — still outside all of this coordination (§4.1), permanently
+  out of scope for this plan, named so it is never silently assumed covered.
+- **Cross-flow race proof is partial** — New-Booking-vs-New-Booking and New-Booking-vs-Block-Time
+  are proven; New-Booking-vs-Walk-in and New-Booking-vs-Reschedule cannot be tested until those
+  flows exist on the same coordination (Phases 2-3).
+- **Unrelated cross-cutting finding:** `salownCreateStaffBooking` is now an eighth consumer of
+  `createBookingCore`, an entry point `docs/RELEASE_MANIFEST_A1.md` (`STAFF-START-AUTHORITY-A1`,
+  hash-pinned 2026-08-14, a **separate, already-planned release this task did not open**) tracks as
+  having exactly seven. That manifest was **not edited** here — it is evidence-pinned for someone
+  else's release — but whoever next deploys either A1's Functions phase or this Phase 1 needs to
+  know the two now overlap at `createBookingCore`, so A1's gate is not silently left off a function
+  that did not exist when A1 was pinned.
+
+### 9.5 Proposed targeted release order (NOT executed — for owner approval)
+
+Three separate deployable units, three separate rollback identities, per §9.1 item 6:
+
+1. **Functions** — `./scripts/deploy-functions.sh salownCreateStaffBooking` (targeted; blanket
+   `--only functions` remains forbidden, `SEC-FN-NS-SALOWN-GUARD`). Rollback: redeploy the previous
+   revision by id (no previous revision exists yet — this is a new export, so "rollback" here means
+   deleting the function, not reverting one).
+2. **Staff hosting** — `firebase deploy --only hosting:salown-staff`, from the isolated
+   `git archive` workspace per `[[feedback_isolated_release_workspace]]`, only AFTER (1) is live and
+   verified reachable (a bundle calling a callable that does not exist yet fails every save).
+   Rollback: the prior `hosting:salown-staff` version id.
+3. **`firestore.rules` narrowing** (§9.1 item 5) — its own, later, separately-reviewed change, only
+   after (1)+(2) are `LIVE_VERIFIED` and no legitimate caller still uses the old direct-write path.
+   Not scheduled by this plan; named here only so it is not forgotten.
+
+Between (1) and (2), New Booking is DEPLOYED-BUT-UNREACHABLE from the client (the old
+`createWalkInDetailed` path would need to stay live in that window if a rollback of (2) alone were
+ever needed) — this is the same "server ships first, client cuts over second" shape as every prior
+O1x package in this codebase (O1AB, O1C, O1S's own walk-in cutover).
