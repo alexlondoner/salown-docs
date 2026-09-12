@@ -201,14 +201,16 @@ deliberate behaviour change, not a refactor: `whitecross` and `dayi-barbers` res
 unless the migration writes an explicit `timeFormat: '12h'` for them first. **Needs an owner
 decision before any code.**
 
-### 5.3 OPEN — end-to-end email verification
+### 5.3 ✅ CLOSED (2026-09-12) — end-to-end email verification
 
-`R-2026-09-12-A` is `ARTIFACT_VERIFIED` for emails: the deployed build, required with `herohairs`'
-real stored presentation, renders the English subject/labels and an unchanged `· 11:30` / `£35.00`.
-It is **not** end-to-end verified — that needs one real booking on a live salon with an
-owner-controlled client email. The owner is running that test himself; until he reports it, the
-lifecycle-email half of this work stays open. (A live send through
-`salownSendBookingConfirmation` is **not** that proof — see §5.1: that path was already English.)
+The owner ran the real booking test with his own address and confirmed the outcome:
+*"hepsi ingilzice olmasi gereken yerler ingilizce"*. `R-2026-09-12-A` is therefore `LIVE_VERIFIED`.
+
+Recorded as **OWNER_CONFIRMED**, not as a machine check: the proof is his inbox on a real booking.
+The artifact evidence that preceded it (the deployed build required with `herohairs`' real stored
+presentation, rendering the English subject/labels and an unchanged `· 11:30` / `£35.00`) stands as
+corroboration, not as the verification — and a live send through `salownSendBookingConfirmation` was
+explicitly NOT accepted as proof, because that path was already English before the fix (§5.1).
 
 ### 5.4 OPEN (Phase 2, not started) — explicit per-tenant customer-language override
 
