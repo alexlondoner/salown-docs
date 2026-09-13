@@ -746,6 +746,80 @@ not waste time rediscovering the same three traps.
 scripts deleted (not committed), `functions/.secret.local` restored, all emulator/dev-server
 processes stopped. Nothing from this round was deployed.
 
+### 9.6a Round-3 — override-prompt owner-gate UX fix, verified live, 1 bug found+fixed (2026-09-13)
+
+A follow-on **client-only** change, not part of §9.1-§9.6's server enforcement: the override-reason
+`window.prompt` in `NewBookingSheet.tsx` used to show for every role on an overridable denial, even
+though the server has always rejected a non-owner's override (`OVERRIDE_REQUIRES_OWNER`). Owner
+approved gating it to `staffRole === 'owner'` (`a7c79f3`), then asked for the same live-Chrome
+acceptance standard as round-2 before any deploy discussion.
+
+**Method — same recipe as §9.6, narrower scope:** local Chrome + the same 3 emulators, synthetic
+tenant `stafftest` (owner/staff/admin accounts, one barber, one service, one pre-seeded CONFIRMED
+booking), `src/firebase.ts` emulator-wired and `StaffRouter.tsx` carrying a debug-only URL-param
+shim to force `staffRole={undefined}` — the ONE case the real resolution flow (`StaffApp.tsx`
+always defaults to `'staff'`) cannot produce live. Both reverted (`git diff` confirmed empty)
+before the next commit; neither was ever pushed.
+
+| # | Scenario | Result |
+|---|---|---|
+| 1 | Staff, live conflict | Zero `window.prompt` calls; form fields intact; Firestore confirmed no new booking |
+| 2 | Owner, live conflict + a mid-flow injected SECOND conflicting booking (synchronous XHR inside the prompt stub, real owner ID token read live off the running app — round-2's own technique) | First prompt → resubmit → server correctly returned `CONFLICT_ACK_REQUIRED` → re-prompted with the exact second message → booking created. Audit doc content (not trigger logs) confirmed: `actor.role:'owner'`, real `actor.uid`, exact typed reason, `conflictingRecordIds` = **both** bookings |
+| 3 | Role unresolved (forced via the debug shim on a real owner account) | Identical to staff — zero prompts, correct toast — the gate is driven by the prop value alone, fail-closed by construction |
+
+**🐛 Bug found by this live run, NOT by the earlier source-scan tests:** scenario 1's toast read the
+raw `SLOT_CONFLICT` text ("That professional already has a booking...") instead of "Owner
+authorization is required for this." `handleCreate`'s outer catch unconditionally re-toasted
+`staffBookingMessage(err, t)` (the ORIGINAL server error) whenever `tryOverride()` returned `null` —
+correct for every pre-existing null path, but it silently overwrote the new gate's own message too.
+Fixed with an `ownerGateBlocked` flag the outer catch branches on once (`631b768`); a new regression
+test pins it (`staffBookingType.test.ts`); re-verified live in the same session afterward — correct
+message confirmed, zero prompts, form intact.
+
+**Gates re-run after the fix:** `src/staff/**` suite 291/291 (was 290, +1), `tsc --noEmit` 0,
+`eslint` clean on the touched files. Full emulator/functions/frontend suites deliberately **not**
+re-run — no server-side code changed; §9.3's 660/2683/5530 remain the valid evidence for the server.
+
+**Commits (salown-app):** `21120af`(claim)→`a7c79f3`(gate impl+test)→`78b72e7`(claim release,
+round before this one) · `7ec4258`(claim extended)→`631b768`(bug fix+test)→`21e0fa8`(claim release)
+→`797c9b3`(SYNC). Full detail: [[edit_log_salown]] / `SYNC.md` 2026-09-13 01:35 UK entry.
+
+**Cleanup confirmed:** emulator trio + Vite dev server stopped; `src/firebase.ts` and
+`StaffRouter.tsx` byte-identical to their committed state (`git diff` empty) before every commit
+above; no production record created anywhere; synthetic tenant only.
+
+### 9.6b Phase 1 release readiness — for owner approval, NOT executed
+
+Everything the acceptance bar in §9.3/§9.6/§9.6a asks for is now met for the New Booking surface,
+INCLUDING the client-side UX fix. This section restates §9.5's already-approved-in-shape order with
+the concrete source identity it would ship, so an approval only has to say "go" — it changes no
+decision §9.5 made.
+
+- **Unit 1 — Functions.** Target `salownCreateStaffBooking` only (`./scripts/deploy-functions.sh
+  salownCreateStaffBooking`; blanket `--only functions` forbidden). Source: unchanged since Phase 1
+  itself — `1a58227` — today's session touched no `functions/` file. Rollback: delete the function
+  (new export, no prior revision to fall back to).
+- **Unit 2 — Staff hosting.** `firebase deploy --only hosting:salown-staff`, from an isolated `git
+  archive` workspace (`[[feedback_isolated_release_workspace]]`), only after Unit 1 is live and
+  reachable. Source: `salown-app` `HEAD` at deploy time — pin and record the exact SHA in the
+  isolated workspace's own log; as of this writing that is `797c9b3` (Phase 1 `1a58227` + this
+  session's UX gate `a7c79f3` + bug fix `631b768` + housekeeping), but ANY session approving this
+  must re-pin at the moment of deploy, never assume this SHA is still `HEAD`. Rollback: the prior
+  `hosting:salown-staff` version id.
+- **Unit 3 — `firestore.rules` narrowing.** Unchanged from §9.5 — still NOT scheduled, still
+  requires Units 1+2 `LIVE_VERIFIED` and a check that no legitimate caller still uses the old
+  direct-write path first.
+
+**⚠️ This readiness statement does NOT mean STAFF-AVAIL-GAP is fully enforced once deployed.**
+§9.4's closing criterion stands exactly as written: `firestore.rules`' `isTenantAny` bypass (both
+`create` and `update` branches) means an authenticated tenant member can still write a `bookings`
+doc directly, skipping every D1-D7 check this plan built, until Unit 3 above ships — which is
+explicitly NOT part of this readiness proposal. Deploying Units 1+2 makes the New Booking UI
+surface correct and the server the ONLY path the shipped client uses; it does not close the
+rules-level bypass, and no report of this deploy may describe the system as conflict-safe or
+override-safe in general. Walk-in/Reschedule/Block Time (Phases 2-4) also remain untouched by
+this readiness proposal.
+
 ### 9.4 Remaining gaps — named, not hidden
 
 - **`firestore.rules` callable-bypass — owner review 2026-09-12: this is now a STATED CLOSING
