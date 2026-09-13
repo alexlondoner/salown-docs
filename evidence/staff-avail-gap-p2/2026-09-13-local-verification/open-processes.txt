@@ -1,0 +1,11 @@
+== open background processes (captured 2026-09-13T12:10:53Z) ==
+node 93940 127.0.0.1:4400
+node 93940 [::1]:4400
+node 93940 127.0.0.1:5001
+node 93940 127.0.0.1:9099
+java 93981 127.0.0.1:8080
+node 94065 127.0.0.1:5199
+  PID  ELAPSED COMMAND
+93940 01:08:57 node ./functions/node_modules/.bin/firebase emulators:start --only auth,firestore,functions --project demo-c1
+93981 01:08:55 java -Dgoogle.cloud_firestore.debug_log_level=FINE -Duser.language=en -jar /Users/alish/.cache/firebase/emulators/cloud-firestore-emulator-v1.22.0.jar --host 127.0.0.1 --port 8080 --websocket_port 9150 --database-ed
+94065 01:08:33 node /private/tmp/claude-501/-Users-alish/1b4e7c9f-b90b-4cb4-9da8-c744b257a970/scratchpad/p2app/node_modules/.bin/vite --config vite.staff.config.js --port 5199 --strictPort --host 127.0.0.1

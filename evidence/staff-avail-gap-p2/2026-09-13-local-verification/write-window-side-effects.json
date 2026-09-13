@@ -1,0 +1,274 @@
+{
+  "capturedAt": "2026-09-13T14:25:10.556Z",
+  "scope": "documents currently under tenants/p2ui (recursive). Created-then-deleted or deleted documents, other tenants, Auth and anything outside Firestore are NOT covered.",
+  "collectionsPresentNow": [
+    "auditLogs",
+    "barbers",
+    "bookingRequests",
+    "bookings",
+    "public",
+    "services",
+    "settings",
+    "staff"
+  ],
+  "results": [
+    {
+      "scenario": "O1b",
+      "window": [
+        "2026-09-13T12:05:01.537Z",
+        "2026-09-13T12:06:44.026Z"
+      ],
+      "touched": [
+        {
+          "path": "auditLogs/TF0rjrkW0Vhk4jtcMvYz",
+          "created": true,
+          "updated": true,
+          "action": "STAFF_BOOKING_POLICY_OVERRIDE"
+        },
+        {
+          "path": "auditLogs/aUWJWlBqFpH66r3TMuBa",
+          "created": true,
+          "updated": true,
+          "action": "WALK_IN_CREATED"
+        },
+        {
+          "path": "bookingRequests/walkin_032a825d25d134c03fe5ea84d786e69873e367ccc115833466b47979aab4511e",
+          "created": true,
+          "updated": true,
+          "op": "walkin-create"
+        },
+        {
+          "path": "bookings/1hizlESKuGZYYxvq7KyC",
+          "created": true,
+          "updated": true,
+          "status": "CONFIRMED",
+          "bookingId": "WCB-1789301167840-f39c"
+        }
+      ]
+    },
+    {
+      "scenario": "O2",
+      "window": [
+        "2026-09-13T12:06:44.026Z",
+        "2026-09-13T12:07:42.682Z"
+      ],
+      "touched": [
+        {
+          "path": "auditLogs/39TAMc1bjLD1drgVBl8b",
+          "created": true,
+          "updated": true,
+          "action": "WALK_IN_CREATED"
+        },
+        {
+          "path": "auditLogs/PnoJLc5OYbJn3252ulJ5",
+          "created": true,
+          "updated": true,
+          "action": "STAFF_BOOKING_POLICY_OVERRIDE"
+        },
+        {
+          "path": "bookingRequests/walkin_74d7debcae1a3b271f1d49e1c68736dcf288c3996879eea7478008fb1197eb19",
+          "created": true,
+          "updated": true,
+          "op": "walkin-create"
+        },
+        {
+          "path": "bookings/FFc9viBZHEHGKS656dQy",
+          "created": true,
+          "updated": true,
+          "status": "CHECKED_OUT",
+          "bookingId": "WCB-1789301234822-e30d"
+        }
+      ]
+    },
+    {
+      "scenario": "O4",
+      "window": [
+        "2026-09-13T12:08:52.598Z",
+        "2026-09-13T12:09:55.057Z"
+      ],
+      "touched": [
+        {
+          "path": "auditLogs/8sPNuCb7r1ZtMW4ikph5",
+          "created": true,
+          "updated": true,
+          "action": "WALK_IN_CREATED"
+        },
+        {
+          "path": "auditLogs/rahNTsOHGPdttuQAPrLv",
+          "created": true,
+          "updated": true,
+          "action": "STAFF_BOOKING_POLICY_OVERRIDE"
+        },
+        {
+          "path": "bookingRequests/walkin_7521d0bb3f8dc89d5d7e2d1197c36e84685cb85a777e6179abe50b3981e145ee",
+          "created": true,
+          "updated": true,
+          "op": "walkin-create"
+        },
+        {
+          "path": "bookings/80pdlTfE6Ymmr56puuma",
+          "created": true,
+          "updated": true,
+          "status": "CONFIRMED",
+          "bookingId": "WCB-1789301362901-0ba5"
+        },
+        {
+          "path": "bookings/r26mlI97NXfZ15EEJ07B",
+          "created": true,
+          "updated": true,
+          "status": "CONFIRMED",
+          "bookingId": "INJECTED-C"
+        }
+      ]
+    }
+  ],
+  "o2CheckedOutBookingFieldNames": [
+    "actualDuration",
+    "barber",
+    "barberId",
+    "barberName",
+    "bookingId",
+    "bookingType",
+    "checkedOutAt",
+    "clientEmail",
+    "clientName",
+    "clientPhone",
+    "createdAt",
+    "discount",
+    "duration",
+    "endTime",
+    "loyaltyPointsEarned",
+    "loyaltyPointsRedeemed",
+    "loyaltyPointsTotal",
+    "loyaltyPromotionSnapshot",
+    "loyaltyRedeemedValue",
+    "note",
+    "paidAmount",
+    "paymentAllocation",
+    "paymentAllocationVersion",
+    "paymentMethod",
+    "paymentType",
+    "price",
+    "receiptAddOnLines",
+    "receiptAddOnTotal_p",
+    "receiptAwardedPoints",
+    "receiptCurrency",
+    "receiptDiscount_p",
+    "receiptEarnBase_p",
+    "receiptEarnMultiplier",
+    "receiptEarnRate",
+    "receiptExpectedPoints",
+    "receiptFailures",
+    "receiptMathVersion",
+    "receiptPaidEarlier_p",
+    "receiptPaidToday_p",
+    "receiptProductLines",
+    "receiptProductTotal_p",
+    "receiptReconciled",
+    "receiptRedeemedPts",
+    "receiptRedeemedValue_p",
+    "receiptServiceAmount_p",
+    "receiptServiceCharge_p",
+    "receiptSubtotal_p",
+    "receiptTip_p",
+    "receiptTransactionTotal_p",
+    "sendLoyaltyEmail",
+    "serviceCharge",
+    "serviceId",
+    "serviceName",
+    "soldAddOns",
+    "soldProducts",
+    "source",
+    "splitAmount",
+    "splitSecond",
+    "startTime",
+    "status",
+    "tenantId",
+    "tip",
+    "tipPaymentMethod"
+  ],
+  "o2CheckedOutBookingPaymentFields": {
+    "paymentType": "CASH",
+    "price": 20,
+    "soldProducts": [],
+    "soldAddOns": [],
+    "loyaltyPromotionSnapshot": {
+      "eligible": false,
+      "reason": "STAFF_CREATED",
+      "multiplier": 1,
+      "multiplierSource": "none",
+      "campaignId": null,
+      "campaignStartDate": null,
+      "campaignEndDate": null,
+      "evaluatedDate": null,
+      "timezone": "Europe/London",
+      "source": "walk-in",
+      "policyVersion": 1,
+      "evaluatedAt": {
+        "_seconds": 1789301234,
+        "_nanoseconds": 979000000
+      }
+    },
+    "loyaltyPointsEarned": 20,
+    "receiptRedeemedPts": 0,
+    "receiptTransactionTotal_p": 2000,
+    "paymentAllocationVersion": 1,
+    "receiptReconciled": true,
+    "discount": 0,
+    "receiptEarnMultiplier": 1,
+    "receiptAddOnLines": [],
+    "receiptFailures": [],
+    "checkedOutAt": "2026-09-13T12:07:14.960Z",
+    "loyaltyPointsTotal": 20,
+    "receiptServiceAmount_p": 2000,
+    "tipPaymentMethod": "",
+    "receiptServiceCharge_p": 0,
+    "receiptAddOnTotal_p": 0,
+    "tip": 0,
+    "receiptPaidToday_p": 2000,
+    "receiptMathVersion": 1,
+    "receiptTip_p": 0,
+    "receiptEarnRate": 1,
+    "receiptExpectedPoints": 20,
+    "receiptCurrency": "GBP",
+    "receiptProductLines": [],
+    "receiptEarnBase_p": 2000,
+    "paymentAllocation": {
+      "service": {
+        "cash_p": 2000,
+        "card_p": 0,
+        "other_p": 0,
+        "total_p": 2000
+      },
+      "tip": {
+        "cash_p": 0,
+        "card_p": 0,
+        "other_p": 0,
+        "total_p": 0
+      },
+      "collected": {
+        "cash_p": 2000,
+        "card_p": 0,
+        "other_p": 0,
+        "total_p": 2000
+      },
+      "firstMethod": "CASH",
+      "secondMethod": "",
+      "source": "admin-checkout",
+      "reconciled": true,
+      "failures": []
+    },
+    "receiptProductTotal_p": 0,
+    "loyaltyRedeemedValue": 0,
+    "receiptRedeemedValue_p": 0,
+    "receiptSubtotal_p": 2000,
+    "receiptAwardedPoints": 20,
+    "sendLoyaltyEmail": false,
+    "paymentMethod": "Cash",
+    "receiptPaidEarlier_p": 0,
+    "loyaltyPointsRedeemed": 0,
+    "paidAmount": 20,
+    "receiptDiscount_p": 0,
+    "status": "CHECKED_OUT"
+  }
+}

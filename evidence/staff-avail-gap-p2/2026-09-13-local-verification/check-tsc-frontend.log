@@ -1,0 +1,7 @@
+# run against git archive of 9ea0aca at 2026-09-13T12:24:01Z
+src/components/bookingDetailPanel.spanContract.test.ts(2,30): error TS2591: Cannot find name 'node:fs'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.
+src/firestoreActions.priceEditClosure.test.ts(2,30): error TS2591: Cannot find name 'node:fs'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.
+src/utils/planLimits.whatsapp.test.ts(4,30): error TS2591: Cannot find name 'node:fs'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.
+src/utils/staffLifecycle.test.ts(897,34): error TS2307: Cannot find module '../../functions/lib/staff/lifecycleRehire.js' or its corresponding type declarations.
+src/utils/staffLifecycle.test.ts(925,32): error TS2307: Cannot find module '../../functions/lib/staff/lifecycleRehire.js' or its corresponding type declarations.
+exit=2

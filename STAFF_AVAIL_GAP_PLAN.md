@@ -909,12 +909,81 @@ everyone.
 - The shared-module refactor changed `createBooking.ts`: the live `salownCreateStaffBooking` (R-2026-09-13-A)
   still runs the pre-refactor code; outcomes are identical, its audit row lacks `tenantId`/`meta.flow`.
 
-**Proposed release (separate approval; NOT executed):** isolated `git archive` at the verified SHA →
-(1) `./scripts/deploy-functions.sh salownCreateStaffWalkIn`, verify ACTIVE/europe-west2 and an
-unauthenticated call returning `UNAUTHENTICATED`, rollback = delete the function; (2) optional, same
-workspace: `salownCreateStaffBooking` for code parity, rollback identity read before deploy;
-(3) only after (1) verifies: `firebase deploy --only hosting:salown-staff`, rollback version
-`62aa1ac4a0302593`, `hosting:salown` must stay `827946e295c69eeb`; no rules deploy.
+### 9.7a Phase 2 release evaluation (2026-09-13) — NO release approved, nothing deployed
+
+Evidence: `evidence/staff-avail-gap-p2/2026-09-13-local-verification/` (`RELEASE-EVALUATION.md`,
+`README.md`, `MANIFEST.sha256`). This section **supersedes** the draft release/rollback plan that was
+in §9.7 (it offered a function deletion as the rollback and left `salownCreateStaffBooking` optional).
+
+**Release candidate.** salown-app **`9ea0aca`** for both code targets, built from `git archive 9ea0aca`
+in an isolated workspace. Later commits are NOT part of it: `2f1007a`…`0780fd1` (INSIGHTS-PASSIVE-BARBER,
+Admin `src/pages/Reports.tsx` — its own Admin release scope) and `e48300e` (SYNC/claim only).
+
+| Target | Live baseline | Delta carried | Evidence |
+|---|---|---|---|
+| `functions:salown` **`salownCreateStaffWalkIn`** (new export) | absent | shipped source vs `797c9b3`: `bookings/staffPolicyGate.ts` (new), `bookings/createBooking.ts` (refactor onto the shared gate), `bookings/createWalkIn.ts` (staffApp surface), `index.ts` (export) | emulator 211/211, real tokens 17/17, archive manifest exit 0, check-only guard exit 0 (clean workspace) |
+| `hosting:salown-staff` | `62aa1ac4a0302593` (built from `797c9b3`) | shipped source vs `797c9b3`: `utils/bookingCallables.ts`, `staff/lib/staffOverrideFlow.ts` (new), `staff/lib/staffCreateReason.ts`, `staff/sheets/WalkInFlow.tsx`, `staff/sheets/NewBookingSheet.tsx`, `i18n/dictionaries/{en,tr}/staffApp.ts`; build from `9ea0aca`: entry `staff-BGZUV_T1.js`, sha256 `882813e2…` | vitest 466/466, tsc/eslint clean, `build:staff` exit 0, Chrome staff/admin/owner |
+| `salownCreateStaffBooking` | live from `797c9b3` | **NOT a target** | same 13-case matrix against `797c9b3` and `9ea0aca` servers with the new client's payloads → identical responses; audit rows differ only by the additive `tenantId`/`meta.flow`. The live function stays; repo source is ahead of it by a behaviour-neutral refactor (record in the ledger) |
+| `hosting:salown`, `firestore:rules`, `salownCreateWalkIn` | — | not in scope | — |
+
+**Order.** Functions first, verified live, then Staff hosting. The new client calls `salownCreateStaffWalkIn`;
+a server without it answers 404 (proven against `797c9b3`), so hosting-first would make every Staff walk-in
+save fail (no write) until the function exists.
+
+**Verified (local, synthetic).** Staff S1-S3, admin A1-A3, owner O1b/O2/O3/O4 in Chrome with before/after
+files; content-level zero-write for S1-S3/A1-A3/O3 over bookings (projected), bookingRequests (full),
+auditLogs (projected) plus an updateTime inventory of the whole `tenants/p2ui` subtree. O2 is proven only as:
+one new booking, CHECKED_OUT with payment/receipt fields on that booking, and no other document in the
+tenant touched during the run. **Not verified:** transactional single execution of `checkoutBooking` (legacy
+client writer, no server guard), registered-client checkout side effects, and the owner's untouched-time
+(backdated) Save & Checkout path; the New Booking sheet's refactored client was not re-driven in Chrome.
+
+**Open decisions (owner) — none is decided by an existing record:**
+1. **Acceptance gap.** §7.2/§8 require a Walk-in-vs-Reschedule race test for Phase 2. Reschedule has no
+   server surface until Phase 3, so the criterion cannot be met now: defer it to Phase 3 explicitly, or hold
+   Phase 2.
+2. **Admin `salownCreateWalkIn`.** It still accepts the `staff` role and skips leave/shift/conflict, so a staff
+   member calling it directly bypasses Phase 2. §9.4 names only Admin *Reschedule* as a possible accepted
+   exception; nothing covers Admin walk-in. Options (not implemented): accept as a named exception for this
+   release; restrict the Admin callable's roles; route Admin walk-ins through the gate (an Admin behaviour
+   change). No authorization change was made.
+3. **`firestore.rules` `isTenantAny` bypass.** §9.4 makes it the closing criterion but allows phases to ship
+   while it is open ("regardless of how many of Phases 1-4 ship"); R-2026-09-13-A shipped Phase 1 on exactly
+   that basis with an owner approval scoped to Phase 1. There is no Phase-2 approval — required, with the
+   report wording "Phase 2 Walk-in callable transition published", never "STAFF-AVAIL-GAP closed". Rules
+   unchanged.
+4. **Staff-facing change notice**: staff/admin Save & Checkout overlapping an unfinished booking or backdated
+   before the shift is now refused without the owner; undated-leave walk-ins are refused for everyone.
+5. **Cached clients**: Staff tabs already open on `62aa1ac4a0302593` keep using `salownCreateWalkIn` (no gate)
+   until reloaded — `sw.js` is unchanged, so nothing forces a reload.
+
+**Mandatory checks still missing (from CLAUDE.md, DEPLOY.md, R-2026-09-13-A precedent):**
+- full frontend `npm test` and the full two-phase `ops/test-emulator.sh` at the pinned SHA (Phase 1 shipped
+  with 5530/5530 and 660/660; Phase 2 has only targeted runs), and the full functions unit suite re-run at the
+  pin (the pre-commit run had 2 git-state failures);
+- in the real release workspace (git-initialised): the guard's uncommitted-changes check, archive manifest,
+  `build:staff`, and a byte comparison of the deployed bundle;
+- Chrome New Booking regression on the new client; UI message when the walk-in callable is missing;
+- pre-deploy live identity reads, tenant + URL announcement and explicit approval, the `RELEASE_LEDGER.md`
+  row with rollback identities, post-deploy served-bytes + source-marker verification.
+
+**Rollback order (to execute only after a release; identities re-read at execution time):**
+1. *Before deploy, record:* live `hosting:salown-staff` version (expected `62aa1ac4a0302593`), live
+   `hosting:salown` version (expected `827946e295c69eeb`, must not move), the function list (expect no
+   `salownCreateStaffWalkIn`; `salownCreateStaffBooking` ACTIVE, updateTime `2026-09-13T00:41:34Z` per the
+   ledger) — via `firebase hosting:channel:list --site <site> --json` and `gcloud functions describe`.
+2. *Roll back Staff hosting first* to the recorded pre-release version (Console → Hosting → `salown-staff` →
+   release history → Roll back), then verify the served entry and bytes match that version.
+3. *Clients still open on the new bundle* keep calling `salownCreateStaffWalkIn` until reloaded (hosting sends
+   no-cache; `sw.js` is network-first but unchanged, so no automatic reload). **Keep the callable deployed**
+   during this drain: those clients stay enforced and able to save. Reloaded clients return to the Phase 1
+   bundle (walk-ins via `salownCreateWalkIn`, legacy parity; New Booking via the untouched
+   `salownCreateStaffBooking`).
+4. *Only after* the hosting rollback is verified and staff devices have reloaded, decide whether to keep the
+   callable (no caller in the old bundle) or remove it with a targeted delete. Deleting it earlier breaks every
+   walk-in save on open new-bundle clients (404, no write) and restores nothing by itself.
+5. Data: bookings and audit rows written by the new callable keep the existing booking shape; no data rollback.
+   `salownCreateStaffBooking` is not released, so it needs no rollback.
 
 ### 9.4 Remaining gaps — named, not hidden
 

@@ -1,0 +1,14 @@
+# functionsArchiveManifest in git archive of 9ea0aca (git init + one commit for tooling), 2026-09-13T14:25:19Z
+functions deploy archive — 228 files, 5.13 MiB
+manifest digest: ba7d343608545ef0414182888b4d4de0736b7e3b5e25e2aff70431d1cb13632b
+
+   112  lib/
+     1  package-lock.json
+     1  package.json
+   112  src/
+     1  tsconfig.build.json
+     1  tsconfig.json
+
+✔ no secret-like file, no debug/test artefact, no unexpected untracked file
+✔ required runtime files present: package.json, lib/index.js
+exit=0

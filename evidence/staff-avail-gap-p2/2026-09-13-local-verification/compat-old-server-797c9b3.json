@@ -1,0 +1,269 @@
+{
+  "label": "old-server-797c9b3",
+  "capturedAt": "2026-09-13T14:34:02.181Z",
+  "environment": {
+    "projectId": "demo-c1",
+    "tenant": "p2nb",
+    "functionsHost": "http://127.0.0.1:5001/demo-c1/europe-west2"
+  },
+  "cases": [
+    {
+      "case": "c01_staff_plain_create",
+      "who": "staff",
+      "http": 200,
+      "result": {
+        "ok": true,
+        "status": "CONFIRMED",
+        "replayed": false,
+        "bookingIdShape": true,
+        "documentId": "c01_staff_plain_create"
+      }
+    },
+    {
+      "case": "c02_staff_same_slot",
+      "who": "staff",
+      "http": 400,
+      "error": {
+        "status": "FAILED_PRECONDITION",
+        "message": "SLOT_CONFLICT",
+        "detailKeys": [
+          "conflictingRecordIds",
+          "reason"
+        ],
+        "reason": "SLOT_CONFLICT",
+        "conflictingRecordIds": [
+          "c01_staff_plain_create"
+        ]
+      }
+    },
+    {
+      "case": "c03_staff_override",
+      "who": "staff",
+      "http": 400,
+      "error": {
+        "status": "FAILED_PRECONDITION",
+        "message": "OVERRIDE_REQUIRES_OWNER",
+        "detailKeys": [
+          "conflictingRecordIds",
+          "reason"
+        ],
+        "reason": "OVERRIDE_REQUIRES_OWNER",
+        "conflictingRecordIds": [
+          "c01_staff_plain_create"
+        ]
+      }
+    },
+    {
+      "case": "c04_admin_override",
+      "who": "admin",
+      "http": 400,
+      "error": {
+        "status": "FAILED_PRECONDITION",
+        "message": "OVERRIDE_REQUIRES_OWNER",
+        "detailKeys": [
+          "conflictingRecordIds",
+          "reason"
+        ],
+        "reason": "OVERRIDE_REQUIRES_OWNER",
+        "conflictingRecordIds": [
+          "c01_staff_plain_create"
+        ]
+      }
+    },
+    {
+      "case": "c05_superadmin_claim_only",
+      "who": "super",
+      "http": 403,
+      "error": {
+        "status": "PERMISSION_DENIED",
+        "message": "PERMISSION_DENIED",
+        "detailKeys": [
+          "reason"
+        ],
+        "reason": "PERMISSION_DENIED"
+      }
+    },
+    {
+      "case": "c06_owner_override_no_ack",
+      "who": "owner",
+      "http": 400,
+      "error": {
+        "status": "FAILED_PRECONDITION",
+        "message": "CONFLICT_ACK_REQUIRED",
+        "detailKeys": [
+          "conflictingRecordIds",
+          "reason"
+        ],
+        "reason": "CONFLICT_ACK_REQUIRED",
+        "conflictingRecordIds": [
+          "c01_staff_plain_create"
+        ]
+      }
+    },
+    {
+      "case": "c07_owner_override_ack",
+      "who": "owner",
+      "http": 200,
+      "result": {
+        "ok": true,
+        "status": "CONFIRMED",
+        "replayed": false,
+        "bookingIdShape": true,
+        "documentId": "c07_owner_override_ack"
+      }
+    },
+    {
+      "case": "c08_owner_override_ack_replay",
+      "who": "owner",
+      "http": 200,
+      "result": {
+        "ok": true,
+        "status": "CONFIRMED",
+        "replayed": true,
+        "bookingIdShape": true,
+        "documentId": "c07_owner_override_ack"
+      }
+    },
+    {
+      "case": "c09_owner_vs_blocked",
+      "who": "owner",
+      "http": 400,
+      "error": {
+        "status": "FAILED_PRECONDITION",
+        "message": "BLOCKED_TIME_CONFLICT",
+        "detailKeys": [
+          "reason"
+        ],
+        "reason": "BLOCKED_TIME_CONFLICT"
+      }
+    },
+    {
+      "case": "c10_staff_outside_shift",
+      "who": "staff",
+      "http": 400,
+      "error": {
+        "status": "FAILED_PRECONDITION",
+        "message": "OUTSIDE_EFFECTIVE_SHIFT",
+        "detailKeys": [
+          "reason",
+          "requestedStartMins",
+          "shiftEndMins",
+          "shiftStartMins"
+        ],
+        "reason": "OUTSIDE_EFFECTIVE_SHIFT",
+        "shiftStartMins": 540,
+        "shiftEndMins": 600,
+        "requestedStartMins": 660
+      }
+    },
+    {
+      "case": "c11_owner_hours_override",
+      "who": "owner",
+      "http": 200,
+      "result": {
+        "ok": true,
+        "status": "CONFIRMED",
+        "replayed": false,
+        "bookingIdShape": true,
+        "documentId": "c11_owner_hours_override"
+      }
+    },
+    {
+      "case": "c12_owner_undated_leave",
+      "who": "owner",
+      "http": 400,
+      "error": {
+        "status": "FAILED_PRECONDITION",
+        "message": "STAFF_UNAVAILABLE",
+        "detailKeys": [
+          "reason"
+        ],
+        "reason": "STAFF_UNAVAILABLE"
+      }
+    },
+    {
+      "case": "c13_unauthenticated",
+      "who": null,
+      "http": 401,
+      "error": {
+        "status": "UNAUTHENTICATED",
+        "message": "UNAUTHENTICATED",
+        "detailKeys": [
+          "reason"
+        ],
+        "reason": "UNAUTHENTICATED"
+      }
+    },
+    {
+      "case": "c14_staff_walkin_callable_presence",
+      "who": "staff",
+      "http": 404,
+      "raw": {
+        "nonJson": true
+      }
+    }
+  ],
+  "overrideAudits": [
+    {
+      "actorRole": "owner",
+      "targetCase": "c07_owner_override_ack",
+      "topLevelKeys": [
+        "action",
+        "actor",
+        "meta",
+        "source",
+        "target",
+        "timestamp",
+        "userEmail",
+        "userId",
+        "userName",
+        "userRole"
+      ],
+      "metaKeys": [
+        "barberId",
+        "barberName",
+        "dimensions",
+        "reason",
+        "requestedEndMs",
+        "requestedStartMs"
+      ],
+      "dimensions": {
+        "conflict": true,
+        "conflictingRecordIds": [
+          "c01_staff_plain_create"
+        ]
+      },
+      "reason": "compat agreed"
+    },
+    {
+      "actorRole": "owner",
+      "targetCase": "c11_owner_hours_override",
+      "topLevelKeys": [
+        "action",
+        "actor",
+        "meta",
+        "source",
+        "target",
+        "timestamp",
+        "userEmail",
+        "userId",
+        "userName",
+        "userRole"
+      ],
+      "metaKeys": [
+        "barberId",
+        "barberName",
+        "dimensions",
+        "reason",
+        "requestedEndMs",
+        "requestedStartMs"
+      ],
+      "dimensions": {
+        "hours": true,
+        "conflictingRecordIds": []
+      },
+      "reason": "late client"
+    }
+  ],
+  "bookingDocsAfter": 4
+}

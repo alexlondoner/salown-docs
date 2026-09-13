@@ -1,0 +1,34 @@
+{
+  "_note": "SECOND (evidence) staff run. Transcribed verbatim from the in-page recorder (window.__p2.state). window.prompt was wrapped to RECORD every call and was deliberately armed with a reason, so any prompt the UI opened would have been recorded and answered. Firestore before/after JSON files are the authoritative write evidence.",
+  "environment": { "page": "http://127.0.0.1:5199/staff.html", "tenant": "p2ui (P2 ui)", "signedIn": "ui-staff@p2.test, role badge Staff (staff-profile-role.jpg)" },
+  "firestoreBefore": "S0-before-staff-rerun.json {bookings 8, idempotency 4, audits 8, checkedOut 1}",
+  "S1_conflict_save": {
+    "config": "Alex, 12:40 explicitly selected (overlaps O1b 12:20-12:50 CONFIRMED), Save without payment",
+    "timeSelected": "12:40",
+    "promptCalls": [],
+    "toastLog": [{ "at": "12:21:13Z", "text": "Owner authorization is required for this." }],
+    "formStillOpen": true, "visibleTimeAfter": "12:40",
+    "screenshot": "S1-staff-conflict-denied-form-kept.jpg (toast visible, form intact)",
+    "firestoreAfter": "S1-after-staff-conflict-save.json — ids identical to S0"
+  },
+  "S2_leave_save": {
+    "config": "Lee (status leave, undated), 15:10, Save without payment",
+    "timeSelected": "15:10",
+    "promptCalls": [],
+    "toastLog": [{ "at": "12:21:51Z", "text": "That professional is not available on this date/time (deactivated or on leave) — this can never be overridden." }],
+    "formStillOpen": true, "visibleTimeAfter": "15:10",
+    "screenshot": "S2-staff-leave-denied-form-kept.jpg (toast visible, Lee selected, form intact)",
+    "firestoreAfter": "S2-after-staff-leave-save.json — ids identical to S1-after"
+  },
+  "S3_conflict_save_and_checkout": {
+    "config": "Alex, 12:45 explicitly selected (overlaps O1b), Continue to payment → Confirm payment (Cash)",
+    "timeSelected": "12:45",
+    "promptCalls": [],
+    "toastLog": [{ "at": "12:22:29Z", "text": "Owner authorization is required for this." }],
+    "onPayStepAfter": true,
+    "screenshot": "S3-staff-checkout-denied-pay-step.jpg (toast visible on the pay step)",
+    "firestoreAfter": "S3-after-staff-conflict-save-and-checkout.json — ids identical to S2-after, checkedOut still 1",
+    "cleanup": "page reloaded to leave the pay step (no write)"
+  },
+  "notCoveredByTheRerun": "the UNTOUCHED-time Save & Checkout backdate path for staff was exercised only in staff run 1 (staff-run1-observations.json: refused, zero writes); the rerun used explicitly selected times"
+}

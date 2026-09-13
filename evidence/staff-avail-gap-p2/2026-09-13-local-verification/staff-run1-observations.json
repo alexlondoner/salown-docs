@@ -1,0 +1,25 @@
+{
+  "_note": "FIRST staff run (before the evidence harness existed). UI values below are transcribed from in-session Chrome javascript-tool output; NO screenshot of this run was saved to disk, and the Firestore reads were printed to the session only (not written to files). Treat this as supporting evidence. A second staff run with saved screenshots and before/after JSON files is planned after the admin check.",
+  "environment": { "page": "http://127.0.0.1:5199/staff.html", "tenant": "p2ui", "signedIn": "ui-staff@p2.test (role staff)", "emulatorLog": "emu-ui3.log" },
+  "firestoreBefore": { "source": "session output after seeding", "bookings": ["BLOCKED-SEED bea BLOCKED", "SEED-ALEX alex CONFIRMED"], "idempotency": 0, "audits": 0 },
+  "S1_conflict_save": {
+    "config": "Alex, 12:05 (untouched default = current minute), Save without payment; window.prompt wrapped to record",
+    "promptCalls": [],
+    "messages": ["Owner authorization is required for this."],
+    "form": { "time": "12:05", "itemVisible": "Haircut", "barber": "Alex selected" },
+    "firestoreAfter": { "bookings": ["BLOCKED-SEED bea BLOCKED", "SEED-ALEX alex CONFIRMED"], "auditLogs": 0 }
+  },
+  "S2_leave_save": {
+    "config": "Lee (status leave, undated), 12:05, Save without payment",
+    "promptCalls": [],
+    "messages": ["That professional is not available on this date/time (deactivated or on leave) — this can never be overridden."],
+    "form": { "time": "12:05", "items": "1 item" }
+  },
+  "S3_conflict_save_and_checkout": {
+    "config": "Alex, time untouched (Save & Checkout backdates by service duration), Continue to payment → Confirm payment; attempted twice",
+    "attempt1": { "promptCalls": [], "messages": "none captured by the 4 s post-click read (toast likely expired)", "stillOnPayStep": true },
+    "attempt2_withMutationObserver": { "promptCalls": [], "toastLog": [{ "at": "11:08:25Z", "text": "Owner authorization is required for this." }], "stillOnPayStep": true },
+    "firestoreAfterBothAttempts": { "bookings": ["BLOCKED-SEED bea BLOCKED", "SEED-ALEX alex CONFIRMED"], "audits": 0, "idempotencyRecords": 0, "paidAmountOnSeeds": "empty" }
+  },
+  "firestoreConsistencyCheck": "evidence/S9-after-staff-before-admin-owner.json (captured later, before any admin/owner action): bookings 2, idempotency 0, audits 0 — no staff write occurred"
+}

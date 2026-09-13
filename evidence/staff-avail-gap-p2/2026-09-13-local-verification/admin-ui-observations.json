@@ -1,0 +1,33 @@
+{
+  "_note": "Transcribed verbatim from the in-page recorder (window.__p2.state). window.prompt was wrapped to RECORD every call and was deliberately armed with a reason for every admin scenario, so any prompt the UI opened would have been recorded and answered. Firestore before/after files are the authoritative write evidence.",
+  "environment": { "page": "http://127.0.0.1:5199/staff.html", "tenant": "p2ui (P2 ui)", "signedIn": "ui-admin@p2.test, role badge Admin (admin-profile-role.jpg)" },
+  "firestoreBefore": "A0-before-admin.json {bookings 8, idempotency 4, audits 8, checkedOut 1}",
+  "A1_conflict_save": {
+    "config": "Alex, 12:30 (conflicts with Alex 12:00/12:05/12:20/12:25), Save without payment",
+    "timeSelected": "12:30",
+    "promptCalls": [],
+    "toastLog": [{ "at": "12:16:49Z", "text": "Owner authorization is required for this." }],
+    "formStillOpen": true, "visibleTimeAfter": "12:30",
+    "screenshot": "A1-admin-conflict-denied-form-kept.jpg (toast visible, form intact)",
+    "firestoreAfter": "A1-after-admin-conflict-save.json — bookings/idempotency/audit ids identical to A0"
+  },
+  "A2_leave_save": {
+    "config": "Lee (status leave, undated), 15:00, Save without payment",
+    "timeSelected": "15:00",
+    "promptCalls": [],
+    "toastLog": [{ "at": "12:17:27Z", "text": "That professional is not available on this date/time (deactivated or on leave) — this can never be overridden." }],
+    "formStillOpen": true, "visibleTimeAfter": "15:00",
+    "screenshot": "A2-admin-leave-denied-form-kept.jpg (form intact with Lee selected; the toast had already expired at capture time — the message evidence is the observer log above)",
+    "firestoreAfter": "A2-after-admin-leave-save.json — identical to A1-after"
+  },
+  "A3_conflict_save_and_checkout": {
+    "config": "Alex, 12:35 explicitly selected, Continue to payment → Confirm payment (Cash)",
+    "timeSelected": "12:35",
+    "promptCalls": [],
+    "toastLog": [{ "at": "12:18:11Z", "text": "Owner authorization is required for this." }],
+    "onPayStepAfter": true,
+    "screenshot": "A3-admin-checkout-denied-pay-step.jpg (toast visible on the pay step, total £20)",
+    "firestoreAfter": "A3-after-admin-conflict-save-and-checkout.json — identical to A2-after, checkedOut still 1",
+    "cleanupNote": "closing the pay step afterwards did not reach Discard; the page was reloaded before sign-out (no write involved)"
+  }
+}

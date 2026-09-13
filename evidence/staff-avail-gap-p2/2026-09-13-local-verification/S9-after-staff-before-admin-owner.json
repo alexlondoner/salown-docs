@@ -1,0 +1,55 @@
+{
+  "label": "S9-after-staff-before-admin-owner",
+  "capturedAt": "2026-09-13T12:02:28.010Z",
+  "environment": {
+    "projectId": "demo-c1",
+    "firestoreHost": "127.0.0.1:8080",
+    "tenant": "p2ui",
+    "tenantName": "P2 ui"
+  },
+  "counts": {
+    "bookings": 2,
+    "idempotency": 0,
+    "audits": 0,
+    "overrideAudits": 0,
+    "checkedOut": 0
+  },
+  "bookings": [
+    {
+      "docId": "cBsMIYdv5dHhouyGznGN",
+      "bookingId": "SEED-ALEX",
+      "barberId": "alex",
+      "status": "CONFIRMED",
+      "source": "Walk-in",
+      "bookingType": "walkin",
+      "startTime": "2026-09-13T11:00:00.000Z",
+      "startLondon": "13/09/2026, 12:00",
+      "endTime": "2026-09-13T11:30:00.000Z",
+      "duration": 30,
+      "price": 20,
+      "paidAmount": null,
+      "paymentMethod": null,
+      "checkedOutAt": null,
+      "total": null
+    },
+    {
+      "docId": "Simn9Qtjp9YNeo2AlmyW",
+      "bookingId": "BLOCKED-SEED",
+      "barberId": "bea",
+      "status": "BLOCKED",
+      "source": "block",
+      "bookingType": null,
+      "startTime": "2026-09-13T12:00:00.000Z",
+      "startLondon": "13/09/2026, 13:00",
+      "endTime": "2026-09-13T12:30:00.000Z",
+      "duration": null,
+      "price": null,
+      "paidAmount": null,
+      "paymentMethod": null,
+      "checkedOutAt": null,
+      "total": null
+    }
+  ],
+  "idempotency": [],
+  "audits": []
+}

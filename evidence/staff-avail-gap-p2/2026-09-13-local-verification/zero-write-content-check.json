@@ -1,0 +1,241 @@
+{
+  "capturedAt": "2026-09-13T14:23:38.566Z",
+  "scope": {
+    "snapshotComparison": {
+      "tenants/p2ui/bookings": "projected fields only: docId, bookingId, barberId, status, source, bookingType, startTime, startLondon, endTime, duration, price, paidAmount, paymentMethod, checkedOutAt, total",
+      "tenants/p2ui/bookingRequests": "full document data",
+      "tenants/p2ui/auditLogs": "projected fields only: id, action, actor, tenantId, target, meta, timestamp"
+    },
+    "updateTimeInventory": "every document currently present under tenants/p2ui (recursive, all subcollections) plus the tenant root doc; a write inside a window would move that doc's updateTime into the window. Blind spots: a document CREATED and then DELETED inside the window, or DELETED inside the window, leaves no trace here; documents outside tenants/p2ui (other tenants, Auth users) are not covered.",
+    "collectionsPresentNow": [
+      "tenants/p2ui/auditLogs",
+      "tenants/p2ui/barbers",
+      "tenants/p2ui/bookingRequests",
+      "tenants/p2ui/bookings",
+      "tenants/p2ui/public",
+      "tenants/p2ui/services",
+      "tenants/p2ui/settings",
+      "tenants/p2ui/staff"
+    ],
+    "documentsInventoried": 33
+  },
+  "results": [
+    {
+      "scenario": "S1",
+      "before": "S0-before-staff-rerun",
+      "after": "S1-after-staff-conflict-save",
+      "window": [
+        "2026-09-13T12:20:36.620Z",
+        "2026-09-13T12:21:32.901Z"
+      ],
+      "bookings_projectedFields": {
+        "before": 8,
+        "after": 8,
+        "added": [],
+        "removed": [],
+        "contentChanged": []
+      },
+      "bookingRequests_fullDocument": {
+        "before": 4,
+        "after": 4,
+        "added": [],
+        "removed": [],
+        "contentChanged": []
+      },
+      "auditLogs_projectedFields": {
+        "before": 8,
+        "after": 8,
+        "added": [],
+        "removed": [],
+        "contentChanged": []
+      },
+      "anyDocInWholeTenantSubtreeUpdatedInWindow": []
+    },
+    {
+      "scenario": "S2",
+      "before": "S1-after-staff-conflict-save",
+      "after": "S2-after-staff-leave-save",
+      "window": [
+        "2026-09-13T12:21:32.901Z",
+        "2026-09-13T12:22:09.276Z"
+      ],
+      "bookings_projectedFields": {
+        "before": 8,
+        "after": 8,
+        "added": [],
+        "removed": [],
+        "contentChanged": []
+      },
+      "bookingRequests_fullDocument": {
+        "before": 4,
+        "after": 4,
+        "added": [],
+        "removed": [],
+        "contentChanged": []
+      },
+      "auditLogs_projectedFields": {
+        "before": 8,
+        "after": 8,
+        "added": [],
+        "removed": [],
+        "contentChanged": []
+      },
+      "anyDocInWholeTenantSubtreeUpdatedInWindow": []
+    },
+    {
+      "scenario": "S3",
+      "before": "S2-after-staff-leave-save",
+      "after": "S3-after-staff-conflict-save-and-checkout",
+      "window": [
+        "2026-09-13T12:22:09.276Z",
+        "2026-09-13T12:23:05.510Z"
+      ],
+      "bookings_projectedFields": {
+        "before": 8,
+        "after": 8,
+        "added": [],
+        "removed": [],
+        "contentChanged": []
+      },
+      "bookingRequests_fullDocument": {
+        "before": 4,
+        "after": 4,
+        "added": [],
+        "removed": [],
+        "contentChanged": []
+      },
+      "auditLogs_projectedFields": {
+        "before": 8,
+        "after": 8,
+        "added": [],
+        "removed": [],
+        "contentChanged": []
+      },
+      "anyDocInWholeTenantSubtreeUpdatedInWindow": []
+    },
+    {
+      "scenario": "A1",
+      "before": "A0-before-admin",
+      "after": "A1-after-admin-conflict-save",
+      "window": [
+        "2026-09-13T12:15:59.676Z",
+        "2026-09-13T12:17:10.796Z"
+      ],
+      "bookings_projectedFields": {
+        "before": 8,
+        "after": 8,
+        "added": [],
+        "removed": [],
+        "contentChanged": []
+      },
+      "bookingRequests_fullDocument": {
+        "before": 4,
+        "after": 4,
+        "added": [],
+        "removed": [],
+        "contentChanged": []
+      },
+      "auditLogs_projectedFields": {
+        "before": 8,
+        "after": 8,
+        "added": [],
+        "removed": [],
+        "contentChanged": []
+      },
+      "anyDocInWholeTenantSubtreeUpdatedInWindow": []
+    },
+    {
+      "scenario": "A2",
+      "before": "A1-after-admin-conflict-save",
+      "after": "A2-after-admin-leave-save",
+      "window": [
+        "2026-09-13T12:17:10.796Z",
+        "2026-09-13T12:17:49.346Z"
+      ],
+      "bookings_projectedFields": {
+        "before": 8,
+        "after": 8,
+        "added": [],
+        "removed": [],
+        "contentChanged": []
+      },
+      "bookingRequests_fullDocument": {
+        "before": 4,
+        "after": 4,
+        "added": [],
+        "removed": [],
+        "contentChanged": []
+      },
+      "auditLogs_projectedFields": {
+        "before": 8,
+        "after": 8,
+        "added": [],
+        "removed": [],
+        "contentChanged": []
+      },
+      "anyDocInWholeTenantSubtreeUpdatedInWindow": []
+    },
+    {
+      "scenario": "A3",
+      "before": "A2-after-admin-leave-save",
+      "after": "A3-after-admin-conflict-save-and-checkout",
+      "window": [
+        "2026-09-13T12:17:49.346Z",
+        "2026-09-13T12:18:37.312Z"
+      ],
+      "bookings_projectedFields": {
+        "before": 8,
+        "after": 8,
+        "added": [],
+        "removed": [],
+        "contentChanged": []
+      },
+      "bookingRequests_fullDocument": {
+        "before": 4,
+        "after": 4,
+        "added": [],
+        "removed": [],
+        "contentChanged": []
+      },
+      "auditLogs_projectedFields": {
+        "before": 8,
+        "after": 8,
+        "added": [],
+        "removed": [],
+        "contentChanged": []
+      },
+      "anyDocInWholeTenantSubtreeUpdatedInWindow": []
+    },
+    {
+      "scenario": "O3",
+      "before": "O2-after-owner-conflict-save-and-checkout",
+      "after": "O3-after-owner-blocked",
+      "window": [
+        "2026-09-13T12:07:42.682Z",
+        "2026-09-13T12:08:51.713Z"
+      ],
+      "bookings_projectedFields": {
+        "before": 5,
+        "after": 5,
+        "added": [],
+        "removed": [],
+        "contentChanged": []
+      },
+      "bookingRequests_fullDocument": {
+        "before": 3,
+        "after": 3,
+        "added": [],
+        "removed": [],
+        "contentChanged": []
+      },
+      "auditLogs_projectedFields": {
+        "before": 6,
+        "after": 6,
+        "added": [],
+        "removed": [],
+        "contentChanged": []
+      },
+      "anyDocInWholeTenantSubtreeUpdatedInWindow": []
+    }
+  ]
+}

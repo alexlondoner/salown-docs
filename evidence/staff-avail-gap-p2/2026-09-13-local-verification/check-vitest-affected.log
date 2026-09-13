@@ -1,0 +1,11 @@
+# run against git archive of 9ea0aca at 2026-09-13T12:25:13Z — rerun; the previous attempt died on an invalid CLI flag (--minWorkers) before any test ran
+
+ RUN  v4.1.9 /private/tmp/claude-501/-Users-alish/1b4e7c9f-b90b-4cb4-9da8-c744b257a970/scratchpad/archive-9ea0aca
+
+
+ Test Files  16 passed (16)
+      Tests  466 passed (466)
+   Start at  13:25:14
+   Duration  4.43s (transform 924ms, setup 0ms, import 1.83s, tests 798ms, environment 1ms)
+
+exit=0

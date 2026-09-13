@@ -1,0 +1,403 @@
+{
+  "label": "A1-after-admin-conflict-save",
+  "capturedAt": "2026-09-13T12:17:10.796Z",
+  "environment": {
+    "projectId": "demo-c1",
+    "firestoreHost": "127.0.0.1:8080",
+    "tenant": "p2ui",
+    "tenantName": "P2 ui"
+  },
+  "counts": {
+    "bookings": 8,
+    "idempotency": 4,
+    "audits": 8,
+    "overrideAudits": 4,
+    "checkedOut": 1
+  },
+  "bookings": [
+    {
+      "docId": "cBsMIYdv5dHhouyGznGN",
+      "bookingId": "SEED-ALEX",
+      "barberId": "alex",
+      "status": "CONFIRMED",
+      "source": "Walk-in",
+      "bookingType": "walkin",
+      "startTime": "2026-09-13T11:00:00.000Z",
+      "startLondon": "13/09/2026, 12:00",
+      "endTime": "2026-09-13T11:30:00.000Z",
+      "duration": 30,
+      "price": 20,
+      "paidAmount": null,
+      "paymentMethod": null,
+      "checkedOutAt": null,
+      "total": null
+    },
+    {
+      "docId": "PS70wv8VzzHoXLMBlXYD",
+      "bookingId": "WCB-1789301080909-cf70",
+      "barberId": "alex",
+      "status": "CONFIRMED",
+      "source": "Walk-in",
+      "bookingType": "walkin",
+      "startTime": "2026-09-13T11:05:00.000Z",
+      "startLondon": "13/09/2026, 12:05",
+      "endTime": "2026-09-13T11:35:00.000Z",
+      "duration": 30,
+      "price": 20,
+      "paidAmount": "",
+      "paymentMethod": null,
+      "checkedOutAt": null,
+      "total": null
+    },
+    {
+      "docId": "1hizlESKuGZYYxvq7KyC",
+      "bookingId": "WCB-1789301167840-f39c",
+      "barberId": "alex",
+      "status": "CONFIRMED",
+      "source": "Walk-in",
+      "bookingType": "walkin",
+      "startTime": "2026-09-13T11:20:00.000Z",
+      "startLondon": "13/09/2026, 12:20",
+      "endTime": "2026-09-13T11:50:00.000Z",
+      "duration": 30,
+      "price": 20,
+      "paidAmount": "",
+      "paymentMethod": null,
+      "checkedOutAt": null,
+      "total": null
+    },
+    {
+      "docId": "FFc9viBZHEHGKS656dQy",
+      "bookingId": "WCB-1789301234822-e30d",
+      "barberId": "alex",
+      "status": "CHECKED_OUT",
+      "source": "Walk-in",
+      "bookingType": "walkin",
+      "startTime": "2026-09-13T11:25:00.000Z",
+      "startLondon": "13/09/2026, 12:25",
+      "endTime": "2026-09-13T11:55:00.000Z",
+      "duration": 30,
+      "price": 20,
+      "paidAmount": 20,
+      "paymentMethod": "Cash",
+      "checkedOutAt": "2026-09-13T12:07:14.960Z",
+      "total": null
+    },
+    {
+      "docId": "Simn9Qtjp9YNeo2AlmyW",
+      "bookingId": "BLOCKED-SEED",
+      "barberId": "bea",
+      "status": "BLOCKED",
+      "source": "block",
+      "bookingType": null,
+      "startTime": "2026-09-13T12:00:00.000Z",
+      "startLondon": "13/09/2026, 13:00",
+      "endTime": "2026-09-13T12:30:00.000Z",
+      "duration": null,
+      "price": null,
+      "paidAmount": null,
+      "paymentMethod": null,
+      "checkedOutAt": null,
+      "total": null
+    },
+    {
+      "docId": "JDmJvh6RKY1cdIjA0O5J",
+      "bookingId": "SEED-BEA-B",
+      "barberId": "bea",
+      "status": "CONFIRMED",
+      "source": "Walk-in",
+      "bookingType": "walkin",
+      "startTime": "2026-09-13T13:00:00.000Z",
+      "startLondon": "13/09/2026, 14:00",
+      "endTime": "2026-09-13T13:30:00.000Z",
+      "duration": 30,
+      "price": 20,
+      "paidAmount": null,
+      "paymentMethod": null,
+      "checkedOutAt": null,
+      "total": null
+    },
+    {
+      "docId": "80pdlTfE6Ymmr56puuma",
+      "bookingId": "WCB-1789301362901-0ba5",
+      "barberId": "bea",
+      "status": "CONFIRMED",
+      "source": "Walk-in",
+      "bookingType": "walkin",
+      "startTime": "2026-09-13T13:05:00.000Z",
+      "startLondon": "13/09/2026, 14:05",
+      "endTime": "2026-09-13T13:35:00.000Z",
+      "duration": 30,
+      "price": 20,
+      "paidAmount": "",
+      "paymentMethod": null,
+      "checkedOutAt": null,
+      "total": null
+    },
+    {
+      "docId": "r26mlI97NXfZ15EEJ07B",
+      "bookingId": "INJECTED-C",
+      "barberId": "bea",
+      "status": "CONFIRMED",
+      "source": "Walk-in",
+      "bookingType": "walkin",
+      "startTime": "2026-09-13T13:15:00.000Z",
+      "startLondon": "13/09/2026, 14:15",
+      "endTime": "2026-09-13T13:45:00.000Z",
+      "duration": 30,
+      "price": null,
+      "paidAmount": null,
+      "paymentMethod": null,
+      "checkedOutAt": null,
+      "total": null
+    }
+  ],
+  "idempotency": [
+    {
+      "id": "walkin_032a825d25d134c03fe5ea84d786e69873e367ccc115833466b47979aab4511e",
+      "op": "walkin-create",
+      "tenantId": "p2ui",
+      "actorUid": "iS3uKYNuPHOgcjvA2hPuYCInBvO8",
+      "rawKey": "swkin-1789301167661-olyckivdx1",
+      "docId": "1hizlESKuGZYYxvq7KyC",
+      "bookingId": "WCB-1789301167840-f39c",
+      "fingerprint": "79e1fb3fdebc9ec5d0f9d41f4bc5f8355dd815cc9a626fcb6d0ac189cdc9d9f2",
+      "createdAt": "2026-09-13T12:06:07.877Z"
+    },
+    {
+      "id": "walkin_74d7debcae1a3b271f1d49e1c68736dcf288c3996879eea7478008fb1197eb19",
+      "op": "walkin-create",
+      "tenantId": "p2ui",
+      "actorUid": "iS3uKYNuPHOgcjvA2hPuYCInBvO8",
+      "rawKey": "swkin-1789301234660-77syhszesx",
+      "docId": "FFc9viBZHEHGKS656dQy",
+      "bookingId": "WCB-1789301234822-e30d",
+      "fingerprint": "31e78b53af774ef6e816cf6166837c08f6d5020d35fc7e72b5a1b91e4c90b464",
+      "createdAt": "2026-09-13T12:07:14.848Z"
+    },
+    {
+      "id": "walkin_7521d0bb3f8dc89d5d7e2d1197c36e84685cb85a777e6179abe50b3981e145ee",
+      "op": "walkin-create",
+      "tenantId": "p2ui",
+      "actorUid": "iS3uKYNuPHOgcjvA2hPuYCInBvO8",
+      "rawKey": "swkin-1789301362655-pslggv0xl",
+      "docId": "80pdlTfE6Ymmr56puuma",
+      "bookingId": "WCB-1789301362901-0ba5",
+      "fingerprint": "8a511a4aec1c4146b370b71b65c1ca62a483798a71071179e8e7a926086a5f8a",
+      "createdAt": "2026-09-13T12:09:22.937Z"
+    },
+    {
+      "id": "walkin_f5dba319a2a328d690a3c9e26e1da5b7060b29833b662efb0ba2c71b6e007db9",
+      "op": "walkin-create",
+      "tenantId": "p2ui",
+      "actorUid": "iS3uKYNuPHOgcjvA2hPuYCInBvO8",
+      "rawKey": "swkin-1789301080665-kdt0824zka",
+      "docId": "PS70wv8VzzHoXLMBlXYD",
+      "bookingId": "WCB-1789301080909-cf70",
+      "fingerprint": "afcaf7d0181106d861a2d9f633193187c08a03380b7a37f7a195c143edb5ca6d",
+      "createdAt": "2026-09-13T12:04:40.937Z"
+    }
+  ],
+  "audits": [
+    {
+      "id": "39TAMc1bjLD1drgVBl8b",
+      "action": "WALK_IN_CREATED",
+      "actor": {
+        "uid": "iS3uKYNuPHOgcjvA2hPuYCInBvO8",
+        "email": "",
+        "name": "",
+        "role": "owner"
+      },
+      "tenantId": null,
+      "target": {
+        "collection": "bookings",
+        "docId": "FFc9viBZHEHGKS656dQy",
+        "label": "WCB-1789301234822-e30d"
+      },
+      "meta": null,
+      "timestamp": "2026-09-13T12:07:14.889Z"
+    },
+    {
+      "id": "8sPNuCb7r1ZtMW4ikph5",
+      "action": "WALK_IN_CREATED",
+      "actor": {
+        "uid": "iS3uKYNuPHOgcjvA2hPuYCInBvO8",
+        "email": "",
+        "name": "",
+        "role": "owner"
+      },
+      "tenantId": null,
+      "target": {
+        "collection": "bookings",
+        "docId": "80pdlTfE6Ymmr56puuma",
+        "label": "WCB-1789301362901-0ba5"
+      },
+      "meta": null,
+      "timestamp": "2026-09-13T12:09:22.968Z"
+    },
+    {
+      "id": "FX8INmc9H0rRdW8GFDi4",
+      "action": "WALK_IN_CREATED",
+      "actor": {
+        "uid": "iS3uKYNuPHOgcjvA2hPuYCInBvO8",
+        "email": "",
+        "name": "",
+        "role": "owner"
+      },
+      "tenantId": null,
+      "target": {
+        "collection": "bookings",
+        "docId": "PS70wv8VzzHoXLMBlXYD",
+        "label": "WCB-1789301080909-cf70"
+      },
+      "meta": null,
+      "timestamp": "2026-09-13T12:04:40.990Z"
+    },
+    {
+      "id": "PnoJLc5OYbJn3252ulJ5",
+      "action": "STAFF_BOOKING_POLICY_OVERRIDE",
+      "actor": {
+        "uid": "iS3uKYNuPHOgcjvA2hPuYCInBvO8",
+        "email": "ui-owner@p2.test",
+        "name": "ui-owner@p2.test",
+        "role": "owner"
+      },
+      "tenantId": "p2ui",
+      "target": {
+        "collection": "bookings",
+        "docId": "FFc9viBZHEHGKS656dQy",
+        "label": "WCB-1789301234822-e30d"
+      },
+      "meta": {
+        "flow": "walkin",
+        "dimensions": {
+          "conflict": true,
+          "conflictingRecordIds": [
+            "cBsMIYdv5dHhouyGznGN",
+            "PS70wv8VzzHoXLMBlXYD",
+            "1hizlESKuGZYYxvq7KyC"
+          ]
+        },
+        "reason": "O2: owner approved, client paid at the till",
+        "barberId": "alex",
+        "barberName": "Alex",
+        "requestedStartMs": 1789298700000,
+        "requestedEndMs": 1789300500000
+      },
+      "timestamp": "2026-09-13T12:07:14.848Z"
+    },
+    {
+      "id": "TF0rjrkW0Vhk4jtcMvYz",
+      "action": "STAFF_BOOKING_POLICY_OVERRIDE",
+      "actor": {
+        "uid": "iS3uKYNuPHOgcjvA2hPuYCInBvO8",
+        "email": "ui-owner@p2.test",
+        "name": "ui-owner@p2.test",
+        "role": "owner"
+      },
+      "tenantId": "p2ui",
+      "target": {
+        "collection": "bookings",
+        "docId": "1hizlESKuGZYYxvq7KyC",
+        "label": "WCB-1789301167840-f39c"
+      },
+      "meta": {
+        "flow": "walkin",
+        "dimensions": {
+          "conflict": true,
+          "conflictingRecordIds": [
+            "cBsMIYdv5dHhouyGznGN",
+            "PS70wv8VzzHoXLMBlXYD"
+          ]
+        },
+        "reason": "O1b: owner approved squeeze-in over both bookings",
+        "barberId": "alex",
+        "barberName": "Alex",
+        "requestedStartMs": 1789298400000,
+        "requestedEndMs": 1789300200000
+      },
+      "timestamp": "2026-09-13T12:06:07.877Z"
+    },
+    {
+      "id": "V8Bby7LLRveiRIMzeLtz",
+      "action": "STAFF_BOOKING_POLICY_OVERRIDE",
+      "actor": {
+        "uid": "iS3uKYNuPHOgcjvA2hPuYCInBvO8",
+        "email": "ui-owner@p2.test",
+        "name": "ui-owner@p2.test",
+        "role": "owner"
+      },
+      "tenantId": "p2ui",
+      "target": {
+        "collection": "bookings",
+        "docId": "PS70wv8VzzHoXLMBlXYD",
+        "label": "WCB-1789301080909-cf70"
+      },
+      "meta": {
+        "flow": "walkin",
+        "dimensions": {
+          "conflict": true,
+          "conflictingRecordIds": [
+            "cBsMIYdv5dHhouyGznGN"
+          ]
+        },
+        "reason": "O1: squeeze-in agreed with both clients",
+        "barberId": "alex",
+        "barberName": "Alex",
+        "requestedStartMs": 1789297500000,
+        "requestedEndMs": 1789299300000
+      },
+      "timestamp": "2026-09-13T12:04:40.937Z"
+    },
+    {
+      "id": "aUWJWlBqFpH66r3TMuBa",
+      "action": "WALK_IN_CREATED",
+      "actor": {
+        "uid": "iS3uKYNuPHOgcjvA2hPuYCInBvO8",
+        "email": "",
+        "name": "",
+        "role": "owner"
+      },
+      "tenantId": null,
+      "target": {
+        "collection": "bookings",
+        "docId": "1hizlESKuGZYYxvq7KyC",
+        "label": "WCB-1789301167840-f39c"
+      },
+      "meta": null,
+      "timestamp": "2026-09-13T12:06:07.953Z"
+    },
+    {
+      "id": "rahNTsOHGPdttuQAPrLv",
+      "action": "STAFF_BOOKING_POLICY_OVERRIDE",
+      "actor": {
+        "uid": "iS3uKYNuPHOgcjvA2hPuYCInBvO8",
+        "email": "ui-owner@p2.test",
+        "name": "ui-owner@p2.test",
+        "role": "owner"
+      },
+      "tenantId": "p2ui",
+      "target": {
+        "collection": "bookings",
+        "docId": "80pdlTfE6Ymmr56puuma",
+        "label": "WCB-1789301362901-0ba5"
+      },
+      "meta": {
+        "flow": "walkin",
+        "dimensions": {
+          "conflict": true,
+          "conflictingRecordIds": [
+            "JDmJvh6RKY1cdIjA0O5J",
+            "r26mlI97NXfZ15EEJ07B"
+          ]
+        },
+        "reason": "O4: re-approved after the conflict changed (B and C)",
+        "barberId": "bea",
+        "barberName": "Bea",
+        "requestedStartMs": 1789304700000,
+        "requestedEndMs": 1789306500000
+      },
+      "timestamp": "2026-09-13T12:09:22.937Z"
+    }
+  ]
+}

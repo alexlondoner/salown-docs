@@ -1,0 +1,56 @@
+== ENVIRONMENT PROOF (captured 2026-09-13T12:01:46Z) ==
+-- repo HEAD / origin --
+0780fd1
+0780fd1
+-- repo src/firebase.ts vs committed (empty = unchanged, production config untouched in repo) --
+(end)
+-- rehearsal copy vs git archive of 9ea0aca (source files only) --
+Only in /private/tmp/claude-501/-Users-alish/1b4e7c9f-b90b-4cb4-9da8-c744b257a970/scratchpad/p2app: .firebase
+Only in /private/tmp/claude-501/-Users-alish/1b4e7c9f-b90b-4cb4-9da8-c744b257a970/scratchpad/p2app/functions: .claude
+Only in /private/tmp/claude-501/-Users-alish/1b4e7c9f-b90b-4cb4-9da8-c744b257a970/scratchpad/p2app/functions: test-parser.js
+Only in /private/tmp/claude-501/-Users-alish/1b4e7c9f-b90b-4cb4-9da8-c744b257a970/scratchpad/p2app/scripts: .security-audit-snapshot.json
+Files /private/tmp/claude-501/-Users-alish/1b4e7c9f-b90b-4cb4-9da8-c744b257a970/scratchpad/archive-9ea0aca/src/firebase.ts and /private/tmp/claude-501/-Users-alish/1b4e7c9f-b90b-4cb4-9da8-c744b257a970/scratchpad/p2app/src/firebase.ts differ
+(end diff)
+-- the ONE differing file: copy src/firebase.ts diff (config values, not credentials) --
+2,4c2,4
+< import { getAuth } from 'firebase/auth'
+< import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from 'firebase/firestore'
+< import { getFunctions } from 'firebase/functions'
+---
+> import { getAuth, connectAuthEmulator } from 'firebase/auth'
+> import { initializeFirestore, memoryLocalCache, connectFirestoreEmulator } from 'firebase/firestore'
+> import { getFunctions, connectFunctionsEmulator } from 'firebase/functions'
+10c10
+<   projectId: "havuz-44f70",
+---
+>   projectId: "demo-c1",
+24c24
+<   localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
+---
+>   localCache: memoryLocalCache(),
+27a28,31
+> // LOCAL REHEARSAL COPY ONLY — never committed.
+> connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true })
+> connectFirestoreEmulator(db, '127.0.0.1', 8080)
+> connectFunctionsEmulator(functions, '127.0.0.1', 5001)
+-- listening processes --
+node 93940 127.0.0.1:4400
+node 93940 [::1]:4400
+node 93940 127.0.0.1:5001
+node 93940 127.0.0.1:9099
+java 93981 127.0.0.1:8080
+node 94065 127.0.0.1:5199
+-- emulator log: project + hub lines --
+i  emulators: Detected demo project ID "demo-c1", emulated services will use a demo configuration and attempts to access non-emulated services for this project will fail.
+i  firestore: Firestore Emulator logging to firestore-debug.log
+✔  firestore: Firestore Emulator was started in standard edition.
+✔  firestore: Firestore Emulator UI websocket is running on 9150.
+i  functions: Watching "/private/tmp/claude-501/-Users-alish/1b4e7c9f-b90b-4cb4-9da8-c744b257a970/scratchpad/p2app/functions" for Cloud Functions...
+✔  functions: Loaded functions definitions from source: salownPublishProfile, salownRepublishOnSettingsEdit, salownReviewProfile, salownRepublishProfileOnEdit, salownSyncPublicBooking, salownPublishPublicCampaign, salownPublishPublicBookingFlags, provisionTenant, salownSendBookingConfirmation, salownSendCancellationEmail, salownSendReminder, sendAbandonedCart, salownSendLoyaltyEmail, salownSendManualLoyaltyAdjustmentEmail, salownGetBusySlots, salownCreateBooking, salownCreateBlock, salownDeleteBlock, salownCreateWalkIn, salownCreateStaffWalkIn, salownReassignBooking, salownCreateAdminBooking, salownCreateStaffBooking, salownGetBookingByToken, salownCancelByToken, salownRescheduleByToken, salownIcalFeed, salownManualImport, salownParseEmails, salownInboundEmail, salownParseInboxDispatch, salownProvisionParseAddress, salownRevokeParseAddress, salownNotifyBookingCreated, salownNotifyBookingUpdated, askAI, salownCreateProductSale, salownCreateStaffProductSale, salownLandingChat, dailyFirestoreBackup, sendMarketingEmail, sendCampaignBulk, salownSetEmailConsent, createStaffUser, deleteStaffUser, sendPasswordResetPublic, salownEmailOptOut, salownBrevoWebhook, addToWaitlist, approveApplication, adminGetOwnerActivity, adminPurgeTenant, salownConnectStart, salownConnectCallback, salownConnectDisconnect, salownConnectStatus, salownCreateCheckoutSession, salownConnectWebhook, salownEmailExitAgreement, salownSendExitSignLink, salownGetExitByToken, salownSignExitByToken, sendStaffPasswordReset, salownBookingConfirmationTrigger, salownNotifyBookingPush, salownNotifyBookingConfirmedPush, salownCleanupExpiredPending, salownStripeWebhook, salownBookingConfirmedEmailTrigger, salownWhatsAppOnBookingCreated, salownWhatsAppOnBookingConfirmed, salownWhatsAppWebhook, salownSavePackageDefinition, salownSellPackage, salownRecordPackagePayment, salownPackageSession, salownSavePackageSettings, salownCancelClientPackage, salownCreateTreatmentSession, salownTransitionTreatmentSession, salownRecordFollowUp, salownCheckoutBooking, salownSaveCheckoutSettings, salownRotaTransaction, salownProvisionTeamMember, salownRotaBootstrapTenant, salownRotaSeedTenantHistory, salownStaffLifecycle, salownCloseFinancePeriod, salownPatchBookingDetails, salownEditBookingForm, salownSetStaffRole.
+✔  functions[europe-west2-salownPublishProfile]: http function initialized (http://127.0.0.1:5001/demo-c1/europe-west2/salownPublishProfile).
+✔  functions[europe-west2-salownReviewProfile]: http function initialized (http://127.0.0.1:5001/demo-c1/europe-west2/salownReviewProfile).
+✔  functions[europe-west2-provisionTenant]: http function initialized (http://127.0.0.1:5001/demo-c1/europe-west2/provisionTenant).
+✔  functions[europe-west2-salownSendBookingConfirmation]: http function initialized (http://127.0.0.1:5001/demo-c1/europe-west2/salownSendBookingConfirmation).
+✔  functions[europe-west2-salownSendCancellationEmail]: http function initialized (http://127.0.0.1:5001/demo-c1/europe-west2/salownSendCancellationEmail).
+✔  functions[europe-west2-salownSendReminder]: http function initialized (http://127.0.0.1:5001/demo-c1/europe-west2/salownSendReminder).
+-- demo- project note: Firebase CLI treats demo-* projects as emulator-only; no production resources exist for them --

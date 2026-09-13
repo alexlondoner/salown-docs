@@ -1,0 +1,5 @@
+
+> build
+> tsc -p tsconfig.build.json
+
+old server (797c9b3) functions build exit=0

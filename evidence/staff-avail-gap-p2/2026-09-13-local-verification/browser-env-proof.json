@@ -1,0 +1,10 @@
+{
+  "capturedUtc": "2026-09-13T12:03Z (approx, same batch as owner-profile-role.jpg)",
+  "pageOrigin": "http://127.0.0.1:5199",
+  "pageUrl": "http://127.0.0.1:5199/staff.html",
+  "resourceTimingLocalRequestCounts": { "127.0.0.1:5199": 123, "127.0.0.1:8080": 20, "127.0.0.1:9099": 2, "127.0.0.1:5001": 0 },
+  "nonLocalHosts": [ { "host": "fonts.googleapis.com", "initiatorType": "link", "note": "web font stylesheet; not a Firebase service" } ],
+  "firebaseProductionHostsSeen": "none (no firestore/identitytoolkit/securetoken googleapis.com, no cloudfunctions.net/run.app)",
+  "resourceTimingCaveat": "callable requests to 127.0.0.1:5001 are fetch/XHR and did not appear in resource timing at capture time; the functions emulator log (emu-ui3.log) records every salownCreateStaffWalkIn execution instead",
+  "signedInProfile": { "name": "ui-owner", "tenant": "P2 ui", "roleBadge": "Owner", "email": "ui-owner@p2.test" }
+}

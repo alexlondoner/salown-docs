@@ -1,0 +1,48 @@
+{
+  "_note": "Transcribed verbatim from the in-page recorder (window.__p2.state) returned by the Chrome javascript tool. window.prompt was wrapped to RECORD every call and answer from a pre-set plan; a MutationObserver recorded toast text. Firestore before/after files are the authoritative write evidence; this file is the UI evidence.",
+  "environment": { "page": "http://127.0.0.1:5199/staff.html", "tenant": "p2ui (P2 ui)", "signedIn": "ui-owner@p2.test, role badge Owner (owner-profile-role.jpg)" },
+  "O1_attempt1": {
+    "config": "Alex, 12:05, Save without payment, plan=[reason 'O1: squeeze-in agreed with both clients']",
+    "ui": "NOT CAPTURED — Vite optimized a new dependency (react-router-dom) at 13:04:41 London and force-reloaded the page mid-script, discarding the recorder",
+    "serverSideOutcome": "vite log 13:04:40 'Walk-in create refused: FirebaseError: SLOT_CONFLICT', then override create committed (evidence/O1-attempt1-aborted-page-navigated.json)",
+    "status": "UI evidence incomplete — not counted as the O1 pass; superseded by O1b"
+  },
+  "O1b": {
+    "config": "Alex, 12:20, Save without payment, plan=[reason 'O1b: owner approved squeeze-in over both bookings']",
+    "timeSelected": "12:20",
+    "promptCalls": [{ "message": "Alex already has a booking at this time. Only an owner can continue — enter a reason:", "defaultValue": "" }],
+    "toastLog": [],
+    "formStillOpenAfter": false,
+    "screenshot": "O1b-after-save-today.jpg (Today: 3 bookings, £60)"
+  },
+  "O2": {
+    "config": "Alex, 12:25 (explicitly selected), Continue to payment → Confirm payment (Cash), plan=[reason 'O2: owner approved, client paid at the till']",
+    "timeSelected": "12:25",
+    "promptCalls": [{ "message": "Alex already has a booking at this time. Only an owner can continue — enter a reason:", "defaultValue": "" }],
+    "toastLog": [{ "at": "12:07:15Z", "text": "Paid £20" }],
+    "formStillOpenAfter": false,
+    "screenshots": ["O2-after-checkout-today.jpg", "O2-after-checkout-today-settled.jpg (Today: 4 bookings, 1 checked out, £80)"]
+  },
+  "O3": {
+    "config": "Bea, 13:00 (BLOCKED seed), Save without payment, plan armed with a reason ON PURPOSE",
+    "timeSelected": "13:00",
+    "promptCalls": [],
+    "toastLog": [{ "at": "12:08:20Z", "text": "The selected time conflicts with a break or blocked time. Pick another time." }],
+    "formStillOpenAfter": true,
+    "visibleTimeAfter": "13:00",
+    "screenshot": "O3-blocked-form-kept.jpg (form intact: 13:00, Bea selected, Haircut £20)",
+    "afterEvidence": "form discarded via Discard only after capture"
+  },
+  "O4": {
+    "config": "Bea, 14:05, Save without payment; B seeded 14:00-14:30 beforehand; plan=[{reason 'O4: first approval (B only)', inject C Bea 14:15-14:45 synchronously while the FIRST prompt is open}, {reason 'O4: re-approved after the conflict changed (B and C)'}]",
+    "timeSelected": "14:05",
+    "injectedWhilePromptOpen": [{ "httpStatus": 200, "docId": "r26mlI97NXfZ15EEJ07B (confirmed from O4-after snapshot; the tool masked it in the page output)" }],
+    "promptCalls": [
+      { "message": "Bea already has a booking at this time. Only an owner can continue — enter a reason:", "defaultValue": "" },
+      { "message": "The conflict just changed. Enter a reason to try again:", "defaultValue": "O4: first approval (B only)" }
+    ],
+    "toastLog": [],
+    "formStillOpenAfter": false,
+    "screenshot": "O4-after-reapproval-today.jpg (Today: 7 bookings, £120)"
+  }
+}

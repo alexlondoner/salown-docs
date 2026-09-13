@@ -1,0 +1,135 @@
+{
+  "comparedAt": "2026-09-13T14:34:02.232Z",
+  "casesCompared": 14,
+  "differingCases": [
+    {
+      "case": "c14_staff_walkin_callable_presence",
+      "newServer": {
+        "case": "c14_staff_walkin_callable_presence",
+        "who": "staff",
+        "http": 200,
+        "result": {
+          "ok": true,
+          "replayed": false,
+          "bookingIdShape": true,
+          "documentId": "c14_staff_walkin_callable_presence"
+        }
+      },
+      "oldServer": {
+        "case": "c14_staff_walkin_callable_presence",
+        "who": "staff",
+        "http": 404,
+        "raw": {
+          "nonJson": true
+        }
+      }
+    }
+  ],
+  "overrideAuditComparison": {
+    "newServer": [
+      {
+        "targetCase": "c07_owner_override_ack",
+        "topLevelKeys": [
+          "action",
+          "actor",
+          "meta",
+          "source",
+          "target",
+          "tenantId",
+          "timestamp",
+          "userEmail",
+          "userId",
+          "userName",
+          "userRole"
+        ],
+        "metaKeys": [
+          "barberId",
+          "barberName",
+          "dimensions",
+          "flow",
+          "reason",
+          "requestedEndMs",
+          "requestedStartMs"
+        ]
+      },
+      {
+        "targetCase": "c11_owner_hours_override",
+        "topLevelKeys": [
+          "action",
+          "actor",
+          "meta",
+          "source",
+          "target",
+          "tenantId",
+          "timestamp",
+          "userEmail",
+          "userId",
+          "userName",
+          "userRole"
+        ],
+        "metaKeys": [
+          "barberId",
+          "barberName",
+          "dimensions",
+          "flow",
+          "reason",
+          "requestedEndMs",
+          "requestedStartMs"
+        ]
+      }
+    ],
+    "oldServer": [
+      {
+        "targetCase": "c07_owner_override_ack",
+        "topLevelKeys": [
+          "action",
+          "actor",
+          "meta",
+          "source",
+          "target",
+          "timestamp",
+          "userEmail",
+          "userId",
+          "userName",
+          "userRole"
+        ],
+        "metaKeys": [
+          "barberId",
+          "barberName",
+          "dimensions",
+          "reason",
+          "requestedEndMs",
+          "requestedStartMs"
+        ]
+      },
+      {
+        "targetCase": "c11_owner_hours_override",
+        "topLevelKeys": [
+          "action",
+          "actor",
+          "meta",
+          "source",
+          "target",
+          "timestamp",
+          "userEmail",
+          "userId",
+          "userName",
+          "userRole"
+        ],
+        "metaKeys": [
+          "barberId",
+          "barberName",
+          "dimensions",
+          "reason",
+          "requestedEndMs",
+          "requestedStartMs"
+        ]
+      }
+    ],
+    "sameDimensionsAndReasons": true
+  },
+  "bookingDocsAfter": {
+    "new": 5,
+    "old": 4
+  }
+}

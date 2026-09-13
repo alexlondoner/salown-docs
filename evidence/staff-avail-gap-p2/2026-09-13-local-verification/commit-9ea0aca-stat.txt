@@ -1,0 +1,24 @@
+commit 9ea0aca076d80b05279be6b7135402ad7f049554
+subject feat(staff): Walk-in server policy gate on a shared Staff override contract [skip ci]
+date 2026-09-13 02:44:06 +0100
+
+ functions/src/bookings/createBooking.ts            | 178 +++-------
+ .../bookings/createStaffWalkIn.emulator.test.js    | 392 +++++++++++++++++++++
+ functions/src/bookings/createWalkIn.ts             | 142 +++++++-
+ functions/src/bookings/staffPolicyGate.test.js     | 143 ++++++++
+ functions/src/bookings/staffPolicyGate.ts          | 298 ++++++++++++++++
+ functions/src/index.ts                             |  32 ++
+ functions/src/utils/deployableExports.test.js      |   5 +
+ src/i18n/dictionaries/en/staffApp.ts               |   1 -
+ src/i18n/dictionaries/tr/staffApp.ts               |   1 -
+ src/staff/lib/staffCreateReason.ts                 |  15 +
+ src/staff/lib/staffOverrideFlow.test.ts            | 154 ++++++++
+ src/staff/lib/staffOverrideFlow.ts                 |  76 ++++
+ src/staff/sheets/NewBookingSheet.tsx               |  74 ++--
+ src/staff/sheets/WalkInFlow.tsx                    | 115 +++---
+ src/staff/sheets/staffBookingType.test.ts          |  57 ++-
+ src/staff/sheets/staffCreateCutover.test.ts        |  61 +++-
+ src/staff/sheets/staffProductSaleCutover.test.ts   |   3 +-
+ src/utils/bookingCallables.test.ts                 |  35 ++
+ src/utils/bookingCallables.ts                      |  41 ++-
+ 19 files changed, 1532 insertions(+), 291 deletions(-)

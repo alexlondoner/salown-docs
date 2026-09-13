@@ -1,0 +1,22 @@
+# real Auth-emulator ID token → real HTTP → callable checks (tenant p2api, emulator demo-c1); tokens/passwords are never printed
+2026-09-13T12:10:45Z
+PASS  unauthenticated → UNAUTHENTICATED
+PASS  staff token, real conflict → SLOT_CONFLICT with the seeded id in details
+PASS  staff token override → OVERRIDE_REQUIRES_OWNER
+PASS  admin token override → OVERRIDE_REQUIRES_OWNER
+PASS  super token override → OVERRIDE_REQUIRES_OWNER
+PASS  owner token override without ack → CONFLICT_ACK_REQUIRED
+PASS  owner token vs BLOCKED → BLOCKED_TIME_CONFLICT
+PASS  owner token vs undated leave → STAFF_UNAVAILABLE
+PASS  staff token outside shift → OUTSIDE_EFFECTIVE_SHIFT with shift bounds in details
+PASS  no booking and no override audit written by any refusal so far
+PASS  owner token override with ack → created
+PASS  audit row from the REAL token: actor uid/role/email, tenant, flow, reason, acknowledged ids, target
+PASS  booking content: canonical barber, exact start, walk-in shape
+PASS  owner retry with the same key → replayed, still one new booking + one audit
+PASS  bare superAdmin token: a policy-clean Staff walk-in is still accepted (legacy creation authority kept)
+PASS  ADMIN callable salownCreateWalkIn rejects override fields as forbidden input
+PASS  ADMIN callable salownCreateWalkIn keeps legacy parity (leave not enforced there)
+
+17/17 token checks passed
+exit=0
