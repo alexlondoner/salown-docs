@@ -820,6 +820,40 @@ rules-level bypass, and no report of this deploy may describe the system as conf
 override-safe in general. Walk-in/Reschedule/Block Time (Phases 2-4) also remain untouched by
 this readiness proposal.
 
+### 9.6c Phase 1 release EXECUTED — Units 1+2 deployed, LIVE_VERIFIED (2026-09-13)
+
+Owner approved exactly §9.6b's Units 1+2, in order, Unit 2 gated on Unit 1's success. Full record:
+[RELEASE_LEDGER.md](RELEASE_LEDGER.md) `R-2026-09-13-A`. Short version:
+
+- **Pre-deploy baseline read first:** `salownCreateStaffBooking` did not exist live (92 functions
+  in `europe-west2`); `hosting:salown-staff` at `48282d9b843c630b`; `hosting:salown` at
+  `827946e295c69eeb` (recorded as the negative control).
+- **Isolated `git archive` workspace pinned at `797c9b3`** (salown-app `HEAD`, verified
+  `== origin/main` immediately beforehand — no drift since §9.6b was written). Archive manifest
+  clean (226 files, no secret-like file). Main repo tree untouched throughout.
+- **Unit 1 (Functions) deployed, verified, THEN Unit 2 proceeded** — the owner's explicit gate:
+  `salownCreateStaffBooking` confirmed `ACTIVE`/`europe-west2`/correct entry point, function count
+  92→93, and a live unauthenticated call returned this codebase's own `UNAUTHENTICATED` reason
+  (proves the real source is live, not a stub) — only then was Unit 2 attempted.
+- **Unit 2 (Staff hosting) deployed and verified:** new version `62aa1ac4a0302593` (was
+  `48282d9b843c630b`), served bundle SHA-256 byte-identical to the pinned build, AND the served
+  bundle was grepped for the exact fixed strings (`"Owner authorization is required for this."`,
+  `OVERRIDE_REQUIRES_OWNER`) — confirming the `631b768` bug fix is what actually shipped, not
+  just the earlier `a7c79f3` gate. `hosting:salown` re-read afterward: **unchanged**
+  (`827946e295c69eeb`), despite its predeploy hook also firing (known CLI quirk) — it built inside
+  the ephemeral workspace only, never uploaded.
+- **Production check (Chrome, real authenticated HeroHairs owner session):** reachability +
+  rendering only — page loaded, New Booking sheet opened and rendered the real form, closed via
+  discard with nothing typed. **Zero production records created.** This is explicitly NOT a
+  re-run of the behaviour verification; §9.6a's local-emulator run remains the evidence for HOW
+  the gate behaves. Labeling this Chrome check as a production end-to-end behaviour test would
+  misrepresent it.
+- **What this release is, in one sentence, for any future report:** "Phase 1 New Booking callable
+  transition published." **What it is not:** "STAFF-AVAIL-GAP fully closed" — §9.4's
+  `firestore.rules` `isTenantAny` bypass is completely untouched, Phases 2-4 have not started, and
+  no system-wide conflict-freedom claim is made.
+- No rules deploy of any kind occurred. No Phase 2 work started.
+
 ### 9.4 Remaining gaps — named, not hidden
 
 - **`firestore.rules` callable-bypass — owner review 2026-09-12: this is now a STATED CLOSING
