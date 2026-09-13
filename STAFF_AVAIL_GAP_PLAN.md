@@ -854,6 +854,68 @@ Owner approved exactly §9.6b's Units 1+2, in order, Unit 2 gated on Unit 1's su
   no system-wide conflict-freedom claim is made.
 - No rules deploy of any kind occurred. No Phase 2 work started.
 
+### 9.7 Phase 2 — Walk-in: implemented, pushed, locally verified, NOT deployed (2026-09-13)
+
+**Source:** salown-app `9ea0aca` (claim `9c2ecd6`). **Status:** `PUSHED_NOT_LIVE`.
+
+**What changed**
+- `functions/src/bookings/staffPolicyGate.ts` — the shared Staff App contract (D2-D5): override context
+  (authority = role re-read from `staff/{uid}` equal to `owner`; `admin` and a bare `superAdmin` claim
+  never qualify), `decideStaffHours` (effective shift + `shiftOverrunAllowanceMins`, salon hours never clip
+  a staff shift), `decideStaffConflict` (any `BLOCKED` record voids the override for every role; approval
+  covers exactly the acknowledged ids), one denial (`BLOCKED_TIME_CONFLICT` > policy reason with shift
+  bounds > `OVERRIDE_REQUIRES_OWNER` / `CONFLICT_ACK_REQUIRED` / `SLOT_CONFLICT`), and the atomic
+  `STAFF_BOOKING_POLICY_OVERRIDE` audit row (actor uid/email/role, `tenantId`, `meta.flow`, reason,
+  staffer, requested window, acknowledged record ids). Phase 1 `createBookingCore` now calls it.
+- `createWalkInCore(…, opts.surface)`: `'staffApp'` evaluates approved leave (only a dated open shift
+  override beats it), the effective shift on the TENANT calendar (`presentation.timezone`), a
+  transactional barber-aware conflict range query, the owner override and its audit, all before any
+  write in the create transaction. Passive/not-started (`assertAssignableStaff`) is unchanged and first.
+- New callable `salownCreateStaffWalkIn`; `salownCreateWalkIn` (Admin) byte-identical in behaviour.
+- Staff App Walk-in: Save and Save & Checkout both create through one enforced step with the shared
+  owner-override flow; the resubmission reuses the same `time` and idempotency key, so a retry or an
+  override cannot create a second walk-in or a second checkout.
+
+**Verification (local only; synthetic tenants; no production record)**
+
+| Check | Result |
+|---|---|
+| Firestore emulator — booking/walk-in/block/access files incl. 22 new walk-in tests | 211/211 |
+| Cross-flow races, 3 rounds each: Walk-in↔New Booking, Walk-in↔Block Time, Walk-in↔Walk-in, stale owner approval vs concurrent New Booking | exactly one write lands every round |
+| Real Auth-emulator ID tokens → HTTP → callables (owner/admin/staff/bare superAdmin, BLOCKED, leave, hours, ack, replay, Admin isolation) | 17/17 |
+| Affected frontend vitest on `git archive 9ea0aca` | 466/466 |
+| tsc (frontend + functions), eslint on changed files | clean |
+| Local Chrome, Auth+Firestore+Functions emulators, tenant `p2ui` — staff: conflict Save, leave Save, conflict Save & Checkout | PASS: no prompt, correct message, form kept, zero writes |
+| — admin: same three | PASS (run separately, own screenshots and before/after files) |
+| — owner: conflict + Save (O1b) | PASS: one reason prompt, +1 booking, audit covers both acknowledged records |
+| — owner: Save & Checkout at a selected 12:25 (O2) | PASS: exactly one booking, CHECKED_OUT at 12:25, one checkout |
+| — owner: BLOCKED (O3) | PASS: no prompt even with a reason armed, zero writes |
+| — owner: conflict changed during approval (O4) | PASS: second prompt, audit ids = both records |
+| — owner O1 attempt 1 | INCOMPLETE (UI recorder lost to a Vite dependency reload; server side committed) — not counted |
+
+Not run: the full frontend suite and the full two-phase `ops/test-emulator.sh`.
+
+**Staff-facing behaviour change (to communicate before release):** a staff/admin Save & Checkout that
+overlaps an unfinished (CONFIRMED) booking, or whose backdated start falls before the staffer's shift,
+is now refused unless the owner overrides with a reason; a walk-in on an undated leave day is refused for
+everyone.
+
+**Remaining limits (not closed by Phase 2)**
+- `firestore.rules` `isTenantAny` create/update bypass — untouched, still the closing criterion (§9.4).
+- `salownCreateWalkIn` (Admin) accepts the `staff` role and does not run the new gate, so a staff member
+  calling it directly bypasses Phase 2 — same family as the rules bypass; decide with §9.4.
+- Parser/aggregator writers still do not participate; no system-wide conflict-freedom claim.
+- Reschedule pairs (Walk-in↔Reschedule) wait for Phase 3.
+- The shared-module refactor changed `createBooking.ts`: the live `salownCreateStaffBooking` (R-2026-09-13-A)
+  still runs the pre-refactor code; outcomes are identical, its audit row lacks `tenantId`/`meta.flow`.
+
+**Proposed release (separate approval; NOT executed):** isolated `git archive` at the verified SHA →
+(1) `./scripts/deploy-functions.sh salownCreateStaffWalkIn`, verify ACTIVE/europe-west2 and an
+unauthenticated call returning `UNAUTHENTICATED`, rollback = delete the function; (2) optional, same
+workspace: `salownCreateStaffBooking` for code parity, rollback identity read before deploy;
+(3) only after (1) verifies: `firebase deploy --only hosting:salown-staff`, rollback version
+`62aa1ac4a0302593`, `hosting:salown` must stay `827946e295c69eeb`; no rules deploy.
+
 ### 9.4 Remaining gaps — named, not hidden
 
 - **`firestore.rules` callable-bypass — owner review 2026-09-12: this is now a STATED CLOSING
