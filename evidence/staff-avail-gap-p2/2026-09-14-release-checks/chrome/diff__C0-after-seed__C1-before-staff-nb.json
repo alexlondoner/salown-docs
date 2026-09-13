@@ -1,0 +1,189 @@
+{
+  "before": "C0-after-seed",
+  "after": "C1-before-staff-nb",
+  "window": [
+    "2026-09-13T22:57:47.931Z",
+    "2026-09-13T23:00:10.891Z"
+  ],
+  "scope": "FULL document data of every document under tenants/p2c (recursive) + the tenant root; deletions detected as removed paths",
+  "added": [
+    {
+      "path": "notifications/QMmmLDq03ZUdUVgcen4I",
+      "data": {
+        "type": "new_booking",
+        "title": "New Booking",
+        "body": "Existing Client – Haircut · Alex · Mon 14 Sept at 10:00 PM",
+        "bookingId": "SEED-NB-ALEX",
+        "read": false,
+        "createdAt": {
+          "__ts": "2026-09-13T22:57:52.046Z"
+        }
+      }
+    },
+    {
+      "path": "public/booking",
+      "data": {
+        "salonName": "P2 chrome round 2",
+        "name": "P2 chrome round 2",
+        "businessType": "",
+        "phone": "",
+        "paymentMode": "off",
+        "features": {
+          "stripe": false
+        },
+        "websiteDepositsEnabled": false,
+        "defaultDepositAmount": 0,
+        "updatedAt": {
+          "__ts": "2026-09-13T22:57:48.754Z"
+        }
+      }
+    },
+    {
+      "path": "public/bookingFlags",
+      "data": {
+        "c1Cutover": false,
+        "updatedAt": {
+          "__ts": "2026-09-13T22:57:49.749Z"
+        }
+      }
+    },
+    {
+      "path": "public/campaign",
+      "data": {
+        "active": false,
+        "startDate": "",
+        "endDate": "",
+        "updatedAt": {
+          "__ts": "2026-09-13T22:57:50.894Z"
+        }
+      }
+    }
+  ],
+  "removed": [],
+  "contentChanged": [
+    {
+      "path": "bookings/nbSeedAlex1400",
+      "before": {
+        "bookingId": "SEED-NB-ALEX",
+        "status": "CONFIRMED",
+        "barberId": "alex",
+        "barberName": "Alex",
+        "barber": "alex",
+        "clientName": "Existing Client",
+        "serviceId": "svc1",
+        "serviceName": "Haircut",
+        "duration": 30,
+        "price": 20,
+        "source": "Staff App",
+        "bookingType": "booking",
+        "date": "2026-09-14",
+        "time": "14:00",
+        "startTime": {
+          "__ts": "2026-09-14T21:00:00.000Z"
+        },
+        "endTime": {
+          "__ts": "2026-09-14T21:30:00.000Z"
+        },
+        "createdAt": {
+          "__ts": "2026-09-13T22:57:46.462Z"
+        }
+      },
+      "after": {
+        "bookingId": "SEED-NB-ALEX",
+        "status": "CONFIRMED",
+        "barberId": "alex",
+        "barberName": "Alex",
+        "barber": "alex",
+        "clientName": "Existing Client",
+        "serviceId": "svc1",
+        "serviceName": "Haircut",
+        "duration": 30,
+        "price": 20,
+        "source": "Staff App",
+        "bookingType": "booking",
+        "date": "2026-09-14",
+        "time": "14:00",
+        "startTime": {
+          "__ts": "2026-09-14T21:00:00.000Z"
+        },
+        "endTime": {
+          "__ts": "2026-09-14T21:30:00.000Z"
+        },
+        "createdAt": {
+          "__ts": "2026-09-13T22:57:46.462Z"
+        },
+        "loyaltyPromotionSnapshot": {
+          "eligible": false,
+          "reason": "NOT_DIRECT_SOURCE",
+          "multiplier": 1,
+          "multiplierSource": "none",
+          "campaignId": null,
+          "campaignStartDate": null,
+          "campaignEndDate": null,
+          "evaluatedDate": null,
+          "timezone": "America/Los_Angeles",
+          "source": "staff app",
+          "policyVersion": 1,
+          "evaluatedAt": {
+            "__ts": "2026-09-13T22:57:54.709Z"
+          }
+        }
+      }
+    },
+    {
+      "path": "bookings/nbSeedBeaBlock1300",
+      "before": {
+        "bookingId": "BLOCKED-NB-BEA",
+        "status": "BLOCKED",
+        "barberId": "bea",
+        "barberName": "bea",
+        "source": "block",
+        "blockKind": "block",
+        "note": "Lunch",
+        "startTime": {
+          "__ts": "2026-09-14T20:00:00.000Z"
+        },
+        "endTime": {
+          "__ts": "2026-09-14T20:30:00.000Z"
+        },
+        "createdAt": {
+          "__ts": "2026-09-13T22:57:46.480Z"
+        }
+      },
+      "after": {
+        "bookingId": "BLOCKED-NB-BEA",
+        "status": "BLOCKED",
+        "barberId": "bea",
+        "barberName": "bea",
+        "source": "block",
+        "blockKind": "block",
+        "note": "Lunch",
+        "startTime": {
+          "__ts": "2026-09-14T20:00:00.000Z"
+        },
+        "endTime": {
+          "__ts": "2026-09-14T20:30:00.000Z"
+        },
+        "createdAt": {
+          "__ts": "2026-09-13T22:57:46.480Z"
+        },
+        "loyaltyPromotionSnapshot": {
+          "eligible": false,
+          "reason": "STAFF_CREATED",
+          "multiplier": 1,
+          "multiplierSource": "none",
+          "campaignId": null,
+          "campaignStartDate": null,
+          "campaignEndDate": null,
+          "evaluatedDate": null,
+          "timezone": "America/Los_Angeles",
+          "source": "block",
+          "policyVersion": 1,
+          "evaluatedAt": {
+            "__ts": "2026-09-13T22:57:55.855Z"
+          }
+        }
+      }
+    }
+  ]
+}

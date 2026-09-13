@@ -1,0 +1,278 @@
+{
+  "label": "C1-before-staff-nb",
+  "capturedAt": "2026-09-13T23:00:10.891Z",
+  "environment": {
+    "projectId": "demo-c1",
+    "firestoreHost": "127.0.0.1:8080",
+    "tenant": "p2c",
+    "timezone": "America/Los_Angeles"
+  },
+  "countsByCollection": {
+    "(tenant root)": 1,
+    "barbers": 3,
+    "bookings": 2,
+    "notifications": 1,
+    "public": 3,
+    "services": 1,
+    "settings": 2,
+    "staff": 2
+  },
+  "documents": [
+    {
+      "path": "(tenant root)",
+      "createTime": "2026-09-13T22:57:46.431Z",
+      "updateTime": "2026-09-13T22:57:46.431Z",
+      "data": {
+        "name": "P2 chrome round 2",
+        "features": {},
+        "presentation": {
+          "timezone": "America/Los_Angeles",
+          "language": "en",
+          "locale": "en-GB",
+          "currency": "GBP",
+          "timeFormat": "24h",
+          "countryCode": "GB"
+        }
+      }
+    },
+    {
+      "path": "barbers/alex",
+      "createTime": "2026-09-13T22:57:46.431Z",
+      "updateTime": "2026-09-13T22:57:46.431Z",
+      "data": {
+        "name": "Alex",
+        "status": "active",
+        "hours": {
+          "open": "00:00",
+          "close": "23:59"
+        },
+        "order": 1
+      }
+    },
+    {
+      "path": "barbers/bea",
+      "createTime": "2026-09-13T22:57:46.428Z",
+      "updateTime": "2026-09-13T22:57:46.428Z",
+      "data": {
+        "name": "Bea",
+        "status": "active",
+        "hours": {
+          "open": "00:00",
+          "close": "23:59"
+        },
+        "order": 2
+      }
+    },
+    {
+      "path": "barbers/lee",
+      "createTime": "2026-09-13T22:57:46.429Z",
+      "updateTime": "2026-09-13T22:57:46.429Z",
+      "data": {
+        "name": "Lee",
+        "status": "leave",
+        "hours": {
+          "open": "00:00",
+          "close": "23:59"
+        },
+        "order": 3
+      }
+    },
+    {
+      "path": "bookings/nbSeedAlex1400",
+      "createTime": "2026-09-13T22:57:46.470Z",
+      "updateTime": "2026-09-13T22:57:54.722Z",
+      "data": {
+        "bookingId": "SEED-NB-ALEX",
+        "status": "CONFIRMED",
+        "barberId": "alex",
+        "barberName": "Alex",
+        "barber": "alex",
+        "clientName": "Existing Client",
+        "serviceId": "svc1",
+        "serviceName": "Haircut",
+        "duration": 30,
+        "price": 20,
+        "source": "Staff App",
+        "bookingType": "booking",
+        "date": "2026-09-14",
+        "time": "14:00",
+        "startTime": {
+          "__ts": "2026-09-14T21:00:00.000Z"
+        },
+        "endTime": {
+          "__ts": "2026-09-14T21:30:00.000Z"
+        },
+        "createdAt": {
+          "__ts": "2026-09-13T22:57:46.462Z"
+        },
+        "loyaltyPromotionSnapshot": {
+          "eligible": false,
+          "reason": "NOT_DIRECT_SOURCE",
+          "multiplier": 1,
+          "multiplierSource": "none",
+          "campaignId": null,
+          "campaignStartDate": null,
+          "campaignEndDate": null,
+          "evaluatedDate": null,
+          "timezone": "America/Los_Angeles",
+          "source": "staff app",
+          "policyVersion": 1,
+          "evaluatedAt": {
+            "__ts": "2026-09-13T22:57:54.709Z"
+          }
+        }
+      }
+    },
+    {
+      "path": "bookings/nbSeedBeaBlock1300",
+      "createTime": "2026-09-13T22:57:46.489Z",
+      "updateTime": "2026-09-13T22:57:55.862Z",
+      "data": {
+        "bookingId": "BLOCKED-NB-BEA",
+        "status": "BLOCKED",
+        "barberId": "bea",
+        "barberName": "bea",
+        "source": "block",
+        "blockKind": "block",
+        "note": "Lunch",
+        "startTime": {
+          "__ts": "2026-09-14T20:00:00.000Z"
+        },
+        "endTime": {
+          "__ts": "2026-09-14T20:30:00.000Z"
+        },
+        "createdAt": {
+          "__ts": "2026-09-13T22:57:46.480Z"
+        },
+        "loyaltyPromotionSnapshot": {
+          "eligible": false,
+          "reason": "STAFF_CREATED",
+          "multiplier": 1,
+          "multiplierSource": "none",
+          "campaignId": null,
+          "campaignStartDate": null,
+          "campaignEndDate": null,
+          "evaluatedDate": null,
+          "timezone": "America/Los_Angeles",
+          "source": "block",
+          "policyVersion": 1,
+          "evaluatedAt": {
+            "__ts": "2026-09-13T22:57:55.855Z"
+          }
+        }
+      }
+    },
+    {
+      "path": "notifications/QMmmLDq03ZUdUVgcen4I",
+      "createTime": "2026-09-13T22:57:52.057Z",
+      "updateTime": "2026-09-13T22:57:52.057Z",
+      "data": {
+        "type": "new_booking",
+        "title": "New Booking",
+        "body": "Existing Client – Haircut · Alex · Mon 14 Sept at 10:00 PM",
+        "bookingId": "SEED-NB-ALEX",
+        "read": false,
+        "createdAt": {
+          "__ts": "2026-09-13T22:57:52.046Z"
+        }
+      }
+    },
+    {
+      "path": "public/booking",
+      "createTime": "2026-09-13T22:57:48.762Z",
+      "updateTime": "2026-09-13T22:57:48.762Z",
+      "data": {
+        "salonName": "P2 chrome round 2",
+        "name": "P2 chrome round 2",
+        "businessType": "",
+        "phone": "",
+        "paymentMode": "off",
+        "features": {
+          "stripe": false
+        },
+        "websiteDepositsEnabled": false,
+        "defaultDepositAmount": 0,
+        "updatedAt": {
+          "__ts": "2026-09-13T22:57:48.754Z"
+        }
+      }
+    },
+    {
+      "path": "public/bookingFlags",
+      "createTime": "2026-09-13T22:57:49.756Z",
+      "updateTime": "2026-09-13T22:57:49.756Z",
+      "data": {
+        "c1Cutover": false,
+        "updatedAt": {
+          "__ts": "2026-09-13T22:57:49.749Z"
+        }
+      }
+    },
+    {
+      "path": "public/campaign",
+      "createTime": "2026-09-13T22:57:50.919Z",
+      "updateTime": "2026-09-13T22:57:50.919Z",
+      "data": {
+        "active": false,
+        "startDate": "",
+        "endDate": "",
+        "updatedAt": {
+          "__ts": "2026-09-13T22:57:50.894Z"
+        }
+      }
+    },
+    {
+      "path": "services/svc1",
+      "createTime": "2026-09-13T22:57:46.427Z",
+      "updateTime": "2026-09-13T22:57:46.427Z",
+      "data": {
+        "name": "Haircut",
+        "duration": 30,
+        "price": 20,
+        "active": true,
+        "category": "Hair"
+      }
+    },
+    {
+      "path": "settings/hours",
+      "createTime": "2026-09-13T22:57:46.425Z",
+      "updateTime": "2026-09-13T22:57:46.425Z",
+      "data": {}
+    },
+    {
+      "path": "settings/settings",
+      "createTime": "2026-09-13T22:57:46.430Z",
+      "updateTime": "2026-09-13T22:57:46.430Z",
+      "data": {
+        "presentation": {
+          "timezone": "America/Los_Angeles",
+          "language": "en",
+          "locale": "en-GB",
+          "currency": "GBP",
+          "timeFormat": "24h",
+          "countryCode": "GB"
+        }
+      }
+    },
+    {
+      "path": "staff/19od2QGXRxZvNtw56a6LP2ZUnbJl",
+      "createTime": "2026-09-13T22:57:46.395Z",
+      "updateTime": "2026-09-13T22:57:46.395Z",
+      "data": {
+        "role": "staff",
+        "email": "c-staff@p2.test",
+        "name": "c staff"
+      }
+    },
+    {
+      "path": "staff/IPkZGuogvJNv5mJCtvaERbTKIxWf",
+      "createTime": "2026-09-13T22:57:46.159Z",
+      "updateTime": "2026-09-13T22:57:46.159Z",
+      "data": {
+        "role": "owner",
+        "email": "c-owner@p2.test",
+        "name": "c owner"
+      }
+    }
+  ]
+}

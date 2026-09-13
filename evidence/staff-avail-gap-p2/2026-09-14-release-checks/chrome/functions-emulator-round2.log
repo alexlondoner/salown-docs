@@ -1,0 +1,437 @@
+i  emulators: Starting emulators: auth, functions, firestore
+i  emulators: Detected demo project ID "demo-c1", emulated services will use a demo configuration and attempts to access non-emulated services for this project will fail.
+i  firestore: Firestore Emulator logging to firestore-debug.log
+✔  firestore: Firestore Emulator was started in standard edition.
+✔  firestore: Firestore Emulator UI websocket is running on 9150.
+(node:4768) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+    at urlParse (node:url:136:13)
+    at Object.urlResolve [as resolve] (node:url:725:10)
+    at $RefParser.parse (/Users/alish/Desktop/alex/salown-app/functions/node_modules/@apidevtools/json-schema-ref-parser/lib/index.js:103:19)
+    at $RefParser.resolve (/Users/alish/Desktop/alex/salown-app/functions/node_modules/@apidevtools/json-schema-ref-parser/lib/index.js:184:16)
+    at $RefParser.bundle (/Users/alish/Desktop/alex/salown-app/functions/node_modules/@apidevtools/json-schema-ref-parser/lib/index.js:227:16)
+    at bundle (/Users/alish/Desktop/alex/salown-app/functions/node_modules/exegesis/lib/index.js:55:22)
+    at /Users/alish/Desktop/alex/salown-app/functions/node_modules/exegesis/lib/index.js:60:34
+    at Generator.next (<anonymous>)
+    at /Users/alish/Desktop/alex/salown-app/functions/node_modules/exegesis/lib/index.js:22:71
+    at new Promise (<anonymous>)
+i  functions: Watching "/private/tmp/claude-501/-Users-alish/1b4e7c9f-b90b-4cb4-9da8-c744b257a970/scratchpad/p2app2/functions" for Cloud Functions...
+⚠  functions: package.json indicates an outdated version of firebase-functions. Please upgrade using npm install --save firebase-functions@latest in your functions directory.
+⚠  functions: Your requested "node" version "22" doesn't match your global version "24". Using node@24 from host.
+Serving at port 8374
+
+✔  functions: Loaded functions definitions from source: salownPublishProfile, salownRepublishOnSettingsEdit, salownReviewProfile, salownRepublishProfileOnEdit, salownSyncPublicBooking, salownPublishPublicCampaign, salownPublishPublicBookingFlags, provisionTenant, salownSendBookingConfirmation, salownSendCancellationEmail, salownSendReminder, sendAbandonedCart, salownSendLoyaltyEmail, salownSendManualLoyaltyAdjustmentEmail, salownGetBusySlots, salownCreateBooking, salownCreateBlock, salownDeleteBlock, salownCreateWalkIn, salownCreateStaffWalkIn, salownReassignBooking, salownCreateAdminBooking, salownCreateStaffBooking, salownGetBookingByToken, salownCancelByToken, salownRescheduleByToken, salownIcalFeed, salownManualImport, salownParseEmails, salownInboundEmail, salownParseInboxDispatch, salownProvisionParseAddress, salownRevokeParseAddress, salownNotifyBookingCreated, salownNotifyBookingUpdated, askAI, salownCreateProductSale, salownCreateStaffProductSale, salownLandingChat, dailyFirestoreBackup, sendMarketingEmail, sendCampaignBulk, salownSetEmailConsent, createStaffUser, deleteStaffUser, sendPasswordResetPublic, salownEmailOptOut, salownBrevoWebhook, addToWaitlist, approveApplication, adminGetOwnerActivity, adminPurgeTenant, salownConnectStart, salownConnectCallback, salownConnectDisconnect, salownConnectStatus, salownCreateCheckoutSession, salownConnectWebhook, salownEmailExitAgreement, salownSendExitSignLink, salownGetExitByToken, salownSignExitByToken, sendStaffPasswordReset, salownBookingConfirmationTrigger, salownNotifyBookingPush, salownNotifyBookingConfirmedPush, salownCleanupExpiredPending, salownStripeWebhook, salownBookingConfirmedEmailTrigger, salownWhatsAppOnBookingCreated, salownWhatsAppOnBookingConfirmed, salownWhatsAppWebhook, salownSavePackageDefinition, salownSellPackage, salownRecordPackagePayment, salownPackageSession, salownSavePackageSettings, salownCancelClientPackage, salownCreateTreatmentSession, salownTransitionTreatmentSession, salownRecordFollowUp, salownCheckoutBooking, salownSaveCheckoutSettings, salownRotaTransaction, salownProvisionTeamMember, salownRotaBootstrapTenant, salownRotaSeedTenantHistory, salownStaffLifecycle, salownCloseFinancePeriod, salownPatchBookingDetails, salownEditBookingForm, salownSetStaffRole.
+✔  functions[europe-west2-salownPublishProfile]: http function initialized (http://127.0.0.1:5001/demo-c1/europe-west2/salownPublishProfile).
+✔  functions[europe-west2-salownRepublishOnSettingsEdit]: firestore function initialized.
+✔  functions[europe-west2-salownReviewProfile]: http function initialized (http://127.0.0.1:5001/demo-c1/europe-west2/salownReviewProfile).
+✔  functions[europe-west2-salownRepublishProfileOnEdit]: firestore function initialized.
+✔  functions[europe-west2-salownSyncPublicBooking]: firestore function initialized.
+✔  functions[europe-west2-salownPublishPublicCampaign]: firestore function initialized.
+✔  functions[europe-west2-salownPublishPublicBookingFlags]: firestore function initialized.
+✔  functions[europe-west2-provisionTenant]: http function initialized (http://127.0.0.1:5001/demo-c1/europe-west2/provisionTenant).
+✔  functions[europe-west2-salownSendBookingConfirmation]: http function initialized (http://127.0.0.1:5001/demo-c1/europe-west2/salownSendBookingConfirmation).
+✔  functions[europe-west2-salownSendCancellationEmail]: http function initialized (http://127.0.0.1:5001/demo-c1/europe-west2/salownSendCancellationEmail).
+✔  functions[europe-west2-salownSendReminder]: http function initialized (http://127.0.0.1:5001/demo-c1/europe-west2/salownSendReminder).
+✔  functions[europe-west2-sendAbandonedCart]: http function initialized (http://127.0.0.1:5001/demo-c1/europe-west2/sendAbandonedCart).
+✔  functions[europe-west2-salownSendLoyaltyEmail]: firestore function initialized.
+✔  functions[europe-west2-salownSendManualLoyaltyAdjustmentEmail]: http function initialized (http://127.0.0.1:5001/demo-c1/europe-west2/salownSendManualLoyaltyAdjustmentEmail).
+✔  functions[europe-west2-salownGetBusySlots]: http function initialized (http://127.0.0.1:5001/demo-c1/europe-west2/salownGetBusySlots).
+✔  functions[europe-west2-salownCreateBooking]: http function initialized (http://127.0.0.1:5001/demo-c1/europe-west2/salownCreateBooking).
+✔  functions[europe-west2-salownCreateBlock]: http function initialized (http://127.0.0.1:5001/demo-c1/europe-west2/salownCreateBlock).
+✔  functions[europe-west2-salownDeleteBlock]: http function initialized (http://127.0.0.1:5001/demo-c1/europe-west2/salownDeleteBlock).
+✔  functions[europe-west2-salownCreateWalkIn]: http function initialized (http://127.0.0.1:5001/demo-c1/europe-west2/salownCreateWalkIn).
+✔  functions[europe-west2-salownCreateStaffWalkIn]: http function initialized (http://127.0.0.1:5001/demo-c1/europe-west2/salownCreateStaffWalkIn).
+✔  functions[europe-west2-salownReassignBooking]: http function initialized (http://127.0.0.1:5001/demo-c1/europe-west2/salownReassignBooking).
+✔  functions[europe-west2-salownCreateAdminBooking]: http function initialized (http://127.0.0.1:5001/demo-c1/europe-west2/salownCreateAdminBooking).
+✔  functions[europe-west2-salownCreateStaffBooking]: http function initialized (http://127.0.0.1:5001/demo-c1/europe-west2/salownCreateStaffBooking).
+✔  functions[europe-west2-salownGetBookingByToken]: http function initialized (http://127.0.0.1:5001/demo-c1/europe-west2/salownGetBookingByToken).
+✔  functions[europe-west2-salownCancelByToken]: http function initialized (http://127.0.0.1:5001/demo-c1/europe-west2/salownCancelByToken).
+✔  functions[europe-west2-salownRescheduleByToken]: http function initialized (http://127.0.0.1:5001/demo-c1/europe-west2/salownRescheduleByToken).
+✔  functions[europe-west2-salownIcalFeed]: http function initialized (http://127.0.0.1:5001/demo-c1/europe-west2/salownIcalFeed).
+✔  functions[europe-west2-salownManualImport]: http function initialized (http://127.0.0.1:5001/demo-c1/europe-west2/salownManualImport).
+i  functions[europe-west2-salownParseEmails]: function ignored because the pubsub emulator does not exist or is not running.
+✔  functions[europe-west2-salownInboundEmail]: http function initialized (http://127.0.0.1:5001/demo-c1/europe-west2/salownInboundEmail).
+✔  functions[europe-west2-salownParseInboxDispatch]: firestore function initialized.
+✔  functions[europe-west2-salownProvisionParseAddress]: http function initialized (http://127.0.0.1:5001/demo-c1/europe-west2/salownProvisionParseAddress).
+✔  functions[europe-west2-salownRevokeParseAddress]: http function initialized (http://127.0.0.1:5001/demo-c1/europe-west2/salownRevokeParseAddress).
+✔  functions[europe-west2-salownNotifyBookingCreated]: firestore function initialized.
+✔  functions[europe-west2-salownNotifyBookingUpdated]: firestore function initialized.
+✔  functions[europe-west2-askAI]: http function initialized (http://127.0.0.1:5001/demo-c1/europe-west2/askAI).
+✔  functions[europe-west2-salownCreateProductSale]: http function initialized (http://127.0.0.1:5001/demo-c1/europe-west2/salownCreateProductSale).
+✔  functions[europe-west2-salownCreateStaffProductSale]: http function initialized (http://127.0.0.1:5001/demo-c1/europe-west2/salownCreateStaffProductSale).
+✔  functions[europe-west2-salownLandingChat]: http function initialized (http://127.0.0.1:5001/demo-c1/europe-west2/salownLandingChat).
+i  functions[europe-west2-dailyFirestoreBackup]: function ignored because the pubsub emulator does not exist or is not running.
+✔  functions[europe-west2-sendMarketingEmail]: http function initialized (http://127.0.0.1:5001/demo-c1/europe-west2/sendMarketingEmail).
+✔  functions[europe-west2-sendCampaignBulk]: http function initialized (http://127.0.0.1:5001/demo-c1/europe-west2/sendCampaignBulk).
+✔  functions[europe-west2-salownSetEmailConsent]: http function initialized (http://127.0.0.1:5001/demo-c1/europe-west2/salownSetEmailConsent).
+✔  functions[europe-west2-createStaffUser]: http function initialized (http://127.0.0.1:5001/demo-c1/europe-west2/createStaffUser).
+✔  functions[europe-west2-deleteStaffUser]: http function initialized (http://127.0.0.1:5001/demo-c1/europe-west2/deleteStaffUser).
+✔  functions[europe-west2-sendPasswordResetPublic]: http function initialized (http://127.0.0.1:5001/demo-c1/europe-west2/sendPasswordResetPublic).
+✔  functions[europe-west2-salownEmailOptOut]: http function initialized (http://127.0.0.1:5001/demo-c1/europe-west2/salownEmailOptOut).
+✔  functions[europe-west2-salownBrevoWebhook]: http function initialized (http://127.0.0.1:5001/demo-c1/europe-west2/salownBrevoWebhook).
+✔  functions[europe-west2-addToWaitlist]: http function initialized (http://127.0.0.1:5001/demo-c1/europe-west2/addToWaitlist).
+✔  functions[europe-west2-approveApplication]: http function initialized (http://127.0.0.1:5001/demo-c1/europe-west2/approveApplication).
+✔  functions[europe-west2-adminGetOwnerActivity]: http function initialized (http://127.0.0.1:5001/demo-c1/europe-west2/adminGetOwnerActivity).
+✔  functions[europe-west2-adminPurgeTenant]: http function initialized (http://127.0.0.1:5001/demo-c1/europe-west2/adminPurgeTenant).
+✔  functions[europe-west2-salownConnectStart]: http function initialized (http://127.0.0.1:5001/demo-c1/europe-west2/salownConnectStart).
+✔  functions[europe-west2-salownConnectCallback]: http function initialized (http://127.0.0.1:5001/demo-c1/europe-west2/salownConnectCallback).
+✔  functions[europe-west2-salownConnectDisconnect]: http function initialized (http://127.0.0.1:5001/demo-c1/europe-west2/salownConnectDisconnect).
+✔  functions[europe-west2-salownConnectStatus]: http function initialized (http://127.0.0.1:5001/demo-c1/europe-west2/salownConnectStatus).
+✔  functions[europe-west2-salownCreateCheckoutSession]: http function initialized (http://127.0.0.1:5001/demo-c1/europe-west2/salownCreateCheckoutSession).
+✔  functions[europe-west2-salownConnectWebhook]: http function initialized (http://127.0.0.1:5001/demo-c1/europe-west2/salownConnectWebhook).
+✔  functions[europe-west2-salownEmailExitAgreement]: http function initialized (http://127.0.0.1:5001/demo-c1/europe-west2/salownEmailExitAgreement).
+✔  functions[europe-west2-salownSendExitSignLink]: http function initialized (http://127.0.0.1:5001/demo-c1/europe-west2/salownSendExitSignLink).
+✔  functions[europe-west2-salownGetExitByToken]: http function initialized (http://127.0.0.1:5001/demo-c1/europe-west2/salownGetExitByToken).
+✔  functions[europe-west2-salownSignExitByToken]: http function initialized (http://127.0.0.1:5001/demo-c1/europe-west2/salownSignExitByToken).
+✔  functions[europe-west2-sendStaffPasswordReset]: http function initialized (http://127.0.0.1:5001/demo-c1/europe-west2/sendStaffPasswordReset).
+✔  functions[europe-west2-salownBookingConfirmationTrigger]: firestore function initialized.
+✔  functions[europe-west2-salownNotifyBookingPush]: firestore function initialized.
+✔  functions[europe-west2-salownNotifyBookingConfirmedPush]: firestore function initialized.
+i  functions[europe-west2-salownCleanupExpiredPending]: function ignored because the pubsub emulator does not exist or is not running.
+✔  functions[europe-west2-salownStripeWebhook]: http function initialized (http://127.0.0.1:5001/demo-c1/europe-west2/salownStripeWebhook).
+✔  functions[europe-west2-salownBookingConfirmedEmailTrigger]: firestore function initialized.
+✔  functions[europe-west2-salownWhatsAppOnBookingCreated]: firestore function initialized.
+✔  functions[europe-west2-salownWhatsAppOnBookingConfirmed]: firestore function initialized.
+✔  functions[europe-west2-salownWhatsAppWebhook]: http function initialized (http://127.0.0.1:5001/demo-c1/europe-west2/salownWhatsAppWebhook).
+✔  functions[europe-west2-salownSavePackageDefinition]: http function initialized (http://127.0.0.1:5001/demo-c1/europe-west2/salownSavePackageDefinition).
+✔  functions[europe-west2-salownSellPackage]: http function initialized (http://127.0.0.1:5001/demo-c1/europe-west2/salownSellPackage).
+✔  functions[europe-west2-salownRecordPackagePayment]: http function initialized (http://127.0.0.1:5001/demo-c1/europe-west2/salownRecordPackagePayment).
+✔  functions[europe-west2-salownPackageSession]: http function initialized (http://127.0.0.1:5001/demo-c1/europe-west2/salownPackageSession).
+✔  functions[europe-west2-salownSavePackageSettings]: http function initialized (http://127.0.0.1:5001/demo-c1/europe-west2/salownSavePackageSettings).
+✔  functions[europe-west2-salownCancelClientPackage]: http function initialized (http://127.0.0.1:5001/demo-c1/europe-west2/salownCancelClientPackage).
+✔  functions[europe-west2-salownCreateTreatmentSession]: http function initialized (http://127.0.0.1:5001/demo-c1/europe-west2/salownCreateTreatmentSession).
+✔  functions[europe-west2-salownTransitionTreatmentSession]: http function initialized (http://127.0.0.1:5001/demo-c1/europe-west2/salownTransitionTreatmentSession).
+✔  functions[europe-west2-salownRecordFollowUp]: http function initialized (http://127.0.0.1:5001/demo-c1/europe-west2/salownRecordFollowUp).
+✔  functions[europe-west2-salownCheckoutBooking]: http function initialized (http://127.0.0.1:5001/demo-c1/europe-west2/salownCheckoutBooking).
+✔  functions[europe-west2-salownSaveCheckoutSettings]: http function initialized (http://127.0.0.1:5001/demo-c1/europe-west2/salownSaveCheckoutSettings).
+✔  functions[europe-west2-salownRotaTransaction]: http function initialized (http://127.0.0.1:5001/demo-c1/europe-west2/salownRotaTransaction).
+✔  functions[europe-west2-salownProvisionTeamMember]: http function initialized (http://127.0.0.1:5001/demo-c1/europe-west2/salownProvisionTeamMember).
+✔  functions[europe-west2-salownRotaBootstrapTenant]: http function initialized (http://127.0.0.1:5001/demo-c1/europe-west2/salownRotaBootstrapTenant).
+✔  functions[europe-west2-salownRotaSeedTenantHistory]: http function initialized (http://127.0.0.1:5001/demo-c1/europe-west2/salownRotaSeedTenantHistory).
+✔  functions[europe-west2-salownStaffLifecycle]: http function initialized (http://127.0.0.1:5001/demo-c1/europe-west2/salownStaffLifecycle).
+✔  functions[europe-west2-salownCloseFinancePeriod]: http function initialized (http://127.0.0.1:5001/demo-c1/europe-west2/salownCloseFinancePeriod).
+✔  functions[europe-west2-salownPatchBookingDetails]: http function initialized (http://127.0.0.1:5001/demo-c1/europe-west2/salownPatchBookingDetails).
+✔  functions[europe-west2-salownEditBookingForm]: http function initialized (http://127.0.0.1:5001/demo-c1/europe-west2/salownEditBookingForm).
+✔  functions[europe-west2-salownSetStaffRole]: http function initialized (http://127.0.0.1:5001/demo-c1/europe-west2/salownSetStaffRole).
+
+[90m┌─────────────────────────────────────────────────────────────┐[39m
+[90m│[39m ✔  All emulators ready! It is now safe to connect your app. [90m│[39m
+[90m│[39m i  View Emulator UI at http://127.0.0.1:4000/               [90m│[39m
+[90m└─────────────────────────────────────────────────────────────┘[39m
+
+[90m┌────────────────[39m[90m┬────────────────[39m[90m┬─────────────────────────────────┐[39m
+[90m│[39m[33m Emulator       [39m[90m│[39m[33m Host:Port      [39m[90m│[39m[33m View in Emulator UI             [39m[90m│[39m
+[90m├────────────────[39m[90m┼────────────────[39m[90m┼─────────────────────────────────┤[39m
+[90m│[39m Authentication [90m│[39m 127.0.0.1:9099 [90m│[39m http://127.0.0.1:4000/auth      [90m│[39m
+[90m├────────────────[39m[90m┼────────────────[39m[90m┼─────────────────────────────────┤[39m
+[90m│[39m Functions      [90m│[39m 127.0.0.1:5001 [90m│[39m http://127.0.0.1:4000/functions [90m│[39m
+[90m├────────────────[39m[90m┼────────────────[39m[90m┼─────────────────────────────────┤[39m
+[90m│[39m Firestore      [90m│[39m 127.0.0.1:8080 [90m│[39m http://127.0.0.1:4000/firestore [90m│[39m
+[90m└────────────────[39m[90m┴────────────────[39m[90m┴─────────────────────────────────┘[39m
+  Emulator Hub host: 127.0.0.1 port: 4400
+  Other reserved ports: 4500, 9150
+
+Issues? Report them at https://github.com/firebase/firebase-tools/issues and attach the *-debug.log files.
+ 
+i  functions: Beginning execution of "europe-west2-salownSyncPublicBooking"
+>  [p2c] public/booking synced
+i  functions: Finished "europe-west2-salownSyncPublicBooking" in 179.237125ms
+i  functions: Beginning execution of "europe-west2-salownPublishPublicBookingFlags"
+>  [p2c] public/bookingFlags write — c1Cutover=false reason=CONTAINER_ABSENT
+i  functions: Finished "europe-west2-salownPublishPublicBookingFlags" in 162.588417ms
+i  functions: Beginning execution of "europe-west2-salownPublishPublicBookingFlags"
+i  functions: Finished "europe-west2-salownPublishPublicBookingFlags" in 1.768792ms
+i  functions: Beginning execution of "europe-west2-salownPublishPublicCampaign"
+i  functions: Finished "europe-west2-salownPublishPublicCampaign" in 13.266625ms
+i  functions: Beginning execution of "europe-west2-salownPublishPublicCampaign"
+>  [p2c] public/campaign write — active=false reason=NO_CAMPAIGN
+i  functions: Finished "europe-west2-salownPublishPublicCampaign" in 204.477125ms
+i  functions: Beginning execution of "europe-west2-salownNotifyBookingCreated"
+i  functions: Finished "europe-west2-salownNotifyBookingCreated" in 227.697584ms
+i  functions: Trying to access secret WHATSAPP_ACCESS_TOKEN@latest
+i  functions: Trying to access secret WHATSAPP_PHONE_NUMBER_ID@latest
+⬢  functions: Unable to access secret environment variables from Google Cloud Secret Manager. Make sure the credential used for the Functions Emulator have access or provide override values in /private/tmp/claude-501/-Users-alish/1b4e7c9f-b90b-4cb4-9da8-c744b257a970/scratchpad/p2app2/functions/.secret.local:
+	FirebaseError: Request to https://secretmanager.googleapis.com/v1/projects/demo-c1/secrets/WHATSAPP_ACCESS_TOKEN/versions/latest:access had HTTP Error: 403, Permission denied on resource project demo-c1.
+	FirebaseError: Request to https://secretmanager.googleapis.com/v1/projects/demo-c1/secrets/WHATSAPP_PHONE_NUMBER_ID/versions/latest:access had HTTP Error: 403, Permission denied on resource project demo-c1.
+i  functions: Beginning execution of "europe-west2-salownWhatsAppOnBookingCreated"
+i  functions: Finished "europe-west2-salownWhatsAppOnBookingCreated" in 194.9565ms
+i  functions: Trying to access secret BREVO_API_KEY@latest
+⬢  functions: Unable to access secret environment variables from Google Cloud Secret Manager. Make sure the credential used for the Functions Emulator have access or provide override values in /private/tmp/claude-501/-Users-alish/1b4e7c9f-b90b-4cb4-9da8-c744b257a970/scratchpad/p2app2/functions/.secret.local:
+	FirebaseError: Request to https://secretmanager.googleapis.com/v1/projects/demo-c1/secrets/BREVO_API_KEY/versions/latest:access had HTTP Error: 403, Permission denied on resource project demo-c1.
+i  functions: Beginning execution of "europe-west2-salownBookingConfirmationTrigger"
+i  functions: Finished "europe-west2-salownBookingConfirmationTrigger" in 231.799958ms
+i  functions: Beginning execution of "europe-west2-salownNotifyBookingPush"
+>  [p2c] FCM push: SKIPPED — no token docs registered, nobody to notify
+i  functions: Finished "europe-west2-salownNotifyBookingPush" in 182.695ms
+i  functions: Beginning execution of "europe-west2-salownNotifyBookingCreated"
+i  functions: Finished "europe-west2-salownNotifyBookingCreated" in 11.787584ms
+i  functions: Beginning execution of "europe-west2-salownWhatsAppOnBookingCreated"
+i  functions: Finished "europe-west2-salownWhatsAppOnBookingCreated" in 16.447042ms
+i  functions: Beginning execution of "europe-west2-salownBookingConfirmationTrigger"
+i  functions: Finished "europe-west2-salownBookingConfirmationTrigger" in 74.554959ms
+i  functions: Beginning execution of "europe-west2-salownNotifyBookingPush"
+i  functions: Finished "europe-west2-salownNotifyBookingPush" in 2.817041ms
+i  functions: Beginning execution of "europe-west2-salownNotifyBookingConfirmedPush"
+i  functions: Finished "europe-west2-salownNotifyBookingConfirmedPush" in 12.40125ms
+i  functions: Beginning execution of "europe-west2-salownNotifyBookingUpdated"
+i  functions: Finished "europe-west2-salownNotifyBookingUpdated" in 477.530458ms
+i  functions: Trying to access secret BREVO_API_KEY@latest
+⬢  functions: Unable to access secret environment variables from Google Cloud Secret Manager. Make sure the credential used for the Functions Emulator have access or provide override values in /private/tmp/claude-501/-Users-alish/1b4e7c9f-b90b-4cb4-9da8-c744b257a970/scratchpad/p2app2/functions/.secret.local:
+	FirebaseError: Request to https://secretmanager.googleapis.com/v1/projects/demo-c1/secrets/BREVO_API_KEY/versions/latest:access had HTTP Error: 403, Permission denied on resource project demo-c1.
+i  functions: Beginning execution of "europe-west2-salownBookingConfirmedEmailTrigger"
+i  functions: Finished "europe-west2-salownBookingConfirmedEmailTrigger" in 9.474166ms
+i  functions: Trying to access secret BREVO_API_KEY@latest
+⬢  functions: Unable to access secret environment variables from Google Cloud Secret Manager. Make sure the credential used for the Functions Emulator have access or provide override values in /private/tmp/claude-501/-Users-alish/1b4e7c9f-b90b-4cb4-9da8-c744b257a970/scratchpad/p2app2/functions/.secret.local:
+	FirebaseError: Request to https://secretmanager.googleapis.com/v1/projects/demo-c1/secrets/BREVO_API_KEY/versions/latest:access had HTTP Error: 403, Permission denied on resource project demo-c1.
+i  functions: Beginning execution of "europe-west2-salownSendLoyaltyEmail"
+i  functions: Finished "europe-west2-salownSendLoyaltyEmail" in 11.652917ms
+i  functions: Trying to access secret WHATSAPP_ACCESS_TOKEN@latest
+i  functions: Trying to access secret WHATSAPP_PHONE_NUMBER_ID@latest
+⬢  functions: Unable to access secret environment variables from Google Cloud Secret Manager. Make sure the credential used for the Functions Emulator have access or provide override values in /private/tmp/claude-501/-Users-alish/1b4e7c9f-b90b-4cb4-9da8-c744b257a970/scratchpad/p2app2/functions/.secret.local:
+	FirebaseError: Request to https://secretmanager.googleapis.com/v1/projects/demo-c1/secrets/WHATSAPP_ACCESS_TOKEN/versions/latest:access had HTTP Error: 403, Permission denied on resource project demo-c1.
+	FirebaseError: Request to https://secretmanager.googleapis.com/v1/projects/demo-c1/secrets/WHATSAPP_PHONE_NUMBER_ID/versions/latest:access had HTTP Error: 403, Permission denied on resource project demo-c1.
+i  functions: Beginning execution of "europe-west2-salownWhatsAppOnBookingConfirmed"
+i  functions: Finished "europe-west2-salownWhatsAppOnBookingConfirmed" in 8.065417ms
+i  functions: Beginning execution of "europe-west2-salownNotifyBookingConfirmedPush"
+i  functions: Finished "europe-west2-salownNotifyBookingConfirmedPush" in 9.062ms
+i  functions: Beginning execution of "europe-west2-salownNotifyBookingUpdated"
+i  functions: Finished "europe-west2-salownNotifyBookingUpdated" in 31.902292ms
+i  functions: Beginning execution of "europe-west2-salownBookingConfirmedEmailTrigger"
+i  functions: Finished "europe-west2-salownBookingConfirmedEmailTrigger" in 3.883917ms
+i  functions: Beginning execution of "europe-west2-salownSendLoyaltyEmail"
+i  functions: Finished "europe-west2-salownSendLoyaltyEmail" in 2.325875ms
+i  functions: Beginning execution of "europe-west2-salownWhatsAppOnBookingConfirmed"
+i  functions: Finished "europe-west2-salownWhatsAppOnBookingConfirmed" in 1.912417ms
+i  functions: Beginning execution of "europe-west2-salownCreateStaffBooking"
+i  functions: Finished "europe-west2-salownCreateStaffBooking" in 2.615417ms
+i  functions: Beginning execution of "europe-west2-salownCreateStaffBooking"
+i  functions: Finished "europe-west2-salownCreateStaffBooking" in 17.559292ms
+i  functions: Beginning execution of "europe-west2-salownCreateStaffBooking"
+>  {"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"}
+i  functions: Beginning execution of "europe-west2-salownNotifyBookingCreated"
+i  functions: Finished "europe-west2-salownCreateStaffBooking" in 630.201583ms
+i  functions: Finished "europe-west2-salownNotifyBookingCreated" in 119.027125ms
+i  functions: Beginning execution of "europe-west2-salownWhatsAppOnBookingCreated"
+i  functions: Finished "europe-west2-salownWhatsAppOnBookingCreated" in 90.902708ms
+i  functions: Beginning execution of "europe-west2-salownBookingConfirmationTrigger"
+i  functions: Finished "europe-west2-salownBookingConfirmationTrigger" in 134.800917ms
+i  functions: Beginning execution of "europe-west2-salownNotifyBookingPush"
+>  [p2c] FCM push: SKIPPED — no token docs registered, nobody to notify
+i  functions: Finished "europe-west2-salownNotifyBookingPush" in 65.123584ms
+i  functions: Beginning execution of "europe-west2-salownNotifyBookingConfirmedPush"
+i  functions: Finished "europe-west2-salownNotifyBookingConfirmedPush" in 28.012209ms
+i  functions: Beginning execution of "europe-west2-salownNotifyBookingUpdated"
+i  functions: Finished "europe-west2-salownNotifyBookingUpdated" in 69.410458ms
+i  functions: Beginning execution of "europe-west2-salownBookingConfirmedEmailTrigger"
+i  functions: Finished "europe-west2-salownBookingConfirmedEmailTrigger" in 28.011625ms
+i  functions: Beginning execution of "europe-west2-salownSendLoyaltyEmail"
+i  functions: Finished "europe-west2-salownSendLoyaltyEmail" in 28.798541ms
+i  functions: Beginning execution of "europe-west2-salownWhatsAppOnBookingConfirmed"
+i  functions: Finished "europe-west2-salownWhatsAppOnBookingConfirmed" in 24.93ms
+i  functions: Beginning execution of "europe-west2-salownCreateStaffBooking"
+i  functions: Finished "europe-west2-salownCreateStaffBooking" in 8.707166ms
+i  functions: Beginning execution of "europe-west2-salownCreateStaffBooking"
+>  {"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"}
+i  functions: Beginning execution of "europe-west2-salownNotifyBookingCreated"
+i  functions: Finished "europe-west2-salownCreateStaffBooking" in 77.936625ms
+i  functions: Finished "europe-west2-salownNotifyBookingCreated" in 51.575917ms
+i  functions: Beginning execution of "europe-west2-salownWhatsAppOnBookingCreated"
+i  functions: Finished "europe-west2-salownWhatsAppOnBookingCreated" in 26.958416ms
+i  functions: Beginning execution of "europe-west2-salownBookingConfirmationTrigger"
+i  functions: Finished "europe-west2-salownBookingConfirmationTrigger" in 48.714834ms
+i  functions: Beginning execution of "europe-west2-salownNotifyBookingPush"
+>  [p2c] FCM push: SKIPPED — no token docs registered, nobody to notify
+i  functions: Finished "europe-west2-salownNotifyBookingPush" in 29.086584ms
+i  functions: Beginning execution of "europe-west2-salownNotifyBookingConfirmedPush"
+i  functions: Finished "europe-west2-salownNotifyBookingConfirmedPush" in 5.879209ms
+i  functions: Beginning execution of "europe-west2-salownNotifyBookingUpdated"
+i  functions: Finished "europe-west2-salownNotifyBookingUpdated" in 42.422542ms
+i  functions: Beginning execution of "europe-west2-salownBookingConfirmedEmailTrigger"
+i  functions: Finished "europe-west2-salownBookingConfirmedEmailTrigger" in 9.349208ms
+i  functions: Beginning execution of "europe-west2-salownSendLoyaltyEmail"
+i  functions: Finished "europe-west2-salownSendLoyaltyEmail" in 16.91075ms
+i  functions: Beginning execution of "europe-west2-salownWhatsAppOnBookingConfirmed"
+i  functions: Finished "europe-west2-salownWhatsAppOnBookingConfirmed" in 8.802084ms
+i  functions: Beginning execution of "europe-west2-salownCreateStaffBooking"
+i  functions: Finished "europe-west2-salownCreateStaffBooking" in 4.569875ms
+i  functions: Beginning execution of "europe-west2-salownCreateStaffBooking"
+>  {"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"}
+i  functions: Finished "europe-west2-salownCreateStaffBooking" in 50.759959ms
+i  functions: Beginning execution of "europe-west2-salownNotifyBookingCreated"
+i  functions: Finished "europe-west2-salownNotifyBookingCreated" in 47.363125ms
+i  functions: Beginning execution of "europe-west2-salownWhatsAppOnBookingCreated"
+i  functions: Finished "europe-west2-salownWhatsAppOnBookingCreated" in 20.898167ms
+i  functions: Beginning execution of "europe-west2-salownBookingConfirmationTrigger"
+i  functions: Finished "europe-west2-salownBookingConfirmationTrigger" in 47.10325ms
+i  functions: Beginning execution of "europe-west2-salownNotifyBookingPush"
+>  [p2c] FCM push: SKIPPED — no token docs registered, nobody to notify
+i  functions: Finished "europe-west2-salownNotifyBookingPush" in 30.651708ms
+i  functions: Beginning execution of "europe-west2-salownNotifyBookingCreated"
+i  functions: Finished "europe-west2-salownNotifyBookingCreated" in 3.339292ms
+i  functions: Beginning execution of "europe-west2-salownWhatsAppOnBookingCreated"
+i  functions: Finished "europe-west2-salownWhatsAppOnBookingCreated" in 2.67ms
+i  functions: Beginning execution of "europe-west2-salownBookingConfirmationTrigger"
+i  functions: Finished "europe-west2-salownBookingConfirmationTrigger" in 53.707ms
+i  functions: Beginning execution of "europe-west2-salownNotifyBookingPush"
+i  functions: Finished "europe-west2-salownNotifyBookingPush" in 2.610834ms
+i  functions: Beginning execution of "europe-west2-salownNotifyBookingConfirmedPush"
+i  functions: Finished "europe-west2-salownNotifyBookingConfirmedPush" in 17.875875ms
+i  functions: Beginning execution of "europe-west2-salownNotifyBookingUpdated"
+i  functions: Finished "europe-west2-salownNotifyBookingUpdated" in 40.105333ms
+i  functions: Beginning execution of "europe-west2-salownBookingConfirmedEmailTrigger"
+i  functions: Finished "europe-west2-salownBookingConfirmedEmailTrigger" in 10.520417ms
+i  functions: Beginning execution of "europe-west2-salownSendLoyaltyEmail"
+i  functions: Finished "europe-west2-salownSendLoyaltyEmail" in 15.54425ms
+i  functions: Beginning execution of "europe-west2-salownWhatsAppOnBookingConfirmed"
+i  functions: Finished "europe-west2-salownWhatsAppOnBookingConfirmed" in 12.225416ms
+i  functions: Beginning execution of "europe-west2-salownNotifyBookingConfirmedPush"
+i  functions: Finished "europe-west2-salownNotifyBookingConfirmedPush" in 3.656584ms
+i  functions: Beginning execution of "europe-west2-salownNotifyBookingUpdated"
+i  functions: Finished "europe-west2-salownNotifyBookingUpdated" in 20.965792ms
+i  functions: Beginning execution of "europe-west2-salownBookingConfirmedEmailTrigger"
+i  functions: Finished "europe-west2-salownBookingConfirmedEmailTrigger" in 5.008125ms
+i  functions: Beginning execution of "europe-west2-salownSendLoyaltyEmail"
+i  functions: Finished "europe-west2-salownSendLoyaltyEmail" in 3.522083ms
+i  functions: Beginning execution of "europe-west2-salownWhatsAppOnBookingConfirmed"
+i  functions: Finished "europe-west2-salownWhatsAppOnBookingConfirmed" in 3.955667ms
+i  functions: Beginning execution of "europe-west2-salownCreateStaffBooking"
+i  functions: Finished "europe-west2-salownCreateStaffBooking" in 7.173458ms
+i  functions: Beginning execution of "europe-west2-salownCreateStaffBooking"
+>  {"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"}
+i  functions: Finished "europe-west2-salownCreateStaffBooking" in 51.092708ms
+i  functions: Beginning execution of "europe-west2-salownCreateStaffBooking"
+i  functions: Finished "europe-west2-salownCreateStaffBooking" in 3.221584ms
+i  functions: Beginning execution of "europe-west2-salownCreateStaffBooking"
+>  {"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"}
+i  functions: Finished "europe-west2-salownCreateStaffBooking" in 86.166166ms
+i  functions: Beginning execution of "europe-west2-salownCreateStaffBooking"
+i  functions: Finished "europe-west2-salownCreateStaffBooking" in 10.219917ms
+i  functions: Beginning execution of "europe-west2-salownCreateStaffBooking"
+>  {"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"}
+i  functions: Finished "europe-west2-salownCreateStaffBooking" in 49.159833ms
+i  functions: Beginning execution of "europe-west2-salownCreateStaffBooking"
+>  {"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"}
+i  functions: Beginning execution of "europe-west2-salownNotifyBookingCreated"
+i  functions: Finished "europe-west2-salownCreateStaffBooking" in 56.463083ms
+i  functions: Finished "europe-west2-salownNotifyBookingCreated" in 68.590417ms
+i  functions: Beginning execution of "europe-west2-salownWhatsAppOnBookingCreated"
+i  functions: Finished "europe-west2-salownWhatsAppOnBookingCreated" in 36.516833ms
+i  functions: Beginning execution of "europe-west2-salownBookingConfirmationTrigger"
+i  functions: Finished "europe-west2-salownBookingConfirmationTrigger" in 82.411625ms
+i  functions: Beginning execution of "europe-west2-salownNotifyBookingPush"
+>  [p2c] FCM push: SKIPPED — no token docs registered, nobody to notify
+i  functions: Finished "europe-west2-salownNotifyBookingPush" in 22.008625ms
+i  functions: Beginning execution of "europe-west2-salownNotifyBookingConfirmedPush"
+i  functions: Finished "europe-west2-salownNotifyBookingConfirmedPush" in 12.874458ms
+i  functions: Beginning execution of "europe-west2-salownNotifyBookingUpdated"
+i  functions: Finished "europe-west2-salownNotifyBookingUpdated" in 25.412417ms
+i  functions: Beginning execution of "europe-west2-salownBookingConfirmedEmailTrigger"
+i  functions: Finished "europe-west2-salownBookingConfirmedEmailTrigger" in 8.960667ms
+i  functions: Beginning execution of "europe-west2-salownSendLoyaltyEmail"
+i  functions: Finished "europe-west2-salownSendLoyaltyEmail" in 12.227083ms
+i  functions: Beginning execution of "europe-west2-salownWhatsAppOnBookingConfirmed"
+i  functions: Finished "europe-west2-salownWhatsAppOnBookingConfirmed" in 8.150333ms
+i  functions: Beginning execution of "europe-west2-salownCreateStaffBooking"
+i  functions: Finished "europe-west2-salownCreateStaffBooking" in 6.502917ms
+i  functions: Beginning execution of "europe-west2-salownCreateStaffBooking"
+>  {"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"}
+i  functions: Finished "europe-west2-salownCreateStaffBooking" in 45.551167ms
+i  functions: Beginning execution of "europe-west2-salownNotifyBookingCreated"
+i  functions: Beginning execution of "europe-west2-salownCreateStaffBooking"
+>  {"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"}
+i  functions: Finished "europe-west2-salownCreateStaffBooking" in 41.483209ms
+i  functions: Beginning execution of "europe-west2-salownCreateStaffBooking"
+i  functions: Finished "europe-west2-salownNotifyBookingCreated" in 73.033833ms
+>  {"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"}
+i  functions: Beginning execution of "europe-west2-salownWhatsAppOnBookingCreated"
+i  functions: Finished "europe-west2-salownWhatsAppOnBookingCreated" in 39.125791ms
+i  functions: Beginning execution of "europe-west2-salownBookingConfirmationTrigger"
+i  functions: Finished "europe-west2-salownCreateStaffBooking" in 129.8235ms
+i  functions: Finished "europe-west2-salownBookingConfirmationTrigger" in 274.7035ms
+i  functions: Beginning execution of "europe-west2-salownNotifyBookingPush"
+>  [p2c] FCM push: SKIPPED — no token docs registered, nobody to notify
+i  functions: Finished "europe-west2-salownNotifyBookingPush" in 47.344125ms
+i  functions: Beginning execution of "europe-west2-salownNotifyBookingCreated"
+i  functions: Finished "europe-west2-salownNotifyBookingCreated" in 48.590625ms
+i  functions: Beginning execution of "europe-west2-salownWhatsAppOnBookingCreated"
+i  functions: Finished "europe-west2-salownWhatsAppOnBookingCreated" in 18.932875ms
+i  functions: Beginning execution of "europe-west2-salownBookingConfirmationTrigger"
+i  functions: Finished "europe-west2-salownBookingConfirmationTrigger" in 94.461583ms
+i  functions: Beginning execution of "europe-west2-salownNotifyBookingPush"
+>  [p2c] FCM push: SKIPPED — no token docs registered, nobody to notify
+i  functions: Finished "europe-west2-salownNotifyBookingPush" in 23.869708ms
+i  functions: Beginning execution of "europe-west2-salownNotifyBookingConfirmedPush"
+i  functions: Finished "europe-west2-salownNotifyBookingConfirmedPush" in 12.0525ms
+i  functions: Beginning execution of "europe-west2-salownNotifyBookingUpdated"
+i  functions: Finished "europe-west2-salownNotifyBookingUpdated" in 57.472542ms
+i  functions: Beginning execution of "europe-west2-salownBookingConfirmedEmailTrigger"
+i  functions: Finished "europe-west2-salownBookingConfirmedEmailTrigger" in 19.845708ms
+i  functions: Beginning execution of "europe-west2-salownSendLoyaltyEmail"
+i  functions: Finished "europe-west2-salownSendLoyaltyEmail" in 26.205709ms
+i  functions: Beginning execution of "europe-west2-salownWhatsAppOnBookingConfirmed"
+i  functions: Finished "europe-west2-salownWhatsAppOnBookingConfirmed" in 24.774459ms
+i  functions: Beginning execution of "europe-west2-salownNotifyBookingConfirmedPush"
+i  functions: Finished "europe-west2-salownNotifyBookingConfirmedPush" in 6.089875ms
+i  functions: Beginning execution of "europe-west2-salownNotifyBookingUpdated"
+i  functions: Finished "europe-west2-salownNotifyBookingUpdated" in 23.38975ms
+i  functions: Beginning execution of "europe-west2-salownBookingConfirmedEmailTrigger"
+i  functions: Finished "europe-west2-salownBookingConfirmedEmailTrigger" in 4.938334ms
+i  functions: Beginning execution of "europe-west2-salownSendLoyaltyEmail"
+i  functions: Finished "europe-west2-salownSendLoyaltyEmail" in 5.751125ms
+i  functions: Beginning execution of "europe-west2-salownWhatsAppOnBookingConfirmed"
+i  functions: Finished "europe-west2-salownWhatsAppOnBookingConfirmed" in 5.174375ms
+i  functions: Beginning execution of "europe-west2-salownNotifyBookingCreated"
+i  functions: Finished "europe-west2-salownNotifyBookingCreated" in 15.380709ms
+i  functions: Beginning execution of "europe-west2-salownWhatsAppOnBookingCreated"
+i  functions: Finished "europe-west2-salownWhatsAppOnBookingCreated" in 43.185458ms
+i  functions: Beginning execution of "europe-west2-salownBookingConfirmationTrigger"
+i  functions: Finished "europe-west2-salownBookingConfirmationTrigger" in 54.5785ms
+i  functions: Beginning execution of "europe-west2-salownNotifyBookingPush"
+i  functions: Finished "europe-west2-salownNotifyBookingPush" in 15.901833ms
+i  functions: Beginning execution of "europe-west2-salownNotifyBookingConfirmedPush"
+i  functions: Finished "europe-west2-salownNotifyBookingConfirmedPush" in 8.662459ms
+i  functions: Beginning execution of "europe-west2-salownNotifyBookingUpdated"
+i  functions: Finished "europe-west2-salownNotifyBookingUpdated" in 18.761625ms
+i  functions: Beginning execution of "europe-west2-salownBookingConfirmedEmailTrigger"
+i  functions: Finished "europe-west2-salownBookingConfirmedEmailTrigger" in 10.287375ms
+i  functions: Beginning execution of "europe-west2-salownSendLoyaltyEmail"
+i  functions: Finished "europe-west2-salownSendLoyaltyEmail" in 7.605167ms
+i  functions: Beginning execution of "europe-west2-salownWhatsAppOnBookingConfirmed"
+i  functions: Finished "europe-west2-salownWhatsAppOnBookingConfirmed" in 5.561084ms
+i  functions: Beginning execution of "europe-west2-salownCreateStaffWalkIn"
+i  functions: Finished "europe-west2-salownCreateStaffWalkIn" in 2.437917ms
+i  functions: Beginning execution of "europe-west2-salownCreateStaffWalkIn"
+>  {"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"}
+i  functions: Finished "europe-west2-salownCreateStaffWalkIn" in 385.009791ms
+i  functions: Beginning execution of "europe-west2-salownCreateStaffWalkIn"
+>  {"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"}
+i  functions: Beginning execution of "europe-west2-salownNotifyBookingCreated"
+i  functions: Finished "europe-west2-salownCreateStaffWalkIn" in 110.362083ms
+i  functions: Finished "europe-west2-salownNotifyBookingCreated" in 39.219625ms
+i  functions: Beginning execution of "europe-west2-salownWhatsAppOnBookingCreated"
+i  functions: Finished "europe-west2-salownWhatsAppOnBookingCreated" in 51.960833ms
+i  functions: Beginning execution of "europe-west2-salownBookingConfirmationTrigger"
+i  functions: Finished "europe-west2-salownBookingConfirmationTrigger" in 126.041625ms
+i  functions: Beginning execution of "europe-west2-salownNotifyBookingPush"
+i  functions: Finished "europe-west2-salownNotifyBookingPush" in 39.070292ms
+i  functions: Beginning execution of "europe-west2-salownNotifyBookingConfirmedPush"
+i  functions: Finished "europe-west2-salownNotifyBookingConfirmedPush" in 25.582291ms
+i  functions: Beginning execution of "europe-west2-salownNotifyBookingUpdated"
+i  functions: Finished "europe-west2-salownNotifyBookingUpdated" in 131.665084ms
+i  functions: Beginning execution of "europe-west2-salownBookingConfirmedEmailTrigger"
+i  functions: Finished "europe-west2-salownBookingConfirmedEmailTrigger" in 10.399375ms
+i  functions: Beginning execution of "europe-west2-salownSendLoyaltyEmail"
+i  functions: Finished "europe-west2-salownSendLoyaltyEmail" in 25.527208ms
+i  functions: Beginning execution of "europe-west2-salownWhatsAppOnBookingConfirmed"
+i  functions: Finished "europe-west2-salownWhatsAppOnBookingConfirmed" in 26.937125ms
+i  functions: Beginning execution of "europe-west2-salownNotifyBookingConfirmedPush"
+i  functions: Finished "europe-west2-salownNotifyBookingConfirmedPush" in 6.834334ms
+i  functions: Beginning execution of "europe-west2-salownNotifyBookingUpdated"
+i  functions: Finished "europe-west2-salownNotifyBookingUpdated" in 26.502583ms
+i  functions: Beginning execution of "europe-west2-salownBookingConfirmedEmailTrigger"
+i  functions: Finished "europe-west2-salownBookingConfirmedEmailTrigger" in 16.73575ms
+i  functions: Beginning execution of "europe-west2-salownSendLoyaltyEmail"
+i  functions: Finished "europe-west2-salownSendLoyaltyEmail" in 6.304333ms
+i  functions: Beginning execution of "europe-west2-salownWhatsAppOnBookingConfirmed"
+i  functions: Finished "europe-west2-salownWhatsAppOnBookingConfirmed" in 19.340833ms

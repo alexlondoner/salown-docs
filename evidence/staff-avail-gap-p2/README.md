@@ -15,12 +15,14 @@ emulator authorization header value is stored in these files (scanned before cop
 | Run | Contents |
 |---|---|
 | `2026-09-13-local-verification/` | `README.md` (scenario table, automated checks), `RELEASE-EVALUATION.md` (content-level zero-write check, O2 scope, compatibility, release tooling), `MANIFEST.sha256` |
+| `2026-09-14-release-checks/` | `RELEASE-EVALUATION-2.md` (owner-independent release checks at `9ea0aca`: full unit/frontend/two-phase emulator in a git-backed isolated workspace, guard/manifest/build, New Booking Chrome regression, owner backdated Save & Checkout, failure classification), `20-owner-decision-recommendations.md`, `30-finding-new-booking-london-timezone.md`, `chrome/` (full-document snapshots and diffs), `MANIFEST.sha256` |
 
 **Verify integrity.**
 
 ```bash
-cd docs/evidence/staff-avail-gap-p2/2026-09-13-local-verification
+cd docs/evidence/staff-avail-gap-p2            # every run at once (top-level manifest)
 shasum -a 256 -c MANIFEST.sha256
+cd 2026-09-14-release-checks && shasum -a 256 -c MANIFEST.sha256   # one run
 ```
 
 **Release status.** `PUSHED_NOT_LIVE`; no release approved. Open decisions and the rollback order are

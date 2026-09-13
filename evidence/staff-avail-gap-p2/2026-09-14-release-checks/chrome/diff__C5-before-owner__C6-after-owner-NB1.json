@@ -1,0 +1,166 @@
+{
+  "before": "C5-before-owner",
+  "after": "C6-after-owner-NB1",
+  "window": [
+    "2026-09-13T23:07:58.384Z",
+    "2026-09-13T23:09:27.470Z"
+  ],
+  "scope": "FULL document data of every document under tenants/p2c (recursive) + the tenant root; deletions detected as removed paths",
+  "added": [
+    {
+      "path": "auditLogs/lyBxDUctelz3RWavoQi4",
+      "data": {
+        "action": "STAFF_BOOKING_CREATED",
+        "source": "function",
+        "userId": "IPkZGuogvJNv5mJCtvaERbTKIxWf",
+        "userEmail": "",
+        "userName": "",
+        "userRole": "owner",
+        "actor": {
+          "uid": "IPkZGuogvJNv5mJCtvaERbTKIxWf",
+          "email": "",
+          "name": "",
+          "role": "owner"
+        },
+        "target": {
+          "collection": "bookings",
+          "docId": "qSVqRO3qopYZiTyusWHU",
+          "label": "WCB-1789340940145-e1c2"
+        },
+        "timestamp": {
+          "__ts": "2026-09-13T23:09:00.193Z"
+        }
+      }
+    },
+    {
+      "path": "auditLogs/vPWa3w6AcjvRYbKSOCXo",
+      "data": {
+        "action": "STAFF_BOOKING_POLICY_OVERRIDE",
+        "source": "function",
+        "userId": "IPkZGuogvJNv5mJCtvaERbTKIxWf",
+        "userEmail": "",
+        "userName": "",
+        "userRole": "owner",
+        "actor": {
+          "uid": "IPkZGuogvJNv5mJCtvaERbTKIxWf",
+          "email": "",
+          "name": "",
+          "role": "owner"
+        },
+        "target": {
+          "collection": "bookings",
+          "docId": "qSVqRO3qopYZiTyusWHU",
+          "label": "WCB-1789340940145-e1c2"
+        },
+        "tenantId": "p2c",
+        "meta": {
+          "flow": "booking",
+          "dimensions": {
+            "conflict": true,
+            "conflictingRecordIds": [
+              "nbLonAlex1100"
+            ]
+          },
+          "reason": "O-NB1: owner approved squeeze-in",
+          "barberId": "alex",
+          "barberName": "Alex",
+          "requestedStartMs": 1789380000000,
+          "requestedEndMs": 1789381800000
+        },
+        "timestamp": {
+          "__ts": "2026-09-13T23:09:00.167Z"
+        }
+      }
+    },
+    {
+      "path": "bookingRequests/staffbk_d026679960c69b5a96bee5480eeb9bd669c7f61a6be9bd71e41a7e1af654b600",
+      "data": {
+        "op": "staff-booking",
+        "tenantId": "p2c",
+        "actorUid": "IPkZGuogvJNv5mJCtvaERbTKIxWf",
+        "rawKey": "stfbk-mu0fe9nm-mxaoq39h16n6",
+        "docId": "qSVqRO3qopYZiTyusWHU",
+        "bookingId": "WCB-1789340940145-e1c2",
+        "fingerprint": "5e39434d7561501c10df7d90f613d7ede6b79ae66063071ec88f7086fb8f98a3",
+        "status": "CONFIRMED",
+        "paymentRequired": false,
+        "paymentFlow": "PAY_AT_VENUE",
+        "createdAt": {
+          "__ts": "2026-09-13T23:09:00.166Z"
+        }
+      }
+    },
+    {
+      "path": "bookings/qSVqRO3qopYZiTyusWHU",
+      "data": {
+        "bookingId": "WCB-1789340940145-e1c2",
+        "tenantId": "p2c",
+        "clientName": "Nb Owner One",
+        "name": "Nb Owner One",
+        "clientEmail": "",
+        "clientPhone": "07700900123",
+        "barberId": "alex",
+        "barberName": "Alex",
+        "barber": "Alex",
+        "serviceId": "svc1",
+        "service": "Haircut",
+        "serviceName": "Haircut",
+        "variationId": null,
+        "date": "2026-09-14",
+        "time": "11:00",
+        "startTime": {
+          "__ts": "2026-09-14T10:00:00.000Z"
+        },
+        "endTime": {
+          "__ts": "2026-09-14T10:30:00.000Z"
+        },
+        "duration": 30,
+        "status": "CONFIRMED",
+        "paymentType": "CASH",
+        "price": 20,
+        "paidAmount": "",
+        "soldProducts": [],
+        "soldAddOns": [],
+        "source": "Staff App",
+        "bookingType": "booking",
+        "createdAt": {
+          "__ts": "2026-09-13T23:09:00.166Z"
+        },
+        "updatedAt": {
+          "__ts": "2026-09-13T23:09:00.166Z"
+        },
+        "loyaltyPromotionSnapshot": {
+          "eligible": false,
+          "reason": "NOT_DIRECT_SOURCE",
+          "multiplier": 1,
+          "multiplierSource": "none",
+          "campaignId": null,
+          "campaignStartDate": null,
+          "campaignEndDate": null,
+          "evaluatedDate": null,
+          "timezone": "America/Los_Angeles",
+          "source": "staff app",
+          "policyVersion": 1,
+          "evaluatedAt": {
+            "__ts": "2026-09-13T23:09:00.352Z"
+          }
+        }
+      }
+    },
+    {
+      "path": "notifications/oTE4nwwbAnfVA6KYT6rF",
+      "data": {
+        "type": "new_booking",
+        "title": "New Booking",
+        "body": "Nb Owner One – Haircut · Alex · Mon 14 Sept at 11:00 AM",
+        "bookingId": "WCB-1789340940145-e1c2",
+        "read": false,
+        "createdAt": {
+          "__ts": "2026-09-13T23:09:00.239Z"
+        }
+      }
+    }
+  ],
+  "removed": [],
+  "contentChanged": []
+}

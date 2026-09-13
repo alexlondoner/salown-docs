@@ -1,0 +1,29 @@
+# 03-emulator-gate-two-phase — 2026-09-13T22:10:02Z — HEAD 9ea0aca
+
+> test:emulator
+> ../ops/test-emulator.sh
+
+── pinned emulator toolchain ──
+   firebase-tools : 15.26.0  (/private/tmp/claude-501/-Users-alish/1b4e7c9f-b90b-4cb4-9da8-c744b257a970/scratchpad/relws/salown-app/functions/node_modules/.bin/firebase)
+   firestore jar  : cloud-firestore-emulator-v1.22.0.jar
+   jar cache      : /Users/alish/.cache/firebase/emulators
+
+── building functions ──
+
+> build
+> tsc -p tsconfig.build.json
+
+
+── emulator phase: general ──
+   tests=655 pass=655 fail=0 (exit 0)
+
+── emulator phase: packages ──
+   tests=27 pass=27 fail=0 (exit 0)
+
+════ CANONICAL EMULATOR GATE — both phases mandatory ════
+  toolchain: firebase-tools 15.26.0 · cloud-firestore-emulator-v1.22.0.jar
+  general  : tests=655  pass=655  fail=0
+  packages : tests=27   pass=27   fail=0
+  TOTAL    : tests=682  pass=682  fail=0
+  RESULT   : PASS
+exit=0

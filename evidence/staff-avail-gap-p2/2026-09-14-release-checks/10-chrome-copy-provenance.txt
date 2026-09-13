@@ -1,0 +1,27 @@
+== Chrome copy p2app2 vs git archive of 9ea0aca, content diff excluding node_modules symlinks and build outputs (2026-09-13T22:10:23Z)
+Files /private/tmp/claude-501/-Users-alish/1b4e7c9f-b90b-4cb4-9da8-c744b257a970/scratchpad/archive-9ea0aca/src/firebase.ts and /private/tmp/claude-501/-Users-alish/1b4e7c9f-b90b-4cb4-9da8-c744b257a970/scratchpad/p2app2/src/firebase.ts differ
+(end diff)
+== the differing file:
+2,4c2,4
+< import { getAuth } from 'firebase/auth'
+< import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from 'firebase/firestore'
+< import { getFunctions } from 'firebase/functions'
+---
+> import { getAuth, connectAuthEmulator } from 'firebase/auth'
+> import { initializeFirestore, memoryLocalCache, connectFirestoreEmulator } from 'firebase/firestore'
+> import { getFunctions, connectFunctionsEmulator } from 'firebase/functions'
+10c10
+<   projectId: "havuz-44f70",
+---
+>   projectId: "demo-c1",
+24c24
+<   localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
+---
+>   localCache: memoryLocalCache(),
+27a28,31
+> // LOCAL REHEARSAL COPY ONLY — never committed.
+> connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true })
+> connectFirestoreEmulator(db, '127.0.0.1', 8080)
+> connectFunctionsEmulator(functions, '127.0.0.1', 5001)
+== archive-9ea0aca provenance check: files equal to a fresh git archive 9ea0aca
+(fresh-vs-archive diff end; 'Only in archive' lines = local build outputs/tooling, filtered)

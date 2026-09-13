@@ -1,0 +1,215 @@
+{
+  "before": "C6-after-owner-NB1",
+  "after": "C7-after-owner-NB2",
+  "window": [
+    "2026-09-13T23:09:27.470Z",
+    "2026-09-13T23:10:32.870Z"
+  ],
+  "scope": "FULL document data of every document under tenants/p2c (recursive) + the tenant root; deletions detected as removed paths",
+  "added": [
+    {
+      "path": "auditLogs/6ygJxrbZW4YLDZKA38Ge",
+      "data": {
+        "action": "STAFF_BOOKING_POLICY_OVERRIDE",
+        "source": "function",
+        "userId": "IPkZGuogvJNv5mJCtvaERbTKIxWf",
+        "userEmail": "",
+        "userName": "",
+        "userRole": "owner",
+        "actor": {
+          "uid": "IPkZGuogvJNv5mJCtvaERbTKIxWf",
+          "email": "",
+          "name": "",
+          "role": "owner"
+        },
+        "target": {
+          "collection": "bookings",
+          "docId": "hnwIbpfOZ7S1iwElMimZ",
+          "label": "WCB-1789340998415-a57e"
+        },
+        "tenantId": "p2c",
+        "meta": {
+          "flow": "booking",
+          "dimensions": {
+            "conflict": true,
+            "conflictingRecordIds": [
+              "LT8lUWHVUfiPU7AjiDrC",
+              "UQF4HxR499qBz99KViEw"
+            ]
+          },
+          "reason": "O-NB2: re-approved after the conflict changed (both records)",
+          "barberId": "bea",
+          "barberName": "Bea",
+          "requestedStartMs": 1789387800000,
+          "requestedEndMs": 1789389600000
+        },
+        "timestamp": {
+          "__ts": "2026-09-13T23:09:58.454Z"
+        }
+      }
+    },
+    {
+      "path": "auditLogs/UbxXDYeyEdIu2sHcpQL0",
+      "data": {
+        "action": "STAFF_BOOKING_CREATED",
+        "source": "function",
+        "userId": "IPkZGuogvJNv5mJCtvaERbTKIxWf",
+        "userEmail": "",
+        "userName": "",
+        "userRole": "owner",
+        "actor": {
+          "uid": "IPkZGuogvJNv5mJCtvaERbTKIxWf",
+          "email": "",
+          "name": "",
+          "role": "owner"
+        },
+        "target": {
+          "collection": "bookings",
+          "docId": "hnwIbpfOZ7S1iwElMimZ",
+          "label": "WCB-1789340998415-a57e"
+        },
+        "timestamp": {
+          "__ts": "2026-09-13T23:09:58.516Z"
+        }
+      }
+    },
+    {
+      "path": "bookingRequests/staffbk_300f1d8b5dcc301e86f4d2c748015131b94b58ef42666598f837b8559b3e37fe",
+      "data": {
+        "op": "staff-booking",
+        "tenantId": "p2c",
+        "actorUid": "IPkZGuogvJNv5mJCtvaERbTKIxWf",
+        "rawKey": "stfbk-mu0ffimb-9dmquv93nv3z",
+        "docId": "hnwIbpfOZ7S1iwElMimZ",
+        "bookingId": "WCB-1789340998415-a57e",
+        "fingerprint": "72bae1f74c03e6ecdbd465c1dcb0f431e5a7eded873d5e88b4b8857458d281a2",
+        "status": "CONFIRMED",
+        "paymentRequired": false,
+        "paymentFlow": "PAY_AT_VENUE",
+        "createdAt": {
+          "__ts": "2026-09-13T23:09:58.454Z"
+        }
+      }
+    },
+    {
+      "path": "bookings/hnwIbpfOZ7S1iwElMimZ",
+      "data": {
+        "bookingId": "WCB-1789340998415-a57e",
+        "tenantId": "p2c",
+        "clientName": "Nb Owner Two",
+        "name": "Nb Owner Two",
+        "clientEmail": "",
+        "clientPhone": "07700900123",
+        "barberId": "bea",
+        "barberName": "Bea",
+        "barber": "Bea",
+        "serviceId": "svc1",
+        "service": "Haircut",
+        "serviceName": "Haircut",
+        "variationId": null,
+        "date": "2026-09-14",
+        "time": "13:10",
+        "startTime": {
+          "__ts": "2026-09-14T12:10:00.000Z"
+        },
+        "endTime": {
+          "__ts": "2026-09-14T12:40:00.000Z"
+        },
+        "duration": 30,
+        "status": "CONFIRMED",
+        "paymentType": "CASH",
+        "price": 20,
+        "paidAmount": "",
+        "soldProducts": [],
+        "soldAddOns": [],
+        "source": "Staff App",
+        "bookingType": "booking",
+        "createdAt": {
+          "__ts": "2026-09-13T23:09:58.454Z"
+        },
+        "updatedAt": {
+          "__ts": "2026-09-13T23:09:58.454Z"
+        },
+        "loyaltyPromotionSnapshot": {
+          "eligible": false,
+          "reason": "NOT_DIRECT_SOURCE",
+          "multiplier": 1,
+          "multiplierSource": "none",
+          "campaignId": null,
+          "campaignStartDate": null,
+          "campaignEndDate": null,
+          "evaluatedDate": null,
+          "timezone": "America/Los_Angeles",
+          "source": "staff app",
+          "policyVersion": 1,
+          "evaluatedAt": {
+            "__ts": "2026-09-13T23:09:58.912Z"
+          }
+        }
+      }
+    },
+    {
+      "path": "bookings/UQF4HxR499qBz99KViEw",
+      "data": {
+        "bookingId": "INJECTED-NB-C",
+        "status": "CONFIRMED",
+        "barberId": "bea",
+        "barberName": "Bea",
+        "clientName": "Injected during approval",
+        "source": "Staff App",
+        "bookingType": "booking",
+        "duration": 30,
+        "startTime": {
+          "__ts": "2026-09-14T12:20:00.000Z"
+        },
+        "endTime": {
+          "__ts": "2026-09-14T12:50:00.000Z"
+        },
+        "loyaltyPromotionSnapshot": {
+          "eligible": false,
+          "reason": "NOT_DIRECT_SOURCE",
+          "multiplier": 1,
+          "multiplierSource": "none",
+          "campaignId": null,
+          "campaignStartDate": null,
+          "campaignEndDate": null,
+          "evaluatedDate": null,
+          "timezone": "America/Los_Angeles",
+          "source": "staff app",
+          "policyVersion": 1,
+          "evaluatedAt": {
+            "__ts": "2026-09-13T23:09:58.646Z"
+          }
+        }
+      }
+    },
+    {
+      "path": "notifications/9w0mm2adY6DZkYakycZm",
+      "data": {
+        "type": "new_booking",
+        "title": "New Booking",
+        "body": "Nb Owner Two – Haircut · Bea · Mon 14 Sept at 1:10 PM",
+        "bookingId": "WCB-1789340998415-a57e",
+        "read": false,
+        "createdAt": {
+          "__ts": "2026-09-13T23:09:58.821Z"
+        }
+      }
+    },
+    {
+      "path": "notifications/eCyVR1csXhmZtBzIVSYb",
+      "data": {
+        "type": "new_booking",
+        "title": "New Booking",
+        "body": "Injected during approval – Unknown service · Bea · Mon 14 Sept at 1:20 PM",
+        "bookingId": "INJECTED-NB-C",
+        "read": false,
+        "createdAt": {
+          "__ts": "2026-09-13T23:09:58.394Z"
+        }
+      }
+    }
+  ],
+  "removed": [],
+  "contentChanged": []
+}

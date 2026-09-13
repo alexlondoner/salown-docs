@@ -1,0 +1,8 @@
+01-functions-unit-full exit=0 finished 2026-09-13T22:09:41Z memfree=42%
+02-frontend-vitest-full exit=1 finished 2026-09-13T22:10:02Z memfree=46%
+03-emulator-gate-two-phase exit=0 finished 2026-09-13T22:56:32Z memfree=40%
+04-deploy-guard-check-only exit=0 finished 2026-09-13T22:56:33Z memfree=40%
+05-functions-archive-manifest exit=0 finished 2026-09-13T22:56:33Z memfree=41%
+06-build-staff exit=0 finished 2026-09-13T22:56:34Z memfree=42%
+07-release-workspace-status-after exit=0 finished 2026-09-13T22:56:34Z memfree=41%
+ALL DONE 2026-09-13T22:56:34Z

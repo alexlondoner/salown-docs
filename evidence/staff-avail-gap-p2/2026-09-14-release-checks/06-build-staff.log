@@ -1,0 +1,23 @@
+# 06-build-staff — 2026-09-13T22:56:33Z — HEAD 9ea0aca
+
+> salown-app@0.0.0 build:staff
+> vite build --config vite.staff.config.js
+
+vite v8.0.14 building client environment for production...
+[2Ktransforming...✓ 141 modules transformed.
+rendering chunks...
+computing gzip size...
+hosting/staff-bundle/staff.html                    10.67 kB │ gzip:   3.38 kB
+hosting/staff-bundle/assets/staff-h5sE0F85.css      3.72 kB │ gzip:   1.41 kB
+hosting/staff-bundle/assets/staff-BGZUV_T1.js   1,120.98 kB │ gzip: 335.04 kB
+
+✓ built in 336ms
+[plugin builtin:vite-reporter] 
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rolldownOptions.output.codeSplitting to improve chunking: https://rolldown.rs/reference/OutputOptions.codeSplitting
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+src="/assets/staff-BGZUV_T1.js"
+14e958ec93180d968422e2620c9ed109ca74ad388f2d62e5e52fa7859f40f4c5  hosting/staff-bundle/index.html
+882813e27ec2e2e7bdcfbdb7e4e01ab7761ea227182b8e68c34ad942e401e4dd  hosting/staff-bundle/assets/staff-BGZUV_T1.js
+exit=0

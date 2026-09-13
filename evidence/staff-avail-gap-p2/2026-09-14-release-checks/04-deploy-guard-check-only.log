@@ -1,0 +1,6 @@
+# 04-deploy-guard-check-only — 2026-09-13T22:56:32Z — HEAD 9ea0aca
+Namespace guard (offline): functions:salown:salownCreateStaffWalkIn
+functions-namespace: OK — 1 target(s) owned by codebase 'salown':
+  functions:salown:salownCreateStaffWalkIn  (europe-west2)
+--check-only: guard passed. Nothing deployed.
+exit=0

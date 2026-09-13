@@ -1,0 +1,29 @@
+== functionsArchiveManifest.test.js NEGATIVE CONTROL: environment dependence (2026-09-13T22:44:51Z)
+-- test source (9ea0aca) lines that pick the input directory and the expected local files --
+10://   • the live `provisionTenant` archive carries a 26,947-byte `firestore-debug.log`
+12://   • `functions/.secret.local` exists on this machine holding `ANTHROPIC_API_KEY`
+46:      cwd: ROOT, encoding: 'utf8', env, maxBuffer: 64 * 1024 * 1024,
+101:  const OLD = manifest(['node_modules', '.git']);
+105:    // `.secret.local`, either the file was removed from this machine (fine — but
+109:    expect(paths).toContain('.secret.local');
+110:    expect(paths).toContain('firestore-debug.log');
+116:    expect(forbidden.some((p) => p.startsWith('_preview/'))).toBe(true);
+117:    expect(forbidden.some((p) => p.startsWith('.claude/'))).toBe(true);
+143:    for (const needed of ['*.log', '.env', '*.local', 'coverage', '_preview', '.claude']) {
+-- presence by NAME only (no content read) --
+functions/.secret.local clean-release-clone: absent   shared-dev-tree: present
+functions/firestore-debug.log clean-release-clone: present  shared-dev-tree: absent
+functions/_preview     clean-release-clone: present  shared-dev-tree: present
+functions/.claude      clean-release-clone: absent   shared-dev-tree: present
+-- tracked by git at 9ea0aca? (expect none: they are local-only files) --
+functions/_preview/1-confirmation.html
+functions/_preview/1-confirmation.png
+functions/_preview/2-cancellation.html
+functions/_preview/2-cancellation.png
+functions/_preview/3-reschedule.html
+functions/_preview/3-reschedule.png
+functions/_preview/4-checkout-loyalty.html
+functions/_preview/4-checkout-loyalty.png
+functions/_preview/4b-checkout-loyalty-deposit.html
+functions/_preview/5-loyalty-update.html
+(end)

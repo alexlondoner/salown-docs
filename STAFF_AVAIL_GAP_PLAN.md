@@ -985,6 +985,26 @@ client writer, no server guard), registered-client checkout side effects, and th
 5. Data: bookings and audit rows written by the new callable keep the existing booking shape; no data rollback.
    `salownCreateStaffBooking` is not released, so it needs no rollback.
 
+### 9.7b Phase 2 owner-independent release checks (2026-09-14) — still NOT releasable
+
+Evidence: `evidence/staff-avail-gap-p2/2026-09-14-release-checks/RELEASE-EVALUATION-2.md`. Candidate `9ea0aca`,
+git-backed isolated workspace, no deploy, shared tree untouched.
+
+| Check | Result |
+|---|---|
+| functions unit (full) | 2734: 2689 pass, 0 fail, 45 skipped (emulator-only suites) |
+| two-phase `ops/test-emulator.sh` | 682/682 PASS |
+| deploy guard `--check-only`, archive manifest, `build:staff` | PASS (bundle `staff-BGZUV_T1.js`, sha256 `882813e2…`) |
+| full frontend `vitest run` | 5552 pass, 6 skipped, **3 fail**: 1 **code-side** (stale `staffPostWriteBoundary.test.ts` count after the `createWalkInEnforced` refactor; the invariant itself still holds, proven by a scratch-only test) + 2 **environment** (archive-manifest negative control needs this machine's untracked `.secret.local`/`.claude`) |
+| Chrome New Booking regression (staff conflict / BLOCKED / leave; owner override; owner re-approval) | PASS on London-placed fixtures; first LA-placed attempt was a fixture error (below) |
+| Chrome owner walk-in, time untouched, Save & Checkout | PASS: backdated start = formula incl. its 5-minute rounding (16:11 − 30 → 15:40), one booking CHECKED_OUT with payment fields, one idempotency record, override audit `flow: walkin` |
+
+**Blocking:** the full frontend suite is red at `9ea0aca`; fixing the stale assertion needs a new commit, a new
+candidate SHA and a full re-run. **New pre-existing finding:** Staff New Booking interprets date/time in
+Europe/London regardless of the tenant timezone (live Phase 1 too) — non-London tenants get a different instant
+and a conflict check at that instant (`30-finding-new-booking-london-timezone.md`). Owner decisions and
+recommendations: `20-owner-decision-recommendations.md` (none decided).
+
 ### 9.4 Remaining gaps — named, not hidden
 
 - **`firestore.rules` callable-bypass — owner review 2026-09-12: this is now a STATED CLOSING

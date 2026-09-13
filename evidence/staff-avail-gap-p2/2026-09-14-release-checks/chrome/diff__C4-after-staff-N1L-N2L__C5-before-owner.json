@@ -1,0 +1,12 @@
+{
+  "before": "C4-after-staff-N1L-N2L",
+  "after": "C5-before-owner",
+  "window": [
+    "2026-09-13T23:06:10.352Z",
+    "2026-09-13T23:07:58.384Z"
+  ],
+  "scope": "FULL document data of every document under tenants/p2c (recursive) + the tenant root; deletions detected as removed paths",
+  "added": [],
+  "removed": [],
+  "contentChanged": []
+}

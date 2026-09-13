@@ -1,0 +1,1248 @@
+{
+  "label": "C9-after-backdated-checkout",
+  "capturedAt": "2026-09-13T23:11:40.614Z",
+  "environment": {
+    "projectId": "demo-c1",
+    "firestoreHost": "127.0.0.1:8080",
+    "tenant": "p2c",
+    "timezone": "America/Los_Angeles"
+  },
+  "countsByCollection": {
+    "(tenant root)": 1,
+    "auditLogs": 8,
+    "barbers": 3,
+    "bookingRequests": 5,
+    "bookings": 11,
+    "notifications": 7,
+    "public": 3,
+    "services": 1,
+    "settings": 2,
+    "staff": 2
+  },
+  "documents": [
+    {
+      "path": "(tenant root)",
+      "createTime": "2026-09-13T22:57:46.431Z",
+      "updateTime": "2026-09-13T22:57:46.431Z",
+      "data": {
+        "name": "P2 chrome round 2",
+        "features": {},
+        "presentation": {
+          "timezone": "America/Los_Angeles",
+          "language": "en",
+          "locale": "en-GB",
+          "currency": "GBP",
+          "timeFormat": "24h",
+          "countryCode": "GB"
+        }
+      }
+    },
+    {
+      "path": "auditLogs/6ebcFgPdxT6Q8MtvAgEI",
+      "createTime": "2026-09-13T23:11:07.241Z",
+      "updateTime": "2026-09-13T23:11:07.241Z",
+      "data": {
+        "action": "WALK_IN_CREATED",
+        "source": "function",
+        "userId": "IPkZGuogvJNv5mJCtvaERbTKIxWf",
+        "userEmail": "",
+        "userName": "",
+        "userRole": "owner",
+        "actor": {
+          "uid": "IPkZGuogvJNv5mJCtvaERbTKIxWf",
+          "email": "",
+          "name": "",
+          "role": "owner"
+        },
+        "target": {
+          "collection": "bookings",
+          "docId": "kFQbdmDzwUZvQNVlePNT",
+          "label": "WCB-1789341067139-a334"
+        },
+        "timestamp": {
+          "__ts": "2026-09-13T23:11:07.239Z"
+        }
+      }
+    },
+    {
+      "path": "auditLogs/6ygJxrbZW4YLDZKA38Ge",
+      "createTime": "2026-09-13T23:09:58.463Z",
+      "updateTime": "2026-09-13T23:09:58.463Z",
+      "data": {
+        "action": "STAFF_BOOKING_POLICY_OVERRIDE",
+        "source": "function",
+        "userId": "IPkZGuogvJNv5mJCtvaERbTKIxWf",
+        "userEmail": "",
+        "userName": "",
+        "userRole": "owner",
+        "actor": {
+          "uid": "IPkZGuogvJNv5mJCtvaERbTKIxWf",
+          "email": "",
+          "name": "",
+          "role": "owner"
+        },
+        "target": {
+          "collection": "bookings",
+          "docId": "hnwIbpfOZ7S1iwElMimZ",
+          "label": "WCB-1789340998415-a57e"
+        },
+        "tenantId": "p2c",
+        "meta": {
+          "flow": "booking",
+          "dimensions": {
+            "conflict": true,
+            "conflictingRecordIds": [
+              "LT8lUWHVUfiPU7AjiDrC",
+              "UQF4HxR499qBz99KViEw"
+            ]
+          },
+          "reason": "O-NB2: re-approved after the conflict changed (both records)",
+          "barberId": "bea",
+          "barberName": "Bea",
+          "requestedStartMs": 1789387800000,
+          "requestedEndMs": 1789389600000
+        },
+        "timestamp": {
+          "__ts": "2026-09-13T23:09:58.454Z"
+        }
+      }
+    },
+    {
+      "path": "auditLogs/cxoB8qWDV0hFF5gdhw7Y",
+      "createTime": "2026-09-13T23:02:59.382Z",
+      "updateTime": "2026-09-13T23:02:59.382Z",
+      "data": {
+        "action": "STAFF_BOOKING_CREATED",
+        "source": "function",
+        "userId": "19od2QGXRxZvNtw56a6LP2ZUnbJl",
+        "userEmail": "",
+        "userName": "",
+        "userRole": "staff",
+        "actor": {
+          "uid": "19od2QGXRxZvNtw56a6LP2ZUnbJl",
+          "email": "",
+          "name": "",
+          "role": "staff"
+        },
+        "target": {
+          "collection": "bookings",
+          "docId": "LT8lUWHVUfiPU7AjiDrC",
+          "label": "WCB-1789340579314-7847"
+        },
+        "timestamp": {
+          "__ts": "2026-09-13T23:02:59.381Z"
+        }
+      }
+    },
+    {
+      "path": "auditLogs/f92GPeZowfTERWn0n80L",
+      "createTime": "2026-09-13T23:11:07.193Z",
+      "updateTime": "2026-09-13T23:11:07.193Z",
+      "data": {
+        "action": "STAFF_BOOKING_POLICY_OVERRIDE",
+        "source": "function",
+        "userId": "IPkZGuogvJNv5mJCtvaERbTKIxWf",
+        "userEmail": "c-owner@p2.test",
+        "userName": "c-owner@p2.test",
+        "userRole": "owner",
+        "actor": {
+          "uid": "IPkZGuogvJNv5mJCtvaERbTKIxWf",
+          "email": "c-owner@p2.test",
+          "name": "c-owner@p2.test",
+          "role": "owner"
+        },
+        "target": {
+          "collection": "bookings",
+          "docId": "kFQbdmDzwUZvQNVlePNT",
+          "label": "WCB-1789341067139-a334"
+        },
+        "tenantId": "p2c",
+        "meta": {
+          "flow": "walkin",
+          "dimensions": {
+            "conflict": true,
+            "conflictingRecordIds": [
+              "bdSeedAlexRecent"
+            ]
+          },
+          "reason": "BD: owner approved, previous client overran",
+          "barberId": "alex",
+          "barberName": "Alex",
+          "requestedStartMs": 1789339200000,
+          "requestedEndMs": 1789341000000
+        },
+        "timestamp": {
+          "__ts": "2026-09-13T23:11:07.184Z"
+        }
+      }
+    },
+    {
+      "path": "auditLogs/lyBxDUctelz3RWavoQi4",
+      "createTime": "2026-09-13T23:09:00.197Z",
+      "updateTime": "2026-09-13T23:09:00.197Z",
+      "data": {
+        "action": "STAFF_BOOKING_CREATED",
+        "source": "function",
+        "userId": "IPkZGuogvJNv5mJCtvaERbTKIxWf",
+        "userEmail": "",
+        "userName": "",
+        "userRole": "owner",
+        "actor": {
+          "uid": "IPkZGuogvJNv5mJCtvaERbTKIxWf",
+          "email": "",
+          "name": "",
+          "role": "owner"
+        },
+        "target": {
+          "collection": "bookings",
+          "docId": "qSVqRO3qopYZiTyusWHU",
+          "label": "WCB-1789340940145-e1c2"
+        },
+        "timestamp": {
+          "__ts": "2026-09-13T23:09:00.193Z"
+        }
+      }
+    },
+    {
+      "path": "auditLogs/NLWpeexHlKpudcqFmcah",
+      "createTime": "2026-09-13T23:02:51.074Z",
+      "updateTime": "2026-09-13T23:02:51.074Z",
+      "data": {
+        "action": "STAFF_BOOKING_CREATED",
+        "source": "function",
+        "userId": "19od2QGXRxZvNtw56a6LP2ZUnbJl",
+        "userEmail": "",
+        "userName": "",
+        "userRole": "staff",
+        "actor": {
+          "uid": "19od2QGXRxZvNtw56a6LP2ZUnbJl",
+          "email": "",
+          "name": "",
+          "role": "staff"
+        },
+        "target": {
+          "collection": "bookings",
+          "docId": "1O9KOigR6PzGFnEwZpN8",
+          "label": "WCB-1789340570474-7f3f"
+        },
+        "timestamp": {
+          "__ts": "2026-09-13T23:02:51.059Z"
+        }
+      }
+    },
+    {
+      "path": "auditLogs/UbxXDYeyEdIu2sHcpQL0",
+      "createTime": "2026-09-13T23:09:58.523Z",
+      "updateTime": "2026-09-13T23:09:58.523Z",
+      "data": {
+        "action": "STAFF_BOOKING_CREATED",
+        "source": "function",
+        "userId": "IPkZGuogvJNv5mJCtvaERbTKIxWf",
+        "userEmail": "",
+        "userName": "",
+        "userRole": "owner",
+        "actor": {
+          "uid": "IPkZGuogvJNv5mJCtvaERbTKIxWf",
+          "email": "",
+          "name": "",
+          "role": "owner"
+        },
+        "target": {
+          "collection": "bookings",
+          "docId": "hnwIbpfOZ7S1iwElMimZ",
+          "label": "WCB-1789340998415-a57e"
+        },
+        "timestamp": {
+          "__ts": "2026-09-13T23:09:58.516Z"
+        }
+      }
+    },
+    {
+      "path": "auditLogs/vPWa3w6AcjvRYbKSOCXo",
+      "createTime": "2026-09-13T23:09:00.173Z",
+      "updateTime": "2026-09-13T23:09:00.173Z",
+      "data": {
+        "action": "STAFF_BOOKING_POLICY_OVERRIDE",
+        "source": "function",
+        "userId": "IPkZGuogvJNv5mJCtvaERbTKIxWf",
+        "userEmail": "",
+        "userName": "",
+        "userRole": "owner",
+        "actor": {
+          "uid": "IPkZGuogvJNv5mJCtvaERbTKIxWf",
+          "email": "",
+          "name": "",
+          "role": "owner"
+        },
+        "target": {
+          "collection": "bookings",
+          "docId": "qSVqRO3qopYZiTyusWHU",
+          "label": "WCB-1789340940145-e1c2"
+        },
+        "tenantId": "p2c",
+        "meta": {
+          "flow": "booking",
+          "dimensions": {
+            "conflict": true,
+            "conflictingRecordIds": [
+              "nbLonAlex1100"
+            ]
+          },
+          "reason": "O-NB1: owner approved squeeze-in",
+          "barberId": "alex",
+          "barberName": "Alex",
+          "requestedStartMs": 1789380000000,
+          "requestedEndMs": 1789381800000
+        },
+        "timestamp": {
+          "__ts": "2026-09-13T23:09:00.167Z"
+        }
+      }
+    },
+    {
+      "path": "barbers/alex",
+      "createTime": "2026-09-13T22:57:46.431Z",
+      "updateTime": "2026-09-13T22:57:46.431Z",
+      "data": {
+        "name": "Alex",
+        "status": "active",
+        "hours": {
+          "open": "00:00",
+          "close": "23:59"
+        },
+        "order": 1
+      }
+    },
+    {
+      "path": "barbers/bea",
+      "createTime": "2026-09-13T22:57:46.428Z",
+      "updateTime": "2026-09-13T22:57:46.428Z",
+      "data": {
+        "name": "Bea",
+        "status": "active",
+        "hours": {
+          "open": "00:00",
+          "close": "23:59"
+        },
+        "order": 2
+      }
+    },
+    {
+      "path": "barbers/lee",
+      "createTime": "2026-09-13T22:57:46.429Z",
+      "updateTime": "2026-09-13T22:57:46.429Z",
+      "data": {
+        "name": "Lee",
+        "status": "leave",
+        "hours": {
+          "open": "00:00",
+          "close": "23:59"
+        },
+        "order": 3
+      }
+    },
+    {
+      "path": "bookingRequests/staffbk_300f1d8b5dcc301e86f4d2c748015131b94b58ef42666598f837b8559b3e37fe",
+      "createTime": "2026-09-13T23:09:58.463Z",
+      "updateTime": "2026-09-13T23:09:58.463Z",
+      "data": {
+        "op": "staff-booking",
+        "tenantId": "p2c",
+        "actorUid": "IPkZGuogvJNv5mJCtvaERbTKIxWf",
+        "rawKey": "stfbk-mu0ffimb-9dmquv93nv3z",
+        "docId": "hnwIbpfOZ7S1iwElMimZ",
+        "bookingId": "WCB-1789340998415-a57e",
+        "fingerprint": "72bae1f74c03e6ecdbd465c1dcb0f431e5a7eded873d5e88b4b8857458d281a2",
+        "status": "CONFIRMED",
+        "paymentRequired": false,
+        "paymentFlow": "PAY_AT_VENUE",
+        "createdAt": {
+          "__ts": "2026-09-13T23:09:58.454Z"
+        }
+      }
+    },
+    {
+      "path": "bookingRequests/staffbk_3798ddf2f42aee6e562c9ac700c50518667513f50a8708f14c408578cfc6b0e5",
+      "createTime": "2026-09-13T23:02:59.363Z",
+      "updateTime": "2026-09-13T23:02:59.363Z",
+      "data": {
+        "op": "staff-booking",
+        "tenantId": "p2c",
+        "actorUid": "19od2QGXRxZvNtw56a6LP2ZUnbJl",
+        "rawKey": "stfbk-mu0f6j6x-lnlnjhxpb2rj",
+        "docId": "LT8lUWHVUfiPU7AjiDrC",
+        "bookingId": "WCB-1789340579314-7847",
+        "fingerprint": "3c41a8e5494bde92334160f1f4b10883b63e1894b2c2274ac562f827c3fbbad0",
+        "status": "CONFIRMED",
+        "paymentRequired": false,
+        "paymentFlow": "PAY_AT_VENUE",
+        "createdAt": {
+          "__ts": "2026-09-13T23:02:59.358Z"
+        }
+      }
+    },
+    {
+      "path": "bookingRequests/staffbk_a938c99e3350eba9143969ce86592cda9e86591a78336d15d82e523b0f79b6e3",
+      "createTime": "2026-09-13T23:02:51.016Z",
+      "updateTime": "2026-09-13T23:02:51.016Z",
+      "data": {
+        "op": "staff-booking",
+        "tenantId": "p2c",
+        "actorUid": "19od2QGXRxZvNtw56a6LP2ZUnbJl",
+        "rawKey": "stfbk-mu0f6cc3-84uieey8u79b",
+        "docId": "1O9KOigR6PzGFnEwZpN8",
+        "bookingId": "WCB-1789340570474-7f3f",
+        "fingerprint": "5b2448c3048819e57445de160de79fce2f0e402f2493278645287afd0706ba99",
+        "status": "CONFIRMED",
+        "paymentRequired": false,
+        "paymentFlow": "PAY_AT_VENUE",
+        "createdAt": {
+          "__ts": "2026-09-13T23:02:51.000Z"
+        }
+      }
+    },
+    {
+      "path": "bookingRequests/staffbk_d026679960c69b5a96bee5480eeb9bd669c7f61a6be9bd71e41a7e1af654b600",
+      "createTime": "2026-09-13T23:09:00.173Z",
+      "updateTime": "2026-09-13T23:09:00.173Z",
+      "data": {
+        "op": "staff-booking",
+        "tenantId": "p2c",
+        "actorUid": "IPkZGuogvJNv5mJCtvaERbTKIxWf",
+        "rawKey": "stfbk-mu0fe9nm-mxaoq39h16n6",
+        "docId": "qSVqRO3qopYZiTyusWHU",
+        "bookingId": "WCB-1789340940145-e1c2",
+        "fingerprint": "5e39434d7561501c10df7d90f613d7ede6b79ae66063071ec88f7086fb8f98a3",
+        "status": "CONFIRMED",
+        "paymentRequired": false,
+        "paymentFlow": "PAY_AT_VENUE",
+        "createdAt": {
+          "__ts": "2026-09-13T23:09:00.166Z"
+        }
+      }
+    },
+    {
+      "path": "bookingRequests/walkin_7835514b527974fff70f3a8ac80c127b6568d1188dbc8ebba742718194caeaeb",
+      "createTime": "2026-09-13T23:11:07.193Z",
+      "updateTime": "2026-09-13T23:11:07.193Z",
+      "data": {
+        "op": "walkin-create",
+        "tenantId": "p2c",
+        "actorUid": "IPkZGuogvJNv5mJCtvaERbTKIxWf",
+        "rawKey": "swkin-1789341065331-2i3ksyy7li",
+        "docId": "kFQbdmDzwUZvQNVlePNT",
+        "bookingId": "WCB-1789341067139-a334",
+        "fingerprint": "237addf443e0e579281600d13ae657c3e9c3312835f03ec60ccbe77629e33ec1",
+        "createdAt": {
+          "__ts": "2026-09-13T23:11:07.183Z"
+        }
+      }
+    },
+    {
+      "path": "bookings/1O9KOigR6PzGFnEwZpN8",
+      "createTime": "2026-09-13T23:02:51.016Z",
+      "updateTime": "2026-09-13T23:02:51.372Z",
+      "data": {
+        "bookingId": "WCB-1789340570474-7f3f",
+        "tenantId": "p2c",
+        "clientName": "Nb Regression One",
+        "name": "Nb Regression One",
+        "clientEmail": "",
+        "clientPhone": "07700900123",
+        "barberId": "alex",
+        "barberName": "Alex",
+        "barber": "Alex",
+        "serviceId": "svc1",
+        "service": "Haircut",
+        "serviceName": "Haircut",
+        "variationId": null,
+        "date": "2026-09-14",
+        "time": "14:00",
+        "startTime": {
+          "__ts": "2026-09-14T13:00:00.000Z"
+        },
+        "endTime": {
+          "__ts": "2026-09-14T13:30:00.000Z"
+        },
+        "duration": 30,
+        "status": "CONFIRMED",
+        "paymentType": "CASH",
+        "price": 20,
+        "paidAmount": "",
+        "soldProducts": [],
+        "soldAddOns": [],
+        "source": "Staff App",
+        "bookingType": "booking",
+        "createdAt": {
+          "__ts": "2026-09-13T23:02:50.999Z"
+        },
+        "updatedAt": {
+          "__ts": "2026-09-13T23:02:50.999Z"
+        },
+        "loyaltyPromotionSnapshot": {
+          "eligible": false,
+          "reason": "NOT_DIRECT_SOURCE",
+          "multiplier": 1,
+          "multiplierSource": "none",
+          "campaignId": null,
+          "campaignStartDate": null,
+          "campaignEndDate": null,
+          "evaluatedDate": null,
+          "timezone": "America/Los_Angeles",
+          "source": "staff app",
+          "policyVersion": 1,
+          "evaluatedAt": {
+            "__ts": "2026-09-13T23:02:51.363Z"
+          }
+        }
+      }
+    },
+    {
+      "path": "bookings/bdSeedAlexRecent",
+      "createTime": "2026-09-13T23:10:33.434Z",
+      "updateTime": "2026-09-13T23:10:33.570Z",
+      "data": {
+        "bookingId": "SEED-BD-ALEX",
+        "status": "CONFIRMED",
+        "barberId": "alex",
+        "barberName": "Alex",
+        "barber": "alex",
+        "clientName": "Previous Client",
+        "serviceId": "svc1",
+        "serviceName": "Haircut",
+        "duration": 30,
+        "price": 20,
+        "source": "Walk-in",
+        "bookingType": "walkin",
+        "startTime": {
+          "__ts": "2026-09-13T22:25:33.262Z"
+        },
+        "endTime": {
+          "__ts": "2026-09-13T22:55:33.262Z"
+        },
+        "createdAt": {
+          "__ts": "2026-09-13T23:10:33.262Z"
+        },
+        "loyaltyPromotionSnapshot": {
+          "eligible": false,
+          "reason": "STAFF_CREATED",
+          "multiplier": 1,
+          "multiplierSource": "none",
+          "campaignId": null,
+          "campaignStartDate": null,
+          "campaignEndDate": null,
+          "evaluatedDate": null,
+          "timezone": "America/Los_Angeles",
+          "source": "walk-in",
+          "policyVersion": 1,
+          "evaluatedAt": {
+            "__ts": "2026-09-13T23:10:33.567Z"
+          }
+        }
+      }
+    },
+    {
+      "path": "bookings/hnwIbpfOZ7S1iwElMimZ",
+      "createTime": "2026-09-13T23:09:58.463Z",
+      "updateTime": "2026-09-13T23:09:58.925Z",
+      "data": {
+        "bookingId": "WCB-1789340998415-a57e",
+        "tenantId": "p2c",
+        "clientName": "Nb Owner Two",
+        "name": "Nb Owner Two",
+        "clientEmail": "",
+        "clientPhone": "07700900123",
+        "barberId": "bea",
+        "barberName": "Bea",
+        "barber": "Bea",
+        "serviceId": "svc1",
+        "service": "Haircut",
+        "serviceName": "Haircut",
+        "variationId": null,
+        "date": "2026-09-14",
+        "time": "13:10",
+        "startTime": {
+          "__ts": "2026-09-14T12:10:00.000Z"
+        },
+        "endTime": {
+          "__ts": "2026-09-14T12:40:00.000Z"
+        },
+        "duration": 30,
+        "status": "CONFIRMED",
+        "paymentType": "CASH",
+        "price": 20,
+        "paidAmount": "",
+        "soldProducts": [],
+        "soldAddOns": [],
+        "source": "Staff App",
+        "bookingType": "booking",
+        "createdAt": {
+          "__ts": "2026-09-13T23:09:58.454Z"
+        },
+        "updatedAt": {
+          "__ts": "2026-09-13T23:09:58.454Z"
+        },
+        "loyaltyPromotionSnapshot": {
+          "eligible": false,
+          "reason": "NOT_DIRECT_SOURCE",
+          "multiplier": 1,
+          "multiplierSource": "none",
+          "campaignId": null,
+          "campaignStartDate": null,
+          "campaignEndDate": null,
+          "evaluatedDate": null,
+          "timezone": "America/Los_Angeles",
+          "source": "staff app",
+          "policyVersion": 1,
+          "evaluatedAt": {
+            "__ts": "2026-09-13T23:09:58.912Z"
+          }
+        }
+      }
+    },
+    {
+      "path": "bookings/kFQbdmDzwUZvQNVlePNT",
+      "createTime": "2026-09-13T23:11:07.193Z",
+      "updateTime": "2026-09-13T23:11:07.545Z",
+      "data": {
+        "bookingId": "WCB-1789341067139-a334",
+        "tenantId": "p2c",
+        "clientName": "Walk-in",
+        "clientEmail": "",
+        "clientPhone": "",
+        "barberId": "alex",
+        "barberName": "Alex",
+        "barber": "alex",
+        "serviceId": "svc1",
+        "serviceName": "Haircut",
+        "startTime": {
+          "__ts": "2026-09-13T22:40:00.000Z"
+        },
+        "endTime": {
+          "__ts": "2026-09-13T23:10:00.000Z"
+        },
+        "duration": 30,
+        "paymentType": "CASH",
+        "price": 20,
+        "soldProducts": [],
+        "soldAddOns": [],
+        "source": "Walk-in",
+        "bookingType": "walkin",
+        "createdAt": {
+          "__ts": "2026-09-13T23:11:07.182Z"
+        },
+        "loyaltyPromotionSnapshot": {
+          "eligible": false,
+          "reason": "STAFF_CREATED",
+          "multiplier": 1,
+          "multiplierSource": "none",
+          "campaignId": null,
+          "campaignStartDate": null,
+          "campaignEndDate": null,
+          "evaluatedDate": null,
+          "timezone": "America/Los_Angeles",
+          "source": "walk-in",
+          "policyVersion": 1,
+          "evaluatedAt": {
+            "__ts": "2026-09-13T23:11:07.388Z"
+          }
+        },
+        "note": "",
+        "loyaltyPointsEarned": 20,
+        "receiptRedeemedPts": 0,
+        "receiptTransactionTotal_p": 2000,
+        "paymentAllocationVersion": 1,
+        "receiptReconciled": true,
+        "actualDuration": 31,
+        "discount": 0,
+        "receiptEarnMultiplier": 1,
+        "receiptAddOnLines": [],
+        "receiptFailures": [],
+        "checkedOutAt": {
+          "__ts": "2026-09-13T23:11:07.314Z"
+        },
+        "loyaltyPointsTotal": 20,
+        "receiptServiceAmount_p": 2000,
+        "tipPaymentMethod": "",
+        "serviceCharge": 0,
+        "receiptServiceCharge_p": 0,
+        "splitAmount": 0,
+        "receiptAddOnTotal_p": 0,
+        "tip": 0,
+        "receiptPaidToday_p": 2000,
+        "receiptMathVersion": 1,
+        "receiptTip_p": 0,
+        "receiptEarnRate": 1,
+        "receiptExpectedPoints": 20,
+        "splitSecond": "",
+        "receiptCurrency": "GBP",
+        "receiptProductLines": [],
+        "receiptEarnBase_p": 2000,
+        "paymentAllocation": {
+          "service": {
+            "cash_p": 2000,
+            "card_p": 0,
+            "other_p": 0,
+            "total_p": 2000
+          },
+          "tip": {
+            "cash_p": 0,
+            "card_p": 0,
+            "other_p": 0,
+            "total_p": 0
+          },
+          "collected": {
+            "cash_p": 2000,
+            "card_p": 0,
+            "other_p": 0,
+            "total_p": 2000
+          },
+          "firstMethod": "CASH",
+          "secondMethod": "",
+          "source": "admin-checkout",
+          "reconciled": true,
+          "failures": []
+        },
+        "receiptProductTotal_p": 0,
+        "loyaltyRedeemedValue": 0,
+        "receiptRedeemedValue_p": 0,
+        "receiptSubtotal_p": 2000,
+        "receiptAwardedPoints": 20,
+        "sendLoyaltyEmail": false,
+        "paymentMethod": "Cash",
+        "receiptPaidEarlier_p": 0,
+        "loyaltyPointsRedeemed": 0,
+        "paidAmount": 20,
+        "receiptDiscount_p": 0,
+        "status": "CHECKED_OUT"
+      }
+    },
+    {
+      "path": "bookings/LT8lUWHVUfiPU7AjiDrC",
+      "createTime": "2026-09-13T23:02:59.363Z",
+      "updateTime": "2026-09-13T23:02:59.500Z",
+      "data": {
+        "bookingId": "WCB-1789340579314-7847",
+        "tenantId": "p2c",
+        "clientName": "Nb Regression Two",
+        "name": "Nb Regression Two",
+        "clientEmail": "",
+        "clientPhone": "07700900123",
+        "barberId": "bea",
+        "barberName": "Bea",
+        "barber": "Bea",
+        "serviceId": "svc1",
+        "service": "Haircut",
+        "serviceName": "Haircut",
+        "variationId": null,
+        "date": "2026-09-14",
+        "time": "13:00",
+        "startTime": {
+          "__ts": "2026-09-14T12:00:00.000Z"
+        },
+        "endTime": {
+          "__ts": "2026-09-14T12:30:00.000Z"
+        },
+        "duration": 30,
+        "status": "CONFIRMED",
+        "paymentType": "CASH",
+        "price": 20,
+        "paidAmount": "",
+        "soldProducts": [],
+        "soldAddOns": [],
+        "source": "Staff App",
+        "bookingType": "booking",
+        "createdAt": {
+          "__ts": "2026-09-13T23:02:59.358Z"
+        },
+        "updatedAt": {
+          "__ts": "2026-09-13T23:02:59.358Z"
+        },
+        "loyaltyPromotionSnapshot": {
+          "eligible": false,
+          "reason": "NOT_DIRECT_SOURCE",
+          "multiplier": 1,
+          "multiplierSource": "none",
+          "campaignId": null,
+          "campaignStartDate": null,
+          "campaignEndDate": null,
+          "evaluatedDate": null,
+          "timezone": "America/Los_Angeles",
+          "source": "staff app",
+          "policyVersion": 1,
+          "evaluatedAt": {
+            "__ts": "2026-09-13T23:02:59.497Z"
+          }
+        }
+      }
+    },
+    {
+      "path": "bookings/nbLonAlex1100",
+      "createTime": "2026-09-13T23:05:14.603Z",
+      "updateTime": "2026-09-13T23:05:14.736Z",
+      "data": {
+        "bookingId": "SEED-NB-LON-ALEX",
+        "status": "CONFIRMED",
+        "barberId": "alex",
+        "barberName": "Alex",
+        "barber": "alex",
+        "clientName": "Existing Client (London instant)",
+        "serviceId": "svc1",
+        "serviceName": "Haircut",
+        "duration": 30,
+        "price": 20,
+        "source": "Staff App",
+        "bookingType": "booking",
+        "date": "2026-09-14",
+        "time": "11:00",
+        "startTime": {
+          "__ts": "2026-09-14T10:00:00.000Z"
+        },
+        "endTime": {
+          "__ts": "2026-09-14T10:30:00.000Z"
+        },
+        "createdAt": {
+          "__ts": "2026-09-13T23:05:14.352Z"
+        },
+        "loyaltyPromotionSnapshot": {
+          "eligible": false,
+          "reason": "NOT_DIRECT_SOURCE",
+          "multiplier": 1,
+          "multiplierSource": "none",
+          "campaignId": null,
+          "campaignStartDate": null,
+          "campaignEndDate": null,
+          "evaluatedDate": null,
+          "timezone": "America/Los_Angeles",
+          "source": "staff app",
+          "policyVersion": 1,
+          "evaluatedAt": {
+            "__ts": "2026-09-13T23:05:14.732Z"
+          }
+        }
+      }
+    },
+    {
+      "path": "bookings/nbLonBeaBlock1200",
+      "createTime": "2026-09-13T23:05:14.626Z",
+      "updateTime": "2026-09-13T23:05:14.831Z",
+      "data": {
+        "bookingId": "BLOCKED-NB-LON-BEA",
+        "status": "BLOCKED",
+        "barberId": "bea",
+        "barberName": "bea",
+        "source": "block",
+        "blockKind": "block",
+        "note": "Lunch",
+        "startTime": {
+          "__ts": "2026-09-14T11:00:00.000Z"
+        },
+        "endTime": {
+          "__ts": "2026-09-14T11:30:00.000Z"
+        },
+        "createdAt": {
+          "__ts": "2026-09-13T23:05:14.623Z"
+        },
+        "loyaltyPromotionSnapshot": {
+          "eligible": false,
+          "reason": "STAFF_CREATED",
+          "multiplier": 1,
+          "multiplierSource": "none",
+          "campaignId": null,
+          "campaignStartDate": null,
+          "campaignEndDate": null,
+          "evaluatedDate": null,
+          "timezone": "America/Los_Angeles",
+          "source": "block",
+          "policyVersion": 1,
+          "evaluatedAt": {
+            "__ts": "2026-09-13T23:05:14.826Z"
+          }
+        }
+      }
+    },
+    {
+      "path": "bookings/nbSeedAlex1400",
+      "createTime": "2026-09-13T22:57:46.470Z",
+      "updateTime": "2026-09-13T22:57:54.722Z",
+      "data": {
+        "bookingId": "SEED-NB-ALEX",
+        "status": "CONFIRMED",
+        "barberId": "alex",
+        "barberName": "Alex",
+        "barber": "alex",
+        "clientName": "Existing Client",
+        "serviceId": "svc1",
+        "serviceName": "Haircut",
+        "duration": 30,
+        "price": 20,
+        "source": "Staff App",
+        "bookingType": "booking",
+        "date": "2026-09-14",
+        "time": "14:00",
+        "startTime": {
+          "__ts": "2026-09-14T21:00:00.000Z"
+        },
+        "endTime": {
+          "__ts": "2026-09-14T21:30:00.000Z"
+        },
+        "createdAt": {
+          "__ts": "2026-09-13T22:57:46.462Z"
+        },
+        "loyaltyPromotionSnapshot": {
+          "eligible": false,
+          "reason": "NOT_DIRECT_SOURCE",
+          "multiplier": 1,
+          "multiplierSource": "none",
+          "campaignId": null,
+          "campaignStartDate": null,
+          "campaignEndDate": null,
+          "evaluatedDate": null,
+          "timezone": "America/Los_Angeles",
+          "source": "staff app",
+          "policyVersion": 1,
+          "evaluatedAt": {
+            "__ts": "2026-09-13T22:57:54.709Z"
+          }
+        }
+      }
+    },
+    {
+      "path": "bookings/nbSeedBeaBlock1300",
+      "createTime": "2026-09-13T22:57:46.489Z",
+      "updateTime": "2026-09-13T22:57:55.862Z",
+      "data": {
+        "bookingId": "BLOCKED-NB-BEA",
+        "status": "BLOCKED",
+        "barberId": "bea",
+        "barberName": "bea",
+        "source": "block",
+        "blockKind": "block",
+        "note": "Lunch",
+        "startTime": {
+          "__ts": "2026-09-14T20:00:00.000Z"
+        },
+        "endTime": {
+          "__ts": "2026-09-14T20:30:00.000Z"
+        },
+        "createdAt": {
+          "__ts": "2026-09-13T22:57:46.480Z"
+        },
+        "loyaltyPromotionSnapshot": {
+          "eligible": false,
+          "reason": "STAFF_CREATED",
+          "multiplier": 1,
+          "multiplierSource": "none",
+          "campaignId": null,
+          "campaignStartDate": null,
+          "campaignEndDate": null,
+          "evaluatedDate": null,
+          "timezone": "America/Los_Angeles",
+          "source": "block",
+          "policyVersion": 1,
+          "evaluatedAt": {
+            "__ts": "2026-09-13T22:57:55.855Z"
+          }
+        }
+      }
+    },
+    {
+      "path": "bookings/qSVqRO3qopYZiTyusWHU",
+      "createTime": "2026-09-13T23:09:00.173Z",
+      "updateTime": "2026-09-13T23:09:00.359Z",
+      "data": {
+        "bookingId": "WCB-1789340940145-e1c2",
+        "tenantId": "p2c",
+        "clientName": "Nb Owner One",
+        "name": "Nb Owner One",
+        "clientEmail": "",
+        "clientPhone": "07700900123",
+        "barberId": "alex",
+        "barberName": "Alex",
+        "barber": "Alex",
+        "serviceId": "svc1",
+        "service": "Haircut",
+        "serviceName": "Haircut",
+        "variationId": null,
+        "date": "2026-09-14",
+        "time": "11:00",
+        "startTime": {
+          "__ts": "2026-09-14T10:00:00.000Z"
+        },
+        "endTime": {
+          "__ts": "2026-09-14T10:30:00.000Z"
+        },
+        "duration": 30,
+        "status": "CONFIRMED",
+        "paymentType": "CASH",
+        "price": 20,
+        "paidAmount": "",
+        "soldProducts": [],
+        "soldAddOns": [],
+        "source": "Staff App",
+        "bookingType": "booking",
+        "createdAt": {
+          "__ts": "2026-09-13T23:09:00.166Z"
+        },
+        "updatedAt": {
+          "__ts": "2026-09-13T23:09:00.166Z"
+        },
+        "loyaltyPromotionSnapshot": {
+          "eligible": false,
+          "reason": "NOT_DIRECT_SOURCE",
+          "multiplier": 1,
+          "multiplierSource": "none",
+          "campaignId": null,
+          "campaignStartDate": null,
+          "campaignEndDate": null,
+          "evaluatedDate": null,
+          "timezone": "America/Los_Angeles",
+          "source": "staff app",
+          "policyVersion": 1,
+          "evaluatedAt": {
+            "__ts": "2026-09-13T23:09:00.352Z"
+          }
+        }
+      }
+    },
+    {
+      "path": "bookings/UQF4HxR499qBz99KViEw",
+      "createTime": "2026-09-13T23:09:58.322Z",
+      "updateTime": "2026-09-13T23:09:58.689Z",
+      "data": {
+        "bookingId": "INJECTED-NB-C",
+        "status": "CONFIRMED",
+        "barberId": "bea",
+        "barberName": "Bea",
+        "clientName": "Injected during approval",
+        "source": "Staff App",
+        "bookingType": "booking",
+        "duration": 30,
+        "startTime": {
+          "__ts": "2026-09-14T12:20:00.000Z"
+        },
+        "endTime": {
+          "__ts": "2026-09-14T12:50:00.000Z"
+        },
+        "loyaltyPromotionSnapshot": {
+          "eligible": false,
+          "reason": "NOT_DIRECT_SOURCE",
+          "multiplier": 1,
+          "multiplierSource": "none",
+          "campaignId": null,
+          "campaignStartDate": null,
+          "campaignEndDate": null,
+          "evaluatedDate": null,
+          "timezone": "America/Los_Angeles",
+          "source": "staff app",
+          "policyVersion": 1,
+          "evaluatedAt": {
+            "__ts": "2026-09-13T23:09:58.646Z"
+          }
+        }
+      }
+    },
+    {
+      "path": "notifications/9w0mm2adY6DZkYakycZm",
+      "createTime": "2026-09-13T23:09:58.826Z",
+      "updateTime": "2026-09-13T23:09:58.826Z",
+      "data": {
+        "type": "new_booking",
+        "title": "New Booking",
+        "body": "Nb Owner Two – Haircut · Bea · Mon 14 Sept at 1:10 PM",
+        "bookingId": "WCB-1789340998415-a57e",
+        "read": false,
+        "createdAt": {
+          "__ts": "2026-09-13T23:09:58.821Z"
+        }
+      }
+    },
+    {
+      "path": "notifications/eCyVR1csXhmZtBzIVSYb",
+      "createTime": "2026-09-13T23:09:58.399Z",
+      "updateTime": "2026-09-13T23:09:58.399Z",
+      "data": {
+        "type": "new_booking",
+        "title": "New Booking",
+        "body": "Injected during approval – Unknown service · Bea · Mon 14 Sept at 1:20 PM",
+        "bookingId": "INJECTED-NB-C",
+        "read": false,
+        "createdAt": {
+          "__ts": "2026-09-13T23:09:58.394Z"
+        }
+      }
+    },
+    {
+      "path": "notifications/Lbm1FSHWdaywv8GgkQ6z",
+      "createTime": "2026-09-13T23:02:59.418Z",
+      "updateTime": "2026-09-13T23:02:59.418Z",
+      "data": {
+        "type": "new_booking",
+        "title": "New Booking",
+        "body": "Nb Regression Two – Haircut · Bea · Mon 14 Sept at 1:00 PM",
+        "bookingId": "WCB-1789340579314-7847",
+        "read": false,
+        "createdAt": {
+          "__ts": "2026-09-13T23:02:59.415Z"
+        }
+      }
+    },
+    {
+      "path": "notifications/oTE4nwwbAnfVA6KYT6rF",
+      "createTime": "2026-09-13T23:09:00.246Z",
+      "updateTime": "2026-09-13T23:09:00.246Z",
+      "data": {
+        "type": "new_booking",
+        "title": "New Booking",
+        "body": "Nb Owner One – Haircut · Alex · Mon 14 Sept at 11:00 AM",
+        "bookingId": "WCB-1789340940145-e1c2",
+        "read": false,
+        "createdAt": {
+          "__ts": "2026-09-13T23:09:00.239Z"
+        }
+      }
+    },
+    {
+      "path": "notifications/QMmmLDq03ZUdUVgcen4I",
+      "createTime": "2026-09-13T22:57:52.057Z",
+      "updateTime": "2026-09-13T22:57:52.057Z",
+      "data": {
+        "type": "new_booking",
+        "title": "New Booking",
+        "body": "Existing Client – Haircut · Alex · Mon 14 Sept at 10:00 PM",
+        "bookingId": "SEED-NB-ALEX",
+        "read": false,
+        "createdAt": {
+          "__ts": "2026-09-13T22:57:52.046Z"
+        }
+      }
+    },
+    {
+      "path": "notifications/RpAbDpcug4P3QT3GUhLu",
+      "createTime": "2026-09-13T23:02:51.132Z",
+      "updateTime": "2026-09-13T23:02:51.132Z",
+      "data": {
+        "type": "new_booking",
+        "title": "New Booking",
+        "body": "Nb Regression One – Haircut · Alex · Mon 14 Sept at 2:00 PM",
+        "bookingId": "WCB-1789340570474-7f3f",
+        "read": false,
+        "createdAt": {
+          "__ts": "2026-09-13T23:02:51.117Z"
+        }
+      }
+    },
+    {
+      "path": "notifications/VmkWejDIobO0E7VrKYMr",
+      "createTime": "2026-09-13T23:05:14.658Z",
+      "updateTime": "2026-09-13T23:05:14.658Z",
+      "data": {
+        "type": "new_booking",
+        "title": "New Booking",
+        "body": "Existing Client (London instant) – Haircut · Alex · Mon 14 Sept at 11:00 AM",
+        "bookingId": "SEED-NB-LON-ALEX",
+        "read": false,
+        "createdAt": {
+          "__ts": "2026-09-13T23:05:14.654Z"
+        }
+      }
+    },
+    {
+      "path": "public/booking",
+      "createTime": "2026-09-13T22:57:48.762Z",
+      "updateTime": "2026-09-13T22:57:48.762Z",
+      "data": {
+        "salonName": "P2 chrome round 2",
+        "name": "P2 chrome round 2",
+        "businessType": "",
+        "phone": "",
+        "paymentMode": "off",
+        "features": {
+          "stripe": false
+        },
+        "websiteDepositsEnabled": false,
+        "defaultDepositAmount": 0,
+        "updatedAt": {
+          "__ts": "2026-09-13T22:57:48.754Z"
+        }
+      }
+    },
+    {
+      "path": "public/bookingFlags",
+      "createTime": "2026-09-13T22:57:49.756Z",
+      "updateTime": "2026-09-13T22:57:49.756Z",
+      "data": {
+        "c1Cutover": false,
+        "updatedAt": {
+          "__ts": "2026-09-13T22:57:49.749Z"
+        }
+      }
+    },
+    {
+      "path": "public/campaign",
+      "createTime": "2026-09-13T22:57:50.919Z",
+      "updateTime": "2026-09-13T22:57:50.919Z",
+      "data": {
+        "active": false,
+        "startDate": "",
+        "endDate": "",
+        "updatedAt": {
+          "__ts": "2026-09-13T22:57:50.894Z"
+        }
+      }
+    },
+    {
+      "path": "services/svc1",
+      "createTime": "2026-09-13T22:57:46.427Z",
+      "updateTime": "2026-09-13T22:57:46.427Z",
+      "data": {
+        "name": "Haircut",
+        "duration": 30,
+        "price": 20,
+        "active": true,
+        "category": "Hair"
+      }
+    },
+    {
+      "path": "settings/hours",
+      "createTime": "2026-09-13T22:57:46.425Z",
+      "updateTime": "2026-09-13T22:57:46.425Z",
+      "data": {}
+    },
+    {
+      "path": "settings/settings",
+      "createTime": "2026-09-13T22:57:46.430Z",
+      "updateTime": "2026-09-13T22:57:46.430Z",
+      "data": {
+        "presentation": {
+          "timezone": "America/Los_Angeles",
+          "language": "en",
+          "locale": "en-GB",
+          "currency": "GBP",
+          "timeFormat": "24h",
+          "countryCode": "GB"
+        }
+      }
+    },
+    {
+      "path": "staff/19od2QGXRxZvNtw56a6LP2ZUnbJl",
+      "createTime": "2026-09-13T22:57:46.395Z",
+      "updateTime": "2026-09-13T22:57:46.395Z",
+      "data": {
+        "role": "staff",
+        "email": "c-staff@p2.test",
+        "name": "c staff"
+      }
+    },
+    {
+      "path": "staff/IPkZGuogvJNv5mJCtvaERbTKIxWf",
+      "createTime": "2026-09-13T22:57:46.159Z",
+      "updateTime": "2026-09-13T22:57:46.159Z",
+      "data": {
+        "role": "owner",
+        "email": "c-owner@p2.test",
+        "name": "c owner"
+      }
+    }
+  ]
+}

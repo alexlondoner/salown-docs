@@ -1,0 +1,208 @@
+{
+  "before": "C8-before-backdated-checkout",
+  "after": "C9-after-backdated-checkout",
+  "window": [
+    "2026-09-13T23:10:34.020Z",
+    "2026-09-13T23:11:40.614Z"
+  ],
+  "scope": "FULL document data of every document under tenants/p2c (recursive) + the tenant root; deletions detected as removed paths",
+  "added": [
+    {
+      "path": "auditLogs/6ebcFgPdxT6Q8MtvAgEI",
+      "data": {
+        "action": "WALK_IN_CREATED",
+        "source": "function",
+        "userId": "IPkZGuogvJNv5mJCtvaERbTKIxWf",
+        "userEmail": "",
+        "userName": "",
+        "userRole": "owner",
+        "actor": {
+          "uid": "IPkZGuogvJNv5mJCtvaERbTKIxWf",
+          "email": "",
+          "name": "",
+          "role": "owner"
+        },
+        "target": {
+          "collection": "bookings",
+          "docId": "kFQbdmDzwUZvQNVlePNT",
+          "label": "WCB-1789341067139-a334"
+        },
+        "timestamp": {
+          "__ts": "2026-09-13T23:11:07.239Z"
+        }
+      }
+    },
+    {
+      "path": "auditLogs/f92GPeZowfTERWn0n80L",
+      "data": {
+        "action": "STAFF_BOOKING_POLICY_OVERRIDE",
+        "source": "function",
+        "userId": "IPkZGuogvJNv5mJCtvaERbTKIxWf",
+        "userEmail": "c-owner@p2.test",
+        "userName": "c-owner@p2.test",
+        "userRole": "owner",
+        "actor": {
+          "uid": "IPkZGuogvJNv5mJCtvaERbTKIxWf",
+          "email": "c-owner@p2.test",
+          "name": "c-owner@p2.test",
+          "role": "owner"
+        },
+        "target": {
+          "collection": "bookings",
+          "docId": "kFQbdmDzwUZvQNVlePNT",
+          "label": "WCB-1789341067139-a334"
+        },
+        "tenantId": "p2c",
+        "meta": {
+          "flow": "walkin",
+          "dimensions": {
+            "conflict": true,
+            "conflictingRecordIds": [
+              "bdSeedAlexRecent"
+            ]
+          },
+          "reason": "BD: owner approved, previous client overran",
+          "barberId": "alex",
+          "barberName": "Alex",
+          "requestedStartMs": 1789339200000,
+          "requestedEndMs": 1789341000000
+        },
+        "timestamp": {
+          "__ts": "2026-09-13T23:11:07.184Z"
+        }
+      }
+    },
+    {
+      "path": "bookingRequests/walkin_7835514b527974fff70f3a8ac80c127b6568d1188dbc8ebba742718194caeaeb",
+      "data": {
+        "op": "walkin-create",
+        "tenantId": "p2c",
+        "actorUid": "IPkZGuogvJNv5mJCtvaERbTKIxWf",
+        "rawKey": "swkin-1789341065331-2i3ksyy7li",
+        "docId": "kFQbdmDzwUZvQNVlePNT",
+        "bookingId": "WCB-1789341067139-a334",
+        "fingerprint": "237addf443e0e579281600d13ae657c3e9c3312835f03ec60ccbe77629e33ec1",
+        "createdAt": {
+          "__ts": "2026-09-13T23:11:07.183Z"
+        }
+      }
+    },
+    {
+      "path": "bookings/kFQbdmDzwUZvQNVlePNT",
+      "data": {
+        "bookingId": "WCB-1789341067139-a334",
+        "tenantId": "p2c",
+        "clientName": "Walk-in",
+        "clientEmail": "",
+        "clientPhone": "",
+        "barberId": "alex",
+        "barberName": "Alex",
+        "barber": "alex",
+        "serviceId": "svc1",
+        "serviceName": "Haircut",
+        "startTime": {
+          "__ts": "2026-09-13T22:40:00.000Z"
+        },
+        "endTime": {
+          "__ts": "2026-09-13T23:10:00.000Z"
+        },
+        "duration": 30,
+        "paymentType": "CASH",
+        "price": 20,
+        "soldProducts": [],
+        "soldAddOns": [],
+        "source": "Walk-in",
+        "bookingType": "walkin",
+        "createdAt": {
+          "__ts": "2026-09-13T23:11:07.182Z"
+        },
+        "loyaltyPromotionSnapshot": {
+          "eligible": false,
+          "reason": "STAFF_CREATED",
+          "multiplier": 1,
+          "multiplierSource": "none",
+          "campaignId": null,
+          "campaignStartDate": null,
+          "campaignEndDate": null,
+          "evaluatedDate": null,
+          "timezone": "America/Los_Angeles",
+          "source": "walk-in",
+          "policyVersion": 1,
+          "evaluatedAt": {
+            "__ts": "2026-09-13T23:11:07.388Z"
+          }
+        },
+        "note": "",
+        "loyaltyPointsEarned": 20,
+        "receiptRedeemedPts": 0,
+        "receiptTransactionTotal_p": 2000,
+        "paymentAllocationVersion": 1,
+        "receiptReconciled": true,
+        "actualDuration": 31,
+        "discount": 0,
+        "receiptEarnMultiplier": 1,
+        "receiptAddOnLines": [],
+        "receiptFailures": [],
+        "checkedOutAt": {
+          "__ts": "2026-09-13T23:11:07.314Z"
+        },
+        "loyaltyPointsTotal": 20,
+        "receiptServiceAmount_p": 2000,
+        "tipPaymentMethod": "",
+        "serviceCharge": 0,
+        "receiptServiceCharge_p": 0,
+        "splitAmount": 0,
+        "receiptAddOnTotal_p": 0,
+        "tip": 0,
+        "receiptPaidToday_p": 2000,
+        "receiptMathVersion": 1,
+        "receiptTip_p": 0,
+        "receiptEarnRate": 1,
+        "receiptExpectedPoints": 20,
+        "splitSecond": "",
+        "receiptCurrency": "GBP",
+        "receiptProductLines": [],
+        "receiptEarnBase_p": 2000,
+        "paymentAllocation": {
+          "service": {
+            "cash_p": 2000,
+            "card_p": 0,
+            "other_p": 0,
+            "total_p": 2000
+          },
+          "tip": {
+            "cash_p": 0,
+            "card_p": 0,
+            "other_p": 0,
+            "total_p": 0
+          },
+          "collected": {
+            "cash_p": 2000,
+            "card_p": 0,
+            "other_p": 0,
+            "total_p": 2000
+          },
+          "firstMethod": "CASH",
+          "secondMethod": "",
+          "source": "admin-checkout",
+          "reconciled": true,
+          "failures": []
+        },
+        "receiptProductTotal_p": 0,
+        "loyaltyRedeemedValue": 0,
+        "receiptRedeemedValue_p": 0,
+        "receiptSubtotal_p": 2000,
+        "receiptAwardedPoints": 20,
+        "sendLoyaltyEmail": false,
+        "paymentMethod": "Cash",
+        "receiptPaidEarlier_p": 0,
+        "loyaltyPointsRedeemed": 0,
+        "paidAmount": 20,
+        "receiptDiscount_p": 0,
+        "status": "CHECKED_OUT"
+      }
+    }
+  ],
+  "removed": [],
+  "contentChanged": []
+}

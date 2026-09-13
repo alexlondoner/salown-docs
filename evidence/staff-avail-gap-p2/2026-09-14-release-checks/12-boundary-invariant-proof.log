@@ -1,0 +1,35 @@
+# scratch invariant proof, rehearsal copy of 9ea0aca (2026-09-13T22:45:59Z)
+
+ RUN  v4.1.9 /private/tmp/claude-501/-Users-alish/1b4e7c9f-b90b-4cb4-9da8-c744b257a970/scratchpad/p2app2
+
+ ❯ src/staff/lib/staffPostWriteBoundary.test.ts (20 tests | 1 failed) 15ms
+     × WalkInFlow: the create/checkout calls are not inside a post-write step 5ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/staff/lib/staffPostWriteBoundary.test.ts > structure — nothing after a committed write can reach the operational catch > WalkInFlow: the create/checkout calls are not inside a post-write step
+AssertionError: expected [ 'await createSaleBooking(' ] to have a length of 2 but got 1
+
+- Expected
++ Received
+
+- 2
++ 1
+
+ ❯ src/staff/lib/staffPostWriteBoundary.test.ts:263:58
+    261|
+    262|   it('WalkInFlow: the create/checkout calls are not inside a post-writ…
+    263|     expect(wf.match(/await createSaleBooking\(/g) || []).toHaveLength(…
+       |                                                          ^
+    264|     expect(wf.match(/await checkoutBooking\(/g) || []).toHaveLength(1);
+    265|     for (const m of wf.matchAll(/afterWriteSucceeded\([\s\S]{0,400}?\n…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed | 1 passed (2)
+      Tests  1 failed | 23 passed (24)
+   Start at  23:46:00
+   Duration  260ms (transform 128ms, setup 0ms, import 165ms, tests 19ms, environment 0ms)
+
+exit=1

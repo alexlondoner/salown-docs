@@ -1,0 +1,12 @@
+{
+  "before": "C3-after-london-seed",
+  "after": "C4-after-staff-N1L-N2L",
+  "window": [
+    "2026-09-13T23:05:15.310Z",
+    "2026-09-13T23:06:10.352Z"
+  ],
+  "scope": "FULL document data of every document under tenants/p2c (recursive) + the tenant root; deletions detected as removed paths",
+  "added": [],
+  "removed": [],
+  "contentChanged": []
+}

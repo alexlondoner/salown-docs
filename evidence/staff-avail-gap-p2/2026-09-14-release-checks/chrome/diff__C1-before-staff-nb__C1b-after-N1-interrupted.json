@@ -1,0 +1,12 @@
+{
+  "before": "C1-before-staff-nb",
+  "after": "C1b-after-N1-interrupted",
+  "window": [
+    "2026-09-13T23:00:10.891Z",
+    "2026-09-13T23:01:58.872Z"
+  ],
+  "scope": "FULL document data of every document under tenants/p2c (recursive) + the tenant root; deletions detected as removed paths",
+  "added": [],
+  "removed": [],
+  "contentChanged": []
+}

@@ -1,0 +1,39 @@
+{
+  "_note": "Round 2 (release-evaluation) Chrome observations, transcribed verbatim from the in-page recorder. window.prompt was wrapped to RECORD every call and answer from a pre-set plan (staff plans were armed with a reason on purpose). A MutationObserver recorded toast text. Firestore before/after FULL-document snapshots and diffs in this folder are the write evidence.",
+  "environment": {
+    "page": "http://127.0.0.1:5199/staff.html (rehearsal copy of 9ea0aca; only src/firebase.ts differs — ../10-chrome-copy-provenance.txt)",
+    "emulators": "demo-c1 auth/firestore/functions on 127.0.0.1, functions built from the same copy",
+    "tenant": "p2c ('P2 chrome round 2'), presentation.timezone America/Los_Angeles",
+    "roles": ["staff-profile-role-round2.jpg (c-staff, Staff)", "owner-profile-role-round2.jpg (c-owner, Owner)"]
+  },
+  "staff_newBooking": {
+    "N1_attempt_interrupted": { "what": "Alex 2026-09-14 14:00", "ui": "LOST — Vite optimized react-router-dom at 00:01:31 London and reloaded the page mid-script", "server": "salownCreateStaffBooking executed once", "writes": "none (diff__C1-before-staff-nb__C1b-after-N1-interrupted: 0 added/removed/changed)", "status": "INCOMPLETE — not counted" },
+    "N1_N2_LA_fixture": {
+      "what": "Alex 14:00 and Bea 13:00 against seeds placed at LA 14:00/13:00",
+      "ui": [{ "promptCalls": [], "toast": "Booking saved!" }, { "promptCalls": [], "toast": "Booking saved!" }],
+      "explanation": "fixture artefact: New Booking interprets the form in Europe/London, the stored bookings are 13:00Z/12:00Z while the seeds are 21:00Z/20:00Z, so nothing overlapped (C2 snapshot, ../30-finding-new-booking-london-timezone.md)",
+      "status": "NOT a policy result — re-run as N1L/N2L"
+    },
+    "N3_leave": { "what": "Lee (undated leave) 2026-09-14 15:00", "promptCalls": [], "toast": "That professional is not available on this date/time (deactivated or on leave) — this can never be overridden.", "formAfter": { "client": "NB Regression Three", "date": "2026-09-14", "time": "15:00" }, "screenshot": "N3-staff-lee-leave-denied-form-kept.jpg", "writes": "diff C1b→C2 contains only the two N1/N2 LA-fixture creations + their audits/idempotency/notifications; nothing for Lee" },
+    "N1L_conflict": { "what": "Alex 2026-09-14 11:00 London vs seed nbLonAlex1100", "promptCalls": [], "toast": "Owner authorization is required for this.", "formAfter": { "client": "NB Regression One L", "date": "2026-09-14", "time": "11:00" }, "screenshot": "N1L-staff-alex-1100-london-conflict-denied.jpg" },
+    "N2L_blocked": { "what": "Bea 2026-09-14 12:00 London vs BLOCKED seed nbLonBeaBlock1200", "promptCalls": [], "toast": "The selected time conflicts with a break or blocked time. Pick another time.", "formAfter": { "client": "NB Regression Two L", "date": "2026-09-14", "time": "12:00" }, "screenshot": "N2L-staff-bea-1200-london-blocked-denied.jpg" },
+    "N1L_N2L_writes": "diff__C3-after-london-seed__C4-after-staff-N1L-N2L: 0 added / 0 removed / 0 content-changed (full documents, whole tenant subtree)"
+  },
+  "owner_newBooking": {
+    "O-NB1": { "what": "Alex 2026-09-14 11:00 London vs nbLonAlex1100, plan=[reason]", "promptCalls": [{ "message": "Alex already has a booking at this time. Only an owner can continue — enter a reason:", "defaultValue": "" }], "formClosed": true, "screenshot": "O-NB1-owner-override-saved-today.jpg", "writes": "diff__C5-before-owner__C6-after-owner-NB1" },
+    "O-NB2": { "what": "Bea 2026-09-14 13:10 London vs existing Bea 13:00-13:30; C (Bea 13:20-13:50) injected into the emulator while prompt 1 was open", "promptCalls": [{ "message": "Bea already has a booking at this time. Only an owner can continue — enter a reason:", "defaultValue": "" }, { "message": "The conflict just changed. Enter a reason to try again:", "defaultValue": "O-NB2: first approval (existing Bea booking)" }], "injectedHttpStatus": 200, "formClosed": true, "screenshot": "O-NB2-owner-reapproval-saved-today.jpg", "writes": "diff__C6-after-owner-NB1__C7-after-owner-NB2" }
+  },
+  "owner_backdatedSaveAndCheckout": {
+    "what": "Walk-in, Alex, Haircut 30 min, time picker NOT touched, Continue to payment → Confirm payment (Cash); seed bdSeedAlexRecent LA 15:25-15:55",
+    "displayedTimeUntouched": "16:11",
+    "confirmClickAtUtc": "2026-09-13T23:11:05.329Z",
+    "laNowAtConfirm": "16:11",
+    "expectedBackdatedStart": "15:41 (formula max(09:00, now − totalDuration))",
+    "expectedIfMinuteTicked": "15:41",
+    "promptCalls": [{ "message": "Alex already has a booking at this time. Only an owner can continue — enter a reason:", "defaultValue": "" }],
+    "toastLog": [{ "at": "23:11:07Z", "text": "Paid £20" }],
+    "stillOnPayStep": false,
+    "screenshot": "BD-owner-backdated-checkout-paid-today.jpg",
+    "writes": "diff__C8-before-backdated-checkout__C9-after-backdated-checkout"
+  }
+}

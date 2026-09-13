@@ -1,0 +1,69 @@
+# 02-frontend-vitest-full — 2026-09-13T22:09:41Z — HEAD 9ea0aca
+
+ RUN  v4.1.9 /private/tmp/claude-501/-Users-alish/1b4e7c9f-b90b-4cb4-9da8-c744b257a970/scratchpad/relws/salown-app
+
+ ❯ src/staff/lib/staffPostWriteBoundary.test.ts (20 tests | 1 failed) 28ms
+     × WalkInFlow: the create/checkout calls are not inside a post-write step 9ms
+ ❯ scripts/functionsArchiveManifest.test.js (12 tests | 2 failed) 565ms
+     × the pre-A1.3 ignore list would have shipped the local secrets file 7ms
+     × …and a pile of test files, preview output and editor state 5ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  scripts/functionsArchiveManifest.test.js > NEGATIVE CONTROL — the old policy really did leak > the pre-A1.3 ignore list would have shipped the local secrets file
+AssertionError: expected [ …(155) ] to include '.secret.local'
+ ❯ scripts/functionsArchiveManifest.test.js:109:19
+    107|     // or the tool stopped looking.
+    108|     const paths = OLD.untracked.concat(OLD.forbidden.map((f) => f.path…
+    109|     expect(paths).toContain('.secret.local');
+       |                   ^
+    110|     expect(paths).toContain('firestore-debug.log');
+    111|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯
+
+ FAIL  scripts/functionsArchiveManifest.test.js > NEGATIVE CONTROL — the old policy really did leak > …and a pile of test files, preview output and editor state
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ scripts/functionsArchiveManifest.test.js:117:61
+    115|     expect(forbidden.some((p) => p.endsWith('.test.js'))).toBe(true);
+    116|     expect(forbidden.some((p) => p.startsWith('_preview/'))).toBe(true…
+    117|     expect(forbidden.some((p) => p.startsWith('.claude/'))).toBe(true);
+       |                                                             ^
+    118|     expect(OLD.ok).toBe(false);
+    119|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯
+
+ FAIL  src/staff/lib/staffPostWriteBoundary.test.ts > structure — nothing after a committed write can reach the operational catch > WalkInFlow: the create/checkout calls are not inside a post-write step
+AssertionError: expected [ 'await createSaleBooking(' ] to have a length of 2 but got 1
+
+- Expected
++ Received
+
+- 2
++ 1
+
+ ❯ src/staff/lib/staffPostWriteBoundary.test.ts:263:58
+    261|
+    262|   it('WalkInFlow: the create/checkout calls are not inside a post-writ…
+    263|     expect(wf.match(/await createSaleBooking\(/g) || []).toHaveLength(…
+       |                                                          ^
+    264|     expect(wf.match(/await checkoutBooking\(/g) || []).toHaveLength(1);
+    265|     for (const m of wf.matchAll(/afterWriteSucceeded\([\s\S]{0,400}?\n…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯
+
+
+ Test Files  2 failed | 186 passed (188)
+      Tests  3 failed | 5552 passed | 6 skipped (5561)
+   Start at  23:09:43
+   Duration  19.23s (transform 17.78s, setup 0ms, import 44.10s, tests 33.07s, environment 33ms)
+
+exit=1
