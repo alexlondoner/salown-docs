@@ -27,6 +27,7 @@ ee102f2c42133b113e6a8f22b884856a75efd51a6aa1b011b6188abd51e6f68c  2026-09-13-loc
 d5b3721407007d0783b8e2dc7c5f69292f2f79d53633758abdaf6ec2bac22926  2026-09-13-local-verification/compat-old-server-emulator.log
 1dc0ee619e248d95e64715fb43903d4ebea4e617eb91fbe939dcfc0d765c5eaf  2026-09-13-local-verification/env-proof.txt
 796c826eed04dba74875cfd03698d877db8c458c3f866f4b708dc766d8809280  2026-09-13-local-verification/functions-emulator-run.log
+e51a5f39b44df5099c7f26f9f5eab0a69126a5aa98633bca42122f84ee0ef401  2026-09-13-local-verification/MANIFEST.sha256
 4c0df539a8d80a60eecc4563cb85407056632c896d5a135258d976b7af1c04c6  2026-09-13-local-verification/O1-attempt1-aborted-page-navigated.json
 2cc261e59673fadd2799407e1074ae077c74bf3d6fd77e45cfae6cf7f596e6fa  2026-09-13-local-verification/O1b-after-owner-conflict-save.json
 f108dfe2faa50bde65bead6afe0f7c6bce56849f3059f3f265a46fdd9cf8027b  2026-09-13-local-verification/O1b-after-save-today.jpg
@@ -61,6 +62,14 @@ a1d6901e1950275f3de948769d081c9934bba0cbbea028f93a4c440432bf9d9f  2026-09-13-loc
 fd74ee19a2264b9b2392c3c044e620a92a29ca008eef991cccb293772ce7081e  2026-09-13-local-verification/vite-dev-server-run.log
 ab875780e83db7e9a003f64fed0de553d6c9c93370f1c7e50385eea850978860  2026-09-13-local-verification/write-window-side-effects.json
 5e1f35f76cd2ec3a328610ea5ea1972f3e95fa06848751d237deb59e534f148c  2026-09-13-local-verification/zero-write-content-check.json
+4a950c5f68910afa37380759cbb8ae59b7e90fd794c352ee5c11471c093306d0  2026-09-14-handoff-state/handoff-state.txt
+1e12b32786fd2965aa0179e37a069beecaf65680d86454d30f0371fc4a8a3da2  2026-09-14-handoff-state/MANIFEST.sha256
+7530c80c8e32e8c56971207fb8d746247ab215a23bb1945e2a4e56434cd189d8  2026-09-14-handoff-state/tools/compat.mjs
+5649dcccb6a0f0ce08db1d7556038173998dae686d9fd562077c6c386162b226  2026-09-14-handoff-state/tools/p2chrome.mjs
+f28180b10e35743a8cb29f9e9a5f6da4a90a12ed5909192bda5e189ad0de1ff2  2026-09-14-handoff-state/tools/p2evidence.mjs
+5302dff3529eacd52f05d326728c1b349cca51d3584e2e11aebd5c349f223c65  2026-09-14-handoff-state/tools/p2rehearsal.mjs
+b79d550c312940151134db8e555a896dd6f0e344fc123c4305baad917c6d73fe  2026-09-14-handoff-state/tools/write_window_check.mjs
+6315f8f0c3122630b8d8dd2ed3a87d367134bdd68de169b32f7720b15c00348e  2026-09-14-handoff-state/tools/zero_write_check.mjs
 6592fdbde41e6a2cb294fc4a569d843ceb6aa6f6d1a51f4671180ba7a935fd5e  2026-09-14-release-checks/00-release-workspace.log
 ce73ed3eb1b4b27445e70af9a5354ae6ebea5ee1b4b388a35387cb10871a800f  2026-09-14-release-checks/01-functions-unit-full.log
 675e9e37fbb0d2a357b0d3aa47e478b4ccc27b556eaa4b4e6d5e7576114cb335  2026-09-14-release-checks/02-frontend-vitest-full.log
@@ -108,6 +117,7 @@ a871e0d21eb20d12fa58d67383f8762a13ee6e4a41e8d8099ce1aa1f8a7afd0a  2026-09-14-rel
 3ef712047dc1244223083f646ff1edadb8bb2ba69b966a2fdb3f66d81a39ccbc  2026-09-14-release-checks/chrome/staff-profile-role-round2.jpg
 1a042ef8651c9e59cc1262586f788b9509c13505414e5610c05078b0d4b0b60d  2026-09-14-release-checks/chrome/ui-observations-round2.json
 9ef47ecb2a5a2ad08cea4a4e630d5667326260c0c2ba16b4304cddd132697d65  2026-09-14-release-checks/chrome/vite-dev-server-round2.log
+d075c354f23181d6570252f813787a09a63a718242cab34530a41fbc7823fcb3  2026-09-14-release-checks/MANIFEST.sha256
 ed3953058f3f6863b3fdc4cc984b04db505b2c47f8dc7ff3b6ffc1f3d570b0c4  2026-09-14-release-checks/RELEASE-EVALUATION-2.md
 d824abe2a8c9776941d25c0086b7c86bbbbb0d1e183fb916f8cc09a2bcfb9739  2026-09-14-release-checks/SUMMARY.txt
-49006e2ea6ce412dff1c47b1b24d8ea47c20884abfda659621bbb679e281cfd9  README.md
+73b52fa473e9ba812658b57797e219b145f605f1a9de9c0d384d6a7b7c76793d  README.md

@@ -1,0 +1,29 @@
+# STAFF-AVAIL-GAP-P2 handoff state — captured 2026-09-13T23:42:36Z (read-only capture; nothing started or stopped by this capture)
+salown-app: HEAD=e48300eadc6ecefc3e583fc66fa649389d42e441 origin=e48300eadc6ecefc3e583fc66fa649389d42e441 ahead/behind=0/0 dirty_lines=0
+docs: HEAD=503158dfa5c0379e74b1a0c3a232c81bdce5e2d6 origin=503158dfa5c0379e74b1a0c3a232c81bdce5e2d6 ahead/behind=0/0 dirty_lines=1
+tested release candidate: 9ea0aca076d80b05279be6b7135402ad7f049554
+## active claims (salown-app ops/claims)
+── alish/whatsapp  [blocked]
+   task: WHATSAPP-B7   since: 2026-09-05T20:30:00+01:00
+   • functions/src/whatsapp/
+## listeners on emulator/dev ports 8080 9099 5001 4400 9150 5199
+(none listed above = none running)
+## emulator / vite processes
+(none listed above = none running)
+## last known PIDs (all TERMINATED at the end of round 2, ~2026-09-13T23:15Z): firebase emulators:start 4768, firestore java 4831, vite 4897 (round 2); earlier rounds 93940/93981/94065 and 1285/1334 also terminated
+## browser: no Chrome tab group exists for this session (round-2 tab 61376393 closed)
+## scratch directories (session-specific /private/tmp — may be deleted by the OS; nothing here is authoritative)
+relws/salown-app       141M
+p2app2                  29M
+oldws/salown-app        28M
+guardws/salown-app      26M
+archive-9ea0aca         41M
+p2app                   24M
+evidence               1.0M
+evidence-p2b           828K
+relws/salown-app (git clone, detached): HEAD=9ea0aca076d80b05279be6b7135402ad7f049554
+   D hosting/staff-bundle/assets/staff-CLriqZe3.js
+   M hosting/staff-bundle/index.html
+  ?? hosting/staff-bundle/assets/staff-BGZUV_T1.js
+p2app2: rehearsal copy of 9ea0aca, src/firebase.ts emulator-wired, functions/lib built (Chrome round 2 served from here)
+oldws/salown-app: git archive of 797c9b3 (live Phase-1 source), functions/lib built (compat matrix old server)

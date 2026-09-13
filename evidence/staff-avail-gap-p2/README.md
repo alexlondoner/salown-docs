@@ -16,6 +16,7 @@ emulator authorization header value is stored in these files (scanned before cop
 |---|---|
 | `2026-09-13-local-verification/` | `README.md` (scenario table, automated checks), `RELEASE-EVALUATION.md` (content-level zero-write check, O2 scope, compatibility, release tooling), `MANIFEST.sha256` |
 | `2026-09-14-release-checks/` | `RELEASE-EVALUATION-2.md` (owner-independent release checks at `9ea0aca`: full unit/frontend/two-phase emulator in a git-backed isolated workspace, guard/manifest/build, New Booking Chrome regression, owner backdated Save & Checkout, failure classification), `20-owner-decision-recommendations.md`, `30-finding-new-booking-london-timezone.md`, `chrome/` (full-document snapshots and diffs), `MANIFEST.sha256` |
+| `2026-09-14-handoff-state/` | `handoff-state.txt` (repo HEADs, claims, ports/processes — none running, scratch directories), `tools/*.mjs` (seed/snapshot/diff/compat helpers; the synthetic password is read from `P2_TEST_PASSWORD`, never stored), `MANIFEST.sha256`. Handoff: [`../../HANDOFF_STAFF_AVAIL_GAP_P2.md`](../../HANDOFF_STAFF_AVAIL_GAP_P2.md) |
 
 **Verify integrity.**
 
