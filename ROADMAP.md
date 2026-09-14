@@ -1093,6 +1093,7 @@ Verified against production in this pass (2026-08-12) unless dated otherwise:
 | `A3` inventory cores | `34ddb12`/`980f6f1`/`98e4bcd` | NOT WIRED / NOT DEPLOYABLE by design |
 | `SEC-FN-NS` source protection | `a336ddce` (+ record `cb710db` in **salown-docs**, not whitecross-site) | on `origin/main`; the guard only proves itself on the next whitecross Functions deploy |
 | `PROFILE-SPECIALHOURS-BACKFILL` | `2cc2a1e` | read-only tool, dry run only, no write |
+| `WALKIN-BACKDATE-FLOOR` | `aa2efd9` | Staff App Walk-in untouched-time Save & Checkout backdate: 09:00 floor removed, one absolute instant computed and sent as `startTime`, midnight rollover correct; companion `assertAssignableStaff` `historicalExemptionAllowed` fix so a midnight-crossing walk-in still gates `STAFF_PASSIVE`/`STAFF_NOT_STARTED`. Separate finding from `STAFF-AVAIL-GAP-P2` (see that row), not bundled with its release. Functions unit 2696/2696, frontend vitest 5569/5569, tsc clean, `deploy-functions.sh --check-only` PASS, `build:staff` PASS — no deploy, no emulator/Chrome live check yet (`docs/evidence/staff-avail-gap-p2/2026-09-14-test-fix-and-uk-checkout/31-future-checkout-scope-options.md`, `SYNC.md` 2026-09-14 16:1x) |
 
 `salownCheckoutBooking` is **deployed but dormant** — reachable only from the Admin TR till, TR
 tenants only (today `demo`); a tenant without `checkoutSettings` fails closed with
