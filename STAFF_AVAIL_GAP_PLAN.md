@@ -1087,6 +1087,27 @@ Evidence: `SYNC.md` 2026-09-14 02:55 UK entry; claim `STAFF-AVAIL-GAP-P2-TESTFIX
 two-phase emulator gate re-run against `a7b1f33`, the UK-daytime backdated-subtraction check, and the
 bypass/Phase-3 owner decisions are all still outstanding. **Not releasable, no deploy.**
 
+### 9.7e Future-dated-checkout finding — target behavior specified, no code changed
+
+Owner specified a target behavior for §9.7c's future-dated-checkout finding: untouched-time start
+= the checkout instant (captured once) minus total duration, unclamped, with correct calendar-day
+rollover across midnight, the same computed instant reused through the conflict check, the owner
+approval flow and the persisted record. `31-future-checkout-scope-options.md` now carries this
+worked through against the actual source (superseding its original three generic options, kept as
+an appendix): why `minsToTimeStr`'s minutes-of-day clamp cannot express a midnight rollover and an
+absolute-instant computation is needed; the existing `startTime`-wins seam in
+`bookingCallables.ts` as the natural (unbuilt) implementation path; that `time` is already
+captured once and reused on an owner-override resubmission but `date` is not (`createSaleBooking`
+re-reads `getTodayStr()` on every call); confirmation that the conflict scan (24h lookback) and
+shift-fit (`tenantDateKey` from the instant) already handle a rolled-back day correctly; the
+manual-time flow confirmed structurally unaffected. **One real, previously-invisible consequence
+found:** `classifyTenantDay`/`assertAssignableStaff`'s historical-day classification would newly
+exempt `STAFF_PASSIVE`/`STAFF_NOT_STARTED` for a duration-driven midnight-crossing backdate — today
+unreachable because the floor keeps every untouched-time backdate inside "today." 9 candidate
+acceptance tests and 4 real remaining decision points (chiefly: is that eligibility exemption
+acceptable for this trigger, or does the floor removal need a companion change there) are listed.
+**No code changed, no emulator/Chrome run, no deploy.**
+
 ### 9.4 Remaining gaps — named, not hidden
 
 - **`firestore.rules` callable-bypass — owner review 2026-09-12: this is now a STATED CLOSING
