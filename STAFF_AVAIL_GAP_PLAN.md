@@ -1005,6 +1005,39 @@ Europe/London regardless of the tenant timezone (live Phase 1 too) — non-Londo
 and a conflict check at that instant (`30-finding-new-booking-london-timezone.md`). Owner decisions and
 recommendations: `20-owner-decision-recommendations.md` (none decided).
 
+### 9.7c Stale-test patch prepared + UK Europe/London backdated-checkout check (2026-09-14 night) — STILL NOT RELEASABLE, nothing committed
+
+Evidence: `evidence/staff-avail-gap-p2/2026-09-14-test-fix-and-uk-checkout/README.md`. No deploy, no
+production access, shared tree (`~/Desktop/alex/salown-app`) untouched, no claim opened.
+
+- **Test-fix patch prepared, NOT committed.** A diff against `src/staff/lib/staffPostWriteBoundary.test.ts`
+  (isolated clone only) replaces §9.7b's stale `createSaleBooking` count with an assertion of the actual
+  `9ea0aca` shape: `createSaleBooking` has exactly one caller (`createWalkInEnforced`), invoked from two call
+  sites inside that caller's own body; `createWalkInEnforced(` itself is called from two places (save + pay);
+  `checkoutBooking(` still once; every `afterWriteSucceeded(...)` post-write block still forbidden from
+  containing any of create/checkout/package-link/product-sale (now including `createWalkInEnforced(` too — the
+  guard was extended, not loosened). Under this patch, full `vitest run` in the isolated clone: **5553 pass, 6
+  skipped, 2 fail** — the same two pre-existing environment negative controls named in §9.7b, nothing else.
+  `9ea0aca`'s own committed test failure is **still open** — this patch has not been committed to salown-app;
+  only a real commit producing a new candidate SHA, followed by a full re-run of this section's gates, would
+  close it.
+- **UK backdated Save & Checkout, closed the §9.7b/§6 gap.** §9.7b's Chrome row above ran the untouched-time
+  Save & Checkout check on tenant `p2c` (`America/Los_Angeles`), not a UK tenant. A new synthetic tenant `p2uk`
+  (`presentation.timezone: Europe/London`) was seeded and the same check re-run live against the Auth+
+  Firestore+Functions emulator trio (confirmed via network requests before any UI action — no request reached
+  `havuz-44f70` or any non-`127.0.0.1` host). At the real London wall-clock time of the run (~01:20 BST), the
+  backdate formula's floor branch applies (`max(9*60, now−30) = 540`), not the subtraction branch §9.7b's LA
+  run exercised (16:11 → 15:40) — a different, equally valid branch of the same formula, not a repeat of the LA
+  result. Booking recorded `startTime = 2026-09-14T08:00:00.000Z` (09:00 BST) exactly as predicted, `status:
+  CHECKED_OUT`, one audit row, no double-write. A UK-daytime rerun would be needed to exercise the subtraction
+  branch specifically on a UK tenant; not claimed here.
+- **New Booking Europe/London hardcode: confirmed from source, recorded as separate.** `functions/src/index.ts:1734`
+  hardcodes `timeZone: 'Europe/London'` in `salownCreateStaffBooking` regardless of tenant, while Walk-in
+  resolves the instant client-side using the tenant's real zone before the server ever sees it
+  (`WalkInFlow.tsx:339` → `bookingCallables.ts:320` → `toIsoStartTime(date, time, timeZone)`; server just parses
+  the resulting `startTime`). Confirmed at the source, independent of any Chrome tenant. Left untouched by this
+  patch (out of scope) — still the same pre-existing, undecided finding as §9.7b names.
+
 ### 9.4 Remaining gaps — named, not hidden
 
 - **`firestore.rules` callable-bypass — owner review 2026-09-12: this is now a STATED CLOSING
