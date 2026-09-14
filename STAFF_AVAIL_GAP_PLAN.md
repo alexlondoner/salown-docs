@@ -1053,6 +1053,40 @@ still open); the UK-daytime backdated-subtraction check is not done; the bypass 
 Walk-in↔Reschedule Phase-3 deferral have not been decided. This section is not sufficient for a release
 decision.
 
+### 9.7d Test-fix patch committed — new candidate `a7b1f33`, two-phase emulator gate NOT re-run, STILL NOT RELEASABLE
+
+Evidence: `SYNC.md` 2026-09-14 02:55 UK entry; claim `STAFF-AVAIL-GAP-P2-TESTFIX` (`5788d8a` → impl
+`a7b1f33` → release `b6c325c`). Scoped commit: only `src/staff/lib/staffPostWriteBoundary.test.ts`
+(the §9.7c fix, unchanged from the isolated-clone patch) + `SYNC.md`. No app/functions source touched.
+**No deploy.**
+
+- **This tree, gates that DID run and passed:** the fixed test 20/20; full frontend `vitest run` 5567
+  pass, 1 fail (the same `functionsArchiveManifest.test.js` environment negative control this machine
+  always shows — down from §9.7b's baseline count of failures because this run has whatever local files
+  that control happened to find this time, not because of the fix); `tsc --noEmit` 0; `eslint` on the
+  touched file 0; functions unit (full, `npm test`) 2691 pass, 0 fail, 43 skipped;
+  `deploy-functions.sh --check-only salownCreateStaffWalkIn` PASS; `functionsArchiveManifest.cjs` PASS;
+  `npm run build:staff` — `staff-BGZUV_T1.js` sha256 `882813e2…`, **byte-identical** to the pre-fix
+  build (expected: no shipped file changed), tracked `hosting/staff-bundle/` restored afterward.
+- **Two-phase `ops/test-emulator.sh` did NOT complete.** Attempted once against this candidate; the
+  machine thrashed under memory pressure (the documented 8GB-RAM trap) and sat stuck on
+  `src/inventory/executor.emulator.test.js` for ~1h40m with near-zero CPU progress before being killed
+  rather than left running indefinitely. This gate's file set (`functions/src/**/*.emulator.test.js` +
+  a few `scripts/*.emulator.test.cjs`) is entirely disjoint from the one file this commit changed, so
+  its last completed result for this functions-tree state — **682/682**, recorded pre-fix in
+  §9.7b/§9.7c — is unaffected in principle. That is supporting reasoning, **not** a substitute for
+  actually re-running it against `a7b1f33`: it has not been re-run. Needs a session with emulator
+  headroom on this machine, or a different machine.
+- Chrome New Booking/Walk-in regression not re-run either, for the same reason (no app source changed
+  by this commit) — §9.6c/§9.7b's existing Chrome evidence is the standing record of actual app
+  behaviour, unaffected by a test-file-only change.
+- New Booking's `Europe/London` hardcode and the walk-in future-dated-checkout finding
+  (`31-future-checkout-scope-options.md`) remain separate, pre-existing, undecided — untouched here.
+
+**Remaining status:** the one code-side gate failure named since §9.7b is closed by this commit. The
+two-phase emulator gate re-run against `a7b1f33`, the UK-daytime backdated-subtraction check, and the
+bypass/Phase-3 owner decisions are all still outstanding. **Not releasable, no deploy.**
+
 ### 9.4 Remaining gaps — named, not hidden
 
 - **`firestore.rules` callable-bypass — owner review 2026-09-12: this is now a STATED CLOSING

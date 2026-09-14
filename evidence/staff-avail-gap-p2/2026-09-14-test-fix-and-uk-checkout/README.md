@@ -6,10 +6,22 @@ tree). **Deploy: none. Production read/write: none.** This folder records two pi
 work done entirely in isolated clones/rehearsal copies under a session scratchpad,
 never in `~/Desktop/alex/salown-app`.
 
-**The candidate `9ea0aca`'s frontend test failure is still open.** Nothing here has
-been committed to salown-app. Only a real commit landing this patch (or an equivalent
-fix), producing a new candidate SHA, and a full re-run of §4's round-2 gates against
-that SHA would close it. **See §5 for a same-night correction pass on this file's
+**Update 2026-09-14 ~02:55 UK — this patch IS now committed to salown-app.** Claim
+`STAFF-AVAIL-GAP-P2-TESTFIX` (`5788d8a` → impl `a7b1f33` → release `b6c325c`), matching
+this folder's patch exactly. `a7b1f33` is the new release candidate, replacing `9ea0aca`.
+In the real tree: the fixed test 20/20, full frontend suite 5567 pass/1 fail (same
+environment control), functions unit 2691/0 fail, tsc/eslint clean, deploy-guard/
+archive-manifest/build:staff all PASS (`build:staff` byte-identical to the pre-fix
+build). **The two-phase `ops/test-emulator.sh` did NOT get re-run against `a7b1f33`** —
+attempted once, the machine thrashed under memory pressure and got stuck for ~1h40m
+before being killed; see `docs/STAFF_AVAIL_GAP_PLAN.md` §9.7d for the full account and
+why that gate's result is reasoned (not proven) to be unaffected by a test-file-only
+change. **Still not releasable, no deploy** — the emulator gate re-run, the UK-daytime
+backdated-subtraction check, and the bypass/Phase-3 decisions all remain outstanding.
+
+**The candidate `9ea0aca`'s frontend test failure is now closed by the commit above** —
+superseded, this paragraph originally said it was still open when this patch existed
+only in an isolated clone. **See §5 for a same-night correction pass on this file's
 original §1/§2 wording** — the floor-branch UK check does not close the round-2 gap and
 surfaced its own undecided finding (§3a).
 
