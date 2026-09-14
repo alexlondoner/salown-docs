@@ -1,5 +1,36 @@
 # Handoff → next session: STAFF-AVAIL-GAP Phase 2 (Staff App Walk-in)
 
+## ⏩ UPDATE 2026-09-14 ~20:0x UK — READ THIS FIRST, corrects this session's own emulator-gate framing below
+
+Written by the same session as the 16:3x update below, after two attempts to re-run the two-phase
+`ops/test-emulator.sh` against `aa2efd9` (§3 of the 16:3x section's "next step"). **Retracting this
+session's own "RAM constraint" framing for why that gate stays open** (16:3x §3 and its "explicitly
+OPEN" line) — that framing was never actually confirmed and should not be repeated. Full record:
+`docs/evidence/staff-avail-gap-p2/2026-09-14-emulator-gate-diagnosis/README.md`.
+
+- **Two full-gate attempts this session, both INCOMPLETE** — not a pass, not a fail, not a
+  confirmed RAM/thrash cause. Attempt 1's watchdog output was lost to a `tee`-buffering bug.
+  Attempt 2's "time cap" counted loop iterations, not real elapsed time, so an external tool
+  timeout — not a designed stop — is what actually ended it, 33 real minutes in. **Swap never grew
+  past baseline in either attempt.**
+- **Separately, a narrow single-file diagnostic (owner-directed, not a full-gate retry):**
+  `src/inventory/executor.emulator.test.js` — the SAME file the ORIGINAL 2026-09-13 incident (§9.7d
+  below) named as where the machine "sat stuck" — run ALONE in an isolated clone, same pinned
+  toolchain/heap/concurrency, durable logs, a real wall-clock cap. **Result: 20/20 PASS, ~3 minutes,
+  no hang.** ~157.7s of that is four deliberately concurrent tests hitting real, documented
+  Firestore transaction-contention/retry-backoff latency (not a defect) — see the evidence README
+  §2 for the exact per-test breakdown. This does not retroactively prove the ORIGINAL §9.7d incident
+  (against `a7b1f33`, a different session, different exact conditions) was something other than what
+  it said — it establishes that THIS file, on ITS OWN, at `aa2efd9`, today, is not broken and does
+  not hang.
+- **Still does not explain why the full multi-file gate stalls.** Leading, UNTESTED hypothesis:
+  aggregate contention when ~20 files' own concurrent tests all hit the ONE shared Firestore
+  emulator instance together. Not run. **No full-gate re-run until this is actually understood** —
+  per explicit instruction, don't repeat the full gate blind again.
+- No deploy, no production access. Bypass/Phase-3 decisions unchanged from every prior record.
+
+---
+
 ## ⏩ UPDATE 2026-09-14 ~16:3x UK — READ THIS FIRST, supersedes the 04:50 update below on the candidate-SHA question
 
 Written by the session that picked up the 04:50 update below, did a separate, unrelated
