@@ -1,0 +1,7 @@
+21:49:12 emulator wrapper PID=41953
+21:49:15 emulator ready
+21:49:15 test PID=41992
+21:49:26 t=+10s java_cpu=2.7% test_cpu=1.2% conns=2 swap=782.38M last_line: ✔ ADMIN EMU: two concurrent same-barber overlapping Admin requests → one ALLOWED + one SLOT_CONFLICT, one booking (3598.005041ms)
+21:49:36 t=+21s java_cpu=0.0% test_cpu=0% conns=0 swap=782.38M last_line: ℹ duration_ms 12411.270042
+21:49:36 test process exited rc=0
+21:49:38 RESULT: finished, rc=0, real_elapsed=23s

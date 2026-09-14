@@ -1,0 +1,13 @@
+21:10:37 FILE START src/bookings/blocks.emulator.test.js  (phase_elapsed=5s)
+21:39:32 FILE END   src/bookings/blocks.emulator.test.js  duration=1735s
+21:39:32 FILE START src/bookings/createAdminBooking.emulator.test.js  (phase_elapsed=1740s)
+21:39:47 FILE END   src/bookings/createAdminBooking.emulator.test.js  duration=15s
+21:39:47 FILE START src/bookings/createBooking.emulator.test.js  (phase_elapsed=1755s)
+21:40:02 FILE END   src/bookings/createBooking.emulator.test.js  duration=15s
+21:40:02 FILE START src/bookings/createStaffBooking.emulator.test.js  (phase_elapsed=1770s)
+21:40:18 FILE END   src/bookings/createStaffBooking.emulator.test.js  duration=16s
+21:40:18 FILE START src/bookings/createStaffWalkIn.emulator.test.js  (phase_elapsed=1786s)
+21:40:28 FILE END   src/bookings/createStaffWalkIn.emulator.test.js  duration=10s
+21:40:28 FILE START src/bookings/createWalkIn.emulator.test.js  (phase_elapsed=1796s)
+21:40:33 FILE END   src/bookings/createWalkIn.emulator.test.js  duration=5s
+21:40:33 FILE START src/bookings/reassignBooking.emulator.test.js  (phase_elapsed=1801s)

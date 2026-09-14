@@ -1,0 +1,17 @@
+21:10:29 STEP 3 — FULL real two-phase gate (31 general + 1 packages), durable logs, real-time caps (phase1<=1800s, phase2<=600s)
+21:10:29 ── phase general — files: src/bookings/blocks.emulator.test.js src/bookings/createAdminBooking.emulator.test.js src/bookings/createBooking.emulator.test.js src/bookings/createStaffBooking.emulator.test.js src/bookings/createStaffWalkIn.emulator.test.js src/bookings/createWalkIn.emulator.test.js src/bookings/reassignBooking.emulator.test.js src/checkout/checkoutSettings.emulator.test.js src/checkout/executor.emulator.test.js src/finance/periodClose.emulator.test.js src/inventory/executor.emulator.test.js src/inventory/reconcile.emulator.test.js src/parsers/importAssignment.emulator.test.js src/parsers/importWiring.emulator.test.js src/payments/connectOauth.emulator.test.js src/sales/productSaleCore.emulator.test.js src/staff/actorAccessGate.emulator.test.js src/staff/identity.emulator.test.js src/staff/lifecycleOffboard.emulator.test.js src/staff/lifecycleRehire.emulator.test.js src/staff/offboarding.emulator.test.js src/staff/provisionTeamMember.emulator.test.js src/staff/rotaArchive.emulator.test.js src/staff/rotaCallable.emulator.test.js src/staff/rotaOverride.emulator.test.js src/staff/rotaSeedImport.emulator.test.js src/staff/rotaWriter.emulator.test.js src/tenants/publishProfile.emulator.test.js src/treatmentSessions/integration.emulator.test.js src/treatmentSessions/sessions.emulator.test.js ../scripts/backfillPublicCampaign.emulator.test.cjs
+21:10:29 ── phase general — test log: /private/tmp/claude-501/-Users-alish/a0fc27d4-d19d-4786-8504-8964dbf64aef/scratchpad/diag-step3-evidence/general-test-output.log
+21:10:29 phase general: emulator wrapper PID=41349
+21:10:32 phase general: emulator ready
+21:10:32 phase general: test PID=41387
+21:10:37 phase general → now running: src/bookings/blocks.emulator.test.js (phase_elapsed=5s)
+21:39:32 phase general → now running: src/bookings/createAdminBooking.emulator.test.js (phase_elapsed=1740s)
+21:39:47 phase general → now running: src/bookings/createBooking.emulator.test.js (phase_elapsed=1755s)
+21:40:02 phase general → now running: src/bookings/createStaffBooking.emulator.test.js (phase_elapsed=1770s)
+21:40:18 phase general → now running: src/bookings/createStaffWalkIn.emulator.test.js (phase_elapsed=1786s)
+21:40:28 phase general → now running: src/bookings/createWalkIn.emulator.test.js (phase_elapsed=1796s)
+21:40:33 phase general → now running: src/bookings/reassignBooking.emulator.test.js (phase_elapsed=1801s)
+21:40:33 ✖ phase general: REAL cap reached (1801s) — saving state BEFORE stopping anything
+21:40:36 phase general RESULT: INCOMPLETE (time-capped) — snapshot: /private/tmp/claude-501/-Users-alish/a0fc27d4-d19d-4786-8504-8964dbf64aef/scratchpad/diag-step3-evidence/general-snapshot-at-limit.txt
+21:40:36 phase general done, rc=3
+21:40:36 RESULT: STEP 3 STOPPED after phase general (rc=3) — not proceeding to packages

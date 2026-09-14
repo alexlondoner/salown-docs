@@ -1,0 +1,20 @@
+20:58:49 STEP 1 — 11 files (10 real predecessors + inventory/executor), real wall-clock cap 1500s
+20:58:49 files (as passed, NOT assumed execution order): src/bookings/blocks.emulator.test.js src/bookings/createAdminBooking.emulator.test.js src/bookings/createBooking.emulator.test.js src/bookings/createStaffBooking.emulator.test.js src/bookings/createStaffWalkIn.emulator.test.js src/bookings/createWalkIn.emulator.test.js src/bookings/reassignBooking.emulator.test.js src/checkout/checkoutSettings.emulator.test.js src/checkout/executor.emulator.test.js src/finance/periodClose.emulator.test.js src/inventory/executor.emulator.test.js
+20:58:49 test output -> /private/tmp/claude-501/-Users-alish/a0fc27d4-d19d-4786-8504-8964dbf64aef/scratchpad/diag-step1-evidence/step1-test-output.log
+20:58:49 emulator log -> /private/tmp/claude-501/-Users-alish/a0fc27d4-d19d-4786-8504-8964dbf64aef/scratchpad/diag-step1-evidence/step1-firestore-emulator.log
+20:58:49 observed file order/durations -> /private/tmp/claude-501/-Users-alish/a0fc27d4-d19d-4786-8504-8964dbf64aef/scratchpad/diag-step1-evidence/step1-observed-file-order.log (polled every 5s from live process argv)
+20:58:49 emulator wrapper PID=39671
+20:58:52 emulator ready
+20:58:52 test PID=39708 (coordinator; per-file children spawned under --test-isolation=process)
+20:58:57 → now running: src/bookings/blocks.emulator.test.js (real_elapsed=8s)
+20:59:43 → now running: src/bookings/createAdminBooking.emulator.test.js (real_elapsed=54s)
+20:59:53 → now running: src/bookings/createBooking.emulator.test.js (real_elapsed=64s)
+21:00:08 → now running: src/bookings/createStaffBooking.emulator.test.js (real_elapsed=79s)
+21:00:13 → now running: src/bookings/createStaffWalkIn.emulator.test.js (real_elapsed=84s)
+21:00:33 → now running: src/bookings/createWalkIn.emulator.test.js (real_elapsed=104s)
+21:00:38 → now running: src/bookings/reassignBooking.emulator.test.js (real_elapsed=109s)
+21:00:43 → now running: src/checkout/executor.emulator.test.js (real_elapsed=114s)
+21:01:09 → now running: src/finance/periodClose.emulator.test.js (real_elapsed=140s)
+21:02:10 → now running: src/inventory/executor.emulator.test.js (real_elapsed=200s)
+21:03:20 test process exited rc=0
+21:03:21 RESULT: STEP 1 finished, rc=0, real_elapsed=272s — see /private/tmp/claude-501/-Users-alish/a0fc27d4-d19d-4786-8504-8964dbf64aef/scratchpad/diag-step1-evidence/step1-test-output.log

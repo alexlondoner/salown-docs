@@ -1,0 +1,17 @@
+✔ ADMIN EMU: commits an Admin booking (source Admin, bookingType booking, CONFIRMED, canonical id) (2252.291208ms)
+✔ ADMIN EMU: two concurrent same-barber overlapping Admin requests → one ALLOWED + one SLOT_CONFLICT, one booking (3598.005041ms)
+✔ ADMIN EMU: concurrent same-key + same payload → one booking, second replayed, adminbk_ namespaced (6059.237833ms)
+✔ ADMIN EMU: same key + materially different admin payload → IDEMPOTENCY_CONFLICT, one booking (49.107ms)
+✔ ADMIN EMU: unrecognized role → PERMISSION_DENIED, zero writes (29.999333ms)
+✔ ADMIN EMU: valid clientManualId is trusted; unknown → CLIENT_NOT_FOUND with zero writes (77.056ms)
+✔ ADMIN EMU: Admin may book short-notice (online minimum-notice policy does not apply) (32.083166ms)
+✔ ADMIN EMU: a barber deactivated mid-transaction can never receive the booking (31.688542ms)
+✔ ADMIN EMU: admin + public bookings on the same raw idempotency key are independent (112.652333ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 9
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 12411.270042

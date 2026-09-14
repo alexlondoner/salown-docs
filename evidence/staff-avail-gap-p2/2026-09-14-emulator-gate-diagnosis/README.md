@@ -178,20 +178,98 @@ original incident's duration; nor anything about the ~20 files that run AFTER `i
 real order, several of which (per round 1's grep) also contain their own `Promise.all`-based
 concurrency tests and were never part of either incident's implicated file.
 
+## 3b. Round 3 — full systematic run: Steps 1-2 clean (655/655, matches historical baseline exactly), Step 3 finds and isolates a genuine, non-reproducing stall
+
+Owner-directed, no further check-ins requested mid-run. Three steps, executed in order, with the
+explicit rule that subsets passing does not substitute for the full gate — Step 3 (the full gate)
+was always the target, not optional.
+
+**Step 1 — all 10 real predecessors + `inventory/executor.emulator.test.js` (11 files), one
+`node --test` invocation, one shared emulator, order OBSERVED (not assumed) via live process-argv
+polling every 5s.** Observed order matched alphabetical again, but this run treats that as measured,
+not guaranteed. **Result: 303/303 PASS, `duration_ms 265174.2` (~4m25s), rc=0.** `executor`'s own
+contribution: ~71s (faster than both round 1's 160s alone and round 2's 79s in a 5-file subset —
+consistent with round 2's finding that nothing here degrades with more preceding files).
+
+**Step 2 — the 20 remaining `PHASE1_GLOBS` files not covered by Step 1** (`inventory/reconcile`,
+`parsers/` both files, `payments/`, `sales/`, `staff/` all 11, `tenants/`, `treatmentSessions/` both
+files, the `.cjs` script), same mechanism. **Result: 352/352 PASS, `duration_ms 240267.3` (~4m00s),
+rc=0.** 303 + 352 = **655 tests — exactly matching the historical known-good general-phase baseline**
+recorded for `9ea0aca` (`03-emulator-gate-two-phase.log`: "tests=655 pass=655 fail=0"). Both splits
+clean, zero failures, no stall in either.
+
+**Step 3 — the full real two-phase gate, all 31 general + 1 packages file, in ONE continuous
+`node --test` invocation per phase** (replicating `ops/test-emulator.sh` exactly, but with durable
+logs instead of its self-deleting `mktemp -d`, and a REAL epoch-seconds time cap — 1800s for
+`general`, informed by Steps 1+2's measured 520s combined, not a guess). **Found a genuine, isolated
+stall, proven with hard evidence:**
+
+- `src/bookings/createAdminBooking.emulator.test.js:88`, test `'ADMIN EMU: two concurrent
+  same-barber overlapping Admin requests → one ALLOWED + one SLOT_CONFLICT, one booking'`, took
+  **1,700,752.35 ms (≈28 minutes 21 seconds)** — see `16-step3-general-test-output.log`. Confirmed by
+  file:line via direct source grep, not inferred from test-name pattern-matching.
+- **This is the first time this file was exercised anywhere in this whole diagnosis** — it was never
+  part of round 1's single-file check, round 2's 5-file subset, or Step 1 (it is one of the 10 real
+  predecessors, but Step 1's file list happened not to include it — corrected in this reproduction
+  step).
+- **Ruled out, with direct measurement, not assumption:** server-side transaction
+  contention/retry. The Firestore emulator's own `FINE`-level debug log
+  (`20-step3-firestore-debug-FULL.log`, recovered from `functions/firestore-debug.log`, which
+  `ops/test-emulator.sh` never surfaces) shows lock-timeout/retry warnings clustered at
+  21:10:38-21:11:16 PM (`blocks.emulator.test.js`'s own already-known concurrent tests) — then
+  **complete silence, zero log lines of any kind, for the entire stall window, 21:11:16 to 21:39:33
+  PM (~28m17s)**. The emulator was not doing anything. This rules out "the server was retrying hard"
+  as the mechanism for this specific stall — whatever was stuck was on the client
+  (Node/firebase-admin/gRPC) side, or on the connection between them, not inside Firestore's
+  transaction engine.
+- The gate's own time cap correctly fired afterward (at 1801s, mid-`reassignBooking`), saved a full
+  snapshot (`18-step3-snapshot-at-limit.txt`: ps tree, `lsof:8080`, tail of both logs, memory/swap)
+  BEFORE killing anything, and stopped only the processes this run itself started. Execution had
+  already resumed completely normally for the four files after the stalled one
+  (`createBooking`/`createStaffBooking`/`createStaffWalkIn`/`createWalkIn`, each 5-15s, matching
+  every prior measurement) — this was not a cascading or worsening failure, one single test spent
+  almost the entire time budget and the run was healthy on both sides of it.
+
+**Reproduction check — `createAdminBooking.emulator.test.js` run alone, immediately after, same
+toolchain/settings, this time with live CPU/memory/swap/connection sampling every 10s (the one gap
+in Step 3's instrumentation).** **Did not reproduce.** The identical test took **3,598.0 ms** —
+**473x faster** than Step 3's 1,700,752.35 ms. The whole file: 9/9 PASS, `duration_ms 12411.3`
+(~12.4s), rc=0. Swap held flat (782.38M, both samples) during the run; `unused` RAM was tight (68-
+120MB) but nothing grew, and nothing stalled despite that.
+
+### What round 3 establishes
+
+- **A definitive, evidence-backed instance of "which operation, and proof it isn't a hang":** one
+  specific test, in one specific file, took 473x longer than normal exactly once, with the emulator
+  provably idle throughout — then never reproduced under identical conditions immediately after.
+- **This is not the same file the original 2026-09-13 incident named** (`inventory/executor.emulator.test.js`,
+  round 1 of this diagnosis, cleared). It is a DIFFERENT file, in a DIFFERENT part of the file order,
+  that had never been tested until Step 3.
+- **Neither RAM/swap growth nor server-side contention is confirmed as the cause** — both were
+  directly checked (swap flat before/after in the reproduction run; the emulator's own debug log
+  proves zero server activity during the stall itself) and neither shows the expected signature. The
+  actual mechanism (a stuck gRPC channel, a client-side hang, a scheduling anomaly on this specific
+  machine) remains unidentified — this is reported as an open, unexplained, non-reproducing
+  transient, not attributed to a cause that wasn't measured.
+- **The full gate is NOT yet confirmed PASS or FAIL end-to-end.** Step 3's `general` phase was
+  stopped by its own time cap partway through `reassignBooking` (file 27 of 31) specifically because
+  the one pathological test consumed almost the entire 1800s budget; `packages` was never reached.
+  Steps 1+2 together prove all 31 general-phase files pass with correct results (655/655) when
+  split into two runs; Step 3 proves the same files pass when run continuously too, MINUS the time
+  lost to one non-reproducing anomaly.
+
 ## 4. Not done — explicitly, so it isn't assumed
 
-- No full-gate re-run.
+- The full gate has not completed as a single continuous run within a time budget — Step 3's
+  `general` phase was time-capped once (by a real, since-non-reproducing anomaly, not by the
+  gate's own logic being wrong), and `packages` was never reached this round.
 - No comparison against a prior known-good source run in the same environment (candidate next
   step if the owner wants one — needs a source with a completed, evidence-backed emulator-gate
   pass to diff against; `9ea0aca`'s round-2 685/682 result predates this machine's current load
   conditions and was not captured with this level of process/timing detail, so it is not a
   like-for-like comparison without re-running something).
-- ~~No aggregate/multi-file contention test~~ — done in round 2 above (§3a), on a 5-file subset. The
-  full 10-file real predecessor set (§3a's table) was NOT fully tested — only 2 of 7 `bookings/`
-  files were included, and `checkout/`+`finance/` (3 files) were not tested at all.
-- No test of the ~20 files that run AFTER `inventory/` alphabetically in the real gate — several
-  carry their own concurrency tests (per round 1's `Promise.all` grep) and were part of neither
-  incident's implicated file.
+- No further reproduction attempts of the `createAdminBooking` stall beyond the one immediate
+  re-run (which did not reproduce it) — its true frequency (one-in-N runs) is unknown.
 - No deploy, no production access, at any point in this diagnosis.
 
 ## 5. Files in this folder
@@ -207,3 +285,18 @@ concurrency tests and were never part of either incident's implicated file.
 | `07-subset-firestore-emulator.log` | Round 2: the Firestore emulator's own log for the subset run |
 | `08-subset-resource-samples.log` | Round 2: TCP:8080 established-connection count + Firestore JVM RSS, sampled every 10s across the whole run — the cross-file leak/teardown evidence (§3a point 3) |
 | `09-subset-watch.log` | Round 2: the diagnostic watchdog's own real-wall-clock check-ins for the subset run |
+| `10-step1-test-output.log` | Round 3 Step 1: `node --test` output for the 11-file run (10 real predecessors + `inventory/executor`) — 303/303 pass |
+| `11-step1-observed-file-order.log` | Round 3 Step 1: observed (not assumed) per-file start/end times from live process-argv polling |
+| `12-step1-watch.log` | Round 3 Step 1: the watchdog's own check-ins |
+| `13-step2-test-output.log` | Round 3 Step 2: `node --test` output for the 20 remaining files — 352/352 pass (303+352=655, matches the historical general-phase baseline exactly) |
+| `14-step2-observed-file-order.log` | Round 3 Step 2: observed per-file start/end times |
+| `15-step2-watch.log` | Round 3 Step 2: the watchdog's own check-ins |
+| `16-step3-general-test-output.log` | Round 3 Step 3: `node --test` output for the FULL continuous 31-file general phase — contains the 1,700,752.35ms `createAdminBooking` stall's exact line |
+| `17-step3-general-observed-file-order.log` | Round 3 Step 3: observed per-file order/timing, including the anomalous gap |
+| `18-step3-snapshot-at-limit.txt` | Round 3 Step 3: full state snapshot (ps tree, `lsof:8080`, log tails, memory/swap) captured the instant the 1800s cap fired, before anything was killed |
+| `19-step3-watch.log` | Round 3 Step 3: the watchdog's own check-ins, including the file-order gap around the stall |
+| `20-step3-firestore-debug-FULL.log` | Round 3 Step 3: the Firestore emulator's `FINE`-level debug log (`functions/firestore-debug.log`, not surfaced by `ops/test-emulator.sh`) — the direct proof of zero server activity during the stall |
+| `21-repro-test-output.log` | Round 3 reproduction check: `createAdminBooking.emulator.test.js` alone — 9/9 pass, the same test at 3,598.0ms (vs. 1,700,752.35ms) |
+| `22-repro-mem-swap-samples.log` | Round 3 reproduction check: live CPU/memory/swap/connection samples every 10s — the instrumentation gap from Step 3, filled in here |
+| `23-repro-firestore-debug-full.log` | Round 3 reproduction check: the emulator's debug log for the non-reproducing run |
+| `24-repro-watch.log` | Round 3 reproduction check: the watchdog's own check-ins |

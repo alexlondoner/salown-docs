@@ -1,0 +1,2 @@
+21:49:26 real_elapsed=10s java_cpu=2.7% test_cpu=1.2% established_conns=2 swap=782.38M | PhysMem: 7565M used (1567M wired, 1647M compressor), 68M unused.
+21:49:36 real_elapsed=21s java_cpu=0.0% test_cpu=0% established_conns=0 swap=782.38M | PhysMem: 7512M used (1568M wired, 1638M compressor), 120M unused.

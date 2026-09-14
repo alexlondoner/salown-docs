@@ -1,0 +1,138 @@
+=== last active file: src/bookings/reassignBooking.emulator.test.js (running 0s so far) ===
+=== ps tree ===
+41349 41343   0.0  1.2       30:04 S    node ./node_modules/.bin/firebase emulators:start --only firestore --project demo-c1 --config ../firebase.json
+41379 41349   0.7  3.4       30:02 Ss   java -Dgoogle.cloud_firestore.debug_log_level=FINE -Duser.language=en -jar /Users/alish/.cache/firebase/emulators/cloud-firestore-emulator-v1.22.0.jar --host 127.0.0.1 --port 8080 --websocket_port 9150 --database-edition standard --project_id demo-c1 --rules /private/tmp/claude-501/-Users-alish/a0fc27d4-d19d-4786-8504-8964dbf64aef/scratchpad/relws-diag3/salown-app/firestore.rules --single_project_mode true
+41387 41343   0.0  0.6       30:01 S    node --test --test-concurrency=1 src/bookings/blocks.emulator.test.js src/bookings/createAdminBooking.emulator.test.js src/bookings/createBooking.emulator.test.js src/bookings/createStaffBooking.emulator.test.js src/bookings/createStaffWalkIn.emulator.test.js src/bookings/createWalkIn.emulator.test.js src/bookings/reassignBooking.emulator.test.js src/checkout/checkoutSettings.emulator.test.js src/checkout/executor.emulator.test.js src/finance/periodClose.emulator.test.js src/inventory/executor.emulator.test.js src/inventory/reconcile.emulator.test.js src/parsers/importAssignment.emulator.test.js src/parsers/importWiring.emulator.test.js src/payments/connectOauth.emulator.test.js src/sales/productSaleCore.emulator.test.js src/staff/actorAccessGate.emulator.test.js src/staff/identity.emulator.test.js src/staff/lifecycleOffboard.emulator.test.js src/staff/lifecycleRehire.emulator.test.js src/staff/offboarding.emulator.test.js src/staff/provisionTeamMember.emulator.test.js src/staff/rotaArchive.emulator.test.js src/staff/rotaCallable.emulator.test.js src/staff/rotaOverride.emulator.test.js src/staff/rotaSeedImport.emulator.test.js src/staff/rotaWriter.emulator.test.js src/tenants/publishProfile.emulator.test.js src/treatmentSessions/integration.emulator.test.js src/treatmentSessions/sessions.emulator.test.js ../scripts/backfillPublicCampaign.emulator.test.cjs
+41723 41387   0.1  2.4       00:03 S    /usr/local/bin/node --test-concurrency=1 --heap-prof-interval=524288 --max-http-header-size=16384 --stack-trace-limit=10 --report-signal=SIGUSR2 --heapsnapshot-near-heap-limit=0 --tls-cipher-list=TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256:TLS_AES_128_GCM_SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-SHA256:DHE-RSA-AES128-SHA256:ECDHE-RSA-AES256-SHA384:DHE-RSA-AES256-SHA384:ECDHE-RSA-AES256-SHA256:DHE-RSA-AES256-SHA256:HIGH:!aNULL:!eNULL:!EXPORT:!DES:!RC4:!MD5:!PSK:!SRP:!CAMELLIA --watch-kill-signal=SIGTERM --inspect-publish-uid=stderr,http --cpu-prof-interval=1000 --test-coverage-functions=0 --test-timeout=0 --test-coverage-lines=0 --test-isolation=process --test-coverage-branches=0 --network-family-autoselection-attempt-timeout=250 --use-largepages=off --inspect-port=127.0.0.1:9229 --secure-heap-min=2 --v8-pool-size=4 --node-snapshot --trace-event-file-pattern=node_trace.${rotation}.log --secure-heap=0 src/bookings/reassignBooking.emulator.test.js
+=== lsof:8080 ===
+COMMAND   PID  USER   FD   TYPE             DEVICE SIZE/OFF NODE NAME
+java    41379 alish  138u  IPv6 0x45968416e22ad18b      0t0  TCP localhost:http-alt (LISTEN)
+java    41379 alish  139u  IPv6 0xb402d16f8005bf58      0t0  TCP localhost:http-alt->localhost:59671 (ESTABLISHED)
+node    41723 alish   16u  IPv4 0x9ce0f85e7f413f6d      0t0  TCP localhost:59671->localhost:http-alt (ESTABLISHED)
+=== node diagnostic report ===
+=== tail test log ===
+✔ STAFF EMU: audit fires STAFF_BOOKING_CREATED once (not ADMIN_BOOKING_CREATED), not on replay (27.080708ms)
+✔ STAFF EMU O1S: passive barber stays STAFF_UNAVAILABLE even for owner + overrideConflict (22.065833ms)
+✔ STAFF EMU O1S: barber on undated leave stays STAFF_UNAVAILABLE even for owner + overrideConflict (28.702916ms)
+✔ STAFF EMU O1S: a dated shiftChanges override beats leave with zero override flags (22.539ms)
+✔ STAFF EMU O1S: outside-shift override attempt by non-owner → OVERRIDE_REQUIRES_OWNER (21.25775ms)
+✔ STAFF EMU O1S: outside-shift override by owner + reason succeeds and audits dimensions.hours (30.773958ms)
+✔ STAFF EMU O1S: plain conflict returns SLOT_CONFLICT with conflictingRecordIds for preview (33.000666ms)
+✔ STAFF EMU O1S: owner override without acknowledgedConflictIds → CONFLICT_ACK_REQUIRED (37.842333ms)
+✔ STAFF EMU O1S: owner override with acknowledgedConflictIds + reason succeeds and audits dimensions.conflict (42.701166ms)
+✔ STAFF EMU O1S: conflict against a BLOCKED record → BLOCKED_TIME_CONFLICT, never overridable (26.594417ms)
+✔ STAFF EMU O1S: mixed booking+BLOCKED collision refuses the whole override, not just the BLOCKED part (38.051667ms)
+✔ STAFF EMU O1S: override fields on the ADMIN surface → INVALID_INPUT, Admin path untouched (4.916708ms)
+✔ STAFF EMU O1S CROSS-FLOW: New Booking vs concurrent Block Time (same barber/time) → exactly one lands (23.344667ms)
+✔ STAFF EMU O1S: a client-supplied `surface` field is rejected as forbidden input, never honored (7.213542ms)
+✔ STAFF EMU O1S: an actor object carrying an extra superAdmin flag but a non-owner role still gets OVERRIDE_REQUIRES_OWNER (19.754125ms)
+✔ STAFF EMU O1S: a verified tenant owner (no superAdmin claim) gets the normal owner override flow (17.421625ms)
+✔ STAFF WALKIN EMU: a policy-clean walk-in commits with the exact minute, walk-in shape, no override audit (306.528417ms)
+✔ STAFF WALKIN EMU: every recognized role — and a bare superAdmin claim — may create a policy-clean walk-in (114.61925ms)
+✔ STAFF WALKIN EMU: passive barber stays STAFF_PASSIVE for the owner with a full override request (24.205375ms)
+✔ STAFF WALKIN EMU: approved leave covering the day → STAFF_UNAVAILABLE for every role, override included (86.03875ms)
+✔ STAFF WALKIN EMU: only a DATED open shift override beats leave; a weekly shift does not; a closed override is off (68.2965ms)
+✔ STAFF WALKIN EMU: effective shift + 15-minute allowance; the salon closing time never clips a staff shift (96.647541ms)
+✔ STAFF WALKIN EMU: hours override — staff/admin/superAdmin-flavoured actors refused, the owner succeeds with an atomic audit (142.7945ms)
+✔ STAFF WALKIN EMU: hours are read on the TENANT calendar (Europe/Istanbul), not the platform default (40.2635ms)
+✔ STAFF WALKIN EMU: a real conflict is refused by default with the record ids; staff and admin cannot override it (84.548917ms)
+✔ STAFF WALKIN EMU: legacy name-keyed and partial overlaps conflict; boundary touch, other staff and settled records do not (56.480833ms)
+✔ STAFF WALKIN EMU: owner conflict override needs the exact acknowledged ids, then commits with an atomic audit (51.61125ms)
+✔ STAFF WALKIN EMU: a conflict that CHANGED since approval needs a fresh approval covering every current record (54.443916ms)
+✔ STAFF WALKIN EMU: BLOCKED time — alone or mixed with a booking — is never overridable, not even by the owner (57.450334ms)
+✔ STAFF WALKIN EMU: an owner override covering hours AND conflict records both dimensions in one row (26.7845ms)
+✔ STAFF WALKIN EMU: retrying a committed override (response lost) replays — one booking, one audit (38.865375ms)
+✔ STAFF WALKIN EMU: concurrent identical override submissions → one booking, one audit, one replay (2733.670125ms)
+✔ STAFF WALKIN EMU: the ADMIN surface (salownCreateWalkIn) keeps legacy parity and never accepts override fields (17.74475ms)
+✔ STAFF WALKIN EMU: a payload cannot choose its surface (2.686ms)
+✔ STAFF WALKIN EMU CROSS-FLOW: Walk-in vs concurrent New Booking (Staff App) → exactly one lands (72.827625ms)
+✔ STAFF WALKIN EMU CROSS-FLOW: Walk-in vs concurrent Block Time → exactly one lands; losing to a block is BLOCKED_TIME_CONFLICT (85.319208ms)
+✔ STAFF WALKIN EMU CROSS-FLOW: two different Staff walk-ins for the same barber/time → exactly one lands (7175.686ms)
+✔ STAFF WALKIN EMU CROSS-FLOW: an owner override approved for record A does not cover a New Booking landing concurrently (115.218083ms)
+✔ EMU: happy path (admin, active barber) → walkin booking, canonical barber id+name (242.97775ms)
+✔ EMU: passive barber → STAFF_PASSIVE, zero writes (22.0995ms)
+✔ EMU: name-based ref resolves to the doc-id (25.440167ms)
+✔ EMU: ambiguous normalized name → STAFF_AMBIGUOUS (doc-id still works) (34.6735ms)
+✔ EMU: unknown ref → STAFF_NOT_FOUND; unrecognized role → PERMISSION_DENIED (27.639625ms)
+✔ EMU: historical walk-in to a passive barber is allowed (history exempt) (22.592917ms)
+✔ EMU: same key + same payload concurrent → one booking, second replayed (3539.884042ms)
+✔ EMU: same key + different payload → IDEMPOTENCY_CONFLICT (36.328291ms)
+✔ EMU: idempotency is namespaced — same raw key, two different actors → both succeed (41.384958ms)
+✔ EMU: a foreign bookingRequests/{rawKey} does NOT collide with the derived walk-in id (25.454042ms)
+✔ EMU: empty serviceId → INVALID_INPUT; unknown service → SERVICE_NOT_FOUND (21.041417ms)
+✔ EMU: cross-tenant service is invisible → SERVICE_NOT_FOUND (tenant isolation) (26.913084ms)
+✔ EMU: service NAME is authoritative from the doc (overrides a wrong input serviceName) (25.652083ms)
+✔ EMU: soldAddOns persists the exact legacy-normalized shape for valid input (32.329ms)
+✔ EMU: malformed monetary/quantity add-on field → INVALID_INPUT (fail closed, not coerced) (10.087833ms)
+✔ EMU: compat `barber` is the normalized key (mixed case + diacritic); identity is barberId (26.540375ms)
+✔ EMU: duplicate display names → distinct barberId identity, same legacy grouping key (52.150208ms)
+✔ EMU: audit fires once on create, NOT on replay; a denied create audits nothing (46.347458ms)
+✔ EMU: deactivate-vs-create race → ok OR STAFF_PASSIVE, always atomic (x8 rounds) (177.834083ms)
+✔ EMU: passive→active reassignment succeeds; only barber fields change (251.69ms)
+✔ EMU: reassigning a FLAGGED import booking RESOLVES the flag atomically (O1P) (27.556875ms)
+✔ EMU: active→passive reassignment fails (STAFF_PASSIVE); booking unchanged (25.627167ms)
+✔ EMU: CANCELLED booking → BOOKING_NOT_REASSIGNABLE even for an owner (untouched) (24.611333ms)
+✔ EMU: NO_SHOW booking → BOOKING_NOT_REASSIGNABLE even for an owner (untouched) (26.414708ms)
+✔ EMU: BLOCKED booking → BOOKING_NOT_REASSIGNABLE even for an owner (untouched) (24.495792ms)
+✔ EMU: CHECKED_OUT today + admin → corrected; ONLY barber fields + lastReassignment move (32.874292ms)
+✔ EMU: the correction writes exactly ONE audit row, in the same commit (32.897458ms)
+✔ EMU: an ordinary (unresolved) reassignment keeps its own audit action (29.478708ms)
+✔ EMU: CHECKED_OUT + plain staff → BOOKING_REASSIGN_ADMIN_REQUIRED (untouched, no audit) (22.304958ms)
+✔ EMU: that SAME staffer may still reassign an UNRESOLVED booking (no regression) (23.872291ms)
+✔ EMU: owner and superAdmin may both correct; superAdmin needs no privileged role (43.400917ms)
+✔ EMU: a sale CHECKED OUT yesterday → BOOKING_REASSIGN_TODAY_ONLY (closed books never move) (24.056375ms)
+✔ EMU: the window follows the SALE, not the appointment (28.091334ms)
+✔ EMU: the reverse — today's appointment whose sale was rung up yesterday (17.80975ms)
+✔ EMU: a completed sale with NO checkout instant fails closed, under its own code (21.017625ms)
+✔ EMU: CHECKED_OUT dated TOMORROW → BOOKING_REASSIGN_TODAY_ONLY (not just historical) (23.678041ms)
+✔ EMU: a PASSIVE target is refused on a same-day correction, with zero writes (25.505084ms)
+✔ EMU: a passive target is refused EVEN when the appointment is historical (25.256041ms)
+✔ EMU: the shared helper is UNCHANGED — passive + historical is still assignable to it (0.49775ms)
+✔ EMU: an ACTIVE target on the same day is still allowed (23.015292ms)
+✔ EMU: a target on LEAVE is allowed — a dated absence is not a departure (22.282209ms)
+✔ EMU: an UNRECOGNISED status fails closed, where barberStatusOf would read it as active (26.0155ms)
+✔ EMU: active:false is refused; a LEGACY doc with no status field is allowed (31.828375ms)
+✔ EMU: a target deactivated between attempts is refused on the retry, not committed (29.884333ms)
+✔ EMU: the UNRESOLVED lane keeps the old target rules exactly (34.479917ms)
+✔ EMU: the window is decided in the TENANT timezone, not the platform default (32.714583ms)
+✔ EMU: the SAME instants are out of window for a London tenant (17.396458ms)
+✔ EMU: a MISSING settings document falls back to the resolver default, not to a failure (22.67225ms)
+✔ EMU: a MALFORMED presentation contract also falls back, rather than guessing (24.685625ms)
+✔ EMU: every parity case classifies exactly as the shared fixture says (185.741209ms)
+✔ EMU: a plain staffer on a HISTORICAL checked-out booking is told ADMIN_REQUIRED first (14.754ms)
+✔ EMU: correcting onto the SAME barber → BARBER_UNCHANGED (no hollow audit row) (36.497834ms)
+✔ EMU: a passive TARGET is still refused on the correction lane (21.873042ms)
+✔ EMU: correctionReason is validated, and unknown fields are still refused (8.54475ms)
+✔ EMU: historical booking → BOOKING_HISTORICAL (untouched) (17.067375ms)
+✔ EMU: name-based newBarberRef resolves; ambiguous name fails closed (38.782709ms)
+✔ EMU: unknown booking → BOOKING_NOT_FOUND; unrecognized role → PERMISSION_DENIED (23.222542ms)
+✔ EMU: idempotency — same key + same request → one apply, second replayed (28.239334ms)
+✔ EMU: deactivate-vs-reassign race → ok OR STAFF_PASSIVE, consistent (x8 rounds) (169.809125ms)
+
+Writing Node.js report to file: report.20260914.214033.41723.0.001.json
+Node.js report completed
+=== tail emulator log ===
+i  emulators: Starting emulators: firestore
+i  emulators: Detected demo project ID "demo-c1", emulated services will use a demo configuration and attempts to access non-emulated services for this project will fail.
+i  firestore: Firestore Emulator logging to firestore-debug.log
+✔  firestore: Firestore Emulator was started in standard edition.
+✔  firestore: Firestore Emulator UI websocket is running on 9150.
+
+[90m┌─────────────────────────────────────────────────────────────┐[39m
+[90m│[39m ✔  All emulators ready! It is now safe to connect your app. [90m│[39m
+[90m│[39m i  View Emulator UI at http://127.0.0.1:4000/               [90m│[39m
+[90m└─────────────────────────────────────────────────────────────┘[39m
+
+[90m┌───────────[39m[90m┬────────────────[39m[90m┬─────────────────────────────────┐[39m
+[90m│[39m[33m Emulator  [39m[90m│[39m[33m Host:Port      [39m[90m│[39m[33m View in Emulator UI             [39m[90m│[39m
+[90m├───────────[39m[90m┼────────────────[39m[90m┼─────────────────────────────────┤[39m
+[90m│[39m Firestore [90m│[39m 127.0.0.1:8080 [90m│[39m http://127.0.0.1:4000/firestore [90m│[39m
+[90m└───────────[39m[90m┴────────────────[39m[90m┴─────────────────────────────────┘[39m
+  Emulator Hub host: 127.0.0.1 port: 4400
+  Other reserved ports: 4500, 9150
+
+Issues? Report them at https://github.com/firebase/firebase-tools/issues and attach the *-debug.log files.
+ 
+=== swap/mem ===
+PhysMem: 7563M used (1298M wired, 1785M compressor), 68M unused.
+vm.swapusage: total = 2048.00M  used = 782.38M  free = 1265.62M  (encrypted)

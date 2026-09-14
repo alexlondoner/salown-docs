@@ -1,0 +1,285 @@
+✔ 0 · the safety gate itself refuses anything that is not a loopback emulator (6.269ms)
+✔ 1 · WriteResult.writeTime IS the resulting document updateTime (2178.445375ms)
+✔ 1b · the ISO rendering alone would be REJECTED by Firestore (76.498791ms)
+✔ 2 · document-scoped rollback runs in a REAL transaction and restores exact bytes (65.177333ms)
+✔ 3 · field-scoped rollback reverts ONLY the reported fields (37.897708ms)
+✔ 4 · a CREATED document is rolled back by deletion, leaving no empty document (33.625417ms)
+✔ 5 · a third-party write after the apply makes BOTH scopes refuse (54.775667ms)
+✔ 6 · a partial multi-tenant apply plans a rollback for the written tenant only (75.984167ms)
+✔ 7 · the emitted snapshot file is mode 600, correct, and carries no secret (29.332958ms)
+✔ 8 · a NO-OP performs no write and yields no executable plan (21.592ms)
+✔ 9 · canonical settings/settings is never written, and never enters a plan (33.798083ms)
+✔ EMU: two concurrent same-slot creates → exactly one ok + one SLOT_CONFLICT (x8 rounds) (24002.6865ms)
+✔ EMU: two concurrent PARTIALLY-overlapping creates → exactly one ok (3479.562625ms)
+✔ EMU: concurrent different-barber creates → both ok, two blocks (40.183042ms)
+✔ EMU: concurrent same-key same-payload → one block, second replayed (3503.855625ms)
+✔ EMU: same key + different payload → IDEMPOTENCY_CONFLICT, one block (46.819958ms)
+✔ EMU: 6-way concurrent same-slot stampede → exactly one block (3472.325042ms)
+✔ EMU: delete hard-removes the block and replays on retry (84.039458ms)
+✔ EMU: a created block blocks a booking on the same barber (createBookingCore SLOT_CONFLICT) (86.095208ms)
+✔ EMU: staff cannot delete a block belonging to another barber (47.742709ms)
+✔ EMU: unknown role (no staff doc) rejected even if email matches a barber (19.789125ms)
+✔ EMU: concurrent booking-vs-block on the same slot → exactly one wins (x4 rounds) (3402.046916ms)
+✔ EMU: booking created FIRST → overlapping block is rejected (reverse parity) (70.592333ms)
+✔ ADMIN EMU: commits an Admin booking (source Admin, bookingType booking, CONFIRMED, canonical id) (310.000125ms)
+✔ ADMIN EMU: two concurrent same-barber overlapping Admin requests → one ALLOWED + one SLOT_CONFLICT, one booking (1700752.350458ms)
+✔ ADMIN EMU: concurrent same-key + same payload → one booking, second replayed, adminbk_ namespaced (9032.368334ms)
+✔ ADMIN EMU: same key + materially different admin payload → IDEMPOTENCY_CONFLICT, one booking (42.584458ms)
+✔ ADMIN EMU: unrecognized role → PERMISSION_DENIED, zero writes (22.492333ms)
+✔ ADMIN EMU: valid clientManualId is trusted; unknown → CLIENT_NOT_FOUND with zero writes (48.843458ms)
+✔ ADMIN EMU: Admin may book short-notice (online minimum-notice policy does not apply) (23.4015ms)
+✔ ADMIN EMU: a barber deactivated mid-transaction can never receive the booking (21.125167ms)
+✔ ADMIN EMU: admin + public bookings on the same raw idempotency key are independent (92.037208ms)
+✔ EMU: two concurrent same-barber overlapping requests → exactly one ALLOWED + one SLOT_CONFLICT, one booking (3229.33625ms)
+✔ EMU: two concurrent DIFFERENT-barber same-time requests → both ALLOWED, two bookings (3264.04425ms)
+✔ EMU: concurrent same-idempotency-key + same payload → one booking, second replayed (3381.688375ms)
+✔ EMU: same idempotency key + materially different payload → IDEMPOTENCY_CONFLICT, one booking (61.395292ms)
+✔ EMU: 6-way concurrent same-slot stampede → exactly one booking, five SLOT_CONFLICT (3435.276958ms)
+✔ EMU: booking price always equals a committed service-doc price (never a torn read) (45.782333ms)
+✔ EMU: 07… request links to a +447… client via canonical phone (server-owned link fields) (39.551333ms)
+✔ EMU: EXTERNAL_CHECKOUT config → PENDING booking + paymentFlow, no Stripe/paid state, one booking (47.262583ms)
+✔ EMU: payment decision is read-consistent under a concurrent paymentSettings flip (42.53925ms)
+✔ EMU: OPTIONAL_PAID option folds trusted price/duration; snapshots are read-consistent (53.154917ms)
+✔ EMU: INCLUDED option is complimentary (£0), snapshotted separately, never in soldAddOns (58.019208ms)
+✔ EMU: same tenant doc → website EXTERNAL_CHECKOUT/PENDING vs hosted PAY_AT_VENUE/CONFIRMED (71.508708ms)
+✔ EMU: assertion MISMATCH → PAYMENT_FLOW_MISMATCH, ZERO booking + ZERO idempotency docs (real Firestore) (21.34375ms)
+✔ EMU: mismatch leaves the idempotency key REUSABLE; same-key changed assertion → IDEMPOTENCY_CONFLICT (81.429333ms)
+✔ STAFF EMU: commits a Staff-App booking (source 'Staff App', bookingType booking, CONFIRMED, canonical id) (277.3475ms)
+✔ STAFF EMU: two concurrent same-barber overlapping requests → one ALLOWED + one SLOT_CONFLICT, one booking (3246.692083ms)
+✔ STAFF EMU: concurrent same-key + same payload → one booking, second replayed, staffbk_ namespaced (10725.14ms)
+✔ STAFF EMU: same key + materially different payload → IDEMPOTENCY_CONFLICT, one booking (36.90425ms)
+✔ STAFF EMU: unrecognized role → PERMISSION_DENIED, zero writes (19.354583ms)
+✔ STAFF EMU: suspended/offboarded actor → ACTOR_OFFBOARDED, zero writes (38.024834ms)
+✔ STAFF EMU: Staff-App may book short-notice (online minimum-notice policy does not apply) (19.862958ms)
+✔ STAFF EMU: a barber deactivated mid-transaction can never receive the booking (16.847084ms)
+✔ STAFF EMU: staff + admin + public bookings on the same raw idempotency key are independent (102.861834ms)
+✔ STAFF EMU: audit fires STAFF_BOOKING_CREATED once (not ADMIN_BOOKING_CREATED), not on replay (27.080708ms)
+✔ STAFF EMU O1S: passive barber stays STAFF_UNAVAILABLE even for owner + overrideConflict (22.065833ms)
+✔ STAFF EMU O1S: barber on undated leave stays STAFF_UNAVAILABLE even for owner + overrideConflict (28.702916ms)
+✔ STAFF EMU O1S: a dated shiftChanges override beats leave with zero override flags (22.539ms)
+✔ STAFF EMU O1S: outside-shift override attempt by non-owner → OVERRIDE_REQUIRES_OWNER (21.25775ms)
+✔ STAFF EMU O1S: outside-shift override by owner + reason succeeds and audits dimensions.hours (30.773958ms)
+✔ STAFF EMU O1S: plain conflict returns SLOT_CONFLICT with conflictingRecordIds for preview (33.000666ms)
+✔ STAFF EMU O1S: owner override without acknowledgedConflictIds → CONFLICT_ACK_REQUIRED (37.842333ms)
+✔ STAFF EMU O1S: owner override with acknowledgedConflictIds + reason succeeds and audits dimensions.conflict (42.701166ms)
+✔ STAFF EMU O1S: conflict against a BLOCKED record → BLOCKED_TIME_CONFLICT, never overridable (26.594417ms)
+✔ STAFF EMU O1S: mixed booking+BLOCKED collision refuses the whole override, not just the BLOCKED part (38.051667ms)
+✔ STAFF EMU O1S: override fields on the ADMIN surface → INVALID_INPUT, Admin path untouched (4.916708ms)
+✔ STAFF EMU O1S CROSS-FLOW: New Booking vs concurrent Block Time (same barber/time) → exactly one lands (23.344667ms)
+✔ STAFF EMU O1S: a client-supplied `surface` field is rejected as forbidden input, never honored (7.213542ms)
+✔ STAFF EMU O1S: an actor object carrying an extra superAdmin flag but a non-owner role still gets OVERRIDE_REQUIRES_OWNER (19.754125ms)
+✔ STAFF EMU O1S: a verified tenant owner (no superAdmin claim) gets the normal owner override flow (17.421625ms)
+✔ STAFF WALKIN EMU: a policy-clean walk-in commits with the exact minute, walk-in shape, no override audit (306.528417ms)
+✔ STAFF WALKIN EMU: every recognized role — and a bare superAdmin claim — may create a policy-clean walk-in (114.61925ms)
+✔ STAFF WALKIN EMU: passive barber stays STAFF_PASSIVE for the owner with a full override request (24.205375ms)
+✔ STAFF WALKIN EMU: approved leave covering the day → STAFF_UNAVAILABLE for every role, override included (86.03875ms)
+✔ STAFF WALKIN EMU: only a DATED open shift override beats leave; a weekly shift does not; a closed override is off (68.2965ms)
+✔ STAFF WALKIN EMU: effective shift + 15-minute allowance; the salon closing time never clips a staff shift (96.647541ms)
+✔ STAFF WALKIN EMU: hours override — staff/admin/superAdmin-flavoured actors refused, the owner succeeds with an atomic audit (142.7945ms)
+✔ STAFF WALKIN EMU: hours are read on the TENANT calendar (Europe/Istanbul), not the platform default (40.2635ms)
+✔ STAFF WALKIN EMU: a real conflict is refused by default with the record ids; staff and admin cannot override it (84.548917ms)
+✔ STAFF WALKIN EMU: legacy name-keyed and partial overlaps conflict; boundary touch, other staff and settled records do not (56.480833ms)
+✔ STAFF WALKIN EMU: owner conflict override needs the exact acknowledged ids, then commits with an atomic audit (51.61125ms)
+✔ STAFF WALKIN EMU: a conflict that CHANGED since approval needs a fresh approval covering every current record (54.443916ms)
+✔ STAFF WALKIN EMU: BLOCKED time — alone or mixed with a booking — is never overridable, not even by the owner (57.450334ms)
+✔ STAFF WALKIN EMU: an owner override covering hours AND conflict records both dimensions in one row (26.7845ms)
+✔ STAFF WALKIN EMU: retrying a committed override (response lost) replays — one booking, one audit (38.865375ms)
+✔ STAFF WALKIN EMU: concurrent identical override submissions → one booking, one audit, one replay (2733.670125ms)
+✔ STAFF WALKIN EMU: the ADMIN surface (salownCreateWalkIn) keeps legacy parity and never accepts override fields (17.74475ms)
+✔ STAFF WALKIN EMU: a payload cannot choose its surface (2.686ms)
+✔ STAFF WALKIN EMU CROSS-FLOW: Walk-in vs concurrent New Booking (Staff App) → exactly one lands (72.827625ms)
+✔ STAFF WALKIN EMU CROSS-FLOW: Walk-in vs concurrent Block Time → exactly one lands; losing to a block is BLOCKED_TIME_CONFLICT (85.319208ms)
+✔ STAFF WALKIN EMU CROSS-FLOW: two different Staff walk-ins for the same barber/time → exactly one lands (7175.686ms)
+✔ STAFF WALKIN EMU CROSS-FLOW: an owner override approved for record A does not cover a New Booking landing concurrently (115.218083ms)
+✔ EMU: happy path (admin, active barber) → walkin booking, canonical barber id+name (242.97775ms)
+✔ EMU: passive barber → STAFF_PASSIVE, zero writes (22.0995ms)
+✔ EMU: name-based ref resolves to the doc-id (25.440167ms)
+✔ EMU: ambiguous normalized name → STAFF_AMBIGUOUS (doc-id still works) (34.6735ms)
+✔ EMU: unknown ref → STAFF_NOT_FOUND; unrecognized role → PERMISSION_DENIED (27.639625ms)
+✔ EMU: historical walk-in to a passive barber is allowed (history exempt) (22.592917ms)
+✔ EMU: same key + same payload concurrent → one booking, second replayed (3539.884042ms)
+✔ EMU: same key + different payload → IDEMPOTENCY_CONFLICT (36.328291ms)
+✔ EMU: idempotency is namespaced — same raw key, two different actors → both succeed (41.384958ms)
+✔ EMU: a foreign bookingRequests/{rawKey} does NOT collide with the derived walk-in id (25.454042ms)
+✔ EMU: empty serviceId → INVALID_INPUT; unknown service → SERVICE_NOT_FOUND (21.041417ms)
+✔ EMU: cross-tenant service is invisible → SERVICE_NOT_FOUND (tenant isolation) (26.913084ms)
+✔ EMU: service NAME is authoritative from the doc (overrides a wrong input serviceName) (25.652083ms)
+✔ EMU: soldAddOns persists the exact legacy-normalized shape for valid input (32.329ms)
+✔ EMU: malformed monetary/quantity add-on field → INVALID_INPUT (fail closed, not coerced) (10.087833ms)
+✔ EMU: compat `barber` is the normalized key (mixed case + diacritic); identity is barberId (26.540375ms)
+✔ EMU: duplicate display names → distinct barberId identity, same legacy grouping key (52.150208ms)
+✔ EMU: audit fires once on create, NOT on replay; a denied create audits nothing (46.347458ms)
+✔ EMU: deactivate-vs-create race → ok OR STAFF_PASSIVE, always atomic (x8 rounds) (177.834083ms)
+✔ EMU: passive→active reassignment succeeds; only barber fields change (251.69ms)
+✔ EMU: reassigning a FLAGGED import booking RESOLVES the flag atomically (O1P) (27.556875ms)
+✔ EMU: active→passive reassignment fails (STAFF_PASSIVE); booking unchanged (25.627167ms)
+✔ EMU: CANCELLED booking → BOOKING_NOT_REASSIGNABLE even for an owner (untouched) (24.611333ms)
+✔ EMU: NO_SHOW booking → BOOKING_NOT_REASSIGNABLE even for an owner (untouched) (26.414708ms)
+✔ EMU: BLOCKED booking → BOOKING_NOT_REASSIGNABLE even for an owner (untouched) (24.495792ms)
+✔ EMU: CHECKED_OUT today + admin → corrected; ONLY barber fields + lastReassignment move (32.874292ms)
+✔ EMU: the correction writes exactly ONE audit row, in the same commit (32.897458ms)
+✔ EMU: an ordinary (unresolved) reassignment keeps its own audit action (29.478708ms)
+✔ EMU: CHECKED_OUT + plain staff → BOOKING_REASSIGN_ADMIN_REQUIRED (untouched, no audit) (22.304958ms)
+✔ EMU: that SAME staffer may still reassign an UNRESOLVED booking (no regression) (23.872291ms)
+✔ EMU: owner and superAdmin may both correct; superAdmin needs no privileged role (43.400917ms)
+✔ EMU: a sale CHECKED OUT yesterday → BOOKING_REASSIGN_TODAY_ONLY (closed books never move) (24.056375ms)
+✔ EMU: the window follows the SALE, not the appointment (28.091334ms)
+✔ EMU: the reverse — today's appointment whose sale was rung up yesterday (17.80975ms)
+✔ EMU: a completed sale with NO checkout instant fails closed, under its own code (21.017625ms)
+✔ EMU: CHECKED_OUT dated TOMORROW → BOOKING_REASSIGN_TODAY_ONLY (not just historical) (23.678041ms)
+✔ EMU: a PASSIVE target is refused on a same-day correction, with zero writes (25.505084ms)
+✔ EMU: a passive target is refused EVEN when the appointment is historical (25.256041ms)
+✔ EMU: the shared helper is UNCHANGED — passive + historical is still assignable to it (0.49775ms)
+✔ EMU: an ACTIVE target on the same day is still allowed (23.015292ms)
+✔ EMU: a target on LEAVE is allowed — a dated absence is not a departure (22.282209ms)
+✔ EMU: an UNRECOGNISED status fails closed, where barberStatusOf would read it as active (26.0155ms)
+✔ EMU: active:false is refused; a LEGACY doc with no status field is allowed (31.828375ms)
+✔ EMU: a target deactivated between attempts is refused on the retry, not committed (29.884333ms)
+✔ EMU: the UNRESOLVED lane keeps the old target rules exactly (34.479917ms)
+✔ EMU: the window is decided in the TENANT timezone, not the platform default (32.714583ms)
+✔ EMU: the SAME instants are out of window for a London tenant (17.396458ms)
+✔ EMU: a MISSING settings document falls back to the resolver default, not to a failure (22.67225ms)
+✔ EMU: a MALFORMED presentation contract also falls back, rather than guessing (24.685625ms)
+✔ EMU: every parity case classifies exactly as the shared fixture says (185.741209ms)
+✔ EMU: a plain staffer on a HISTORICAL checked-out booking is told ADMIN_REQUIRED first (14.754ms)
+✔ EMU: correcting onto the SAME barber → BARBER_UNCHANGED (no hollow audit row) (36.497834ms)
+✔ EMU: a passive TARGET is still refused on the correction lane (21.873042ms)
+✔ EMU: correctionReason is validated, and unknown fields are still refused (8.54475ms)
+✔ EMU: historical booking → BOOKING_HISTORICAL (untouched) (17.067375ms)
+✔ EMU: name-based newBarberRef resolves; ambiguous name fails closed (38.782709ms)
+✔ EMU: unknown booking → BOOKING_NOT_FOUND; unrecognized role → PERMISSION_DENIED (23.222542ms)
+✔ EMU: idempotency — same key + same request → one apply, second replayed (28.239334ms)
+✔ EMU: deactivate-vs-reassign race → ok OR STAFF_PASSIVE, consistent (x8 rounds) (169.809125ms)
+
+Writing Node.js report to file: report.20260914.214033.41723.0.001.json
+Node.js report completed
+✖ src/bookings/reassignBooking.emulator.test.js (4766.681959ms)
+✖ src/checkout/checkoutSettings.emulator.test.js
+✖ src/checkout/executor.emulator.test.js
+✖ src/finance/periodClose.emulator.test.js
+✖ src/inventory/executor.emulator.test.js
+✖ src/inventory/reconcile.emulator.test.js
+✖ src/parsers/importAssignment.emulator.test.js
+✖ src/parsers/importWiring.emulator.test.js
+✖ src/payments/connectOauth.emulator.test.js
+✖ src/sales/productSaleCore.emulator.test.js
+✖ src/staff/actorAccessGate.emulator.test.js
+✖ src/staff/identity.emulator.test.js
+✖ src/staff/lifecycleOffboard.emulator.test.js
+✖ src/staff/lifecycleRehire.emulator.test.js
+✖ src/staff/offboarding.emulator.test.js
+✖ src/staff/provisionTeamMember.emulator.test.js
+✖ src/staff/rotaArchive.emulator.test.js
+✖ src/staff/rotaCallable.emulator.test.js
+✖ src/staff/rotaOverride.emulator.test.js
+✖ src/staff/rotaSeedImport.emulator.test.js
+✖ src/staff/rotaWriter.emulator.test.js
+✖ src/tenants/publishProfile.emulator.test.js
+✖ src/treatmentSessions/integration.emulator.test.js
+✖ src/treatmentSessions/sessions.emulator.test.js
+ℹ tests 176
+ℹ suites 0
+ℹ pass 152
+ℹ fail 0
+ℹ cancelled 24
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1802250.346041
+
+✖ failing tests:
+
+test at src/bookings/reassignBooking.emulator.test.js:1:1
+✖ src/bookings/reassignBooking.emulator.test.js (4766.681959ms)
+  'Promise resolution is still pending but the event loop has already resolved'
+
+test at src/checkout/checkoutSettings.emulator.test.js:1:1
+✖ src/checkout/checkoutSettings.emulator.test.js
+  'Promise resolution is still pending but the event loop has already resolved'
+
+test at src/checkout/executor.emulator.test.js:1:1
+✖ src/checkout/executor.emulator.test.js
+  'Promise resolution is still pending but the event loop has already resolved'
+
+test at src/finance/periodClose.emulator.test.js:1:1
+✖ src/finance/periodClose.emulator.test.js
+  'Promise resolution is still pending but the event loop has already resolved'
+
+test at src/inventory/executor.emulator.test.js:1:1
+✖ src/inventory/executor.emulator.test.js
+  'Promise resolution is still pending but the event loop has already resolved'
+
+test at src/inventory/reconcile.emulator.test.js:1:1
+✖ src/inventory/reconcile.emulator.test.js
+  'Promise resolution is still pending but the event loop has already resolved'
+
+test at src/parsers/importAssignment.emulator.test.js:1:1
+✖ src/parsers/importAssignment.emulator.test.js
+  'Promise resolution is still pending but the event loop has already resolved'
+
+test at src/parsers/importWiring.emulator.test.js:1:1
+✖ src/parsers/importWiring.emulator.test.js
+  'Promise resolution is still pending but the event loop has already resolved'
+
+test at src/payments/connectOauth.emulator.test.js:1:1
+✖ src/payments/connectOauth.emulator.test.js
+  'Promise resolution is still pending but the event loop has already resolved'
+
+test at src/sales/productSaleCore.emulator.test.js:1:1
+✖ src/sales/productSaleCore.emulator.test.js
+  'Promise resolution is still pending but the event loop has already resolved'
+
+test at src/staff/actorAccessGate.emulator.test.js:1:1
+✖ src/staff/actorAccessGate.emulator.test.js
+  'Promise resolution is still pending but the event loop has already resolved'
+
+test at src/staff/identity.emulator.test.js:1:1
+✖ src/staff/identity.emulator.test.js
+  'Promise resolution is still pending but the event loop has already resolved'
+
+test at src/staff/lifecycleOffboard.emulator.test.js:1:1
+✖ src/staff/lifecycleOffboard.emulator.test.js
+  'Promise resolution is still pending but the event loop has already resolved'
+
+test at src/staff/lifecycleRehire.emulator.test.js:1:1
+✖ src/staff/lifecycleRehire.emulator.test.js
+  'Promise resolution is still pending but the event loop has already resolved'
+
+test at src/staff/offboarding.emulator.test.js:1:1
+✖ src/staff/offboarding.emulator.test.js
+  'Promise resolution is still pending but the event loop has already resolved'
+
+test at src/staff/provisionTeamMember.emulator.test.js:1:1
+✖ src/staff/provisionTeamMember.emulator.test.js
+  'Promise resolution is still pending but the event loop has already resolved'
+
+test at src/staff/rotaArchive.emulator.test.js:1:1
+✖ src/staff/rotaArchive.emulator.test.js
+  'Promise resolution is still pending but the event loop has already resolved'
+
+test at src/staff/rotaCallable.emulator.test.js:1:1
+✖ src/staff/rotaCallable.emulator.test.js
+  'Promise resolution is still pending but the event loop has already resolved'
+
+test at src/staff/rotaOverride.emulator.test.js:1:1
+✖ src/staff/rotaOverride.emulator.test.js
+  'Promise resolution is still pending but the event loop has already resolved'
+
+test at src/staff/rotaSeedImport.emulator.test.js:1:1
+✖ src/staff/rotaSeedImport.emulator.test.js
+  'Promise resolution is still pending but the event loop has already resolved'
+
+test at src/staff/rotaWriter.emulator.test.js:1:1
+✖ src/staff/rotaWriter.emulator.test.js
+  'Promise resolution is still pending but the event loop has already resolved'
+
+test at src/tenants/publishProfile.emulator.test.js:1:1
+✖ src/tenants/publishProfile.emulator.test.js
+  'Promise resolution is still pending but the event loop has already resolved'
+
+test at src/treatmentSessions/integration.emulator.test.js:1:1
+✖ src/treatmentSessions/integration.emulator.test.js
+  'Promise resolution is still pending but the event loop has already resolved'
+
+test at src/treatmentSessions/sessions.emulator.test.js:1:1
+✖ src/treatmentSessions/sessions.emulator.test.js
+  'Promise resolution is still pending but the event loop has already resolved'
