@@ -81,7 +81,7 @@ export interface Dataset {
 
 export const monthOf = (day: string): MonthKey => day.slice(0, 7)
 
-// ── Fee attribution (the UNAPPROVED fee-day assumption lives only here) ──────
+// ── Fee attribution — owner decision 2026-09-15: checkout day ('service'); 'payment' is a comparison view ──
 
 export type Attribution =
   | { kind: 'day'; day: string }

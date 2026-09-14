@@ -143,7 +143,10 @@ where the fee and the refund land:
 - **D** is the bank's view. It is the right basis for **reconciling the bank**, not for P&L. It needs payout records that
   no writer produces yet.
 
-**Recommended split for the owner to confirm:** fees on the **service day** (A); refunds on the **service day while that
+**Owner decision 2026-09-15:** a fee is recorded on **the day the customer came — the checkout day** (option A). Payment
+day (B) and payout day (D) are not used for the fee in P&L. The refund-day and cancelled-booking rows below remain open.
+
+**Original recommendation (kept for the record):** fees on the **service day** (A); refunds on the **service day while that
 month is open, otherwise the refund day in the first open month** (A with C as fallback); bank reconciliation on the
 **payout arrival day** (D) as a separate view once payouts are recorded.
 
@@ -154,7 +157,8 @@ switched on this becomes routine. Proposal: book that fee on the **cancellation 
 
 ## 4 · Decisions needed before B2 is built
 
-1. Fee day: A (service) or B (payment) — §3.
+1. ~~Fee day: A (service) or B (payment)~~ — **decided 2026-09-15: the day the customer came = checkout day (A).** Still
+   open under it: a checkout recorded on a different calendar day from the booking's start time.
 2. Refund day rule, including closed months — §3.
 3. The cancelled-and-refunded fee case — §3.
 4. Whether Bank Balance should show Online at net in B2 (§2.2) or wait for payout data.

@@ -96,9 +96,9 @@ function PrototypeBar(props: {
     <div style={{ background: '#0b1220', color: '#e2e8f0', fontFamily: "ui-monospace,SFMono-Regular,Menlo,monospace", fontSize: '0.68rem', padding: '8px 20px', display: 'flex', flexWrap: 'wrap', gap: '6px 14px', alignItems: 'center', position: 'sticky', top: 0, zIndex: 10 }}>
       <strong style={{ color: '#22d3ee' }}>PROTOTYPE</strong>
       <span>synthetic data · not connected to any account · not product copy</span>
-      <span style={{ marginLeft: 'auto' }}>fee day (assumption, undecided):</span>
-      <button style={btn(props.assumption === 'service')} onClick={() => props.setAssumption('service')}>service day</button>
-      <button style={btn(props.assumption === 'payment')} onClick={() => props.setAssumption('payment')}>payment day</button>
+      <span style={{ marginLeft: 'auto' }}>fee day:</span>
+      <button style={btn(props.assumption === 'service')} onClick={() => props.setAssumption('service')}>checkout day (owner decision)</button>
+      <button style={btn(props.assumption === 'payment')} onClick={() => props.setAssumption('payment')}>payment day (comparison)</button>
       <span>design notes:</span>
       <button style={btn(props.notes)} onClick={() => props.setNotes(!props.notes)}>{props.notes ? 'on' : 'off'}</button>
       <button style={btn(false)} onClick={() => props.setTheme(props.theme === 'light' ? 'dark' : 'light')}>{props.theme === 'light' ? 'dark' : 'light'}</button>
@@ -109,7 +109,8 @@ function PrototypeBar(props: {
 function AssumptionNotes({ assumption }: { assumption: FeeDayAssumption }) {
   return (
     <Note>
-      Fee day is placed by <b>{assumption === 'service' ? 'SERVICE DAY' : 'PAYMENT DAY'}</b> — an assumption for review, not a decision.
+      Fee day is placed by <b>{assumption === 'service' ? 'CHECKOUT DAY — owner decision 2026-09-15' : 'PAYMENT DAY — comparison view only'}</b>.
+      Still open: a checkout on a different day from the booking's start time; the fee on a cancelled, refunded booking; refund day.
       Revenue follows today's Finance contract (checked-out sales, service day) and never moves with fees.
       Refunds are shown from Stripe; today's Finance does not read them, so revenue is not reduced (open decision; a ledger entry needs B1b).
       Closed months keep stored figures; only the existing super-admin post-close adjustment could change one — the prototype makes none.
@@ -447,7 +448,7 @@ function DailyLedger({ month, assumption }: { month: string; assumption: FeeDayA
         {rows.some((r) => r.secondCapture) && <div>⚑ A duplicate charge on this day needs review.</div>}
       </div>
       <Note>
-        The Stripe fee column is placed by the {assumption === 'service' ? 'service-day' : 'payment-day'} assumption (switch it in the prototype bar).
+        The Stripe fee column is placed on the {assumption === 'service' ? 'checkout day (owner decision 2026-09-15)' : 'payment day (comparison view only)'}.
         Revenue columns are today's Finance and do not move with it. Per-day expense columns are omitted in the prototype.
         Where a fee on a cancelled, refunded booking should land is an open decision.
       </Note>
@@ -524,7 +525,7 @@ function PaymentCard({ b, assumption }: { b: OnlineBooking; assumption: FeeDayAs
         {b.refunds.length > 0 && ' Refund rows are read from Stripe here; a real ledger entry needs B1b.'}
         {v.refundKind !== 'none' && b.status === 'CHECKED_OUT' && ' Revenue is not reduced because today\'s Finance does not read refunds — the product decision is open.'}
         {review && ' No automatic refund; resolution is a separate manual step.'}
-        {b.captures.some((c) => attributeCapture(b, c, assumption, ds).kind !== 'day') && ' "Counted on / not counted" follows the fee-day assumption, which is undecided.'}
+        {b.captures.some((c) => attributeCapture(b, c, assumption, ds).kind !== 'day') && ' A fee with no checkout day (cancelled booking) or in a closed month is not placed on any day — where it should go is still open.'}
       </Note>
     </div>
   )

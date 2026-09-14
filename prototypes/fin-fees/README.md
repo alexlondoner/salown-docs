@@ -25,7 +25,10 @@ The dark bar at the top is prototype chrome, not part of the product.
 
 ## Assumptions (undecided — review, do not treat as rules)
 
-- **Fee day:** switchable between service day and payment day (`?fee=service|payment`). **No decision has been made.**
+- **Fee day:** **decided by the owner on 2026-09-15 — the day the customer came, i.e. the checkout day** (`?fee=service`, the
+  default). `?fee=payment` stays only as a comparison view. Screenshots dated 2026-09-14 predate the decision and still
+  label the switch "undecided". Still open: a checkout on a different day from the booking's start time; the fee on a
+  cancelled, refunded booking; refund day.
 - **Revenue** follows today's Finance contract: checked-out sales on the service day; it never moves with fees.
 - **Refunds** are displayed from Stripe. Today's Finance does not read refunds, so revenue is not reduced; refunds on
   checked-out sales are raised for review. How revenue should treat them is an open decision.
