@@ -6,6 +6,9 @@
 > **Existing design searched first:** no mockup, design handoff or component for fee display exists (grep over `docs/`,
 > `design_handoff_*`, `salown-app/src`, the served Admin bundle). This page is therefore a first sketch placed on the
 > **current** Finance screen, not a redesign.
+> **Local prototype of this draft (synthetic data, 2026-09-14):** [`prototypes/fin-fees/`](prototypes/fin-fees/) — run
+> instructions in its README; screenshots in `evidence/fin-processor-fees/2026-09-14-prototype/`. Product copy and design
+> notes are separate layers there. The fee-day choice in the prototype is a switch for review, **not** a decision.
 
 ---
 
