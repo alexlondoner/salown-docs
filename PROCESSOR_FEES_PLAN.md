@@ -1,17 +1,21 @@
 # PROCESSOR_FEES_PLAN.md — payment-rail fees, provider-agnostic, in phases
 
-> **Status (2026-09-09, re-verified read-only):** 🟡 **B0 design complete. B1 IMPLEMENTED IN SOURCE, NOT IN PRODUCTION.**
-> Phase 0 (the online tender leg) is LIVE (`FIN-ONLINE-TENDER`, R-2026-09-05-B).
+> **Status (2026-09-14, re-verified read-only — `evidence/fin-processor-fees/2026-09-14-status-audit.md`):** 🟡
+> **B0 design complete. B1 IMPLEMENTED IN SOURCE; only its rules arm is in production.**
+> Phase 0 (the online tender leg, **gross only**) is LIVE (`FIN-ONLINE-TENDER`, R-2026-09-05-B).
 > **B1 source:** `whitecross-site/functions/settlements.js` + the `stripeWebhook` branch, landed `8137711b`;
 > `salown-app` side (index + `settlementLedgerEnabled` rules arms) landed `9a9547a`. Functions suite **182/182 pass**
-> (re-run 2026-09-09). Staging rehearsals on `salown-staging` all passed 2026-09-08 (index, real HTTP, scheduler, kill switch)
-> and the staging resources were torn down afterwards.
-> **B1 production state — every leg absent, each checked against the live project on 2026-09-09:**
-> no `wcSettlementSweeper` in `us-central1` (121 live functions enumerated, zero settlement functions);
-> `settlementLedgerEnabled` appears **0 times** in the live ruleset `a0a10819-3b62-46d5-9f95-9ea048701c59`;
-> production carries **2** composite `bookings` indexes and the `settlementSync` index is **not** among them.
-> B1 is implemented and rehearsed but not released; B1b and later packages remain planned. This document is the B0 data
-> contract; it is not an implementation or release approval, and the source being ready is not a release approval either.
+> (re-run 2026-09-14 on a `git archive` of whitecross-site `22850996`). Staging rehearsals on `salown-staging` all passed
+> 2026-09-08 (index, real HTTP, scheduler, kill switch) and the staging resources were torn down afterwards.
+> **B1 production state, 2026-09-14:** rules arm **LIVE** — ruleset `5e102dd4-e7e7-4950-b12a-14a74daa82e8`
+> (`R-2026-09-10-C`, shipped inseparably with GTM A3), `settlementLedgerEnabled` ×5, byte-identical to salown-app
+> `HEAD:firestore.rules`. Everything functional is **absent**: no `wcSettlementSweeper` (functions list, Cloud Run, Scheduler);
+> `stripeWebhook` still `stripewebhook-00106-dof` (bundle byte-identical to `6817356f`); **2** composite `bookings` indexes,
+> `settlementSync` not among them; flag absent; `settlements` collection-group count **0**. No Finance reader exists.
+> *Corrected 2026-09-14: the 2026-09-09 status said the rules arm was absent and B1 was blocked on COA; COA and the arm went
+> live together on 2026-09-10.* Current release package: `FIN_B1_RELEASE_PREFLIGHT.md`.
+> B1b and later packages remain planned. This document is the B0 data contract; it is not an implementation or release
+> approval, and the source being ready is not a release approval either.
 > **Owner decisions that created this document:** "Stripe's cut needs its own calculation in Finance — split it into
 > phases. Finance is premium; many tenants will never use it, so Reports/Insights must stay provider-agnostic. We are on
 > Stripe today; tomorrow we may buy a different card machine with different fees." (2026-09-05) · "Don't leave the
@@ -297,7 +301,7 @@ receipt or loyalty fields.
 |---|---|---|---|---|---|
 | **0** | Online leg visible | `tenderFacts.online_p`; Finance/Reports/Sales | — | `hosting:salown` — **LIVE** `ff183fbbb067b6b7` | previous version |
 | **B0** | This contract | §2–§7 | — | docs only — **DONE 2026-09-07** | — |
-| **B1** | Stripe captures + actual fees, new payments only | `stripeWebhook`: handle `charge.succeeded`/`charge.updated` (the fee arrives with `charge.updated` — verified on the real test API: `balance_transaction` is `null` in `charge.succeeded`), retrieve outside the transaction, append `CAPTURED` + `FEE_ACTUAL`, recompute projection; **`wcSettlementSweeper`**: due pass + provider scan with persistent page cursor; second-capture flag; kill switch `settlementLedgerEnabled`. Confirmation gates and every existing booking field untouched. **No Finance change, no hosting release.** | B0 · composite index (`settlementSync.state`, `settlementSync.nextAttemptAt`) · `charge.updated` subscription on the live endpoint · env `WC_STRIPE_ACCOUNT_ID`, `WC_STRIPE_LIVEMODE`, **`WC_SETTLEMENT_START_ISO` set once, at first release, and never moved on a redeploy** (it is the ledger's permanent origin) · rules release (`settlementLedgerEnabled` owner authority) | in this order (preflight `FIN_B1_RELEASE_PREFLIGHT.md`, candidate identities are maintained only in preflight §1 and must pass its pre-release re-check): (1) index deploy — **`FIN-B1-INDEX-DRIFT` is closed** (`9a9547a` wrote the two live indexes into `salown-app/firestore.indexes.json`; verified read-only 2026-09-09: live 2, file 3, live-not-in-file none), so this deploy now **creates** the `settlementSync` index and deletes nothing; still never answer a deletion prompt with yes; (2) env values; (3) `charge.updated` subscription; (4) targeted Functions deploy of exactly `stripeWebhook` + `wcSettlementSweeper` with the flag absent/false (both inert, logs show `DISABLED`); (5) **rules last** — separate owner-approved ruleset release, verified read-only by comparing the published ruleset id/hash with the reviewed file, never by writing as staff/owner in production; (6) owner sets the flag `true` only after (5) is verified | **Stop = flag `false`**: new invocations inert at once; in-flight ones finish (webhook ≤ its timeout, sweeper ≤ 120 s, no retry); then verify quiescence (no new `settlements` entry / marker across two scheduler intervals). Then, if needed: pause the Cloud Scheduler job, `functions:delete wcSettlementSweeper` (there is no earlier revision of a new function to return to), redeploy `stripeWebhook` from the previous source SHA to drop the branch. The index is left in place (it is inert and deleting it is not a rollback step); entries already written are correct facts and stay |
+| **B1** | Stripe captures + actual fees, new payments only | `stripeWebhook`: handle `charge.succeeded`/`charge.updated` (the fee arrives with `charge.updated` — verified on the real test API: `balance_transaction` is `null` in `charge.succeeded`), retrieve outside the transaction, append `CAPTURED` + `FEE_ACTUAL`, recompute projection; **`wcSettlementSweeper`**: due pass + provider scan with persistent page cursor; second-capture flag; kill switch `settlementLedgerEnabled`. Confirmation gates and every existing booking field untouched. **No Finance change, no hosting release.** | B0 · composite index (`settlementSync.state`, `settlementSync.nextAttemptAt`) · `charge.updated` subscription on the live endpoint · env `WC_STRIPE_ACCOUNT_ID`, `WC_STRIPE_LIVEMODE`, **`WC_SETTLEMENT_START_ISO` set once, at first release, and never moved on a redeploy** (it is the ledger's permanent origin) · rules release (`settlementLedgerEnabled` owner authority) | in this order (preflight `FIN_B1_RELEASE_PREFLIGHT.md`, candidate identities are maintained only in preflight §1 and must pass its pre-release re-check): (1) index deploy — **`FIN-B1-INDEX-DRIFT` is closed** (`9a9547a` wrote the two live indexes into `salown-app/firestore.indexes.json`; verified read-only 2026-09-09: live 2, file 3, live-not-in-file none), so this deploy now **creates** the `settlementSync` index and deletes nothing; still never answer a deletion prompt with yes; (2) env values; (3) `charge.updated` subscription; (4) targeted Functions deploy of exactly `stripeWebhook` + `wcSettlementSweeper` with the flag absent/false (both inert, logs show `DISABLED`); (5) ~~rules last~~ — **done 2026-09-10** inside `R-2026-09-10-C` (ruleset `5e102dd4-…`, together with A3; not separately rollbackable), so the 2026-09-14 package has no rules step; (6) owner sets the flag `true` only after (5) is verified | **Stop = flag `false`**: new invocations inert at once; in-flight ones finish (webhook ≤ its timeout, sweeper ≤ 120 s, no retry); then verify quiescence (no new `settlements` entry / marker across two scheduler intervals). Then, if needed: pause the Cloud Scheduler job, `functions:delete wcSettlementSweeper` (there is no earlier revision of a new function to return to), redeploy `stripeWebhook` from the previous source SHA to drop the branch. The index is left in place (it is inert and deleting it is not a rollback step); entries already written are correct facts and stay |
 | B1b | Refund entries | `REFUNDED` entries from the existing `charge.refunded` reconcile (`index.js:700-735`) | B1 | same unit | same |
 | B2 | Finance shows fees | *Expenses & Fees* line per provider (actual/estimate labelled; unknown counted, not zeroed), Bank Balance and Net P&L net of fees, `multipleCharges` review strip, `CANONICAL_BASE_MISMATCH` count; Treatwell line becomes the provider rule of §6.5 | B1, owner decision on the P&L day | `hosting:salown` | previous version |
 | B3 | History, read-only first | script: every `stripePaymentIntent` since go-live → Balance Transactions → CSV (no writes); then, on approval, a batch-stamped backfill of entries | B1 contract | script; then a production operation with a ledger row | per-batch `COMPENSATION` entries (2.6); nothing nulled |
@@ -313,11 +317,11 @@ receipt or loyalty fields.
 | Card terminal on the counter: model, API or statements only; Booksy fee model (per booking / subscription / both) | B5+ (`railFees`, terminal APIs) | **No** |
 
 **B1 design blockers: none** — no open decision in this table blocks B1, and implementation approval has been given and
-spent: the code is written, tested (182/182) and rehearsed on staging. **B1 release blockers: two, both open.**
-(1) **COA first** — owner decision 2026-09-09, path R-a in `FIN_B1_RELEASE_PREFLIGHT.md` §2: the `[COA]` rules block
-(`edfa6e7`) must be released and verified by its own owner before B1's rules step, and as of 2026-09-09 it is
-**PUSHED_NOT_LIVE** (0 `[COA]` lines in the live ruleset). (2) the targeted-deploy approval for the release sequence
-itself. Until both clear, the kill-switch flag stays absent and every B1 leg stays out of production.
+spent: the code is written, tested (182/182) and rehearsed on staging. **B1 release blockers (2026-09-14):**
+~~(1) COA first~~ — **cleared 2026-09-10**: `R-2026-09-10-C` released COA and B1's `settlementLedgerEnabled` rules arm
+together (ruleset `5e102dd4-…`), so B1's rules step is already done. Still open: (a) the targeted-deploy approval for
+the index + functions sequence; (b) the live Stripe endpoint's event list, which has not been read since 2026-08-29 and
+then carried no `charge.*` event (`FIN_B1_RELEASE_PREFLIGHT.md` §3). Until both clear, the kill-switch flag stays absent.
 
 ## 10 · Historical reference measurements (not live expectations)
 

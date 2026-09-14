@@ -151,3 +151,41 @@ Missing fee = `null` / "unknown", never £0 (plan §2.6). No reader exists.
    blocks the other; B1b would make its fee cost visible later.
 5. Owner decides fee P&L day (service vs payment); then B1b + B2 Finance fee line, including the refund-after-checkout
    behaviour in §4 items 3–4 as fixture tests.
+
+---
+
+## 8. Follow-up, same day (2026-09-14, later) — records corrected, preflight re-derived
+
+**Status records corrected (docs repo, no product change):** §5 items 1–6 — `PROCESSOR_FEES_PLAN.md` header, §8 B1 row
+step (5) and §9; ROADMAP `FIN-PROCESSOR-FEES` row; `DEPLOYMENT_STATUS.md` rules / indexes / `functions:whitecross` rows and
+the struck "most consequential gap" line; `RELEASE_LEDGER.md` `R-2026-09-09-A` inventory cell (correction appended, the
+original words kept); INCIDENTS 2026-09-10 status line. Each carries a dated "Corrected 2026-09-14" note.
+
+**`FIN_B1_RELEASE_PREFLIGHT.md` re-derived** — candidates whitecross-site `22850996`, salown-app `b6c325c`; rules step
+removed (done); live `stripeWebhook` bundle re-proven byte-identical to `6817356f` from the downloaded source zip;
+functions suite 182/182 on an archive of `22850996`; salown-app ops guards 120/120.
+
+**New findings while re-deriving:**
+- The live Stripe endpoint is recorded (2026-08-29) with **no `charge.*` event**. The 2026-09-09 package assumed
+  `charge.succeeded` was present. B1 still runs on `checkout.session.completed`; the fee then comes from the sweeper
+  unless `charge.updated` is added. The endpoint list was not read today (no Stripe credential used).
+- No activation tool exists for `settlementLedgerEnabled`.
+
+**Finance UX + fee-date decision:** no existing design found; draft written as `docs/FIN_FEES_UX_DRAFT.md`.
+
+**Auto-refund (BL-4) readiness — read-only check, kept separate from B1.** "Only the flag + a £10 test remain" is true for
+a *controlled test*, not for routine use:
+- VERIFIED: R1/R2 live and inert (`wcRefundSweeper` logs `autoRefundEnabled is not true — inert` 2026-09-14); the flag gate
+  is in the deployed `salowncancelbytoken-00070-moq` bytes (source zip); flag absent; owner-only in rules; activation is
+  `whitecross-site/scripts/activateAutoRefund.mjs` (dry-run, `--arm --expect-update-time`, audit row).
+- VERIFIED coverage limit: intent and actuator both require `paymentProvider === 'EXTERNAL_CHECKOUT'`. Of **92** whitecross
+  bookings with a Stripe payment, **18** carry that provider and **74** carry none — those would not refund automatically.
+- VERIFIED scope: only the customer's own cancel link outside the 8-hour window writes an intent. Staff/Admin/Staff App and
+  parser cancellations never refund. Full refunds only.
+- OPEN: no customer refund e-mail or text; `refundState` `NEEDS_REVIEW`/`FAILED` is not shown to the owner (audit logs only);
+  the cancel surface has no token/rate limit, which the refund runbook ties to rollout; switching the flag off does not clear
+  intents already `REQUESTED`/`NEEDS_REVIEW` (they are paid when it is switched on again) — not in the runbook's stop step.
+- UNVERIFIED today: the endpoint's `charge.refunded`/`refund.updated` subscription; "no intent while the flag is off" on
+  revision 00070 (proven on 00069 only); whether the legacy whitecross tills (barber-mobile `e652bfac`, barber-panel
+  `545d6de1`, both refund-blind in source) are still used — relevant to a partial refund followed by checkout, not to a
+  full refund on a cancelled booking.
