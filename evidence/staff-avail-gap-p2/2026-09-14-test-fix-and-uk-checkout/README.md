@@ -226,14 +226,15 @@ further here.
   morning, but asserts only that the output is a parseable time label, never that it is
   temporally sane relative to "now"). None of these discuss, name, or ratify a
   future-dated checkout record as intentional.
-- **Not this task's to fix.** Scope here was the stale test only. Whether this is
-  accepted behavior (rare edge case, low business impact), a quirk worth documenting in
-  `KNOWN_QUIRKS.md`, or a latent bug worth a floor-vs-real-time guard is an owner
-  product decision, separate from and in addition to the STAFF-AVAIL-GAP-P2 release
-  decisions already open in `20-owner-decision-recommendations.md`. Three candidate
-  scopes, none chosen, are laid out in `31-future-checkout-scope-options.md`: (1) leave
-  as-is, document as a quirk; (2) cap the floor at "not later than now"; (3) same cap,
-  but floor from the tenant's real opening/shift time instead of a hardcoded 09:00.
+- **Not this task's to fix.** Scope here was the stale test only. The owner has since specified
+  a target behavior for this finding (checkout-instant-minus-duration, unclamped, correct
+  midnight-day-rollover, one computed instant reused throughout) — worked through against the
+  actual source, with the points that would need to change, the interaction with the
+  eligibility gate's historical-day exemption (a real, previously-invisible consequence: it
+  would newly apply to duration-driven midnight-crossing backdates), the (unaffected)
+  manual-time flow, and candidate acceptance tests, in `31-future-checkout-scope-options.md`.
+  Still no code changed; still separate from and in addition to the STAFF-AVAIL-GAP-P2 release
+  decisions already open in `20-owner-decision-recommendations.md`.
 
 ## 4. What was NOT done
 
@@ -276,4 +277,4 @@ owner. **This report is not sufficient for a release decision.**
 - `tools/p2uk.mjs` — throwaway seed/snapshot script for the synthetic `p2uk` (Europe/London) tenant. Never committed; mirrors `2026-09-14-handoff-state/tools/p2chrome.mjs`'s pattern for `p2c`.
 - `uk-backdated-checkout/seed-users.json` — seed output (tenant, timezone, London wall-clock at seed time, synthetic user emails).
 - `uk-backdated-checkout/after-checkout.json` — full Firestore documents (bookings + auditLogs) for tenant `p2uk` after the checkout run.
-- `31-future-checkout-scope-options.md` — three candidate scopes for the §3a future-dated-checkout finding, none chosen, for an owner decision.
+- `31-future-checkout-scope-options.md` — target specification for the §3a future-dated-checkout finding (owner-specified behavior, source-level impact analysis, the historical-day eligibility interaction, acceptance tests, and the real remaining decision points). Superseded three-generic-options draft kept as an appendix.
