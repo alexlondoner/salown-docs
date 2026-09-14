@@ -1,0 +1,140 @@
+{
+ "bookings": {
+  "7ZpjXULUYxPMyigIZWRR": {
+   "bookingId": "WCB-1789345316430-3b73",
+   "tenantId": "p2uk",
+   "clientName": "Walk-in",
+   "clientEmail": "",
+   "clientPhone": "",
+   "barberId": "alex",
+   "barberName": "Alex",
+   "barber": "alex",
+   "serviceId": "svc1",
+   "serviceName": "Haircut",
+   "startTime": {
+    "__ts": "2026-09-14T08:00:00.000Z"
+   },
+   "endTime": {
+    "__ts": "2026-09-14T08:30:00.000Z"
+   },
+   "duration": 30,
+   "paymentType": "CASH",
+   "price": 20,
+   "soldProducts": [],
+   "soldAddOns": [],
+   "source": "Walk-in",
+   "bookingType": "walkin",
+   "createdAt": {
+    "__ts": "2026-09-14T00:21:56.790Z"
+   },
+   "note": "",
+   "loyaltyPointsEarned": 20,
+   "receiptRedeemedPts": 0,
+   "receiptTransactionTotal_p": 2000,
+   "paymentAllocationVersion": 1,
+   "receiptReconciled": true,
+   "actualDuration": null,
+   "discount": 0,
+   "receiptEarnMultiplier": 1,
+   "receiptAddOnLines": [],
+   "receiptFailures": [],
+   "checkedOutAt": {
+    "__ts": "2026-09-14T00:21:56.900Z"
+   },
+   "loyaltyPointsTotal": 20,
+   "receiptServiceAmount_p": 2000,
+   "tipPaymentMethod": "",
+   "serviceCharge": 0,
+   "receiptServiceCharge_p": 0,
+   "splitAmount": 0,
+   "receiptAddOnTotal_p": 0,
+   "tip": 0,
+   "receiptPaidToday_p": 2000,
+   "receiptMathVersion": 1,
+   "receiptTip_p": 0,
+   "receiptEarnRate": 1,
+   "receiptExpectedPoints": 20,
+   "splitSecond": "",
+   "receiptCurrency": "GBP",
+   "receiptProductLines": [],
+   "receiptEarnBase_p": 2000,
+   "paymentAllocation": {
+    "service": {
+     "cash_p": 2000,
+     "card_p": 0,
+     "other_p": 0,
+     "total_p": 2000
+    },
+    "tip": {
+     "cash_p": 0,
+     "card_p": 0,
+     "other_p": 0,
+     "total_p": 0
+    },
+    "collected": {
+     "cash_p": 2000,
+     "card_p": 0,
+     "other_p": 0,
+     "total_p": 2000
+    },
+    "firstMethod": "CASH",
+    "secondMethod": "",
+    "source": "admin-checkout",
+    "reconciled": true,
+    "failures": []
+   },
+   "receiptProductTotal_p": 0,
+   "loyaltyRedeemedValue": 0,
+   "receiptRedeemedValue_p": 0,
+   "receiptSubtotal_p": 2000,
+   "receiptAwardedPoints": 20,
+   "sendLoyaltyEmail": false,
+   "paymentMethod": "Cash",
+   "receiptPaidEarlier_p": 0,
+   "loyaltyPointsRedeemed": 0,
+   "paidAmount": 20,
+   "receiptDiscount_p": 0,
+   "status": "CHECKED_OUT",
+   "loyaltyPromotionSnapshot": {
+    "eligible": false,
+    "reason": "STAFF_CREATED",
+    "multiplier": 1,
+    "multiplierSource": "none",
+    "campaignId": null,
+    "campaignStartDate": null,
+    "campaignEndDate": null,
+    "evaluatedDate": null,
+    "timezone": "Europe/London",
+    "source": "walk-in",
+    "policyVersion": 1,
+    "evaluatedAt": {
+     "__ts": "2026-09-14T00:22:00.594Z"
+    }
+   }
+  }
+ },
+ "auditLogs": {
+  "lC5iwkl7A4MsbVWB9lYM": {
+   "action": "WALK_IN_CREATED",
+   "source": "function",
+   "userId": "IaAyBTFC073SQ36r4S5qKQa28DUR",
+   "userEmail": "",
+   "userName": "",
+   "userRole": "owner",
+   "actor": {
+    "uid": "IaAyBTFC073SQ36r4S5qKQa28DUR",
+    "email": "",
+    "name": "",
+    "role": "owner"
+   },
+   "target": {
+    "collection": "bookings",
+    "docId": "7ZpjXULUYxPMyigIZWRR",
+    "label": "WCB-1789345316430-3b73"
+   },
+   "timestamp": {
+    "__ts": "2026-09-14T00:21:56.840Z"
+   }
+  }
+ }
+}

@@ -1,0 +1,46 @@
+
+ RUN  v4.1.9 /private/tmp/claude-501/-Users-alish/13dc2679-2b57-4268-8fb7-68eb20581502/scratchpad/relws-p2
+
+ ❯ scripts/functionsArchiveManifest.test.js (12 tests | 2 failed) 427ms
+     × the pre-A1.3 ignore list would have shipped the local secrets file 7ms
+     × …and a pile of test files, preview output and editor state 6ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  scripts/functionsArchiveManifest.test.js > NEGATIVE CONTROL — the old policy really did leak > the pre-A1.3 ignore list would have shipped the local secrets file
+AssertionError: expected [ …(155) ] to include '.secret.local'
+ ❯ scripts/functionsArchiveManifest.test.js:109:19
+    107|     // or the tool stopped looking.
+    108|     const paths = OLD.untracked.concat(OLD.forbidden.map((f) => f.path…
+    109|     expect(paths).toContain('.secret.local');
+       |                   ^
+    110|     expect(paths).toContain('firestore-debug.log');
+    111|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  scripts/functionsArchiveManifest.test.js > NEGATIVE CONTROL — the old policy really did leak > …and a pile of test files, preview output and editor state
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ scripts/functionsArchiveManifest.test.js:117:61
+    115|     expect(forbidden.some((p) => p.endsWith('.test.js'))).toBe(true);
+    116|     expect(forbidden.some((p) => p.startsWith('_preview/'))).toBe(true…
+    117|     expect(forbidden.some((p) => p.startsWith('.claude/'))).toBe(true);
+       |                                                             ^
+    118|     expect(OLD.ok).toBe(false);
+    119|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  1 failed | 187 passed (188)
+      Tests  2 failed | 5553 passed | 6 skipped (5561)
+   Start at  00:58:10
+   Duration  18.06s (transform 17.99s, setup 0ms, import 39.88s, tests 37.62s, environment 29ms)
+
