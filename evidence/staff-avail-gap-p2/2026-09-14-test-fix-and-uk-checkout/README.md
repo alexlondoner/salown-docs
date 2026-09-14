@@ -9,7 +9,9 @@ never in `~/Desktop/alex/salown-app`.
 **The candidate `9ea0aca`'s frontend test failure is still open.** Nothing here has
 been committed to salown-app. Only a real commit landing this patch (or an equivalent
 fix), producing a new candidate SHA, and a full re-run of §4's round-2 gates against
-that SHA would close it.
+that SHA would close it. **See §5 for a same-night correction pass on this file's
+original §1/§2 wording** — the floor-branch UK check does not close the round-2 gap and
+surfaced its own undecided finding (§3a).
 
 ## 1. The stale-test patch
 
@@ -19,27 +21,36 @@ at `9ea0aca`, applied and run only in a git clone under scratchpad (`p2rehearsal
 
 **What was actually stale and why.** The Phase 2 refactor introduced
 `createWalkInEnforced` in `WalkInFlow.tsx` — a shared owner-override wrapper used by
-both the Save and the Pay handlers. Structurally, at `9ea0aca`:
+both the Save and the Pay handlers. Exact line-numbered facts at `9ea0aca`
+(`src/staff/sheets/WalkInFlow.tsx`), because "caller" and "call site" are different
+things and an earlier draft of this note conflated them:
 
-- `async function createSaleBooking(...)` is declared once (its own definition), and is
-  never called from anywhere in the file **except from inside** `createWalkInEnforced`'s
-  own body, where it is referenced exactly twice: `return await createSaleBooking(time)`
-  (the plain path) and `submit: (override) => createSaleBooking(time, override)` (the
-  owner-override resubmission path). So `createSaleBooking` has exactly **one caller**
-  (`createWalkInEnforced`), which itself invokes it from **two call sites**, both inside
-  its own body.
-- `createWalkInEnforced(` is itself called from **two places** at the component level —
-  the Save handler and the Pay handler — matching "save + pay" in the original test's
-  comment.
+- **`createSaleBooking` — one caller, two call sites, only one textually `await`-prefixed.**
+  Declared once, at line 319 (`async function createSaleBooking(...)`). It is invoked
+  from exactly **two call sites**, and both sit inside the body of exactly **one
+  caller**, `createWalkInEnforced` (that function's body runs lines 372–393): line 375,
+  `return await createSaleBooking(time)`, and line 384,
+  `submit: (override) => createSaleBooking(time, override)`. No other function in the
+  file calls `createSaleBooking`. Of those two call sites, only line 375 has the literal
+  text `await createSaleBooking(` — line 384's call is real (it fires later, when
+  whatever holds `submit` invokes it, as the owner-override resubmission path) but the
+  word `await` does not appear on that line, so the regex `/await createSaleBooking\(/g`
+  (used by both the original test and this patch) matches **once**, not twice. That
+  regex count of 1 must not be read as "`createSaleBooking` is called once" — it is
+  called twice; the regex only counts a specific textual pattern, not invocations.
+- **`createWalkInEnforced` — a separate "two", at the component level, not inside itself.**
+  `createWalkInEnforced(` is called from two places, unrelated to the two call sites
+  above: line 428 (`const saved = await createWalkInEnforced(time)`, the Save handler)
+  and line 533 (`const created = await createWalkInEnforced(time)`, the Pay handler) —
+  the "save + pay" pairing in the original test's comment.
 - `checkoutBooking(` still has exactly one call site, in the Pay handler, unchanged.
 
 The original committed test asserted `wf.match(/await createSaleBooking\(/g)).toHaveLength(2)`
 — a literal count of the pre-refactor shape, where Save and Pay each called
-`createSaleBooking` directly. After the refactor that count is 1 (one `await` site;
-the second reference inside `createWalkInEnforced` has no `await` prefix, since it's
-passed as a callback), so the committed test fails on `9ea0aca` — not because the
-boundary invariant broke, but because the test's shape assumption didn't move with the
-refactor it's supposed to be testing.
+`createSaleBooking` directly. After the refactor that regex count is 1 (only line 375
+has the literal `await createSaleBooking(` text), so the committed test fails on
+`9ea0aca` — not because the boundary invariant broke, but because the test's shape
+assumption didn't move with the refactor it's supposed to be testing.
 
 **What the patch changes.** It replaces that one stale assertion with a test that:
 1. Asserts the new literal counts (`createSaleBooking` await-count 1, `createWalkInEnforced`
@@ -75,7 +86,7 @@ committed test's failure.
     gap, not a code regression. Build `functions/` before trusting a "3 fails" or "12
     fails" count from a fresh clone.
 
-## 2. UK (Europe/London) backdated Save & Checkout — live check
+## 2. UK (Europe/London) backdated Save & Checkout — floor-branch check only, gap NOT closed
 
 The round-2 evidence (`RELEASE-EVALUATION-2.md` §6) named a real gap: the owner
 untouched-time Save & Checkout backdate path had only been exercised on tenant `p2c`
@@ -113,30 +124,48 @@ getNowMins(tz) - (totalDuration || 30)), tf)` line).
 system clock; `date` → `Mon 14 Sep 2026 01:18:24 BST`; the Walk-in sheet's own default
 Time field read "01:20", confirming the app resolved the tenant's real Europe/London
 clock, not a fixed offset). At that hour, `getNowMins(tz) - 30` is far below `9*60`
-(540), so the formula's expected result is the **floor branch**: `09:00`, not a
-subtraction result like round 2's LA "16:11 → 15:40". This is a different branch of the
-same formula than round 2 exercised, not a repeat of it — it is what a genuine UK clock
-produces at this hour. A rerun during UK daytime would be needed to exercise the
-subtraction branch specifically on a UK tenant; that is not covered by this run and is
-not claimed here.
+(540), so the formula's coded result is the **floor branch**: `09:00`.
 
 **Result** (`uk-backdated-checkout/after-checkout.json`, read directly from the
 Firestore emulator after checkout): booking `WCB-1789345316430-3b73`,
-`startTime = 2026-09-14T08:00:00.000Z` = **09:00 Europe/London (BST, UTC+1)** — exactly
-the predicted floor value. `status: CHECKED_OUT`, `checkedOutAt` stamped once,
-`paymentAllocation.reconciled: true`, `receiptFailures: []`, one `WALK_IN_CREATED`
-audit row with `actor.role: owner`. No second write, no error toast observed.
+`checkedOutAt = 2026-09-14T00:21:56.900Z` (01:21:56 BST — the real moment of the write)
+but `startTime = 2026-09-14T08:00:00.000Z` / `endTime = 2026-09-14T08:30:00.000Z`
+(09:00–09:30 BST) — exactly the floor branch's coded output. `status: CHECKED_OUT`,
+`paymentAllocation.reconciled: true`, `receiptFailures: []`, one `WALK_IN_CREATED` audit
+row with `actor.role: owner`. No second write, no error toast observed.
 
-**What this does and doesn't establish:**
-- Confirms, live and unconfounded by any non-UK tenant, that the owner untouched-time
-  Save & Checkout path works correctly on a genuine Europe/London tenant, using the
-  Auth+Firestore+Functions emulator trio only (verified above) — not the LA run
-  substituted in its place.
-- Does **not** modify, retest, or comment further on the separate, already
-  source-confirmed New Booking `Europe/London`-hardcode finding (below) — that finding
-  is out of scope for this test-fix patch and was left untouched in both the shared
-  tree and this rehearsal copy (`git diff --stat` in the rehearsal copy shows only
-  `src/firebase.ts` and the test file changed; `functions/src/index.ts` is unmodified).
+**What this run does and does NOT establish — corrected 2026-09-14, superseding the
+original wording of this section:**
+- It confirms that the coded floor branch (`max(9*60, ...)`) executes as written, on a
+  genuine Europe/London tenant, with Auth/Firestore/Functions all genuinely resolving to
+  the local emulator throughout (verified above, not assumed).
+- It does **not** establish that "the owner untouched-time Save & Checkout path works
+  correctly" in general, and it does **not** exercise or validate the UK subtraction
+  branch (`now − duration` while that value is ≥ 540) — a UK-daytime rerun would be
+  needed for that, and was not performed here. The original text of this section said
+  the floor result was "a different, equally valid branch of the same formula" than
+  round 2's LA subtraction result and that this run "closed" the round-2 gap named in
+  §6 of `RELEASE-EVALUATION-2.md`. Both claims were overreach and are withdrawn: a
+  branch executing as coded is not evidence that the branch's *behavior* is the
+  intended/correct one, and the daytime-subtraction half of that gap remains untested
+  on a UK tenant.
+- **It surfaces, without resolving, a distinct and previously unexamined question.**
+  Because real "now" (01:21:56 BST, `checkedOutAt`) was earlier than the floor (09:00
+  BST), this write recorded a Walk-in booking whose own service window
+  (`startTime`–`endTime`, 09:00–09:30 BST) is **~7h38m later than the actual moment it
+  was checked out** — a checkout record that is future-dated relative to its own write
+  time, on the same calendar day. A source/docs/history check (git log, `WalkInFlow.tsx`,
+  `src/staff/lib/staffTimeContract.test.ts`, `BUSINESS_RULES.md`, `KNOWN_QUIRKS.md`,
+  `INVARIANTS.md`, `INCIDENTS.md`, `20-owner-decision-recommendations.md`) found **no
+  documented product decision or acknowledgement of this consequence anywhere.** The
+  only rationale for the `9*60` floor at all is a bare inline comment on the constant's
+  origin commit (`7756967`, 2026-06-18, then in `NewBookingSheet.jsx`): "Checkout: start
+  = now - duration (customer just finished), min 9:00 AM" — which explains why *a*
+  floor exists (the salon doesn't open before 9am) but says nothing about what should
+  happen to the resulting record when the actual current time is itself before the
+  floor, i.e. whether a future-dated checkout record is the intended behavior, an
+  accepted quirk, or a latent bug. **Not fixed here, not assumed correct, recorded as a
+  separate, undecided finding (§3a) — this test-fix patch does not touch it.**
 
 ## 3. New Booking `Europe/London` hardcode — recorded as a separate, distinct finding
 
@@ -162,6 +191,35 @@ task introduced, touched, or is scoped to fix. It is named here only for the rec
 Owner decision on whether/when to fix it is open and separate from the STAFF-AVAIL-GAP-P2
 release decisions in `20-owner-decision-recommendations.md`.
 
+## 3a. Walk-in early-morning backdate floor produces a future-dated checkout record — undecided, recorded as a separate finding
+
+Discovered incidentally by the §2 run above, not by design, and not fixed or evaluated
+further here.
+
+- **Mechanism** (`src/staff/sheets/WalkInFlow.tsx`, around the
+  `minsToTimeStr(Math.max(9 * 60, getNowMins(tz) - (totalDuration || 30)), tf)` line): when
+  the untouched-time Save & Checkout runs at a real tenant-local time earlier than
+  `09:00 + duration`, the floor (`9 * 60`) wins over the subtraction, so the recorded
+  service `startTime`/`endTime` lands **later than the actual moment of the write**
+  (`checkedOutAt`). §2's run is one concrete instance: write at 01:21:56 BST, recorded
+  service window 09:00–09:30 BST, same calendar day.
+- **No documented decision found.** Checked: this file's own patch/section 2 (the only
+  place this scenario has ever actually been run and recorded, and it did not evaluate
+  the consequence, only the mechanical formula output); `docs/BUSINESS_RULES.md`,
+  `docs/KNOWN_QUIRKS.md`, `docs/INVARIANTS.md`, `docs/INCIDENTS.md`,
+  `20-owner-decision-recommendations.md`; `git log` on the constant's origin
+  (`NewBookingSheet.jsx` commit `7756967`, 2026-06-18) and the current
+  `WalkInFlow.tsx`/`walkinTime.ts` comments; `src/staff/lib/staffTimeContract.test.ts`
+  (pins the formula's parseability across all 1440 minutes-of-day, including early
+  morning, but asserts only that the output is a parseable time label, never that it is
+  temporally sane relative to "now"). None of these discuss, name, or ratify a
+  future-dated checkout record as intentional.
+- **Not this task's to fix.** Scope here was the stale test only. Whether this is
+  accepted behavior (rare edge case, low business impact), a quirk worth documenting in
+  `KNOWN_QUIRKS.md`, or a latent bug worth a floor-vs-real-time guard is an owner
+  product decision, separate from and in addition to the STAFF-AVAIL-GAP-P2 release
+  decisions already open in `20-owner-decision-recommendations.md`.
+
 ## 4. What was NOT done
 
 - No deploy, of any kind.
@@ -177,6 +235,23 @@ release decisions in `20-owner-decision-recommendations.md`.
   (port 5199) processes started for this check were stopped at the end of this session;
   ports 8080/9099/5001/4400/9150/5199 are free again. The Chrome tab opened for this
   check was closed.
+
+## 5. Correction pass (2026-09-14, same night) — no new Chrome/emulator run
+
+The original §2 and part of §1 overreached: they called the floor-branch result an
+"equally valid branch" of, and treated it as closing the gap left by, round 2's LA
+subtraction-branch result, and one caller/call-site sentence in §1 was ambiguous enough
+to read as contradicting itself. Both are corrected above using only the evidence
+already collected in this folder (the patch, the source line numbers, and
+`after-checkout.json`'s existing timestamps) plus a source/docs/git-history check for
+any decision behind the floor's future-dating consequence — no Chrome, emulator, or
+Vite process was started again, and no code or test file was committed or changed.
+
+**Remaining status, unchanged by this correction pass:** the test fix is prepared but
+not applied (still only a patch in an isolated clone; `9ea0aca`'s committed test failure
+is still open); the UK-daytime backdated-subtraction check is not done; the bypass
+exceptions and the Walk-in↔Reschedule Phase-3 deferral have not been decided by the
+owner. **This report is not sufficient for a release decision.**
 
 ## Files
 

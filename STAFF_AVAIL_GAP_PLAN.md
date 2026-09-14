@@ -1021,22 +1021,37 @@ production access, shared tree (`~/Desktop/alex/salown-app`) untouched, no claim
   `9ea0aca`'s own committed test failure is **still open** — this patch has not been committed to salown-app;
   only a real commit producing a new candidate SHA, followed by a full re-run of this section's gates, would
   close it.
-- **UK backdated Save & Checkout, closed the §9.7b/§6 gap.** §9.7b's Chrome row above ran the untouched-time
-  Save & Checkout check on tenant `p2c` (`America/Los_Angeles`), not a UK tenant. A new synthetic tenant `p2uk`
-  (`presentation.timezone: Europe/London`) was seeded and the same check re-run live against the Auth+
-  Firestore+Functions emulator trio (confirmed via network requests before any UI action — no request reached
-  `havuz-44f70` or any non-`127.0.0.1` host). At the real London wall-clock time of the run (~01:20 BST), the
-  backdate formula's floor branch applies (`max(9*60, now−30) = 540`), not the subtraction branch §9.7b's LA
-  run exercised (16:11 → 15:40) — a different, equally valid branch of the same formula, not a repeat of the LA
-  result. Booking recorded `startTime = 2026-09-14T08:00:00.000Z` (09:00 BST) exactly as predicted, `status:
-  CHECKED_OUT`, one audit row, no double-write. A UK-daytime rerun would be needed to exercise the subtraction
-  branch specifically on a UK tenant; not claimed here.
+- **UK backdated Save & Checkout — floor branch only, §9.7b/§6 gap NOT closed (corrected, see below).** §9.7b's
+  Chrome row above ran the untouched-time Save & Checkout check on tenant `p2c` (`America/Los_Angeles`), not a
+  UK tenant. A new synthetic tenant `p2uk` (`presentation.timezone: Europe/London`) was seeded and the same
+  check re-run live against the Auth+Firestore+Functions emulator trio (confirmed via network requests before
+  any UI action — no request reached `havuz-44f70` or any non-`127.0.0.1` host). At the real London wall-clock
+  time of the run (~01:20 BST), the backdate formula's floor branch applies (`max(9*60, now−30) = 540`), giving
+  `startTime = 2026-09-14T08:00:00.000Z` (09:00 BST) exactly as the formula computes. **This confirms only that
+  the coded floor branch executes as written** — it does not establish that the untouched-time Save & Checkout
+  path is correct in general, and it does not exercise or validate the UK subtraction branch (§9.7b's LA
+  16:11 → 15:40 result), which remains untested on a UK tenant. An earlier draft of this note called the floor
+  result "an equally valid branch" of the LA result and said this run "closed" the gap; both claims were
+  withdrawn same-night as overreach.
+- **New finding, undecided: the floor produces a future-dated checkout record.** Because real "now" (01:21:56
+  BST, `checkedOutAt`) was earlier than the floor (09:00 BST), the run above recorded a Walk-in booking whose
+  own service window (09:00–09:30 BST) is ~7h38m *later* than the actual moment it was checked out. A
+  source/docs/git-history check (`BUSINESS_RULES.md`, `KNOWN_QUIRKS.md`, `INVARIANTS.md`, `INCIDENTS.md`,
+  `20-owner-decision-recommendations.md`, the constant's origin commit `7756967` 2026-06-18, `staffTimeContract.test.ts`)
+  found no documented decision or acknowledgement of this consequence anywhere — only a bare inline comment
+  explaining why *a* floor exists at all, not what should happen when real time is itself before it. Not fixed,
+  not assumed correct; recorded as a separate open finding (`evidence/staff-avail-gap-p2/2026-09-14-test-fix-and-uk-checkout/README.md` §3a).
 - **New Booking Europe/London hardcode: confirmed from source, recorded as separate.** `functions/src/index.ts:1734`
   hardcodes `timeZone: 'Europe/London'` in `salownCreateStaffBooking` regardless of tenant, while Walk-in
   resolves the instant client-side using the tenant's real zone before the server ever sees it
   (`WalkInFlow.tsx:339` → `bookingCallables.ts:320` → `toIsoStartTime(date, time, timeZone)`; server just parses
   the resulting `startTime`). Confirmed at the source, independent of any Chrome tenant. Left untouched by this
   patch (out of scope) — still the same pre-existing, undecided finding as §9.7b names.
+
+**Remaining status, unchanged:** the test fix is prepared but not applied (9ea0aca's committed test failure is
+still open); the UK-daytime backdated-subtraction check is not done; the bypass exceptions and the
+Walk-in↔Reschedule Phase-3 deferral have not been decided. This section is not sufficient for a release
+decision.
 
 ### 9.4 Remaining gaps — named, not hidden
 
