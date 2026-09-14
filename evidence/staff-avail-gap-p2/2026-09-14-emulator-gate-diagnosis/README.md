@@ -258,18 +258,81 @@ in Step 3's instrumentation).** **Did not reproduce.** The identical test took *
   split into two runs; Step 3 proves the same files pass when run continuously too, MINUS the time
   lost to one non-reproducing anomaly.
 
+## 3c. Round 4 — Step 3 retried, a SECOND and THIRD distinct anomaly found, neither reproduces either
+
+Since Step 3's `createAdminBooking` stall did not reproduce in isolation, Step 3 (the full
+continuous two-phase gate) was retried from a clean state to see if it would complete now. It did
+not — it hit a **different** anomaly this time, and along the way exposed a genuine (but also
+non-reproducing) assertion failure. Both were checked in isolation afterward.
+
+**`finance/periodClose.emulator.test.js` — a real assertion FAILURE, not just slowness:**
+`✖ R21. the read→commit window is EMPTY — the writer cannot cross it` failed after
+**323,843.15ms (~5m24s)** — see `25-step3retry-general-test-output.log`. R21's own design
+(`src/finance/periodClose.emulator.test.js:619`) holds a transaction at its commit barrier for an
+intentional, hard-coded `HOLD_MS = 2000` (2 seconds) and asserts a competing write cannot land
+inside that window. 323.8 seconds is nowhere close to the test's own 2-second design — something
+well outside the test's own logic caused the delay. **Reproduction check
+(`31-repro3-periodclose-test-output.log`): run alone, R21 PASSED at 2,122.27ms — its designed
+duration almost exactly (the diagnostic even reads `window held 2000ms · writer committed inside
+it = false · writer committed 6ms after the window closed`, textbook-correct). 31/31 pass. Does
+NOT reproduce.**
+
+**`src/treatmentSessions/integration.emulator.test.js` — a genuine HANG, not just slowness, proven
+by Node's own diagnostic, not inferred:** Node's file-level failure report reads verbatim:
+`✖ src/treatmentSessions/integration.emulator.test.js (1,379,525.89ms)` immediately followed by
+`'Promise resolution is still pending but the event loop has already resolved'` — Node's own
+language for "this file was killed with an unresolved promise still outstanding." **This is
+qualitatively different from the other two anomalies: it never would have finished on its own
+within the observed window; it required external termination.** (The initial live process-argv
+polling misattributed this ~23-minute gap to `rotaWriter.emulator.test.js`, which was actually
+fast and complete, all 24 of its own tests present and normal in the log — a real limitation of
+that detection method, corrected here by finding Node's own definitive file-level report instead of
+trusting the poller.) **Reproduction check (`29-repro2-integration-test-output.log`): run alone,
+finished in 7.2 seconds, rc=0, 15/15 pass — 191x faster. Live CPU/mem/swap sampling
+(`30-repro2-integration-mem-swap-samples.log`) shows nothing unusual in the one sample taken. Does
+NOT reproduce.**
+
+### What round 4 establishes
+
+- **Three anomalies now found across two full-gate attempts, in three different files, at three
+  different points in the file order** (`bookings/createAdminBooking`, `finance/periodClose`,
+  `treatmentSessions/integration`) **— and NONE of the three reproduces when the same file is run
+  alone immediately afterward, under identical settings.** This is now a pattern, not a coincidence:
+  each full-gate attempt encountered exactly one such event, consuming most or all of that attempt's
+  time budget, while isolated single-file runs of the very same files are consistently fast and
+  clean.
+- **This pattern is consistent with a low-probability, per-unit-time stochastic event** (on this
+  specific machine, in this specific long-running session) whose chance of firing during any given
+  short (10-90 second) isolated file run is low, but which has a meaningful chance of firing
+  somewhere across a ~10-40 minute continuous multi-file run — rather than a deterministic defect
+  tied to any specific test, file, or product code path. It is reported as exactly that: an
+  observed pattern, not a diagnosed root cause.
+- **Neither RAM/swap growth nor sustained server-side contention is confirmed as the mechanism for
+  any of the three** — each was checked (the emulator's own debug log for `createAdminBooking`;
+  live swap sampling for the `integration` reproduction attempt; nothing anomalous in either). The
+  actual mechanism (OS-level scheduling, a JVM GC pause, a gRPC channel/keepalive edge case, or
+  something specific to this machine after hours of continuous emulator/JVM/Node churn across many
+  consecutive test runs) remains genuinely unidentified.
+- **The full gate has still not completed as one clean, uninterrupted, continuous run within any
+  time budget tried, across two attempts.** Both attempts' `general` phase failed to reach
+  `packages`. This is the honest, current state — it is not being reported as a pass.
+
 ## 4. Not done — explicitly, so it isn't assumed
 
-- The full gate has not completed as a single continuous run within a time budget — Step 3's
-  `general` phase was time-capped once (by a real, since-non-reproducing anomaly, not by the
-  gate's own logic being wrong), and `packages` was never reached this round.
+- **The full gate has not completed cleanly end-to-end, in either of two attempts.** Both times, one
+  anomaly (different each time) consumed the time budget before all 31 general-phase files plus the
+  1 packages file could run to completion in one continuous invocation. A third attempt was not
+  made — the pattern from two attempts plus three independent non-reproductions was judged
+  sufficient evidence to report rather than keep re-running blind.
 - No comparison against a prior known-good source run in the same environment (candidate next
   step if the owner wants one — needs a source with a completed, evidence-backed emulator-gate
   pass to diff against; `9ea0aca`'s round-2 685/682 result predates this machine's current load
   conditions and was not captured with this level of process/timing detail, so it is not a
   like-for-like comparison without re-running something).
-- No further reproduction attempts of the `createAdminBooking` stall beyond the one immediate
-  re-run (which did not reproduce it) — its true frequency (one-in-N runs) is unknown.
+- No deeper instrumentation of the stochastic anomaly itself (no `strace`/`dtrace`, no
+  `GRPC_TRACE`/`GRPC_VERBOSITY`, no attempt on a different/fresher machine) — each of the three
+  occurrences was investigated after the fact from the durable logs already being captured, not
+  chased live with additional tooling armed in advance.
 - No deploy, no production access, at any point in this diagnosis.
 
 ## 5. Files in this folder
@@ -300,3 +363,10 @@ in Step 3's instrumentation).** **Did not reproduce.** The identical test took *
 | `22-repro-mem-swap-samples.log` | Round 3 reproduction check: live CPU/memory/swap/connection samples every 10s — the instrumentation gap from Step 3, filled in here |
 | `23-repro-firestore-debug-full.log` | Round 3 reproduction check: the emulator's debug log for the non-reproducing run |
 | `24-repro-watch.log` | Round 3 reproduction check: the watchdog's own check-ins |
+| `25-step3retry-general-test-output.log` | Round 4: the SECOND full-gate `general`-phase attempt — contains both the `periodClose` R21 failure (323,843.15ms) and the `treatmentSessions/integration` hang (1,379,525.89ms, with Node's own "Promise resolution is still pending" diagnostic) |
+| `26-step3retry-general-observed-file-order.log` | Round 4: observed per-file order/timing for the second attempt (includes the polling misattribution to `rotaWriter`, corrected in §3c by reading Node's own file-level report instead) |
+| `27-step3retry-snapshot-at-limit.txt` | Round 4: full state snapshot captured when the second attempt's cap fired |
+| `28-step3retry-watch.log` | Round 4: the watchdog's own check-ins for the second attempt |
+| `29-repro2-integration-test-output.log` | Round 4: `treatmentSessions/integration.emulator.test.js` alone — 15/15 pass, 7.2s, does not reproduce the hang |
+| `30-repro2-integration-mem-swap-samples.log` | Round 4: live CPU/memory/swap/connection samples for that reproduction attempt |
+| `31-repro3-periodclose-test-output.log` | Round 4: `finance/periodClose.emulator.test.js` alone — 31/31 pass including R21 at its designed 2,122.27ms, does not reproduce the failure |

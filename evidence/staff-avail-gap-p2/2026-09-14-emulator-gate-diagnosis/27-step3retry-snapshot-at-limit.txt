@@ -1,0 +1,138 @@
+=== last active file: src/treatmentSessions/integration.emulator.test.js (running 0s so far) ===
+=== ps tree ===
+42250 42245   0.0  0.7       39:25 S    node ./node_modules/.bin/firebase emulators:start --only firestore --project demo-c1 --config ../firebase.json
+42281 42250   1.6  2.9       39:23 Ss   java -Dgoogle.cloud_firestore.debug_log_level=FINE -Duser.language=en -jar /Users/alish/.cache/firebase/emulators/cloud-firestore-emulator-v1.22.0.jar --host 127.0.0.1 --port 8080 --websocket_port 9150 --database-edition standard --project_id demo-c1 --rules /private/tmp/claude-501/-Users-alish/a0fc27d4-d19d-4786-8504-8964dbf64aef/scratchpad/relws-diag3/salown-app/firestore.rules --single_project_mode true
+42290 42245   0.0  0.6       39:22 S    node --test --test-concurrency=1 src/bookings/blocks.emulator.test.js src/bookings/createAdminBooking.emulator.test.js src/bookings/createBooking.emulator.test.js src/bookings/createStaffBooking.emulator.test.js src/bookings/createStaffWalkIn.emulator.test.js src/bookings/createWalkIn.emulator.test.js src/bookings/reassignBooking.emulator.test.js src/checkout/checkoutSettings.emulator.test.js src/checkout/executor.emulator.test.js src/finance/periodClose.emulator.test.js src/inventory/executor.emulator.test.js src/inventory/reconcile.emulator.test.js src/parsers/importAssignment.emulator.test.js src/parsers/importWiring.emulator.test.js src/payments/connectOauth.emulator.test.js src/sales/productSaleCore.emulator.test.js src/staff/actorAccessGate.emulator.test.js src/staff/identity.emulator.test.js src/staff/lifecycleOffboard.emulator.test.js src/staff/lifecycleRehire.emulator.test.js src/staff/offboarding.emulator.test.js src/staff/provisionTeamMember.emulator.test.js src/staff/rotaArchive.emulator.test.js src/staff/rotaCallable.emulator.test.js src/staff/rotaOverride.emulator.test.js src/staff/rotaSeedImport.emulator.test.js src/staff/rotaWriter.emulator.test.js src/tenants/publishProfile.emulator.test.js src/treatmentSessions/integration.emulator.test.js src/treatmentSessions/sessions.emulator.test.js ../scripts/backfillPublicCampaign.emulator.test.cjs
+43919 42290  22.6  1.2       22:58 S    /usr/local/bin/node --test-concurrency=1 --heap-prof-interval=524288 --max-http-header-size=16384 --stack-trace-limit=10 --report-signal=SIGUSR2 --heapsnapshot-near-heap-limit=0 --tls-cipher-list=TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256:TLS_AES_128_GCM_SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-SHA256:DHE-RSA-AES128-SHA256:ECDHE-RSA-AES256-SHA384:DHE-RSA-AES256-SHA384:ECDHE-RSA-AES256-SHA256:DHE-RSA-AES256-SHA256:HIGH:!aNULL:!eNULL:!EXPORT:!DES:!RC4:!MD5:!PSK:!SRP:!CAMELLIA --watch-kill-signal=SIGTERM --inspect-publish-uid=stderr,http --cpu-prof-interval=1000 --test-coverage-functions=0 --test-timeout=0 --test-coverage-lines=0 --test-isolation=process --test-coverage-branches=0 --network-family-autoselection-attempt-timeout=250 --use-largepages=off --inspect-port=127.0.0.1:9229 --secure-heap-min=2 --v8-pool-size=4 --node-snapshot --trace-event-file-pattern=node_trace.${rotation}.log --secure-heap=0 src/treatmentSessions/integration.emulator.test.js
+=== lsof:8080 ===
+COMMAND   PID  USER   FD   TYPE             DEVICE SIZE/OFF NODE NAME
+java    42281 alish  138u  IPv6 0xe8291c5c4aebb243      0t0  TCP localhost:http-alt (LISTEN)
+java    42281 alish  139u  IPv6 0xf3a9faf4acf84e01      0t0  TCP localhost:http-alt->localhost:60705 (ESTABLISHED)
+node    43919 alish   15u  IPv4 0xe4f8e75423df8262      0t0  TCP localhost:60705->localhost:http-alt (ESTABLISHED)
+=== node diagnostic report ===
+=== tail test log ===
+✔ EMU-OVR 4b. a DEMOTION mid-flight stops it too, and the loser writes nothing (61.854333ms)
+✔ EMU-OVR 4c. a super-admin BACKDATED override races a revocation and still loses (48.520625ms)
+✔ EMU-OVR 5a. a correction racing a second override — one wins, both survive in the log (3160.10325ms)
+ℹ 5a winner: scheduled
+✔ EMU-OVR 5b. …and the revert wins CAUSALLY, clearing exactly one map member (105.953584ms)
+✔ EMU-OVR 6a. a staggered sweep of both orders — never two decisions for one day (12825.618667ms)
+ℹ 6a/override-first+0ms -> change
+ℹ 6a/change-first+0ms -> override
+ℹ 6a/override-first+5ms -> change
+ℹ 6a/change-first+5ms -> override
+ℹ 6a/override-first+20ms -> override
+ℹ 6a/change-first+20ms -> change
+ℹ 6a/override-first+60ms -> override
+ℹ 6a/change-first+60ms -> change
+✔ EMU-OVR 7a. concurrent overrides of DIFFERENT days both survive in the map (71.568625ms)
+✔ EMU-OVR 7b. a BACKDATED override lands in the log and NOT in the map (53.56725ms)
+✔ EMU-PG 8a. a pre-genesis override leaves the header ABSENT and the entry count ZERO (40.234042ms)
+✔ EMU-PG 8b. a BACK-DATED pre-genesis override is refused, and a super-admin fares no better (72.07975ms)
+# EMU-PG 9a winner: second
+✔ EMU-PG 9a. two IDENTICAL pre-genesis overrides — exactly one audit, one projection (3190.208667ms)
+✔ EMU-PG 9b. …and the same changeId with different material input is refused (70.936042ms)
+# EMU-PG 10a outcomes: projected / projected
+✔ EMU-PG 10a. CONFLICTING concurrent overrides of the SAME day — one coherent winner (2984.536583ms)
+✔ EMU-PG 11a. concurrent pre-genesis overrides of DIFFERENT days — BOTH projections survive (3212.037708ms)
+✔ EMU-PG 11b. a pre-genesis projection then a REAL ROTA_START — the log starts clean at revision 1 (103.64125ms)
+✔ EMU-SEED 1a: two applies of the SAME plan from genesis — at most one commits (3334.226292ms)
+ℹ 1a loser: REFUSED/HEADER_EXISTS
+✔ EMU-SEED 1b: two DIFFERENT plans from genesis — one wins whole, the other leaves nothing (3037.109791ms)
+ℹ 1b winner: 24-segment plan · loser: REFUSED/HEADER_EXISTS
+✔ EMU-SEED 1c: three rounds of same-plan contention, and every round is coherent (67100.557583ms)
+✔ EMU-SEED 2a: seed vs cutover from the same virgin subject — exactly one authority (67.133ms)
+ℹ 2a winner: seed · seed=SEEDED · cutover=ALREADY_CANONICAL · rolloutFlipped=true
+✔ EMU-SEED 2b: cutover vs seed, both PRE-PLANNED — the two write phases contend (109273.907041ms)
+ℹ 2b winner: cutover · seed=REFUSED · cutover=MIGRATED · rolloutFlipped=true
+✔ EMU-SEED 2c: the cutover WINS — a seed arriving on a subject it just claimed (115.161458ms)
+ℹ 2c winner: cutover · seed=HEADER_EXISTS/HEADER_EXISTS
+✔ EMU-SEED 2d: a staggered sweep of both orders — never two authorities (9218.602667ms)
+ℹ 2d 2d/seed-first+0ms -> cutover (rollout canonical)
+ℹ 2d 2d/cutover-first+0ms -> cutover (rollout canonical)
+ℹ 2d 2d/seed-first+5ms -> seed (rollout legacy)
+ℹ 2d 2d/cutover-first+5ms -> cutover (rollout canonical)
+ℹ 2d 2d/seed-first+20ms -> seed (rollout canonical)
+ℹ 2d 2d/cutover-first+20ms -> cutover (rollout canonical)
+ℹ 2d 2d/seed-first+60ms -> seed (rollout canonical)
+ℹ 2d 2d/cutover-first+60ms -> cutover (rollout canonical)
+✔ EMU-SEED 3a: retrying an applied seed is ALREADY_SEEDED and writes nothing (103.838ms)
+✔ EMU-SEED 3b: a retry racing itself still commits once and replays the rest (81.769334ms)
+✔ EMU-SEED 3c: a CHANGED payload carrying the stale digests is refused, with zero writes (57.923167ms)
+✔ EMU-SEED 3d: a DIFFERENT plan on an already-seeded subject is HEADER_EXISTS, not a second history (78.546209ms)
+✔ EMU-SEED 3e: an apply that omits a precondition writes nothing, even alone (112.34825ms)
+✔ EMU-SEED 4a: override FIRST — the seed stays eligible and applies unchanged (95.540542ms)
+✔ EMU-SEED 4b: seed FIRST — the override appends canonically and does not touch the seeded history (88.919292ms)
+✔ EMU-SEED 4c: override FIRST — the cutover still sees an ELIGIBLE subject, and commits one ROTA_START (89.294292ms)
+✔ EMU-SEED 4d: cutover FIRST — the override appends onto its log, and starts no second history (76.084167ms)
+# EMU-SEED 4e outcomes: seed/projected · seed/projected · seed/projected · seed/projected
+✔ EMU-SEED 4e: a CONCURRENT seed and pre-genesis override — both orders, one coherent outcome (12973.769625ms)
+✔ EMU-R 1a: two writers on the same revision — exactly one commits (3880.900167ms)
+✔ EMU-R 1b: two writers racing the FIRST change — still exactly one (3327.28675ms)
+✔ EMU-R 1c: three rounds of contention, and the chain still describes the log (9643.979ms)
+✔ EMU-R 2a: retrying the winning key writes no second entry and no second audit (94.2245ms)
+✔ EMU-R 2b: the same key with a different intent is refused, and nothing moves (38.635834ms)
+✔ EMU-R 2c: a stale revision and a stale hash are both refused (64.448667ms)
+✔ EMU-R 2d: the collision matrix, against real documents (297.836125ms)
+✔ EMU-R 2e: an occupied audit id is not a retry, and does not poison the subject (44.620625ms)
+✔ EMU-R 3: a Thursday change for Monday moves nothing until Monday, then moves once (122.462417ms)
+✔ EMU-R 4a: START then END then a fresh START, all on one real log (54.271ms)
+✔ EMU-R 4b: SUPERSEDE withdraws a future change and leaves every entry in place (68.861791ms)
+✔ EMU-R 4c: a cross-lane period never becomes the weekly pattern; the same lane does (52.988375ms)
+✔ EMU-R 5a: by_exception commits the log, blocks the legacy write, and blanks nothing (35.429834ms)
+✔ EMU-R 5b: an uncovered day freezes the pattern, and only a proven passive subject proceeds (72.802584ms)
+✔ EMU-R 6a: an out-of-band entry that breaks the chain is refused, not folded around (53.690542ms)
+✔ EMU-R 6b: mutating the LAST transaction is caught by the header instead (37.820042ms)
+✔ EMU-R 6c: re-ordering the log is refused (57.8195ms)
+✔ EMU-R 6d: a hole in the log and a stray document both fail closed, on real documents (156.362708ms)
+✔ EMU-R 7a: an audit record that cannot be created takes the canonical write down (25.316083ms)
+✔ EMU-R 7b: a co-write Firestore refuses takes the entire transaction down (34.191125ms)
+✔ EMU-R 7c: a caller hook that throws leaves no partial rota (22.8575ms)
+✔ EMU-R 7d: a missing barber refuses the whole change, with nothing written (21.875917ms)
+✔ EMU-R 8: every stored document is the declared shape, non-financial, and never empty-dayed (48.864125ms)
+✔ EMU-R 9: entry SHAPE regression heuristic — not a Firestore ceiling (45.74375ms)
+✔ P1-1a — a standard submission issues ZERO writes to public/profile (261.759125ms)
+✔ P1-1b — nothing becomes readable at public/profile DURING the call (799.237625ms)
+✔ P1-1c — an invalid standard submission is queued with its issues, still nothing public (45.864167ms)
+✔ P1-1d — a published standard tenant that re-submits goes offline with its status (42.545708ms)
+✔ P1-2a — a valid self-managed publish writes the composed projection and publishes (28.479042ms)
+✔ P1-2b — an INVALID self-managed publish does not publish and does not move the status (23.808292ms)
+✔ P1-2c — an invalid edit by an already-published tenant leaves the last VALID page live (37.312167ms)
+✔ P1-2d — approval revalidates: an invalid pending_review tenant is refused, nothing published (26.658833ms)
+✔ P1-2e — approval of a valid submission publishes it (25.357875ms)
+✔ P1-3a — a failed status write takes a FIRST publication back down (25.609583ms)
+✔ P1-3a2 — a failed status write on a REpublish leaves the refreshed page live (41.444458ms)
+✔ P1-3b — a failed delete aborts a standard re-submission instead of being swallowed (28.846667ms)
+✔ P1-3c — suspend removes the page, and a failed removal never reports "suspended" (30.730958ms)
+✔ P1-3d — reject removes the page and asks for changes (15.4355ms)
+✔ P1-4 — composePublicProfile writes nothing at all (16.662292ms)
+✔ 1 · a TR-C scheduled session may reference a TR-B client package (243.705666ms)
+✔ 2 · completing emits exactly ONE consume and TR-B consumes exactly one (71.364625ms)
+
+Writing Node.js report to file: report.20260914.223713.43919.0.001.json
+Node.js report completed
+=== tail emulator log ===
+i  emulators: Starting emulators: firestore
+i  emulators: Detected demo project ID "demo-c1", emulated services will use a demo configuration and attempts to access non-emulated services for this project will fail.
+i  firestore: Firestore Emulator logging to firestore-debug.log
+✔  firestore: Firestore Emulator was started in standard edition.
+✔  firestore: Firestore Emulator UI websocket is running on 9150.
+
+[90m┌─────────────────────────────────────────────────────────────┐[39m
+[90m│[39m ✔  All emulators ready! It is now safe to connect your app. [90m│[39m
+[90m│[39m i  View Emulator UI at http://127.0.0.1:4000/               [90m│[39m
+[90m└─────────────────────────────────────────────────────────────┘[39m
+
+[90m┌───────────[39m[90m┬────────────────[39m[90m┬─────────────────────────────────┐[39m
+[90m│[39m[33m Emulator  [39m[90m│[39m[33m Host:Port      [39m[90m│[39m[33m View in Emulator UI             [39m[90m│[39m
+[90m├───────────[39m[90m┼────────────────[39m[90m┼─────────────────────────────────┤[39m
+[90m│[39m Firestore [90m│[39m 127.0.0.1:8080 [90m│[39m http://127.0.0.1:4000/firestore [90m│[39m
+[90m└───────────[39m[90m┴────────────────[39m[90m┴─────────────────────────────────┘[39m
+  Emulator Hub host: 127.0.0.1 port: 4400
+  Other reserved ports: 4500, 9150
+
+Issues? Report them at https://github.com/firebase/firebase-tools/issues and attach the *-debug.log files.
+ 
+=== swap/mem ===
+PhysMem: 7521M used (1305M wired, 1828M compressor), 111M unused.
+vm.swapusage: total = 2048.00M  used = 782.38M  free = 1265.62M  (encrypted)

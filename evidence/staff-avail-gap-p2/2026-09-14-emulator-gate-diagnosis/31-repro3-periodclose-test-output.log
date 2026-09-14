@@ -1,0 +1,53 @@
+✔ R1. two IDENTICAL closes, same period — at most one commits (24305.448209ms)
+ℹ R1 winner distribution over 6 rounds: {"first":2,"second":4}
+✔ R2. two DIFFERENT closes, same period — the loser refuses and leaves nothing (23164.032875ms)
+ℹ R2 winner distribution over 6 rounds: {"a":3,"b":3}
+✔ R15a. BOTH winner directions execute — forced causally, not sampled (387.820041ms)
+✔ R3. close vs barbers/{id}.workingDays — refused, zero writes (85.264708ms)
+✔ R4. close vs barbers/{id}.shiftChanges — refused, zero writes (80.007291ms)
+✔ R5. close vs staffComp/{id} — refused, zero writes (94.807917ms)
+✔ R6. close vs settings/finance_config — refused, zero writes (94.054583ms)
+✔ R7. close vs the tenant TIMEZONE — refused, zero writes (76.340083ms)
+✔ R8. close vs a booking ADDED inside the period — refused, zero writes (80.305208ms)
+✔ R9. close vs a booking CHANGED inside the period — refused, zero writes (83.262833ms)
+✔ R10. close vs a booking REMOVED from the period — refused, zero writes (78.264417ms)
+✔ R8b. a change OUTSIDE the period does not block the close (106.852625ms)
+✔ R3b. a mutation racing the apply CONCURRENTLY still cannot corrupt the record (422.576541ms)
+ℹ R3b outcome distribution over 6 rounds: {"committed":0,"refused":6}
+✔ R14. authority revoked between preview and commit — zero writes (44.235334ms)
+✔ R14b. revocation racing the transaction refuses, and never half-writes (210.279875ms)
+ℹ R14b outcome distribution over 4 rounds: {"committed":0,"refused":4}
+✔ R11. identical concurrent adjustment replay — appended exactly once (16257.464084ms)
+ℹ R11 winner distribution over 5 rounds: {"first":1,"second":4}
+✔ R12. same adjustment id, DIFFERENT content — refused, one stored (141.112292ms)
+✔ R12b. two DIFFERENT ids race — both land, and neither overwrites the other (3641.902084ms)
+✔ R13. close vs adjustment — an adjustment cannot precede the close (129.939333ms)
+✔ R18. in-period INSERT after the transaction began, before its source read (99.555ms)
+ℹ R18 insert: refused in-transaction with drift [{"path":"tenants/tn-fpc-mu1to6un-42/bookings#period=2026-07","kind":"HASH_CHANGED"}] after 1 attempt(s)
+✔ R19. in-period UPDATE after the transaction began, before its source read (99.893ms)
+ℹ R19 update: refused in-transaction with drift [{"path":"tenants/tn-fpc-mu1to6xf-43/bookings#period=2026-07","kind":"HASH_CHANGED"}] after 1 attempt(s)
+✔ R20. in-period REMOVAL after the transaction began, before its source read (111.112917ms)
+ℹ R20 remove: refused in-transaction with drift [{"path":"tenants/tn-fpc-mu1to707-44/bookings#period=2026-07","kind":"HASH_CHANGED"}] after 1 attempt(s)
+✔ R21. the read→commit window is EMPTY — the writer cannot cross it (2122.26925ms)
+ℹ R21: window held 2000ms · writer committed inside it = false · writer committed 6ms after the window closed
+✔ R22. the commit loses the lock — the body RETRIES, re-reads and refuses (1357.667125ms)
+ℹ R22 latch sequence: TX_BEGIN#1 → TX_BEFORE_SOURCE_READ#1 → TX_BEFORE_COMMIT#1 → TX_BEGIN#2 → TX_BEFORE_SOURCE_READ#2
+✔ R23. authority revoked INSIDE the transaction — refusal, zero writes (78.948ms)
+ℹ R23: revocation observed before commit → ACTOR_OFFBOARDED, zero writes
+✔ R24. the close commits FIRST — a later revocation cannot rewrite it (122.462583ms)
+ℹ R24: close committed first; revocation is causally later and rewrote nothing
+✔ R25. the close commits FIRST — a later source mutation cannot rewrite the base (146.125292ms)
+ℹ R25: base unchanged by three post-close source mutations; re-close refused
+✔ R26. real Timestamp / GeoPoint / DocumentReference / bytes rows close, and drift on CONTENT (131.517ms)
+ℹ R26: aggregate over real SDK values = 41b2b592a4e83416
+✔ R16. AUGUST 2026 cannot be closed, and nothing is written trying (22.947208ms)
+✔ R17. a dry run against a real backend writes nothing at all (48.486125ms)
+✔ R27. with NO override installed, the production allowlist is what refuses (13.786458ms)
+ℹ tests 31
+ℹ suites 0
+ℹ pass 31
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 74008.26375

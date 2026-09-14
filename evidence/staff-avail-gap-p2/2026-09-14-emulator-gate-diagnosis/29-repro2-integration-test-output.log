@@ -1,0 +1,23 @@
+✔ 1 · a TR-C scheduled session may reference a TR-B client package (2042.404917ms)
+✔ 2 · completing emits exactly ONE consume and TR-B consumes exactly one (173.686ms)
+✔ 3 · six concurrent completions consume exactly ONE entitlement (3712.729583ms)
+✔ 4 · an authorized no-show correction consumes exactly ONCE across three moves (178.844875ms)
+✔ 5 · cancelling releases the hold through TR-B, per its contract (146.871208ms)
+✔ 6 · a no-show creates no ledger entry — attendance is not a money event (108.649583ms)
+✔ 7 · a full TR-C lifecycle leaves every TR-B money field byte-identical (176.083417ms)
+✔ 8 · a package payload carrying a money field is refused outright (34.845084ms)
+✔ 9 · a packages-DISABLED tenant gets no package behaviour, and the lifecycle still works (51.287708ms)
+✔ 9b · a package-linked session in a DISABLED tenant reports the refusal instead of hiding it (57.222958ms)
+✔ 10 · a legacy barber booking is untouched by any of this (16.928125ms)
+✔ 11 · a BLOCKED booking never enters the lifecycle, package or not (43.539416ms)
+✔ 12 · tenant isolation holds across BOTH the lifecycle and the package reference (90.430833ms)
+✔ 13 · the dashboard count and the Follow-ups list come from one query (120.317666ms)
+✔ 14/15 · overdue is computed in the TENANT calendar — Istanbul and London (60.660708ms)
+ℹ tests 15
+ℹ suites 0
+ℹ pass 15
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 7214.476041

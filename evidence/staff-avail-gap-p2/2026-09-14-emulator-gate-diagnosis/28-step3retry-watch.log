@@ -1,0 +1,32 @@
+21:57:48 STEP 3 — FULL real two-phase gate (31 general + 1 packages), durable logs, real-time caps (phase1<=1800s, phase2<=600s)
+21:57:48 ── phase general — files: src/bookings/blocks.emulator.test.js src/bookings/createAdminBooking.emulator.test.js src/bookings/createBooking.emulator.test.js src/bookings/createStaffBooking.emulator.test.js src/bookings/createStaffWalkIn.emulator.test.js src/bookings/createWalkIn.emulator.test.js src/bookings/reassignBooking.emulator.test.js src/checkout/checkoutSettings.emulator.test.js src/checkout/executor.emulator.test.js src/finance/periodClose.emulator.test.js src/inventory/executor.emulator.test.js src/inventory/reconcile.emulator.test.js src/parsers/importAssignment.emulator.test.js src/parsers/importWiring.emulator.test.js src/payments/connectOauth.emulator.test.js src/sales/productSaleCore.emulator.test.js src/staff/actorAccessGate.emulator.test.js src/staff/identity.emulator.test.js src/staff/lifecycleOffboard.emulator.test.js src/staff/lifecycleRehire.emulator.test.js src/staff/offboarding.emulator.test.js src/staff/provisionTeamMember.emulator.test.js src/staff/rotaArchive.emulator.test.js src/staff/rotaCallable.emulator.test.js src/staff/rotaOverride.emulator.test.js src/staff/rotaSeedImport.emulator.test.js src/staff/rotaWriter.emulator.test.js src/tenants/publishProfile.emulator.test.js src/treatmentSessions/integration.emulator.test.js src/treatmentSessions/sessions.emulator.test.js ../scripts/backfillPublicCampaign.emulator.test.cjs
+21:57:48 ── phase general — test log: /private/tmp/claude-501/-Users-alish/a0fc27d4-d19d-4786-8504-8964dbf64aef/scratchpad/diag-step3-evidence/general-test-output.log
+21:57:48 phase general: emulator wrapper PID=42250
+21:57:51 phase general: emulator ready
+21:57:51 phase general: test PID=42290
+21:57:56 phase general → now running: src/bookings/blocks.emulator.test.js (phase_elapsed=5s)
+21:58:47 phase general → now running: src/bookings/createAdminBooking.emulator.test.js (phase_elapsed=56s)
+21:58:52 phase general → now running: src/bookings/createBooking.emulator.test.js (phase_elapsed=61s)
+21:59:07 phase general → now running: src/bookings/createStaffBooking.emulator.test.js (phase_elapsed=76s)
+21:59:12 phase general → now running: src/bookings/createStaffWalkIn.emulator.test.js (phase_elapsed=81s)
+21:59:27 phase general → now running: src/bookings/createWalkIn.emulator.test.js (phase_elapsed=96s)
+21:59:32 phase general → now running: src/bookings/reassignBooking.emulator.test.js (phase_elapsed=101s)
+21:59:37 phase general → now running: src/checkout/executor.emulator.test.js (phase_elapsed=106s)
+22:00:03 phase general → now running: src/finance/periodClose.emulator.test.js (phase_elapsed=132s)
+22:06:35 phase general → now running: src/inventory/executor.emulator.test.js (phase_elapsed=524s)
+22:07:51 phase general → now running: src/inventory/reconcile.emulator.test.js (phase_elapsed=600s)
+22:08:32 phase general → now running: src/parsers/importWiring.emulator.test.js (phase_elapsed=641s)
+22:08:37 phase general → now running: src/payments/connectOauth.emulator.test.js (phase_elapsed=646s)
+22:08:57 phase general → now running: src/staff/actorAccessGate.emulator.test.js (phase_elapsed=666s)
+22:09:02 phase general → now running: src/staff/lifecycleOffboard.emulator.test.js (phase_elapsed=671s)
+22:09:13 phase general → now running: src/staff/offboarding.emulator.test.js (phase_elapsed=681s)
+22:09:18 phase general → now running: src/staff/provisionTeamMember.emulator.test.js (phase_elapsed=687s)
+22:09:23 phase general → now running: src/staff/rotaArchive.emulator.test.js (phase_elapsed=692s)
+22:09:53 phase general → now running: src/staff/rotaOverride.emulator.test.js (phase_elapsed=722s)
+22:10:33 phase general → now running: src/staff/rotaSeedImport.emulator.test.js (phase_elapsed=762s)
+22:13:58 phase general → now running: src/staff/rotaWriter.emulator.test.js (phase_elapsed=967s)
+22:37:13 phase general → now running: src/treatmentSessions/integration.emulator.test.js (phase_elapsed=2362s)
+22:37:13 ✖ phase general: REAL cap reached (2362s) — saving state BEFORE stopping anything
+22:37:17 phase general RESULT: INCOMPLETE (time-capped) — snapshot: /private/tmp/claude-501/-Users-alish/a0fc27d4-d19d-4786-8504-8964dbf64aef/scratchpad/diag-step3-evidence/general-snapshot-at-limit.txt
+22:37:17 phase general done, rc=3
+22:37:17 RESULT: STEP 3 STOPPED after phase general (rc=3) — not proceeding to packages
