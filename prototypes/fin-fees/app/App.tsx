@@ -97,7 +97,7 @@ function PrototypeBar(props: {
       <strong style={{ color: '#22d3ee' }}>PROTOTYPE</strong>
       <span>synthetic data · not connected to any account · not product copy</span>
       <span style={{ marginLeft: 'auto' }}>fee day:</span>
-      <button style={btn(props.assumption === 'service')} onClick={() => props.setAssumption('service')}>checkout day (owner decision)</button>
+      <button style={btn(props.assumption === 'checkout')} onClick={() => props.setAssumption('checkout')}>checkout day (owner decision)</button>
       <button style={btn(props.assumption === 'payment')} onClick={() => props.setAssumption('payment')}>payment day (comparison)</button>
       <span>design notes:</span>
       <button style={btn(props.notes)} onClick={() => props.setNotes(!props.notes)}>{props.notes ? 'on' : 'off'}</button>
@@ -109,8 +109,8 @@ function PrototypeBar(props: {
 function AssumptionNotes({ assumption }: { assumption: FeeDayAssumption }) {
   return (
     <Note>
-      Fee day is placed by <b>{assumption === 'service' ? 'CHECKOUT DAY — owner decision 2026-09-15' : 'PAYMENT DAY — comparison view only'}</b>.
-      Still open: a checkout on a different day from the booking's start time; the fee on a cancelled, refunded booking; refund day.
+      Fee day is placed by <b>{assumption === 'checkout' ? 'CHECKOUT DAY — owner decision 2026-09-15' : 'PAYMENT DAY — comparison view only'}</b>.
+      Source date: checkedOutAt in the salon's time zone; no checkout time → review, no fallback. Still open: re-checkout (first vs latest checkout time); the fee on a booking never checked out; refund day.
       Revenue follows today's Finance contract (checked-out sales, service day) and never moves with fees.
       Refunds are shown from Stripe; today's Finance does not read them, so revenue is not reduced (open decision; a ledger entry needs B1b).
       Closed months keep stored figures; only the existing super-admin post-close adjustment could change one — the prototype makes none.
@@ -277,6 +277,7 @@ const REVIEW_TEXT: Record<ReviewItem['kind'], (i: ReviewItem) => ReactNode> = {
   SECOND_CAPTURE: (i) => <><strong style={strong}>Charged twice:</strong> {i.ref} was charged a second time ({gbp(i.amount_p)}) on {dayLabel(i.day)}. Finance counts the sale once. Check this payment in Stripe.</>,
   REFUND_AFTER_CHECKOUT: (i) => <><strong style={strong}>Refund after checkout:</strong> {i.ref} · {gbp(i.amount_p)} refunded on {dayLabel(i.day)}. The sale still shows its full amount in revenue.</>,
   REFUND_ON_CLOSED_MONTH_SALE: (i) => <><strong style={strong}>Refund for a closed month:</strong> {i.ref} · {gbp(i.amount_p)} refunded on {dayLabel(i.day)} for a sale in a closed month. It isn't included in that month's figures.</>,
+  FEE_DAY_UNRESOLVED: (i) => <><strong style={strong}>Checkout time missing:</strong> {i.ref} is checked out but has no checkout time, so its Stripe fee ({gbp(i.amount_p)}) isn't placed on any day.</>,
 }
 
 function ReviewStrip({ month }: { month: string }) {
@@ -440,15 +441,17 @@ function DailyLedger({ month, assumption }: { month: string; assumption: FeeDayA
           {incomplete && ' Net is shown as "up to" until every fee is known.'}</div>
         {cov.outside.map((o) => (
           <div key={o.chargeRef}>
-            {o.ref} · Stripe fee {o.fee_p !== null ? gbp(o.fee_p) : o.feeState === 'pending' ? 'awaiting Stripe' : 'with no record'} — {o.reason === 'no_service_day'
-              ? 'booking cancelled and refunded, so this fee is not on any day.'
+            {o.ref} · Stripe fee {o.fee_p !== null ? gbp(o.fee_p) : o.feeState === 'pending' ? 'awaiting Stripe' : 'with no record'} — {o.reason === 'no_checkout'
+              ? 'booking cancelled and refunded without a checkout, so this fee is not on any day.'
+              : o.reason === 'checkout_time_missing'
+              ? 'checked out, but the checkout time is missing, so this fee is not on any day — needs review.'
               : `belongs to ${MONTHS[o.month ?? ''] ?? o.month}, which is closed, so it is not included.`}
           </div>
         ))}
         {rows.some((r) => r.secondCapture) && <div>⚑ A duplicate charge on this day needs review.</div>}
       </div>
       <Note>
-        The Stripe fee column is placed on the {assumption === 'service' ? 'checkout day (owner decision 2026-09-15)' : 'payment day (comparison view only)'}.
+        The Stripe fee column is placed on the {assumption === 'checkout' ? 'checkout day (owner decision 2026-09-15)' : 'payment day (comparison view only)'}.
         Revenue columns are today's Finance and do not move with it. Per-day expense columns are omitted in the prototype.
         Where a fee on a cancelled, refunded booking should land is an open decision.
       </Note>
@@ -482,6 +485,7 @@ function PaymentCard({ b, assumption }: { b: OnlineBooking; assumption: FeeDayAs
           {v.refundKind === 'partial' && <Tag tone="neg">Partly refunded</Tag>}
           {v.refundKind === 'full' && <Tag tone="neg">Refunded</Tag>}
           {review && <Tag tone="neg">Charged twice</Tag>}
+          {b.status === 'CHECKED_OUT' && !b.checkedOutOn && <Tag tone="neg">Checkout time missing</Tag>}
           {closedSale && <Tag tone="muted">Sale in a closed month</Tag>}
         </span>
       </div>
@@ -489,7 +493,8 @@ function PaymentCard({ b, assumption }: { b: OnlineBooking; assumption: FeeDayAs
       {b.captures.map((c, idx) => {
         const at = attributeCapture(b, c, assumption, ds)
         const where = at.kind === 'day' ? `Counted on ${dayLabel(at.day)}`
-          : at.kind === 'no_service_day' ? 'Not counted on any day — booking cancelled'
+          : at.kind === 'no_checkout' ? 'Not counted on any day — never checked out'
+          : at.kind === 'checkout_time_missing' ? 'Not counted on any day — checkout time missing'
           : `Belongs to ${MONTHS[monthOf(at.day)] ?? monthOf(at.day)}, which is closed — not included`
         const feeValue = c.feeState === 'actual' && c.fee_p !== null ? minus(c.fee_p)
           : c.feeState === 'pending' ? <Tag tone="warn">awaiting Stripe</Tag> : <Tag tone="muted">no record</Tag>
@@ -517,6 +522,8 @@ function PaymentCard({ b, assumption }: { b: OnlineBooking; assumption: FeeDayAs
         <div><strong style={strong}>In Finance revenue:</strong> {b.status === 'CHECKED_OUT'
           ? `${gbp(v.financeRevenue_p)} on ${dayLabel(b.serviceOn)} (online ${gbp(b.onlineLeg_p)}${b.deskCash_p ? ` + cash ${gbp(b.deskCash_p)}` : ''}${b.deskCard_p ? ` + card ${gbp(b.deskCard_p)}` : ''})${closedSale ? ' — in a closed month' : ''}`
           : 'nothing — booking cancelled'}</div>
+        {b.status === 'CHECKED_OUT' && b.checkedOutOn && b.checkedOutOn !== b.serviceOn && <div>Checked out on {dayLabel(b.checkedOutOn)} — revenue shows on the appointment day, the Stripe fee on the checkout day.</div>}
+        {b.status === 'CHECKED_OUT' && !b.checkedOutOn && <div style={{ color: NEG }}>The checkout time is missing, so the Stripe fee isn't placed on a day. Review this sale.</div>}
         {v.refundKind !== 'none' && b.status === 'CHECKED_OUT' && <div style={{ color: WARN }}>The refund isn't deducted from this sale's revenue.</div>}
         {review && <div style={{ color: NEG }}>{gbp(v.gross_p)} was taken but Finance counts {gbp(b.onlineLeg_p)}. Check the duplicate charge in Stripe.</div>}
       </div>
@@ -525,7 +532,7 @@ function PaymentCard({ b, assumption }: { b: OnlineBooking; assumption: FeeDayAs
         {b.refunds.length > 0 && ' Refund rows are read from Stripe here; a real ledger entry needs B1b.'}
         {v.refundKind !== 'none' && b.status === 'CHECKED_OUT' && ' Revenue is not reduced because today\'s Finance does not read refunds — the product decision is open.'}
         {review && ' No automatic refund; resolution is a separate manual step.'}
-        {b.captures.some((c) => attributeCapture(b, c, assumption, ds).kind !== 'day') && ' A fee with no checkout day (cancelled booking) or in a closed month is not placed on any day — where it should go is still open.'}
+        {b.captures.some((c) => attributeCapture(b, c, assumption, ds).kind !== 'day') && ' A fee is placed only on its checkout day (salon time zone). With no checkout, a missing checkout time or a closed month it is placed on no day; where a no-checkout fee goes is a separate open decision.'}
       </Note>
     </div>
   )
@@ -556,7 +563,7 @@ function readParam(name: string, allowed: string[] | null, fallback: string): st
 export function App() {
   const [month, setMonth] = useState(() => readParam('month', MONTH_KEYS, '2026-09'))
   const [tab, setTab] = useState(() => readParam('tab', ['daily', 'online'], 'daily'))
-  const [assumption, setAssumption] = useState<FeeDayAssumption>(() => readParam('fee', ['service', 'payment'], 'service') as FeeDayAssumption)
+  const [assumption, setAssumption] = useState<FeeDayAssumption>(() => (readParam('fee', ['checkout', 'service', 'payment'], 'checkout') === 'payment' ? 'payment' : 'checkout') as FeeDayAssumption)
   const [theme, setTheme] = useState(() => readParam('theme', ['light', 'dark'], 'light'))
   const [notes, setNotes] = useState(() => readParam('notes', ['0', '1'], '0') === '1')
   // Review aids only (not product): show a subset of cards, scroll a section into view.

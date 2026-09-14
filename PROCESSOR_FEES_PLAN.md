@@ -188,16 +188,56 @@ Owner-only, per tenant, produces `FEE_ESTIMATE` entries only: `{ desk_card: {pro
 (`rateVersion`). Changing a rate never rewrites actuals and never rewrites past estimates (a new version, new entries).
 The terminal model, its API and Booksy's fee model are **open owner questions** that gate this package, not B1.
 
-## 5 · Dates — six of them, kept apart
+## 5 · Dates — seven of them, kept apart
 
 | Date | Field | Meaning | Used by |
 |---|---|---|---|
-| service | booking `date`/`startTime` | when the service happened | revenue (all views), fee accrual in P&L — **owner decision 2026-09-15: the day the customer came = checkout day** (§9) |
+| service | booking `startTime` (fallback `date`) | the appointment's start | **revenue in every view today** (Finance, Reports, Sales — measured in §5.1). Not the fee day |
+| checkout | booking `checkedOutAt`, calendar day in the **salon's time zone** | when the sale was checked out | **the fee day in P&L — owner decision 2026-09-15** (§9, tests T11–T18) |
 | payment | `paidAt` | when the customer paid | Sales/Reports "paid on" |
 | fee known | `balance_transaction.created` | when Stripe priced the capture | audit |
 | available | `available_on` | when funds become usable in the Stripe balance | Stripe-balance bridge |
 | expected arrival | `payout.arrival_date` | Stripe's **estimate** of bank arrival | information only, never "in the bank" |
 | arrived | payout `status = paid` **and** a matching bank statement line | the only "money in the bank" | bank reconciliation (§7) |
+
+### 5.1 Fee day vs revenue day — measured 2026-09-15 (read-only; revenue date NOT changed)
+
+**Which day revenue books on today (source):** Finance `dateKey = tenantDayKey(startTime)`, with a fallback to
+`date`+`time` (`src/pages/Finance.tsx:377-381`). Reports builds daily revenue from `startTime`
+(`src/pages/Reports.tsx:251,326`); Sales uses canonical `startTime` (`src/utils/salesPeriod.ts:191-209`). None of them read
+`checkedOutAt`. **The fee day (checkout) and the revenue day (appointment start) are therefore different fields.**
+
+**Writers of `checkedOutAt`:** the Admin/Staff till `checkoutBooking` stamps `new Date()` at checkout
+(`src/firestoreActions.ts:680,787`). It does so unconditionally, so **a correction re-checkout overwrites it** with the
+correction time (open point T18). Product sales stamp their sale date (`:1059`, `functions/src/sales/productSaleCore.ts:359`).
+The not-yet-called server executor stamps `now` (`functions/src/checkout/executor.ts:1508`). Historical aggregator imports
+write `CHECKED_OUT` without a checkout stamp (`functions/src/parsers/booksy.ts:374`, `fresha.ts:293`).
+
+**Production census, `tenants/whitecross/bookings`, status CHECKED_OUT, day in Europe/London (aggregates only):**
+
+| Measure | Count |
+|---|---|
+| CHECKED_OUT bookings | 1,799 |
+| `checkedOutAt` **missing** | 564: 563 walk-ins with appointment dates Feb–May 2026, 1 Fresha |
+| checkout day = appointment day | 1,142 |
+| checkout day ≠ appointment day | 93: +1 day 27 · +2…+7 days 17 · **> 7 days 47** · −1 day 1 · < −1 day 1 |
+| … of which the checkout falls in a **different month** | 47. All land in May–Jul 2026, mostly Mar/Apr → May, which is consistent with later correction re-checkouts; the cause is not proven |
+| bookings with an online payment (`stripeAmountPaid` or `platformDepositAmount` > 0) | 150 |
+| … online-paid, checkout day ≠ appointment day | 6 (5 Booksy, 1 website; 4 cross a month; all dated Mar–Jun 2026) |
+| … online-paid, `checkedOutAt` missing | 0 |
+| stored closed Finance periods (`financePeriods`) | 0 documents |
+
+**Impact:**
+- **Today:** none. No Stripe fee is recorded yet (B1 not deployed), and every mismatch above predates any possible
+  `WC_SETTLEMENT_START_ISO`.
+- **Once B1 + B2 run:** a fee sits on the checkout day while its revenue sits on the appointment day. In the measured
+  history that happens for 6 of 150 online-paid bookings (4.0 %), and for 4 of them the two fall in different months.
+  Daily and monthly Net Revenue then carry a fee without its sale, or a sale without its fee. B2 must show this rather than
+  hide it: T12 (fee on checkout day) together with T17 (revenue unchanged).
+- **Missing `checkedOutAt`:** none on online-paid bookings today. The 563 legacy walk-ins carry no online fee, so T15's
+  review list starts empty.
+- **Re-checkout:** the 47 checkouts landing more than a week after the appointment show that `checkedOutAt` is not a
+  stable first-checkout time. Deciding T18 is required before B2 ships.
 
 ## 6 · Writers, retries and idempotency
 
@@ -288,6 +328,24 @@ Source-level assertions for B1 (same standard as `analyseCompPeriods.test.js`): 
 `runTransaction`; the settlement writer never touches `paidAmount`, `platformDepositAmount`, `paymentAllocation`,
 receipt or loyalty fields.
 
+### 7.1 Fee day — owner decision 2026-09-15 (B2 reader; B1 unchanged)
+
+The fee day is a **reader derivation**, not a stored field: B1 keeps writing every provider date separately (§5) and the
+projection gains no "fee day". The B2 reader places a fee by `booking.checkedOutAt`, converted to a calendar day in the
+salon's time zone (the same zone Finance already uses for `tenantDayKey`). Revenue keeps its own day (§5.1) and is not
+changed by this decision.
+
+| # | Test | Where |
+|---|---|---|
+| T11 | **Salon time zone, not UTC or the browser.** A capture checked out at 23:30 UTC on the last Saturday of October (BST, so 00:30 local on the next day) lands on the salon's next calendar day. A second fixture in winter time lands on the same day. The browser time zone of the test runner does not change the result. | B2 reader, new |
+| T12 | **Checkout day only.** One booking whose `startTime`, `paidAt`, `balance_transaction.created`, `available_on`, `payout.arrival_date` and `checkedOutAt` fall on six different days. The fee appears on the `checkedOutAt` day and on no other day, in the Day, Week and Month views. | B2 reader, new |
+| T13 | **Late fee keeps the checkout day.** `FEE_ACTUAL` recorded (`recordedAt`) days after checkout, or a pending fee completed later by the sweeper, is attributed to the original checkout day, not to the day the fee arrived. | B1 fixture + B2 reader |
+| T14 | **Closed period is not restated.** The checkout day falls in a stored (closed) period. The period's stored totals are byte-identical before and after the fee arrives. The fee reaches Finance only through the existing post-close adjustment path (`FIN_PERIOD_CLOSE_DESIGN.md` §8): a super-admin `PeriodAdjustment` on the operating expense component, shown as a prior-period memo. The reader never adds it silently to the closed month or to the open month. | B2 reader + period-close reader, new |
+| T15 | **Missing `checkedOutAt`: no silent fallback.** A `CHECKED_OUT` booking with a fee and no `checkedOutAt` gets no day. It is not placed by `startTime`, `paidAt`, `date` or `updatedAt`. It is listed for review (`FEE_DAY_UNRESOLVED`), counted in coverage, and the affected totals are shown as incomplete. | B2 reader, new |
+| T16 | **No checkout: no automatic date.** A fee on a booking that was paid and then cancelled or fully refunded without ever being checked out gets no day and is listed separately. Assigning it a date is a separate owner decision (§9), so this test pins the absence of a date. | B2 reader, new |
+| T17 | **Revenue untouched** (extends T4). With fee-day attribution on, every revenue figure and its day bucketing are byte-identical: `effectiveRevenue` by `startTime` in Finance, Reports and Sales. | new |
+| T18 | **Re-checkout — BLOCKED on a decision.** Today a correction re-checkout overwrites `checkedOutAt` with the correction time (`src/firestoreActions.ts` ~680/787, unconditional). A fee day read from it would move to the correction day. The test is written once the owner decides whether the first or the latest checkout time is the fee day (§9). | pending |
+
 **Bank reconciliation (Finance phase), three layers — never "service-month online minus fees = payout":**
 1. *Inside Stripe:* for a payout with `reconciliation_status = completed`, Σ `balance_transaction.net` over the
    transactions Stripe lists for that payout = `payout.amount`.
@@ -312,7 +370,7 @@ receipt or loyalty fields.
 
 | Decision | Needed by | Blocks B1? |
 |---|---|---|
-| ~~P&L day for fees: service day or payment day~~ — **DECIDED 2026-09-15 (owner): the day the customer came, i.e. the day the booking is checked out** — the same Finance row as the revenue it cost; not the payment day, not the payout day. *Still open, not covered by this decision:* (a) a checkout recorded on a different calendar day from the booking's `startTime` (Finance revenue buckets by `startTime` today); (b) the fee on a booking that is paid, then cancelled/refunded and never checked out (it has no checkout day); (c) refund day, including closed months | B2 | **No** — B1 stores every provider date separately (§5) |
+| ~~P&L day for fees~~ — **DECIDED 2026-09-15 (owner, refined the same day): the fee belongs to the day the checkout happened** — not the appointment/service day, not the online payment day, not the payout day. (1) Source: `booking.checkedOutAt`, as a calendar day in the salon's time zone (T11, T12). (2) A fee Stripe reports later still attaches to that checkout day (T13). (3) If that period is closed, stored totals are not changed silently; the existing post-close adjustment mechanism is used (T14). (4) No `checkedOutAt` → no fallback to any other date; raised for review (T15). (5) The fee left on a payment cancelled or fully refunded **without** a checkout is a **separate decision** — this one assigns it no date (T16). **Not decided by it:** re-checkout, i.e. first vs latest `checkedOutAt` (T18). Revenue stays where it is today (`startTime`); the owner asked for the impact to be shown, not for revenue to move — see §5.1 | B2 | **No** — B1 stores every provider date separately (§5) |
 | Second capture handling beyond the flag (refund vs keep) | B2 review strip | **No** — B1 records and flags, never spends |
 | Card terminal on the counter: model, API or statements only; Booksy fee model (per booking / subscription / both) | B5+ (`railFees`, terminal APIs) | **No** |
 

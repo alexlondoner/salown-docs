@@ -1,6 +1,7 @@
 // SYNTHETIC DATA — invented for the local FIN-FEES prototype. No real booking,
 // client, amount or Stripe object is represented. Fee amounts are illustrative
 // and are NOT Stripe's price list. Integer pence throughout.
+// `checkedOutOn` stands for the salon-time-zone calendar day of `checkedOutAt`.
 import type { Dataset } from './model'
 
 export const DATASET: Dataset = {
@@ -29,56 +30,56 @@ export const DATASET: Dataset = {
   online: [
     {
       ref: 'W-01', client: 'Client A', scenario: 'Fee known — full online payment',
-      status: 'CHECKED_OUT', serviceOn: '2026-09-09', paymentType: 'FULL',
+      status: 'CHECKED_OUT', serviceOn: '2026-09-09', checkedOutOn: '2026-09-09', paymentType: 'FULL',
       onlineLeg_p: 4000, deskCash_p: 0, deskCard_p: 0,
       captures: [{ chargeRef: 'ch_synthetic_01', paidOn: '2026-09-06', gross_p: 4000, fee_p: 80, feeState: 'actual' }],
       refunds: [],
     },
     {
       ref: 'W-02', client: 'Client B', scenario: 'Fee known — deposit online, remainder at the desk',
-      status: 'CHECKED_OUT', serviceOn: '2026-09-10', paymentType: 'DEPOSIT',
+      status: 'CHECKED_OUT', serviceOn: '2026-09-10', checkedOutOn: '2026-09-10', paymentType: 'DEPOSIT',
       onlineLeg_p: 1000, deskCash_p: 0, deskCard_p: 2200,
       captures: [{ chargeRef: 'ch_synthetic_02', paidOn: '2026-09-07', gross_p: 1000, fee_p: 35, feeState: 'actual' }],
       refunds: [],
     },
     {
       ref: 'W-03', client: 'Client C', scenario: 'Fee pending — Stripe has not priced it yet',
-      status: 'CHECKED_OUT', serviceOn: '2026-09-14', paymentType: 'FULL',
+      status: 'CHECKED_OUT', serviceOn: '2026-09-14', checkedOutOn: '2026-09-14', paymentType: 'FULL',
       onlineLeg_p: 3200, deskCash_p: 0, deskCard_p: 0,
       captures: [{ chargeRef: 'ch_synthetic_03', paidOn: '2026-09-14', gross_p: 3200, fee_p: null, feeState: 'pending' }],
       refunds: [],
     },
     {
       ref: 'W-04', client: 'Client D', scenario: 'No fee record — paid before fee tracking started',
-      status: 'CHECKED_OUT', serviceOn: '2026-09-03', paymentType: 'FULL',
+      status: 'CHECKED_OUT', serviceOn: '2026-09-03', checkedOutOn: '2026-09-03', paymentType: 'FULL',
       onlineLeg_p: 2800, deskCash_p: 0, deskCard_p: 0,
       captures: [{ chargeRef: 'ch_synthetic_04', paidOn: '2026-09-01', gross_p: 2800, fee_p: null, feeState: 'not_recorded' }],
       refunds: [],
     },
     {
       ref: 'W-05', client: 'Client E', scenario: 'No fee record — deposit paid in a closed month, service in this month',
-      status: 'CHECKED_OUT', serviceOn: '2026-09-04', paymentType: 'DEPOSIT',
+      status: 'CHECKED_OUT', serviceOn: '2026-09-04', checkedOutOn: '2026-09-04', paymentType: 'DEPOSIT',
       onlineLeg_p: 1000, deskCash_p: 2000, deskCard_p: 0,
       captures: [{ chargeRef: 'ch_synthetic_05', paidOn: '2026-08-28', gross_p: 1000, fee_p: null, feeState: 'not_recorded' }],
       refunds: [],
     },
     {
       ref: 'W-06', client: 'Client F', scenario: 'Partial refund after checkout — fee not returned',
-      status: 'CHECKED_OUT', serviceOn: '2026-09-11', paymentType: 'FULL',
+      status: 'CHECKED_OUT', serviceOn: '2026-09-11', checkedOutOn: '2026-09-11', paymentType: 'FULL',
       onlineLeg_p: 4500, deskCash_p: 0, deskCard_p: 0,
       captures: [{ chargeRef: 'ch_synthetic_06', paidOn: '2026-09-08', gross_p: 4500, fee_p: 88, feeState: 'actual' }],
       refunds: [{ refundedOn: '2026-09-12', amount_p: 1500 }],
     },
     {
       ref: 'W-07', client: 'Client G', scenario: 'Full refund — cancelled, never checked out, fee not returned',
-      status: 'CANCELLED', serviceOn: '2026-09-15', paymentType: 'FULL',
+      status: 'CANCELLED', serviceOn: '2026-09-15', checkedOutOn: null, paymentType: 'FULL',
       onlineLeg_p: 0, deskCash_p: 0, deskCard_p: 0,
       captures: [{ chargeRef: 'ch_synthetic_07', paidOn: '2026-09-09', gross_p: 3200, fee_p: 68, feeState: 'actual' }],
       refunds: [{ refundedOn: '2026-09-10', amount_p: 3200 }],
     },
     {
       ref: 'W-08', client: 'Client H', scenario: 'Second capture — charged twice, needs review',
-      status: 'CHECKED_OUT', serviceOn: '2026-09-12', paymentType: 'FULL',
+      status: 'CHECKED_OUT', serviceOn: '2026-09-12', checkedOutOn: '2026-09-12', paymentType: 'FULL',
       onlineLeg_p: 3200, deskCash_p: 0, deskCard_p: 0,
       captures: [
         { chargeRef: 'ch_synthetic_08a', paidOn: '2026-09-12', gross_p: 3200, fee_p: 68, feeState: 'actual' },
@@ -89,10 +90,24 @@ export const DATASET: Dataset = {
     },
     {
       ref: 'W-09', client: 'Client I', scenario: 'Refund in this month on a sale in a closed month',
-      status: 'CHECKED_OUT', serviceOn: '2026-08-29', paymentType: 'DEPOSIT',
+      status: 'CHECKED_OUT', serviceOn: '2026-08-29', checkedOutOn: '2026-08-29', paymentType: 'DEPOSIT',
       onlineLeg_p: 1000, deskCash_p: 0, deskCard_p: 2500,
       captures: [{ chargeRef: 'ch_synthetic_09', paidOn: '2026-08-27', gross_p: 1000, fee_p: null, feeState: 'not_recorded' }],
       refunds: [{ refundedOn: '2026-09-03', amount_p: 1000 }],
+    },
+    {
+      ref: 'W-10', client: 'Client J', scenario: 'Checked out the day after the appointment — fee day differs from revenue day',
+      status: 'CHECKED_OUT', serviceOn: '2026-09-10', checkedOutOn: '2026-09-11', paymentType: 'FULL',
+      onlineLeg_p: 3000, deskCash_p: 0, deskCard_p: 0,
+      captures: [{ chargeRef: 'ch_synthetic_10', paidOn: '2026-09-06', gross_p: 3000, fee_p: 60, feeState: 'actual' }],
+      refunds: [],
+    },
+    {
+      ref: 'W-11', client: 'Client K', scenario: 'Checked out but checkout time missing — fee not placed, raised for review',
+      status: 'CHECKED_OUT', serviceOn: '2026-09-08', checkedOutOn: null, paymentType: 'FULL',
+      onlineLeg_p: 2500, deskCash_p: 0, deskCard_p: 0,
+      captures: [{ chargeRef: 'ch_synthetic_11', paidOn: '2026-09-07', gross_p: 2500, fee_p: 75, feeState: 'actual' }],
+      refunds: [],
     },
   ],
   costs: {

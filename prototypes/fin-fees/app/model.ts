@@ -1,23 +1,25 @@
 // FIN-FEES prototype — pure derivations over a synthetic dataset.
 //
 // LOCAL PROTOTYPE ONLY. Nothing here is wired to Firebase, Stripe or any
-// production reader, and nothing here is an accounting rule. It renders the
-// B2 draft (docs/FIN_FEES_UX_DRAFT.md) under stated, UNAPPROVED assumptions:
+// production reader. It renders the B2 draft (docs/FIN_FEES_UX_DRAFT.md):
 //
+//  * FEE DAY (owner decision 2026-09-15): the salon-time-zone calendar day of
+//    `checkedOutAt` ('checkout'). 'payment' is kept only as a comparison view.
+//    No checkout time -> no day, raised for review. Never checked out -> no day.
 //  * Revenue follows TODAY's Finance contract and never moves with fees:
 //    a CHECKED_OUT booking contributes online leg + desk cash + desk card on
-//    its service day; anything else contributes nothing.
+//    its appointment (service) day; anything else contributes nothing.
 //  * A refund is shown as a Stripe fact. Today's Finance does not read refunds,
 //    so revenue is NOT reduced here either; a refund on a checked-out sale is
 //    raised for review instead of being decided by this prototype.
 //  * A stored (closed) month is never restated. Fee or refund facts that belong
 //    to it are listed, never added.
 //  * An unknown fee is never zero. Every total that would need it is reported
-//    as an upper bound ("at most") with the missing coverage beside it.
+//    as an upper bound with the missing coverage beside it.
 //  * No payout data exists, so nothing is ever called bank money.
 
 export type FeeState = 'actual' | 'pending' | 'not_recorded'
-export type FeeDayAssumption = 'service' | 'payment'
+export type FeeDayAssumption = 'checkout' | 'payment'
 export type MonthKey = string
 
 export interface Capture {
@@ -39,7 +41,10 @@ export interface OnlineBooking {
   client: string
   scenario: string
   status: 'CHECKED_OUT' | 'CANCELLED'
+  /** Appointment day (startTime) — the day today's Finance books revenue on. */
   serviceOn: string
+  /** Salon-time-zone calendar day of checkedOutAt; null when absent. */
+  checkedOutOn: string | null
   paymentType: 'FULL' | 'DEPOSIT'
   /** What Finance's online leg reads for this booking (platformDepositAmount). */
   onlineLeg_p: number
@@ -81,18 +86,23 @@ export interface Dataset {
 
 export const monthOf = (day: string): MonthKey => day.slice(0, 7)
 
-// ── Fee attribution — owner decision 2026-09-15: checkout day ('service'); 'payment' is a comparison view ──
+// ── Fee attribution — owner decision 2026-09-15: checkout day; 'payment' is a comparison view ──
 
 export type Attribution =
   | { kind: 'day'; day: string }
-  | { kind: 'no_service_day' }
+  | { kind: 'no_checkout' }
+  | { kind: 'checkout_time_missing' }
   | { kind: 'closed_month'; day: string }
 
 export function attributeCapture(b: OnlineBooking, c: Capture, assumption: FeeDayAssumption, ds: Dataset): Attribution {
-  const day = assumption === 'service'
-    ? (b.status === 'CHECKED_OUT' ? b.serviceOn : null)
-    : c.paidOn
-  if (!day) return { kind: 'no_service_day' }
+  let day: string
+  if (assumption === 'checkout') {
+    if (b.status !== 'CHECKED_OUT') return { kind: 'no_checkout' }
+    if (!b.checkedOutOn) return { kind: 'checkout_time_missing' } // never fall back to another date
+    day = b.checkedOutOn
+  } else {
+    day = c.paidOn
+  }
   if (ds.closedMonths[monthOf(day)]) return { kind: 'closed_month', day }
   return { kind: 'day', day }
 }
@@ -100,7 +110,7 @@ export function attributeCapture(b: OnlineBooking, c: Capture, assumption: FeeDa
 export interface OutsideItem {
   ref: string
   chargeRef: string
-  reason: 'no_service_day' | 'closed_month'
+  reason: 'no_checkout' | 'checkout_time_missing' | 'closed_month'
   month?: MonthKey
   fee_p: number | null
   feeState: FeeState
@@ -114,9 +124,13 @@ export interface FeeCoverage {
   pendingGross_p: number
   notRecordedCount: number
   notRecordedGross_p: number
-  /** Captures related to this month whose fee is NOT in this month under the assumption. */
+  /** Captures related to this month whose fee is NOT on a day of this month. */
   outside: OutsideItem[]
 }
+
+const relatedToMonth = (b: OnlineBooking, c: Capture, month: MonthKey): boolean =>
+  monthOf(c.paidOn) === month
+  || (b.status === 'CHECKED_OUT' && (monthOf(b.serviceOn) === month || (!!b.checkedOutOn && monthOf(b.checkedOutOn) === month)))
 
 export function feeCoverage(ds: Dataset, month: MonthKey, assumption: FeeDayAssumption): FeeCoverage {
   const out: FeeCoverage = {
@@ -134,8 +148,7 @@ export function feeCoverage(ds: Dataset, month: MonthKey, assumption: FeeDayAssu
         else { out.notRecordedCount++; out.notRecordedGross_p += c.gross_p }
         continue
       }
-      const related = monthOf(c.paidOn) === month || (b.status === 'CHECKED_OUT' && monthOf(b.serviceOn) === month)
-      if (!related) continue
+      if (!relatedToMonth(b, c, month)) continue
       if (at.kind === 'closed_month' && monthOf(at.day) === month) continue
       out.outside.push({
         ref: b.ref,
@@ -153,7 +166,7 @@ export function feeCoverage(ds: Dataset, month: MonthKey, assumption: FeeDayAssu
 export const coverageComplete = (c: FeeCoverage): boolean =>
   c.pendingCount === 0 && c.notRecordedCount === 0 && c.outside.length === 0
 
-// ── Revenue — today's Finance contract, independent of fees ──────────────────
+// ── Revenue — today's Finance contract (appointment day), independent of fees ──
 
 export interface MonthRevenue {
   cash_p: number
@@ -278,7 +291,7 @@ export function stripeActivity(ds: Dataset, month: MonthKey): StripeActivity {
 
 export interface ReviewItem {
   ref: string
-  kind: 'SECOND_CAPTURE' | 'REFUND_AFTER_CHECKOUT' | 'REFUND_ON_CLOSED_MONTH_SALE'
+  kind: 'SECOND_CAPTURE' | 'REFUND_AFTER_CHECKOUT' | 'REFUND_ON_CLOSED_MONTH_SALE' | 'FEE_DAY_UNRESOLVED'
   amount_p: number
   day: string
 }
@@ -292,6 +305,12 @@ export function reviewItems(ds: Dataset, month: MonthKey): ReviewItem[] {
       }
     }
     if (b.status !== 'CHECKED_OUT') continue
+    if (!b.checkedOutOn && b.captures.length > 0) {
+      const first = b.captures[0]
+      if (monthOf(first.paidOn) === month || monthOf(b.serviceOn) === month) {
+        out.push({ ref: b.ref, kind: 'FEE_DAY_UNRESOLVED', amount_p: b.captures.reduce((s, c) => s + (c.fee_p ?? 0), 0), day: first.paidOn })
+      }
+    }
     for (const r of b.refunds) {
       if (monthOf(r.refundedOn) !== month) continue
       const closed = !!ds.closedMonths[monthOf(b.serviceOn)]
@@ -311,7 +330,7 @@ export interface BookingView {
   refundKind: 'none' | 'partial' | 'full'
   afterFeeAndRefunds_p: number
   atMost: boolean
-  /** What today's Finance counts for this booking (service day, CHECKED_OUT only). */
+  /** What today's Finance counts for this booking (appointment day, CHECKED_OUT only). */
   financeRevenue_p: number
 }
 
@@ -336,6 +355,7 @@ export function bookingView(b: OnlineBooking): BookingView {
 export function bookingsInMonth(ds: Dataset, month: MonthKey): OnlineBooking[] {
   return ds.online.filter((b) =>
     monthOf(b.serviceOn) === month
+    || (!!b.checkedOutOn && monthOf(b.checkedOutOn) === month)
     || b.captures.some((c) => monthOf(c.paidOn) === month)
     || b.refunds.some((r) => monthOf(r.refundedOn) === month))
 }

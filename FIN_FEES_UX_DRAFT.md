@@ -143,8 +143,14 @@ where the fee and the refund land:
 - **D** is the bank's view. It is the right basis for **reconciling the bank**, not for P&L. It needs payout records that
   no writer produces yet.
 
-**Owner decision 2026-09-15:** a fee is recorded on **the day the customer came — the checkout day** (option A). Payment
-day (B) and payout day (D) are not used for the fee in P&L. The refund-day and cancelled-booking rows below remain open.
+**Owner decision 2026-09-15 (refined the same day):** a fee is recorded on **the day the checkout happened** —
+`checkedOutAt` as a calendar day in the salon's time zone. It is not the appointment day, the payment day or the payout
+day. A fee that arrives later keeps that checkout day. A closed period is corrected only through the existing post-close
+adjustment. No `checkedOutAt` means review, with no fallback. A fee on a payment cancelled or refunded without a checkout
+is a separate decision. The canonical text and acceptance tests are in `PROCESSOR_FEES_PLAN.md` §9 and §7.1.
+**Caution — option A in the table below means the *service* day.** Finance revenue still books on the appointment
+(`startTime`) day, so revenue and fee land on different days whenever a checkout is late or re-done
+(measured in `PROCESSOR_FEES_PLAN.md` §5.1). The refund-day rows below remain open.
 
 **Original recommendation (kept for the record):** fees on the **service day** (A); refunds on the **service day while that
 month is open, otherwise the refund day in the first open month** (A with C as fallback); bank reconciliation on the
