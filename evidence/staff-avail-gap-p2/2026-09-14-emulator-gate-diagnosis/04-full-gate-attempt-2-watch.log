@@ -1,0 +1,8 @@
+19:12:09 starting: JAVA_HOME=/opt/homebrew/opt/openjdk JAVA_TOOL_OPTIONS=-Xmx512m ./ops/test-emulator.sh
+19:12:09 baseline: swap=822M PhysMem: 6360M used (1458M wired, 1045M compressor), 1272M unused.
+19:12:09 gate PID=37536
+19:13:10 t=+60s procs=6 cpu_pct_sum=0% swap=822M swap_delta=0M | PhysMem: 7439M used (1261M wired, 959M compressor), 193M unused.
+19:37:14 t=+120s procs=6 cpu_pct_sum=124% swap=814M swap_delta=-8M | PhysMem: 7436M used (1459M wired, 978M compressor), 196M unused.
+19:38:14 t=+180s procs=6 cpu_pct_sum=0% swap=814M swap_delta=0M | PhysMem: 7436M used (1407M wired, 987M compressor), 196M unused.
+19:39:15 t=+240s procs=6 cpu_pct_sum=0% swap=814M swap_delta=0M | PhysMem: 7257M used (1392M wired, 973M compressor), 374M unused.
+19:40:15 t=+300s procs=6 cpu_pct_sum=1% swap=814M swap_delta=0M | PhysMem: 7371M used (1283M wired, 942M compressor), 262M unused.

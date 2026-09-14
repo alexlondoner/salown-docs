@@ -1,0 +1,14 @@
+19:53:47 REAL wall-clock cap: 600s (checked via epoch seconds, not iteration count)
+19:53:47 test output  -> /private/tmp/claude-501/-Users-alish/a0fc27d4-d19d-4786-8504-8964dbf64aef/scratchpad/diag-evidence/executor-test-output.log (live, durable — not the wrapper's self-deleting mktemp dir)
+19:53:47 emulator log -> /private/tmp/claude-501/-Users-alish/a0fc27d4-d19d-4786-8504-8964dbf64aef/scratchpad/diag-evidence/firestore-emulator.log (live, durable)
+19:53:47 emulator wrapper PID=38108 — waiting for it to report ready
+19:53:50 emulator ready
+19:53:50 test PID=38145
+19:54:10 real_elapsed=23s last_test_line: ✔ EMU 4b: same mutationId + different payload ⇒ IDEMPOTENCY_CONFLICT, no second mutation (32.726334ms)
+19:55:27 real_elapsed=100s last_test_line: ✔ EMU 5a: two concurrent SAME-mutation attempts ⇒ exactly one applied stock delta (x8 rounds) (88183.825792ms)
+19:55:47 real_elapsed=120s last_test_line: ✔ EMU 5b: two concurrent DIFFERENT mutations, stock insufficient for both ⇒ exactly one wins (x8 rounds) (25253.07675ms)
+19:56:07 real_elapsed=140s last_test_line: ✔ EMU 5b: two concurrent DIFFERENT mutations, stock insufficient for both ⇒ exactly one wins (x8 rounds) (25253.07675ms)
+19:56:27 real_elapsed=160s last_test_line: ✔ EMU 7b: successful hook write commits with product update + ledger row (all three atomic) (16.613584ms)
+19:56:47 real_elapsed=180s last_test_line: ℹ duration_ms 159996.506166
+19:56:47 test process exited rc=0
+19:56:48 RESULT: this file PASSED on its own, real_elapsed=181s

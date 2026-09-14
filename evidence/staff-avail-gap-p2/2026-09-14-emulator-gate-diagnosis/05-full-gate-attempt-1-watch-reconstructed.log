@@ -1,0 +1,34 @@
+Reconstructed from the session transcript (the live file at
+/private/tmp/.../scratchpad/emulator-gate-watch.log was overwritten by attempt 2's
+script run, which truncates the same filename at start — a process hygiene gap,
+noted, not repeated in the diagnostic run below). This is the complete watch-log
+content attempt 1 actually printed, verbatim:
+
+18:01:47 starting: JAVA_HOME=/opt/homebrew/opt/openjdk JAVA_TOOL_OPTIONS=-Xmx512m ./ops/test-emulator.sh
+18:01:48 baseline swap used: 1384M · PhysMem: 7095M used (1310M wired, 740M compressor), 538M unused.
+18:01:48 gate PID=37200
+
+Gate log (the wrapper script's own stdout, captured separately) reached exactly:
+
+── pinned emulator toolchain ──
+   firebase-tools : 15.26.0  (/Users/alish/Desktop/alex/salown-app/functions/node_modules/.bin/firebase)
+   firestore jar  : cloud-firestore-emulator-v1.22.0.jar
+   jar cache      : /Users/alish/.cache/firebase/emulators
+
+── building functions ──
+
+> build
+> tsc -p tsconfig.build.json
+
+── emulator phase: general ──
+
+...and no further output. Monitor's own 2,100,000ms (35min) timeout fired at that
+point with zero further watchdog check-ins ever printed — diagnosed afterward
+(attempt 2's own design notes) as an unbuffered-vs-fully-buffered `tee` bug: the
+watchdog's log() function piped through `tee -a` to a non-tty consumer (Monitor),
+which fully-buffered instead of line-buffered, so every check-in the loop actually
+printed sat in a buffer and was lost when the process was hard-killed at timeout
+rather than exiting normally and flushing. Whether the loop's checks ran normally
+in the background the whole time (and were merely never seen) or genuinely never
+executed cannot be distinguished after the fact — this is exactly why attempt 1
+must be recorded as INCOMPLETE, not as evidence of anything about the gate itself.

@@ -1,0 +1,28 @@
+✔ EMU 1a: single tracked product ⇒ decrement + ledger row in the same commit (1706.098292ms)
+✔ EMU 1b: multi-product decrement atomic (both or neither in a single commit) (43.290167ms)
+✔ EMU 1c: duplicate lines for the same productId coalesce (single write) (32.654917ms)
+✔ EMU 2a: insufficient stock ⇒ zero writes (product AND ledger untouched) (25.107375ms)
+✔ EMU 2b: one missing product in a multi-line plan ⇒ NEITHER product changes (25.307375ms)
+✔ EMU 2c: untracked product (no stockQty) ⇒ ok:true, no product write, ledger tracked:false (26.457709ms)
+✔ EMU 2d: explicit stockQty:0 ⇒ INSUFFICIENT_STOCK (not silent-skip) (25.854292ms)
+✔ EMU 3a: restock adds back (reversal / owner adjustment) (20.79175ms)
+✔ EMU 4a: retry with same mutationId + same payload ⇒ single decrement (replay) (65.546ms)
+✔ EMU 4b: same mutationId + different payload ⇒ IDEMPOTENCY_CONFLICT, no second mutation (32.726334ms)
+✔ EMU 5a: two concurrent SAME-mutation attempts ⇒ exactly one applied stock delta (x8 rounds) (88183.825792ms)
+✔ EMU 5b: two concurrent DIFFERENT mutations, stock insufficient for both ⇒ exactly one wins (x8 rounds) (25253.07675ms)
+✔ EMU 5c: high-concurrency stampede (6 different mutations for stock=10, qty=3 each) ⇒ 3 win, 3 lose (21351.426417ms)
+✔ EMU 6a: tenant A mutation NEVER touches tenant B products with the same productId (28.292875ms)
+✔ EMU 7a: hook throws mid-tx ⇒ product & ledger & hook write all roll back (16.878084ms)
+✔ EMU 7b: successful hook write commits with product update + ledger row (all three atomic) (16.613584ms)
+✔ EMU 8a: concurrent decrement on a shared product does NOT double-write our mutation (22928.946916ms)
+✔ EMU 9a: invalid quantity in lines ⇒ zero product writes, zero ledger writes (36.482833ms)
+✔ EMU 9b: invalid sourceType at the executor envelope ⇒ zero writes (8.026083ms)
+✔ EMU 10a: corrupt stockQty (negative) ⇒ INVENTORY_CORRUPT, zero writes (14.434083ms)
+ℹ tests 20
+ℹ suites 0
+ℹ pass 20
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 159996.506166
