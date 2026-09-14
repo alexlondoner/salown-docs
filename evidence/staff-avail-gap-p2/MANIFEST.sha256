@@ -121,3 +121,10 @@ d075c354f23181d6570252f813787a09a63a718242cab34530a41fbc7823fcb3  2026-09-14-rel
 ed3953058f3f6863b3fdc4cc984b04db505b2c47f8dc7ff3b6ffc1f3d570b0c4  2026-09-14-release-checks/RELEASE-EVALUATION-2.md
 d824abe2a8c9776941d25c0086b7c86bbbbb0d1e183fb916f8cc09a2bcfb9739  2026-09-14-release-checks/SUMMARY.txt
 73b52fa473e9ba812658b57797e219b145f605f1a9de9c0d384d6a7b7c76793d  README.md
+eac31dadd513b185df441423a3db80b433ca68365198aeaa666c68bed12c38ed  2026-09-15-callable-level-verify/callable-check-results.json
+9e927bf7dba121970729450172511da304b52dfbbb7fc58e2a90d787299b51df  2026-09-15-callable-level-verify/callable-check.mjs
+6d7d28bdd2b03ff21aaca3f71f8075b0e135243bfba8e9a2fddb8cc81d3758a6  2026-09-15-callable-level-verify/MANIFEST.sha256
+3224c97a63ea9ed8f43f2f2e50585932367e9292ab8c1360ce90d974cd74ec08  2026-09-15-callable-level-verify/README.md
+f672e30f8bee75ace47aa0bf1ad6dcc4c0288c897e1e55415ecbe1ae33b3e772  2026-09-15-callable-level-verify/round12-full-gate.log
+4d2fcf42cb3173fef98822cacbaa5bd5750b315cc7d36a784acfdc59ab93d7ae  2026-09-15-callable-level-verify/round12-sampler-raw.log
+a2e02f4d1716725eb1ab97cc92fbd57f800c7f63259f5c2568f3a69d98005199  2026-09-15-callable-level-verify/seed.mjs

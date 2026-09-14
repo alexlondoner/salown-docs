@@ -1,0 +1,26 @@
+=== round 12 full-gate attempt (aa2efd9 clone) start 2026-09-14T23:05:09Z ===
+── pinned emulator toolchain ──
+   firebase-tools : 15.26.0  (/private/tmp/claude-501/-Users-alish/da044e32-667a-44c5-aaf1-636d18deb59a/scratchpad/staff-avail-gap-p2/clone-aa2efd9/functions/node_modules/.bin/firebase)
+   firestore jar  : cloud-firestore-emulator-v1.22.0.jar
+   jar cache      : /Users/alish/.cache/firebase/emulators
+
+── building functions ──
+
+> build
+> tsc -p tsconfig.build.json
+
+
+── emulator phase: general ──
+   tests=655 pass=655 fail=0 (exit 0)
+
+── emulator phase: packages ──
+   tests=27 pass=27 fail=0 (exit 0)
+
+════ CANONICAL EMULATOR GATE — both phases mandatory ════
+  toolchain: firebase-tools 15.26.0 · cloud-firestore-emulator-v1.22.0.jar
+  general  : tests=655  pass=655  fail=0
+  packages : tests=27   pass=27   fail=0
+  TOTAL    : tests=682  pass=682  fail=0
+  RESULT   : PASS
+GATE_EXIT=0
+=== round 12 full-gate attempt end 2026-09-14T23:15:36Z ===

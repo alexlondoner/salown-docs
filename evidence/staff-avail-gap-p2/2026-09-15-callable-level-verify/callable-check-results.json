@@ -1,0 +1,174 @@
+[
+  {
+    "label": "test1-computed-instant",
+    "at": "2026-09-14T23:30:41.504Z",
+    "startTimeIso": "2026-09-14T22:15:00.000Z",
+    "note": "CONTROLLED fixed instant (not real Date.now()) — captured ONCE, reused verbatim below, mirrors WalkInFlow.tsx closing over `start`"
+  },
+  {
+    "label": "test1a-staff-no-override",
+    "at": "2026-09-14T23:30:41.602Z",
+    "ok": false,
+    "claims": {
+      "tenantId": "p2mid",
+      "tenantRole": "staff",
+      "email": "mid-staff@p2.test",
+      "email_verified": false,
+      "auth_time": 1789428641,
+      "user_id": "PyUtcyGzK5jl1ZElBMoZAMUHJw05",
+      "firebase": {
+        "identities": {
+          "email": [
+            "mid-staff@p2.test"
+          ]
+        },
+        "sign_in_provider": "password"
+      },
+      "iat": 1789428641,
+      "exp": 1789432241,
+      "aud": "demo-c1",
+      "iss": "https://securetoken.google.com/demo-c1",
+      "sub": "PyUtcyGzK5jl1ZElBMoZAMUHJw05"
+    },
+    "code": "functions/failed-precondition",
+    "message": "SLOT_CONFLICT",
+    "details": {
+      "reason": "SLOT_CONFLICT",
+      "conflictingRecordIds": [
+        "midConflictCara"
+      ]
+    }
+  },
+  {
+    "label": "test1b-staff-smuggled-override",
+    "at": "2026-09-14T23:30:41.644Z",
+    "ok": false,
+    "claims": {
+      "tenantId": "p2mid",
+      "tenantRole": "staff",
+      "email": "mid-staff@p2.test",
+      "email_verified": false,
+      "auth_time": 1789428641,
+      "user_id": "PyUtcyGzK5jl1ZElBMoZAMUHJw05",
+      "firebase": {
+        "identities": {
+          "email": [
+            "mid-staff@p2.test"
+          ]
+        },
+        "sign_in_provider": "password"
+      },
+      "iat": 1789428641,
+      "exp": 1789432241,
+      "aud": "demo-c1",
+      "iss": "https://securetoken.google.com/demo-c1",
+      "sub": "PyUtcyGzK5jl1ZElBMoZAMUHJw05"
+    },
+    "code": "functions/failed-precondition",
+    "message": "OVERRIDE_REQUIRES_OWNER",
+    "details": {
+      "reason": "OVERRIDE_REQUIRES_OWNER",
+      "conflictingRecordIds": [
+        "midConflictCara"
+      ]
+    }
+  },
+  {
+    "label": "test1c-owner-no-override",
+    "at": "2026-09-14T23:30:41.680Z",
+    "ok": false,
+    "claims": {
+      "tenantId": "p2mid",
+      "tenantRole": "owner",
+      "email": "mid-owner@p2.test",
+      "email_verified": false,
+      "auth_time": 1789428641,
+      "user_id": "1PN7MID79UfK1dqbWHzyVKXRMGTo",
+      "firebase": {
+        "identities": {
+          "email": [
+            "mid-owner@p2.test"
+          ]
+        },
+        "sign_in_provider": "password"
+      },
+      "iat": 1789428641,
+      "exp": 1789432241,
+      "aud": "demo-c1",
+      "iss": "https://securetoken.google.com/demo-c1",
+      "sub": "1PN7MID79UfK1dqbWHzyVKXRMGTo"
+    },
+    "code": "functions/failed-precondition",
+    "message": "SLOT_CONFLICT",
+    "details": {
+      "reason": "SLOT_CONFLICT",
+      "conflictingRecordIds": [
+        "midConflictCara"
+      ]
+    }
+  },
+  {
+    "label": "test1d-owner-override-success",
+    "at": "2026-09-14T23:30:41.761Z",
+    "ok": true,
+    "claims": {
+      "tenantId": "p2mid",
+      "tenantRole": "owner",
+      "email": "mid-owner@p2.test",
+      "email_verified": false,
+      "auth_time": 1789428641,
+      "user_id": "1PN7MID79UfK1dqbWHzyVKXRMGTo",
+      "firebase": {
+        "identities": {
+          "email": [
+            "mid-owner@p2.test"
+          ]
+        },
+        "sign_in_provider": "password"
+      },
+      "iat": 1789428641,
+      "exp": 1789432241,
+      "aud": "demo-c1",
+      "iss": "https://securetoken.google.com/demo-c1",
+      "sub": "1PN7MID79UfK1dqbWHzyVKXRMGTo"
+    },
+    "data": {
+      "ok": true,
+      "bookingId": "WCB-1789428641696-c6e6",
+      "documentId": "r4QOodDI2aCDCm0cqclR",
+      "replayed": false
+    }
+  },
+  {
+    "label": "test2-passive-barber-historical-day",
+    "at": "2026-09-14T23:30:41.804Z",
+    "startTimeIso": "2026-09-14T19:00:00.000Z",
+    "ok": false,
+    "claims": {
+      "tenantId": "p2mid",
+      "tenantRole": "owner",
+      "email": "mid-owner@p2.test",
+      "email_verified": false,
+      "auth_time": 1789428641,
+      "user_id": "1PN7MID79UfK1dqbWHzyVKXRMGTo",
+      "firebase": {
+        "identities": {
+          "email": [
+            "mid-owner@p2.test"
+          ]
+        },
+        "sign_in_provider": "password"
+      },
+      "iat": 1789428641,
+      "exp": 1789432241,
+      "aud": "demo-c1",
+      "iss": "https://securetoken.google.com/demo-c1",
+      "sub": "1PN7MID79UfK1dqbWHzyVKXRMGTo"
+    },
+    "code": "functions/failed-precondition",
+    "message": "STAFF_PASSIVE",
+    "details": {
+      "reason": "STAFF_PASSIVE"
+    }
+  }
+]

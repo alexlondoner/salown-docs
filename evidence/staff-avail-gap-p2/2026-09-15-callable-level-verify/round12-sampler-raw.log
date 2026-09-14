@@ -1,0 +1,580 @@
+sampler start 2026-09-14T23:05:25Z epoch=1789427125
+---- [0 s] 2026-09-14T23:05:25Z ----
+java_pid=46024 node_pids=46063 46096 46104 
+java: 46024    784   0.0   00:21
+java_fd_count=9
+java_tcp_estab=0
+node(46063): 46063 172160   0.0   00:12
+node_fd_count(46063)=43
+node(46096): 46096  49472   0.0   00:10
+node_fd_count(46096)=21
+node(46104): 46104 112480   1.8   00:08
+node_fd_count(46104)=19
+Pages free:                                3943.
+Pages active:                            131998.
+Pages inactive:                          131100.
+Pages speculative:                          472.
+Pages wired down:                         98801.
+swapouts=total = 2048.00M  used = 782.38M  free = 1265.62M  (encrypted)
+---- [15 s] 2026-09-14T23:05:40Z ----
+java_pid=46024 node_pids=46063 46096 46104 
+java: 46024    784   0.0   00:36
+java_fd_count=9
+java_tcp_estab=0
+node(46063): 46063 122032   0.3   00:27
+node_fd_count(46063)=43
+node(46096): 46096  49408   0.0   00:25
+node_fd_count(46096)=21
+node(46104): 46104 117600   1.6   00:23
+node_fd_count(46104)=19
+Pages free:                                4533.
+Pages active:                            139830.
+Pages inactive:                          138640.
+Pages speculative:                          428.
+Pages wired down:                         82160.
+swapouts=total = 2048.00M  used = 782.38M  free = 1265.62M  (encrypted)
+---- [30 s] 2026-09-14T23:05:55Z ----
+java_pid=46024 node_pids=46063 46096 46104 
+java: 46024    784   0.0   00:51
+java_fd_count=9
+java_tcp_estab=0
+node(46063): 46063 122672   0.0   00:42
+node_fd_count(46063)=43
+node(46096): 46096  49632   0.1   00:40
+node_fd_count(46096)=21
+node(46104): 46104 155232  11.2   00:38
+node_fd_count(46104)=19
+Pages free:                                4773.
+Pages active:                            137190.
+Pages inactive:                          136597.
+Pages speculative:                          101.
+Pages wired down:                         86682.
+swapouts=total = 2048.00M  used = 782.38M  free = 1265.62M  (encrypted)
+---- [45 s] 2026-09-14T23:06:10Z ----
+java_pid=46024 node_pids=46063 46096 46284 
+java: 46024    784   0.0   01:06
+java_fd_count=9
+java_tcp_estab=0
+node(46063): 46063 122736   0.0   00:57
+node_fd_count(46063)=43
+node(46096): 46096  50160   0.0   00:55
+node_fd_count(46096)=21
+node(46284): 46284 108560   1.0   00:02
+node_fd_count(46284)=19
+Pages free:                                4117.
+Pages active:                            138513.
+Pages inactive:                          136794.
+Pages speculative:                         1242.
+Pages wired down:                         82464.
+swapouts=total = 2048.00M  used = 782.38M  free = 1265.62M  (encrypted)
+---- [158 s] 2026-09-14T23:08:03Z ----
+java_pid=46024 node_pids=46063 46096 46342 
+java: 46024    640   0.0   02:59
+java_fd_count=9
+java_tcp_estab=0
+node(46063): 46063 115200   0.0   02:50
+node_fd_count(46063)=43
+node(46096): 46096  50000   0.0   02:48
+node_fd_count(46096)=21
+node(46342): 46342 118976   2.2   00:07
+node_fd_count(46342)=19
+Pages free:                               15815.
+Pages active:                            120898.
+Pages inactive:                          117043.
+Pages speculative:                         3480.
+Pages wired down:                         90297.
+swapouts=total = 2048.00M  used = 782.38M  free = 1265.62M  (encrypted)
+---- [173 s] 2026-09-14T23:08:18Z ----
+java_pid=46024 node_pids=46063 46096 46395 
+java: 46024    640   0.0   03:14
+java_fd_count=9
+java_tcp_estab=0
+node(46063): 46063 115680   0.0   03:05
+node_fd_count(46063)=43
+node(46096): 46096  52144   0.0   03:03
+node_fd_count(46096)=21
+node(46395): 46395 106496   0.1   00:02
+node_fd_count(46395)=19
+Pages free:                                3785.
+Pages active:                            131186.
+Pages inactive:                          130060.
+Pages speculative:                          536.
+Pages wired down:                         92782.
+swapouts=total = 2048.00M  used = 782.38M  free = 1265.62M  (encrypted)
+---- [188 s] 2026-09-14T23:08:33Z ----
+java_pid=46024 node_pids=46063 46096 46447 
+java: 46024    640   0.0   03:29
+java_fd_count=9
+java_tcp_estab=0
+node(46063): 46063 114160   0.0   03:20
+node_fd_count(46063)=43
+node(46096): 46096  53120   0.0   03:18
+node_fd_count(46096)=21
+node(46447): 46447 191088   0.0   00:09
+node_fd_count(46447)=19
+Pages free:                                4878.
+Pages active:                            131956.
+Pages inactive:                          129549.
+Pages speculative:                          146.
+Pages wired down:                         91761.
+swapouts=total = 2048.00M  used = 782.38M  free = 1265.62M  (encrypted)
+---- [203 s] 2026-09-14T23:08:48Z ----
+java_pid=46024 node_pids=46063 46096 46506 
+java: 46024    640   0.0   03:44
+java_fd_count=9
+java_tcp_estab=0
+node(46063): 46063 114560   0.0   03:35
+node_fd_count(46063)=43
+node(46096): 46096  53392   0.9   03:33
+node_fd_count(46096)=21
+node(46506): 46506 133392  75.8   00:01
+node_fd_count(46506)=19
+Pages free:                                4165.
+Pages active:                            128425.
+Pages inactive:                          127116.
+Pages speculative:                          373.
+Pages wired down:                         99918.
+swapouts=total = 2048.00M  used = 782.38M  free = 1265.62M  (encrypted)
+---- [218 s] 2026-09-14T23:09:03Z ----
+java_pid=46024 node_pids=46063 46096 46506 
+java: 46024    640   0.0   04:00
+java_fd_count=9
+java_tcp_estab=0
+node(46063): 46063 114752   0.0   03:51
+node_fd_count(46063)=43
+node(46096): 46096  53296   0.0   03:49
+node_fd_count(46096)=21
+node(46506): 46506 186448   0.7   00:17
+node_fd_count(46506)=19
+Pages free:                               11333.
+Pages active:                            129610.
+Pages inactive:                          130160.
+Pages speculative:                          483.
+Pages wired down:                         86763.
+swapouts=total = 2048.00M  used = 782.38M  free = 1265.62M  (encrypted)
+---- [234 s] 2026-09-14T23:09:19Z ----
+java_pid=46024 node_pids=46063 46096 46615 
+java: 46024    640   0.0   04:15
+java_fd_count=9
+java_tcp_estab=0
+node(46063): 46063 114864   0.0   04:06
+node_fd_count(46063)=43
+node(46096): 46096  53376   0.0   04:04
+node_fd_count(46096)=21
+node(46615): 46615 129488   0.0   00:11
+node_fd_count(46615)=19
+Pages free:                               11763.
+Pages active:                            126110.
+Pages inactive:                          128813.
+Pages speculative:                          480.
+Pages wired down:                         93170.
+swapouts=total = 2048.00M  used = 782.38M  free = 1265.62M  (encrypted)
+---- [249 s] 2026-09-14T23:09:34Z ----
+java_pid=46024 node_pids=46063 46096 46615 
+java: 46024    640   0.0   04:30
+java_fd_count=9
+java_tcp_estab=0
+node(46063): 46063 114864   0.0   04:21
+node_fd_count(46063)=43
+node(46096): 46096  53440   0.0   04:19
+node_fd_count(46096)=21
+node(46615): 46615 173952   0.6   00:26
+node_fd_count(46615)=19
+Pages free:                                7933.
+Pages active:                            133841.
+Pages inactive:                          132094.
+Pages speculative:                         1064.
+Pages wired down:                         87084.
+swapouts=total = 2048.00M  used = 782.38M  free = 1265.62M  (encrypted)
+---- [264 s] 2026-09-14T23:09:49Z ----
+java_pid=46024 node_pids=46063 46096 46615 
+java: 46024    640   0.0   04:45
+java_fd_count=9
+java_tcp_estab=0
+node(46063): 46063 112928   0.0   04:36
+node_fd_count(46063)=43
+node(46096): 46096  53440   0.0   04:34
+node_fd_count(46096)=21
+node(46615): 46615 194368   0.1   00:41
+node_fd_count(46615)=19
+Pages free:                               13223.
+Pages active:                            131854.
+Pages inactive:                          129904.
+Pages speculative:                         1123.
+Pages wired down:                         87072.
+swapouts=total = 2048.00M  used = 782.38M  free = 1265.62M  (encrypted)
+---- [279 s] 2026-09-14T23:10:04Z ----
+java_pid=46024 node_pids=46063 46096 46615 
+java: 46024    640   0.0   05:00
+java_fd_count=9
+java_tcp_estab=0
+node(46063): 46063 113248   0.0   04:51
+node_fd_count(46063)=43
+node(46096): 46096  53488   0.0   04:49
+node_fd_count(46096)=21
+node(46615): 46615 243600   5.5   00:56
+node_fd_count(46615)=19
+Pages free:                               10688.
+Pages active:                            129501.
+Pages inactive:                          129306.
+Pages speculative:                         1166.
+Pages wired down:                         92645.
+swapouts=total = 2048.00M  used = 782.38M  free = 1265.62M  (encrypted)
+---- [294 s] 2026-09-14T23:10:19Z ----
+java_pid=46024 node_pids=46063 46096 46829 
+java: 46024    640   0.0   05:15
+java_fd_count=9
+java_tcp_estab=0
+node(46063): 46063 113264   0.0   05:06
+node_fd_count(46063)=43
+node(46096): 46096  53280   0.0   05:04
+node_fd_count(46096)=21
+node(46829): 46829 111184   0.9   00:03
+node_fd_count(46829)=19
+Pages free:                                4698.
+Pages active:                            139267.
+Pages inactive:                          137327.
+Pages speculative:                         1105.
+Pages wired down:                         81829.
+swapouts=total = 2048.00M  used = 782.38M  free = 1265.62M  (encrypted)
+---- [309 s] 2026-09-14T23:10:34Z ----
+java_pid=46024 node_pids=46063 46096 46829 
+java: 46024    640   0.0   05:31
+java_fd_count=9
+java_tcp_estab=0
+node(46063): 46063 113696   0.0   05:22
+node_fd_count(46063)=43
+node(46096): 46096  53280   0.0   05:20
+node_fd_count(46096)=21
+node(46829): 46829 116512   1.2   00:19
+node_fd_count(46829)=19
+Pages free:                                4002.
+Pages active:                            132721.
+Pages inactive:                          131330.
+Pages speculative:                          899.
+Pages wired down:                         95834.
+swapouts=total = 2048.00M  used = 782.38M  free = 1265.62M  (encrypted)
+---- [325 s] 2026-09-14T23:10:50Z ----
+java_pid=46024 node_pids=46063 46096 46829 
+java: 46024    640   0.0   05:46
+java_fd_count=9
+java_tcp_estab=0
+node(46063): 46063 114080   0.1   05:37
+node_fd_count(46063)=43
+node(46096): 46096  53280   0.0   05:35
+node_fd_count(46096)=21
+node(46829): 46829 117808   0.7   00:34
+node_fd_count(46829)=19
+Pages free:                                3896.
+Pages active:                            134332.
+Pages inactive:                          133515.
+Pages speculative:                          192.
+Pages wired down:                         97872.
+swapouts=total = 2048.00M  used = 782.38M  free = 1265.62M  (encrypted)
+---- [340 s] 2026-09-14T23:11:05Z ----
+java_pid=46024 node_pids=46063 46096 46829 
+java: 46024    640   0.0   06:01
+java_fd_count=9
+java_tcp_estab=0
+node(46063): 46063 114304   0.0   05:52
+node_fd_count(46063)=43
+node(46096): 46096  53264   0.0   05:50
+node_fd_count(46096)=21
+node(46829): 46829 118176   2.5   00:49
+node_fd_count(46829)=19
+Pages free:                                4440.
+Pages active:                            133904.
+Pages inactive:                          133147.
+Pages speculative:                          165.
+Pages wired down:                         97652.
+swapouts=total = 2048.00M  used = 782.38M  free = 1265.62M  (encrypted)
+---- [355 s] 2026-09-14T23:11:20Z ----
+java_pid=46024 node_pids=46063 46096 47160 
+java: 46024    640   0.0   06:16
+java_fd_count=9
+java_tcp_estab=0
+node(46063): 46063 111216   0.0   06:07
+node_fd_count(46063)=43
+node(46096): 46096  53232   0.4   06:05
+node_fd_count(46096)=21
+node(47160): 47160 102832  88.0   00:00
+node_fd_count(47160)=19
+Pages free:                                4491.
+Pages active:                            132266.
+Pages inactive:                          130472.
+Pages speculative:                          975.
+Pages wired down:                         98624.
+swapouts=total = 2048.00M  used = 782.38M  free = 1265.62M  (encrypted)
+---- [370 s] 2026-09-14T23:11:35Z ----
+java_pid=46024 node_pids=46063 46096 47160 
+java: 46024    640   0.0   06:31
+java_fd_count=9
+java_tcp_estab=0
+node(46063): 46063  70208   0.1   06:22
+node_fd_count(46063)=43
+node(46096): 46096  53248   0.0   06:20
+node_fd_count(46096)=21
+node(47160): 47160 118592   0.6   00:15
+node_fd_count(47160)=19
+Pages free:                                4217.
+Pages active:                            133490.
+Pages inactive:                          132279.
+Pages speculative:                          494.
+Pages wired down:                         95552.
+swapouts=total = 2048.00M  used = 782.38M  free = 1265.62M  (encrypted)
+---- [385 s] 2026-09-14T23:11:50Z ----
+java_pid=46024 node_pids=46063 46096 47160 
+java: 46024    640   0.0   06:46
+java_fd_count=9
+java_tcp_estab=0
+node(46063): 46063  64272   0.0   06:37
+node_fd_count(46063)=43
+node(46096): 46096  52992   0.0   06:35
+node_fd_count(46096)=21
+node(47160): 47160 116768   0.9   00:31
+node_fd_count(47160)=19
+Pages free:                                6181.
+Pages active:                            131819.
+Pages inactive:                          130857.
+Pages speculative:                          339.
+Pages wired down:                         95619.
+swapouts=total = 2048.00M  used = 782.38M  free = 1265.62M  (encrypted)
+---- [401 s] 2026-09-14T23:12:06Z ----
+java_pid=46024 node_pids=46063 46096 47329 
+java: 46024    640   0.0   07:02
+java_fd_count=9
+java_tcp_estab=0
+node(46063): 46063  64496   0.0   06:53
+node_fd_count(46063)=43
+node(46096): 46096  52544   0.0   06:51
+node_fd_count(46096)=21
+node(47329): 47329 104384   0.0   00:05
+node_fd_count(47329)=19
+Pages free:                                4137.
+Pages active:                            141300.
+Pages inactive:                          136084.
+Pages speculative:                         1365.
+Pages wired down:                         82226.
+swapouts=total = 2048.00M  used = 782.38M  free = 1265.62M  (encrypted)
+---- [416 s] 2026-09-14T23:12:21Z ----
+java_pid=46024 node_pids=46063 46096 47393 
+java: 46024    640   0.0   07:17
+java_fd_count=9
+java_tcp_estab=0
+node(46063): 46063  64496   0.0   07:08
+node_fd_count(46063)=43
+node(46096): 46096  53968   0.4   07:06
+node_fd_count(46096)=21
+node(47393): 47393 120688  30.7   00:01
+node_fd_count(47393)=19
+Pages free:                                6002.
+Pages active:                            139382.
+Pages inactive:                          138319.
+Pages speculative:                          324.
+Pages wired down:                         80718.
+swapouts=total = 2048.00M  used = 782.38M  free = 1265.62M  (encrypted)
+---- [431 s] 2026-09-14T23:12:36Z ----
+java_pid=46024 node_pids=46063 46096 47447 
+java: 46024    640   0.0   07:32
+java_fd_count=9
+java_tcp_estab=0
+node(46063): 46063  64528   0.0   07:23
+node_fd_count(46063)=43
+node(46096): 46096  54320   0.0   07:21
+node_fd_count(46096)=21
+node(47447): 47447 120560   2.1   00:07
+node_fd_count(47447)=19
+Pages free:                                7862.
+Pages active:                            131751.
+Pages inactive:                          130745.
+Pages speculative:                          265.
+Pages wired down:                         94212.
+swapouts=total = 2048.00M  used = 782.38M  free = 1265.62M  (encrypted)
+---- [446 s] 2026-09-14T23:12:51Z ----
+java_pid=46024 node_pids=46063 46096 47499 
+java: 46024    640   0.0   07:47
+java_fd_count=9
+java_tcp_estab=0
+node(46063): 46063  64528   0.0   07:38
+node_fd_count(46063)=43
+node(46096): 46096  54336   0.0   07:36
+node_fd_count(46096)=21
+node(47499): 47499 127232   0.3   00:15
+node_fd_count(47499)=19
+Pages free:                                7970.
+Pages active:                            131255.
+Pages inactive:                          129701.
+Pages speculative:                         1138.
+Pages wired down:                         95319.
+swapouts=total = 2048.00M  used = 782.38M  free = 1265.62M  (encrypted)
+---- [461 s] 2026-09-14T23:13:06Z ----
+java_pid=46024 node_pids=46063 46096 47499 
+java: 46024    640   0.0   08:02
+java_fd_count=9
+java_tcp_estab=0
+node(46063): 46063  64528   0.0   07:53
+node_fd_count(46063)=43
+node(46096): 46096  54336   0.0   07:51
+node_fd_count(46096)=21
+node(47499): 47499 132032   6.2   00:30
+node_fd_count(47499)=19
+Pages free:                                5585.
+Pages active:                            131853.
+Pages inactive:                          130006.
+Pages speculative:                         1147.
+Pages wired down:                         97382.
+swapouts=total = 2048.00M  used = 782.38M  free = 1265.62M  (encrypted)
+---- [476 s] 2026-09-14T23:13:21Z ----
+java_pid=46024 node_pids=46063 46096 47610 
+java: 46024    640   0.0   08:17
+java_fd_count=9
+java_tcp_estab=0
+node(46063): 46063  64544   0.0   08:08
+node_fd_count(46063)=43
+node(46096): 46096  54592   0.0   08:07
+node_fd_count(46096)=21
+node(47610): 47610 127808  13.4   00:07
+node_fd_count(47610)=19
+Pages free:                                6170.
+Pages active:                            132835.
+Pages inactive:                          130507.
+Pages speculative:                         1605.
+Pages wired down:                         95660.
+swapouts=total = 2048.00M  used = 782.38M  free = 1265.62M  (encrypted)
+---- [492 s] 2026-09-14T23:13:37Z ----
+java_pid=46024 node_pids=46063 46096 47610 
+java: 46024    640   0.0   08:33
+java_fd_count=9
+java_tcp_estab=0
+node(46063): 46063  63856   0.0   08:24
+node_fd_count(46063)=43
+node(46096): 46096  53648   0.0   08:22
+node_fd_count(46096)=21
+node(47610): 47610 139920   0.0   00:22
+node_fd_count(47610)=19
+Pages free:                                4130.
+Pages active:                            130730.
+Pages inactive:                          129747.
+Pages speculative:                          265.
+Pages wired down:                         97501.
+swapouts=total = 2048.00M  used = 782.38M  free = 1265.62M  (encrypted)
+---- [507 s] 2026-09-14T23:13:52Z ----
+java_pid=46024 node_pids=46063 46096 47746 
+java: 46024    640   0.0   08:48
+java_fd_count=9
+java_tcp_estab=0
+node(46063): 46063  64144   0.0   08:39
+node_fd_count(46063)=43
+node(46096): 46096  53872   0.0   08:37
+node_fd_count(46096)=21
+node(47746): 47746 118224  18.3   00:01
+node_fd_count(47746)=19
+Pages free:                                4847.
+Pages active:                            131309.
+Pages inactive:                          129639.
+Pages speculative:                          888.
+Pages wired down:                         96777.
+swapouts=total = 2048.00M  used = 782.38M  free = 1265.62M  (encrypted)
+---- [522 s] 2026-09-14T23:14:07Z ----
+java_pid=46024 node_pids=46063 46096 47746 
+java: 46024    640   0.0   09:03
+java_fd_count=9
+java_tcp_estab=0
+node(46063): 46063  64208   0.0   08:54
+node_fd_count(46063)=43
+node(46096): 46096  53408   0.0   08:52
+node_fd_count(46096)=21
+node(47746): 47746 138320   1.7   00:16
+node_fd_count(47746)=19
+Pages free:                               11269.
+Pages active:                            125499.
+Pages inactive:                          128021.
+Pages speculative:                          516.
+Pages wired down:                         96879.
+swapouts=total = 2048.00M  used = 782.38M  free = 1265.62M  (encrypted)
+---- [537 s] 2026-09-14T23:14:22Z ----
+java_pid=46024 node_pids=46063 46096 47746 
+java: 46024    640   0.0   09:18
+java_fd_count=9
+java_tcp_estab=0
+node(46063): 46063  64240   0.0   09:09
+node_fd_count(46063)=43
+node(46096): 46096  53408   0.0   09:07
+node_fd_count(46096)=21
+node(47746): 47746 174416   0.3   00:31
+node_fd_count(47746)=19
+Pages free:                                7259.
+Pages active:                            138031.
+Pages inactive:                          136801.
+Pages speculative:                          639.
+Pages wired down:                         80359.
+swapouts=total = 2048.00M  used = 782.38M  free = 1265.62M  (encrypted)
+---- [552 s] 2026-09-14T23:14:37Z ----
+java_pid=46024 node_pids=46063 46096 47930 
+java: 46024    640   0.0   09:33
+java_fd_count=9
+java_tcp_estab=0
+node(46063): 46063  61872   0.0   09:24
+node_fd_count(46063)=43
+node(46096): 46096  53264   0.2   09:22
+node_fd_count(46096)=21
+node(47930): 47930  93904  58.0   00:00
+node_fd_count(47930)=18
+Pages free:                               10251.
+Pages active:                            125301.
+Pages inactive:                          124229.
+Pages speculative:                         1155.
+Pages wired down:                         99490.
+swapouts=total = 2048.00M  used = 782.38M  free = 1265.62M  (encrypted)
+---- [567 s] 2026-09-14T23:14:52Z ----
+java_pid=46024 node_pids=46063 46096 47930 
+java: 46024    640   0.0   09:48
+java_fd_count=9
+java_tcp_estab=0
+node(46063): 46063  57872   0.0   09:39
+node_fd_count(46063)=43
+node(46096): 46096  47600   0.0   09:37
+node_fd_count(46096)=21
+node(47930): 47930 105584   0.0   00:16
+node_fd_count(47930)=19
+Pages free:                               16993.
+Pages active:                            119582.
+Pages inactive:                          117765.
+Pages speculative:                         1114.
+Pages wired down:                         94965.
+swapouts=total = 2048.00M  used = 782.38M  free = 1265.62M  (encrypted)
+---- [583 s] 2026-09-14T23:15:08Z ----
+java_pid=46024 node_pids=46063 46096 48122 
+java: 46024    640   0.0   10:04
+java_fd_count=9
+java_tcp_estab=0
+node(46063): 46063  59520   0.2   09:55
+node_fd_count(46063)=43
+node(46096): 46096  51776   0.0   09:53
+node_fd_count(46096)=21
+node(48122): 48122 111904   0.8   00:07
+node_fd_count(48122)=19
+Pages free:                                7942.
+Pages active:                            127285.
+Pages inactive:                          123665.
+Pages speculative:                         2782.
+Pages wired down:                         96152.
+swapouts=total = 2048.00M  used = 782.38M  free = 1265.62M  (encrypted)
+---- [598 s] 2026-09-14T23:15:23Z ----
+java_pid=46024 node_pids=48191 48222 48223 
+java: 46024    640   0.0   10:19
+java_fd_count=9
+java_tcp_estab=0
+node(48191): 48191 222976   0.0   00:10
+node_fd_count(48191)=43
+node(48222): 48222  49360   0.0   00:07
+node_fd_count(48222)=21
+node(48223): 48223 121536   0.0   00:07
+node_fd_count(48223)=19
+Pages free:                                3918.
+Pages active:                            133347.
+Pages inactive:                          128704.
+Pages speculative:                         3806.
+Pages wired down:                         94993.
+swapouts=total = 2048.00M  used = 782.38M  free = 1265.62M  (encrypted)
+[613 s] STOP_FILE seen, exiting
