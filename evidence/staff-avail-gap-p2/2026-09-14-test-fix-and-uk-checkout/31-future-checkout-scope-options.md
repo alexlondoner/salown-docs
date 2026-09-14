@@ -1,12 +1,21 @@
 # Walk-in early-morning backdate floor — target specification for an owner decision
 
-Written 2026-09-14, updated same night with a concrete target behavior. **No code changed. No
-decision made here.** §1 replaces the original three generic options (§Appendix, superseded)
-with the owner's specified target behavior, worked through against the actual source. §2–§5
-extract what would need to change, how it interacts with existing shift/conflict/historical-day
-authority, what the manual-time flow does (unaffected), and candidate acceptance tests. §6 lists
-the real open decision points — this is where an owner call is still needed, even with a
-target behavior specified.
+Written 2026-09-14, updated same night with a concrete target behavior. §1 replaces the original
+three generic options (§Appendix, superseded) with the owner's specified target behavior, worked
+through against the actual source. §2–§5 extract what would need to change, how it interacts with
+existing shift/conflict/historical-day authority, what the manual-time flow does (unaffected), and
+candidate acceptance tests. §8 lists the real open decision points.
+
+**⏩ UPDATE 2026-09-14 ~16:1x UK — all four §8 decision points answered by the owner, and
+implemented same session.** (1) Scope down the historical-day exemption via a companion fix,
+rather than shipping the floor removal with that consequence merely documented. (2) Remove the
+floor entirely — including the non-midnight-crossing early-checkout case, not just the
+midnight-crossing one. (3) Track the adjacent `tz: undefined` → `LONDON_TZ` default separately,
+not bundled into this change. (4) Confirmed separate from, and not a blocker for, the
+`STAFF-AVAIL-GAP-P2` release decision. Implementation: salown-app `aa2efd9` (claim
+`WALKIN-BACKDATE-FLOOR`, `SYNC.md` 2026-09-14 16:1x, `docs/ROADMAP.md` §12). **This document is
+now historical record of the analysis that led to those decisions — read §1–§7 as the reasoning,
+not as still-open.** Not yet emulator/Chrome-verified end-to-end; not deployed.
 
 ## 0. The defect, restated precisely
 
