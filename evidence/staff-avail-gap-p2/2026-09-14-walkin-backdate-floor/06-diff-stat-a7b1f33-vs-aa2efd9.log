@@ -1,0 +1,14 @@
+ SYNC.md                                            | 60 ++++++++++++++++++
+ functions/src/bookings/createWalkIn.ts             | 11 +++-
+ functions/src/bookings/staffEligibility.test.js    | 39 ++++++++++++
+ functions/src/bookings/staffEligibility.ts         | 14 ++++-
+ hosting/staff-bundle/assets/staff-CLriqZe3.js      | 35 -----------
+ hosting/staff-bundle/assets/staff-CxdWlU6-.js      | 35 +++++++++++
+ hosting/staff-bundle/index.html                    |  2 +-
+ ...ESTFIX--alish--staff-avail-gap-p2-testfix.claim | 14 -----
+ ...LKIN-BACKDATE-FLOOR--alish--staffavailgap.claim | 26 ++++++++
+ src/staff/lib/staffPostWriteBoundary.test.ts       |  4 +-
+ src/staff/lib/staffTimeContract.test.ts            | 44 +++++++++-----
+ src/staff/sheets/WalkInFlow.tsx                    | 71 +++++++++++++++-------
+ src/staff/sheets/staffCreateCutover.test.ts        | 23 ++++---
+ 13 files changed, 278 insertions(+), 100 deletions(-)

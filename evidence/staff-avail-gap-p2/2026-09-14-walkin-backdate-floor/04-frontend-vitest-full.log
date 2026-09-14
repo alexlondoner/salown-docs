@@ -1,0 +1,9 @@
+
+ RUN  v4.1.9 /Users/alish/Desktop/alex/salown-app
+
+
+ Test Files  189 passed (189)
+      Tests  5569 passed (5569)
+   Start at  17:27:54
+   Duration  19.91s (transform 17.06s, setup 0ms, import 39.97s, tests 48.82s, environment 35ms)
+

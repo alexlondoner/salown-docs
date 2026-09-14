@@ -1,5 +1,47 @@
 # Handoff → next session: STAFF-AVAIL-GAP Phase 2 (Staff App Walk-in)
 
+## ⏩ UPDATE 2026-09-14 ~16:3x UK — READ THIS FIRST, supersedes the 04:50 update below on the candidate-SHA question
+
+Written by the session that picked up the 04:50 update below, did a separate, unrelated
+piece of work (`WALKIN-BACKDATE-FLOOR`) on the owner's go-ahead, then received an owner
+correction on how that work's same-session report described its relationship to this item.
+This section is that correction, made durable. Full detail: [[project_staff_avail_gap]] round 6,
+`docs/evidence/staff-avail-gap-p2/2026-09-14-walkin-backdate-floor/README.md` §2 (the reasoning in
+full, with the exact file-overlap evidence).
+
+### The short version
+
+1. **`WALKIN-BACKDATE-FLOOR` is DONE, at salown-app `aa2efd9`** (pushed, not deployed): the
+   Walk-in untouched-time Save & Checkout backdate no longer has a 09:00 floor — one absolute
+   instant is computed instead, correctly rolling the calendar day back across midnight — with a
+   companion fix so a midnight-crossing backdate still gates `STAFF_PASSIVE`/`STAFF_NOT_STARTED`
+   (`assertAssignableStaff`'s new `historicalExemptionAllowed` flag). This was a separate,
+   owner-approved piece of work, decided and implemented in one session; see round 6 for the four
+   decision points and their answers.
+2. **"Separate work" is a scope/decision statement, not a deployability one.** `aa2efd9` sits
+   downstream of `a7b1f33` on `main` and edits `createWalkIn.ts` / `WalkInFlow.tsx` directly — the
+   SAME runtime files that ARE this item's Walk-in payload, plus `staffEligibility.ts`, the module
+   they call into. **The Phase 2 release candidate remains `a7b1f33`** — the only SHA that has
+   actually been through this item's own release verification (round-2 emulator/Chrome/compat
+   gates). `aa2efd9` has passed its OWN gates (functions unit, frontend vitest, `tsc`,
+   deploy-guard) but has **not** been through Phase 2's release verification. **A deploy of
+   `salownCreateStaffWalkIn` or `hosting:salown-staff` from current `main` HEAD (or anything at or
+   after `aa2efd9`) would ship both together, whether or not that is the intent** — there is no
+   ordinary build of `main` that contains one without the other; isolating either one requires this
+   repo's established pinned-workspace release pattern. Do not describe a future Phase 2 candidate
+   as simply "`a7b1f33`" without saying which SHA a build actually pins to.
+3. **`aa2efd9`'s emulator/Chrome verification stays explicitly OPEN** — same reason as `a7b1f33`'s
+   own open emulator-gate re-run below: this machine's RAM constraint, owner chose to defer both
+   this session. Neither SHA may be reported as emulator/Chrome-verified until that actually runs.
+4. **No deploy happened or is proposed. The bypass exceptions and the Phase-3 deferral remain
+   unchanged, unaccepted recommendations** — nothing in this update touches §8 below.
+5. **Raw-log discipline:** the first same-session report of `aa2efd9`'s gates stated results from
+   inline terminal output with nothing persisted — self-reported, not independently checkable. The
+   evidence folder named above now carries the actual log files; read those (or re-run the
+   commands) rather than trusting a prose summary, this one included.
+
+---
+
 ## ⏩ UPDATE 2026-09-14 ~04:50 UK — READ THIS FIRST, supersedes the "first concrete step" below
 
 Written by the session that picked up the original handoff below, worked the whole way through

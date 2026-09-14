@@ -1,0 +1,5 @@
+Namespace guard (offline): functions:salown:salownCreateStaffWalkIn functions:salown:salownCreateWalkIn
+functions-namespace: OK — 2 target(s) owned by codebase 'salown':
+  functions:salown:salownCreateStaffWalkIn  (europe-west2)
+  functions:salown:salownCreateWalkIn  (europe-west2)
+--check-only: guard passed. Nothing deployed.
