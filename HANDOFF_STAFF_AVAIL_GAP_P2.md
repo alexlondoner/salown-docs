@@ -1,5 +1,147 @@
 # Handoff → next session: STAFF-AVAIL-GAP Phase 2 (Staff App Walk-in)
 
+## ⏩ SESSION CLOSE 2026-09-14 ~23:5x UK — READ THIS FIRST, supersedes the 23:4x summary below on precision
+
+This session is ending here. **No new tests were started after this point.** This section is the
+exact, durable record the next session needs — SHAs, HEADs, claims, every run with its command and
+raw log, and two corrections to how the 23:4x summary below characterized the result.
+
+### Corrections to this session's own 23:4x wording, made explicit
+
+- **Do not say "the product code is clean."** What is actually proven: the general phase, split
+  into two groups, passed completely twice-in-aggregate (655/655, matching the historical
+  baseline), and every individual file involved in a full-gate anomaly also passed alone when
+  re-run immediately after. That is the full extent of what was established — it does not license
+  a broader claim that the product is clean, because **the full gate has never completed as one
+  continuous run, and the mechanism behind three real anomalies inside that continuous run remains
+  unknown.**
+- **Do not say the anomalies were "RAM-caused" or attribute them to any other specific mechanism.**
+  RAM/swap growth and server-side transaction contention were the only two candidate mechanisms
+  directly measured, and neither showed the expected signature in any of the three cases. This
+  means those two are ruled out as the mechanism for what was observed — it does **not** mean the
+  cause is known. It is not.
+- **An isolated re-run passing does not close a full-run failure.** Each of the three anomalies
+  below is still an open, unresolved, unexplained event that happened once inside a real gate run.
+  Passing in isolation only proves the anomaly did not repeat that specific time — it is evidence
+  against "this file/test is inherently broken," not evidence that the anomaly itself is resolved
+  or understood.
+
+### Candidate SHAs and current repo state (re-verify at session start, don't trust past the moment this was written)
+
+| Repo | Path | HEAD = origin | Clean? | Notes |
+|---|---|---|---|---|
+| salown-app | `~/Desktop/alex/salown-app` | `a3da1b23e3a05f03bc530c5ebed6dd0e57d57042` | yes, 0/0 | |
+| docs (salown-docs, private) | `~/Desktop/alex/docs` | `2963d8e73f36b86b80202e6a82388f6fc92a3d80` | untracked `prototypes/` present — **not this session's, not touched, not committed** | |
+
+- **`STAFF-AVAIL-GAP-P2` Phase 2 release candidate: still `a7b1f33`** — unchanged by anything in
+  this session. No emulator/Chrome verification exists for it beyond what was already recorded
+  before this session started.
+- **`WALKIN-BACKDATE-FLOOR` implementation: still `aa2efd9`**, sitting downstream of `a7b1f33` on
+  `main`, unchanged by this session's diagnosis work (which used source-identical clones of it, not
+  a rebuild). No emulator/Chrome verification exists for it either.
+- **Claims:** `ops/claims/` holds only the pre-existing, unrelated, blocked `WHATSAPP-B7`
+  (`since: 2026-09-05`). Nothing from this session's diagnosis work remains claimed — every
+  `EMULATOR-GATE-DIAGNOSIS*` claim opened this session was released the same session, verified via
+  `./ops/claims/claims.sh list` immediately before this update was written.
+- **Every diagnostic run this session used an isolated clone whose HEAD, while numerically
+  different from `aa2efd9` (it carries this session's own later claim/`SYNC.md` bookkeeping
+  commits), is byte-identical to `aa2efd9` in every other tracked path** — verified explicitly:
+  `git diff --stat aa2efd9 <clone-HEAD> -- . ':!ops/claims' ':!SYNC.md'` returns empty for every
+  clone HEAD used (`a993feb`, `e639a1c`, `2a2038f`, `a3da1b2`). Read every run below as "against
+  `aa2efd9`'s source," regardless of which of those four exact clone HEADs it names.
+
+### Every run this session, in order — SHA, command, result, raw log
+
+All commands below ran with `JAVA_HOME=/opt/homebrew/opt/openjdk`,
+`JAVA_TOOL_OPTIONS=-Xmx512m`, `FIRESTORE_EMULATOR_HOST=127.0.0.1:8080`,
+`GCLOUD_PROJECT=demo-c1`, against `firebase-tools 15.26.0` /
+`cloud-firestore-emulator-v1.22.0.jar` (the repo's pinned toolchain), from
+`functions/`. Every raw log path below is relative to
+`docs/evidence/staff-avail-gap-p2/2026-09-14-emulator-gate-diagnosis/`.
+
+| # | Source | Command (files) | Result | Raw log(s) |
+|---|---|---|---|---|
+| 1 | shared tree, `a993feb` | full 2-phase `ops/test-emulator.sh` (attempt 1) | **INCOMPLETE** — watchdog output lost to a `tee` buffering bug; cannot say what ran | `05-full-gate-attempt-1-watch-reconstructed.log` |
+| 2 | shared tree, `a993feb` | full 2-phase `ops/test-emulator.sh` (attempt 2) | **INCOMPLETE** — killed by an external Monitor timeout after the script's own iteration-count cap failed to fire in real time | `04-full-gate-attempt-2-watch.log` |
+| 3 | clone `e639a1c` | `node --test --test-concurrency=1 src/inventory/executor.emulator.test.js` alone | **PASS 20/20** | `01-executor-test-output.log`, `02-firestore-emulator.log`, `03-diag-watch.log` |
+| 4 | clone `e639a1c` | 5-file subset: `bookings/blocks`, `bookings/createWalkIn`, `parsers/importAssignment`, `staff/rotaWriter`, `inventory/executor` (real order differed from listed order — see log) | **PASS 79/79** | `06-subset-test-output.log`, `07-subset-firestore-emulator.log`, `08-subset-resource-samples.log`, `09-subset-watch.log` |
+| 5 | clone `2a2038f` | Step 1: the 10 real predecessors + `inventory/executor` (11 files) | **PASS 303/303** | `10-step1-test-output.log`, `11-step1-observed-file-order.log`, `12-step1-watch.log` |
+| 6 | clone `2a2038f` | Step 2: the 20 remaining `PHASE1_GLOBS` files | **PASS 352/352** (303+352=655, matches `9ea0aca`'s historical 655/655) | `13-step2-test-output.log`, `14-step2-observed-file-order.log`, `15-step2-watch.log` |
+| 7 | clone `2a2038f` | Step 3, general phase, full 31-file continuous run (attempt A) | **INCOMPLETE — TIMEOUT/EXTREME-SLOWNESS symptom**: `bookings/createAdminBooking.emulator.test.js:88` took 1,700,752.35ms (~28m21s); own gate cap fired next, mid-`reassignBooking` | `16-step3-general-test-output.log`, `17-step3-general-observed-file-order.log`, `18-step3-snapshot-at-limit.txt`, `19-step3-watch.log`, `20-step3-firestore-debug-FULL.log` |
+| 8 | clone `2a2038f` | `createAdminBooking.emulator.test.js` alone, immediately after #7 | **PASS 9/9** (3,598.0ms; does not reproduce #7 — does not close it) | `21-repro-test-output.log`, `22-repro-mem-swap-samples.log`, `23-repro-firestore-debug-full.log`, `24-repro-watch.log` |
+| 9 | clone `2a2038f` | Step 3, general phase, full 31-file continuous run (attempt B, clean restart) | **INCOMPLETE — TWO SEPARATE symptoms in one run:** (a) **ASSERTION FAILURE** — `finance/periodClose.emulator.test.js` test `R21` failed after 323,843.15ms; (b) **PENDING-PROMISE / HANG** — `treatmentSessions/integration.emulator.test.js` reported by Node itself as `1,379,525.89ms` with `'Promise resolution is still pending but the event loop has already resolved'`, requiring external termination. Own gate cap fired after this | `25-step3retry-general-test-output.log`, `26-step3retry-general-observed-file-order.log`, `27-step3retry-snapshot-at-limit.txt`, `28-step3retry-watch.log` |
+| 10 | clone `2a2038f` | `treatmentSessions/integration.emulator.test.js` alone, after #9 | **PASS 15/15** (7.2s; does not reproduce #9b — does not close it) | `29-repro2-integration-test-output.log`, `30-repro2-integration-mem-swap-samples.log` |
+| 11 | clone `2a2038f` | `finance/periodClose.emulator.test.js` alone, after #9 | **PASS 31/31**, `R21` at 2,122.27ms — its own designed 2-second-hold duration (does not reproduce #9a — does not close it) | `31-repro3-periodclose-test-output.log` |
+
+### Split general phase — the one thing that is unambiguously PASS
+
+Runs #5+#6 together cover every file the full gate's `general` phase covers, split into two
+groups: **655/655, zero failures.** This is the historical baseline number exactly. This is the
+only PASS result in this whole session that spans the full file set.
+
+### Full gate — status, stated precisely, per phase
+
+- **`general` phase: NOT completed as one continuous run, in either of two attempts (#7, #9).**
+  Attempt #7 stopped on a slowness/timeout symptom before reaching `packages`. Attempt #9 stopped
+  after encountering BOTH an assertion failure and a hang before reaching `packages`. Neither
+  attempt's `general` phase reached its own natural end.
+- **`packages` phase (`src/packages/executor.emulator.test.js`, historically 27/27): NEVER
+  REACHED, in either attempt.** The `run_phase` design used this session explicitly does not
+  proceed to `packages` unless `general` finishes cleanly first (matching `ops/test-emulator.sh`'s
+  own gating) — so there is **zero evidence about `packages` from this session**, neither pass nor
+  fail. This is distinct from `general`'s status and must not be reported alongside it as if both
+  were tested.
+
+### Remaining Chrome/emulator checks for the new backdate formula (`WALKIN-BACKDATE-FLOOR`, `aa2efd9`)
+
+None of the following have been run through a live Chrome/emulator rehearsal — `aa2efd9`'s own
+gates this session (and the original implementing session) were unit/vitest-level only. Source:
+`docs/evidence/staff-avail-gap-p2/2026-09-14-test-fix-and-uk-checkout/31-future-checkout-scope-options.md`
+§7's 9 candidate acceptance tests. Two already have UNIT-level coverage (noted); none have live
+Chrome coverage:
+
+1. No-crossing early morning (08:50 → 08:20 same day) — **no coverage at all yet.**
+2. Exact midnight crossing (00:10 → 23:40 previous day) — **unit-level covered**
+   (`src/staff/lib/staffTimeContract.test.ts`), **not Chrome-verified.**
+3. Boundary just inside the same day (00:40 → 00:10, no rollover) — **unit-level covered**
+   (same file), **not Chrome-verified.**
+4. Long service crossing midnight by hours, `MAX_DURATION_MINS` still refuses correctly — **no
+   coverage at all yet.**
+5. Owner-override resubmission reuses the identical instant across a real `CONFLICT_ACK_REQUIRED`
+   retry — **no coverage at all yet; needs live Chrome.**
+6. Manual-time regression (`timeTouched === true` byte-identical before/after) — **no
+   change-specific re-verification yet** (the existing WYSIWYG invariant tests were not re-run
+   against this specific change).
+7. Historical-day eligibility exemption — **the target behavior itself CHANGED since this list was
+   written**: the owner's later decision (this session, before the emulator-gate diagnosis began)
+   was to SCOPE DOWN the exemption for the staff surface, not accept it as-is. The companion fix
+   (`historicalExemptionAllowed`) has **unit-level coverage** (`functions/src/bookings/staffEligibility.test.js`)
+   proving the flag's mechanics, but **no live emulator/Chrome test exercises the actual
+   `createWalkIn.ts` staff-surface call path end-to-end** with a real midnight-crossing walk-in
+   against a real passive/not-yet-started barber.
+8. Conflict correctness across midnight (23:50-yesterday booking vs. 23:40-yesterday walk-in) —
+   **no coverage at all yet; needs a real emulator, not assumed from source reading.**
+9. Shift-fit correctness across midnight (yesterday's shift, not today's) — **no coverage at all
+   yet; needs a real emulator, not assumed from source reading.**
+
+### Unchanged, reaffirmed
+
+Bypass exceptions and the Walk-in↔Reschedule Phase-3 deferral remain recommendations only, **not
+accepted**. **No deploy happened or is proposed anywhere in this session.** No production
+read/write at any point.
+
+### Verified before writing this section
+
+- `MANIFEST.sha256` in the evidence folder: `shasum -a 256 -c MANIFEST.sha256` — **all 32 entries
+  OK.**
+- No emulator/Java/Node-test process left running (`ps aux` swept for
+  `cloud-firestore-emulator|node --test|firebase emulators` — none found); all emulator ports
+  (8080/9099/5001/4400/9150) free.
+- Both repos: `git fetch --prune` run, HEAD = origin confirmed for both, working tree clean for
+  salown-app (docs carries only the untracked, not-this-session's `prototypes/` noted above).
+
+---
+
 ## ⏩ UPDATE 2026-09-14 ~23:4x UK — READ THIS FIRST, the emulator-gate diagnosis conclusion
 
 Written by the same session as the 20:0x update below, after an owner-directed systematic
