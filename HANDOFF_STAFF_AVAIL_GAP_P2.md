@@ -1,5 +1,43 @@
 # Handoff → next session: STAFF-AVAIL-GAP Phase 2 (Staff App Walk-in)
 
+## ⏩ UPDATE 2026-09-14 ~23:4x UK — READ THIS FIRST, the emulator-gate diagnosis conclusion
+
+Written by the same session as the 20:0x update below, after an owner-directed systematic
+diagnosis: run the real predecessor set, the remaining files, then the full gate itself, with
+proper real-time-based logging. Full record:
+`docs/evidence/staff-avail-gap-p2/2026-09-14-emulator-gate-diagnosis/README.md` §3a-§3c.
+
+**The product code is clean.** All 31 general-phase files were run split into two groups
+(11 + 20) and passed completely: **655/655 — exactly matching the historical known-good baseline**
+recorded for `9ea0aca`. Every individual file implicated in every anomaly below also passes cleanly
+and quickly the moment it is run alone.
+
+**The full gate has NOT yet completed as one clean, continuous, uninterrupted run — twice
+attempted, twice stopped by a different, non-reproducing anomaly:**
+1. `bookings/createAdminBooking.emulator.test.js:88` took ~28m21s once; the emulator's own debug
+   log proved it was doing NOTHING server-side for that entire window.
+2. `finance/periodClose.emulator.test.js` R21 FAILED once, after ~5m24s, in a test whose own design
+   only holds a 2-second barrier.
+3. `treatmentSessions/integration.emulator.test.js` produced Node's own definitive file-level hang
+   report — `1,379,525.89ms` with `'Promise resolution is still pending but the event loop has
+   already resolved'` — once.
+
+**None of the three reproduced** when the exact same file was re-run alone immediately afterward
+(473x, 153x, and 191x faster respectively, all passing). This is reported as an observed pattern —
+one stochastic anomaly per full-gate attempt, in a different file each time — **not** a diagnosed
+root cause, and specifically **not** attributed to RAM or contention: both were directly checked in
+each case and neither showed the expected signature. **No third full-gate attempt was made** — two
+attempts plus three independent non-reproductions was judged sufficient to report rather than keep
+re-running blind. No deploy, no production access, at any point.
+
+**What this means for STAFF-AVAIL-GAP-P2 and `aa2efd9` specifically:** neither has advanced through
+this diagnosis — this work was about understanding the GATE's own reliability (using files spanning
+well beyond either candidate's own changes), not about re-verifying either SHA. The candidate-SHA
+state from the 16:3x update is UNCHANGED: `a7b1f33` remains Phase 2's release candidate; `aa2efd9`
+sits downstream, still Phase-2-release-unverified; both still lack emulator/Chrome verification.
+
+---
+
 ## ⏩ UPDATE 2026-09-14 ~20:0x UK — READ THIS FIRST, corrects this session's own emulator-gate framing below
 
 Written by the same session as the 16:3x update below, after two attempts to re-run the two-phase
