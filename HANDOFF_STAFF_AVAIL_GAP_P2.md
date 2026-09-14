@@ -1,5 +1,105 @@
 # Handoff → next session: STAFF-AVAIL-GAP Phase 2 (Staff App Walk-in)
 
+## ⏩ UPDATE 2026-09-14 ~04:50 UK — READ THIS FIRST, supersedes the "first concrete step" below
+
+Written by the session that picked up the original handoff below, worked the whole way through
+its own "first concrete step," and is now closing out. **Everything below this update section is
+the ORIGINAL handoff as written 2026-09-13 night — it is historical record, not current
+instructions.** Full detail in [[project_staff_avail_gap]] and `docs/STAFF_AVAIL_GAP_PLAN.md`
+§9.7c–§9.7e; this section is the short version.
+
+### Status in one line
+`STAFF-AVAIL-GAP-P2` is **still `PUSHED_NOT_LIVE`, still NOT releasable, no deploy**. The one
+code-side blocker the original handoff named (the stale `staffPostWriteBoundary.test.ts`) **is
+now fixed and committed** — the candidate SHA changed from `9ea0aca` to **`a7b1f33`**. Three things
+remain open before this could even be considered for release, and none of them are close to done.
+
+### What changed since the original handoff (all in `salown-app` unless noted)
+1. **Test-fix committed**, not just prepared. Claim `STAFF-AVAIL-GAP-P2-TESTFIX`
+   (`5788d8a` → impl `a7b1f33` → release `b6c325c`). Only
+   `src/staff/lib/staffPostWriteBoundary.test.ts` + `SYNC.md` touched — no app/functions source.
+   In the real tree: fixed test 20/20, full frontend `vitest run` 5567 pass/1 fail (the same
+   pre-existing `functionsArchiveManifest.test.js` environment negative control this machine
+   always shows), functions unit (full) 2691 pass/0 fail/43 skipped, `tsc`/`eslint` clean,
+   `deploy-functions.sh --check-only`/archive-manifest/`build:staff` all PASS (`build:staff`'s
+   output is byte-identical to the pre-fix bundle, sha256 `882813e2…` — expected, no shipped file
+   changed). `salown-app` HEAD = origin = **`b6c325c`**, 0/0 clean.
+2. **⚠️ The two-phase `ops/test-emulator.sh` did NOT get re-run against `a7b1f33` — this is the
+   most important open item.** It was attempted once. This machine (the documented 8GB-RAM trap)
+   thrashed under memory pressure and sat stuck on `src/inventory/executor.emulator.test.js` for
+   ~1h40m with near-zero CPU progress before being killed rather than left running indefinitely.
+   The gate's file set (`functions/src/**/*.emulator.test.js` + a few `scripts/*.emulator.test.cjs`)
+   is entirely disjoint from the one file the test-fix commit touched, so its last completed
+   result — **682/682**, recorded pre-fix — is *reasoned*, not *proven*, to still hold. **Do not
+   report this gate as passing for `a7b1f33` without actually running it.** If this machine is
+   still memory-constrained, either free real RAM first (this session's own attempt didn't try
+   closing the user's other Chrome tabs — that would need the user's own action, not something to
+   do unilaterally) or run it on a different machine.
+3. **UK (Europe/London) backdated-checkout Chrome check — done, but narrower than it first
+   looked.** Ran live against a genuine `Europe/London` synthetic tenant (`p2uk`) with
+   Auth+Firestore+Functions all confirmed on the local emulator (network-request-verified, no
+   production contact). At the real wall-clock time of the run (~01:20 BST) this only exercised
+   the formula's **floor branch** (`max(9*60, now−duration) → 09:00`) — an earlier draft of this
+   session's own report overclaimed "closes the round-2 gap" and "equally valid branch," both
+   **withdrawn same-night as overreach** (see `docs/STAFF_AVAIL_GAP_PLAN.md` §9.7c/§9.7d). The
+   UK-daytime **subtraction** branch (what round 2's LA tenant actually exercised, 16:11 → 15:40)
+   is **still not tested on a UK tenant**. Do not claim this is done.
+4. **The future-dated-checkout finding this UK check surfaced now has an owner-specified target
+   behavior, worked through against source, but zero code written.**
+   `docs/evidence/staff-avail-gap-p2/2026-09-14-test-fix-and-uk-checkout/31-future-checkout-scope-options.md`
+   (superseding its own earlier three-generic-options draft, kept as an appendix) has: why the
+   existing `minsToTimeStr` clamp can't express a midnight day-rollover and an absolute-instant
+   computation is needed instead; the existing `startTime`-wins seam in `bookingCallables.ts` as
+   the natural (unbuilt) implementation path; that `time` is already captured once and reused on
+   an owner-override retry but `date` (`getTodayStr()`) is not; **the one real, previously-invisible
+   consequence found** — `classifyTenantDay`/`assertAssignableStaff` in
+   `functions/src/bookings/staffEligibility.ts` would newly exempt `STAFF_PASSIVE`/`STAFF_NOT_STARTED`
+   for a duration-driven midnight-crossing backdate (unreachable today because the floor keeps
+   every untouched-time backdate inside "today"); confirmation that conflict-scan (24h lookback)
+   and shift-fit (`tenantDateKey` from the instant) already handle a rolled-back day correctly;
+   confirmation the manual-time-picker flow is structurally unaffected; 9 candidate acceptance
+   tests; 4 real remaining decision points (the eligibility exemption chief among them). **This is
+   a separate, unrelated finding from the Phase 2 release decisions** — not a blocker for, and not
+   bundled with, Phase 2's release.
+
+### Repos and claims (re-verify, don't trust this table past the moment it was written)
+| Repo | Path | HEAD = origin at writing |
+|---|---|---|
+| salown-app | `~/Desktop/alex/salown-app` | `b6c325cc5262c267fe37cc7b83e7380f0c074af9`, clean, 0/0 |
+| docs (private) | `~/Desktop/alex/docs` | `eca2ef4565b1c54f6f16283c4cc1e5e0f4722a4f` (includes one unrelated same-night commit from another session, `FIN-PROCESSOR-FEES` evidence — no conflict), clean, 0/0 |
+
+`ops/claims/` holds only the unrelated `WHATSAPP-B7` (blocked). `STAFF-AVAIL-GAP-P2-TESTFIX` was
+opened, used, and released within this session — nothing is claimed by this work now.
+
+### Local environment
+Nothing emulator/rehearsal-related is running. Ports 8080/9099/5001/4400/9150/5199 all free,
+verified at close. **The one thing that IS running and must stay untouched:** the shared Vite dev
+server on `localhost:5173` (PID varies by session, currently ~94201) — pointed at **production**
+Firebase (`havuz-44f70`) per `src/firebase.ts`'s default config, not an emulator. Per
+[[feedback_shared_dev_server]]: never restart/kill it; if a hard refresh is needed, ask the owner.
+
+### First concrete step for the next session (supersedes §9's below, which is now done)
+1. Read this update, then `docs/STAFF_AVAIL_GAP_PLAN.md` §9.7c–§9.7e and
+   `docs/evidence/staff-avail-gap-p2/2026-09-14-test-fix-and-uk-checkout/` in full (README +
+   `31-future-checkout-scope-options.md`) before doing anything else.
+2. `git fetch --prune` both repos, confirm the HEADs above still match, confirm no claim conflicts.
+3. **Priority: get `ops/test-emulator.sh` to actually complete against `a7b1f33`.** Check real
+   available RAM before starting (`top -l 1 | grep PhysMem`); if this machine is still tight,
+   either ask the owner whether other apps/tabs can be closed, or use a different machine. Do not
+   report a gate result without it actually having run to completion this session.
+4. UK-daytime backdated-subtraction check on a genuine UK tenant — still not done, still needed
+   before Phase 2 could be considered release-ready on that front.
+5. The future-checkout target-behavior spec (§`31-future-checkout-scope-options.md` §8) has 4 real
+   decision points that need the owner, not an engineering default — surface them, don't guess.
+6. **No deploy, no production read/write, no code change without a claim and explicit go-ahead** —
+   all of this session's own constraints carry forward unchanged. Bypass exceptions and the
+   Walk-in↔Reschedule Phase-3 deferral (`20-owner-decision-recommendations.md`) remain
+   recommendations only, still not accepted.
+
+---
+
+## ORIGINAL HANDOFF (2026-09-13 night) — historical record below this line, superseded by the update above
+
 **Written:** 2026-09-13 23:4x UTC (2026-09-14 00:4x UK) by the session that implemented and evaluated
 Phase 2. **Status:** `PUSHED_NOT_LIVE`, **NOT releasable**, no release approved. Nothing is claimed by
 this work (`ops/claims/` holds only the unrelated `WHATSAPP-B7`). Every value below was read at the time of
