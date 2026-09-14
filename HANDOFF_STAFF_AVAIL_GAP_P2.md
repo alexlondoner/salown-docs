@@ -1,5 +1,56 @@
 # Handoff → next session: STAFF-AVAIL-GAP Phase 2 (Staff App Walk-in)
 
+## ⏩ SESSION UPDATE 2026-09-15 ~00:3x UK — round-12 full gate PASS + callable-level verification, Chrome checks still open — READ THIS FIRST
+
+Full record: `docs/evidence/staff-avail-gap-p2/2026-09-15-callable-level-verify/README.md`.
+Isolated clone of `aa2efd9`, no shared-tree edit, no deploy, no production access. Claim
+`STAFF-AVAIL-GAP-P2-VERIFY` released at end of session.
+
+**1. Emulator-gate diagnosis — round 12, the actual `ops/test-emulator.sh` script run as ONE
+continuous invocation, completed cleanly: `general` 655/655, `packages` 27/27, TOTAL 682/682,
+script's own `RESULT: PASS`, `GATE_EXIT=0`, wall-clock ~10m27s.** First time in 12 rounds this
+exact script (not a manual re-split of its globs) has completed end-to-end without a stall. This
+does **not** retroactively explain rounds 7/9's three anomalies (still open, still non-reproducing)
+— it is a fourth continuous attempt, and this one passed. Skip/cancelled counts are not captured by
+this gate at all (by the script's own design, confirmed this round); the raw per-test log is
+deleted by the script's own `trap` whenever both phases pass, so only the phase-level totals above
+survive for a clean run. A resource-sampling bug this round (documented in the evidence README) means
+round 12 adds no new RAM/fd evidence beyond rounds 8-11 — their "checked, no signature found" stands
+unchanged, not strengthened.
+
+**2. Callable-level (no Chrome) verification, against the real `salownCreateStaffWalkIn`
+callable + real Auth/Firestore/Functions emulators, real client SDK, controlled fixed instants (not
+`Date.now()`):** confirmed server-side — (a) a submitted start instant survives conflict detection
+→ owner-override retry → the final booking doc AND its audit log, byte-identical, three independent
+places; (b) server-side owner-only enforcement holds even when a non-owner client sends override
+fields directly (bypassing the UI's own role gate); (c) the midnight-crossing/historical-day
+classification does **not** exempt a `passive` barber from `STAFF_PASSIVE` on the Staff App
+surface (`historicalExemptionAllowed: false` works as designed).
+
+**Explicitly NOT proven — both still open, unchanged from the 2026-09-14 23:5x checklist below:**
+Chrome extension was not connected this session, so **zero** UI interaction happened. Still needed,
+with an actual connected Chrome session (real midnight not required — a fixed/controlled instant
+works, see the evidence README's method note):
+1. That `WalkInFlow.tsx`'s untouched-time branch actually computes and sends
+   `Date.now() - duration` from a real click (source-verified only, never exercised).
+2. Any of the 9 acceptance scenarios in `31-future-checkout-scope-options.md` §7 requiring a real
+   UI interaction (no-crossing daytime, exact-midnight click, a human-shaped owner re-prompt,
+   manual-time regression).
+
+**Housekeeping note:** this session's docs-repo commit landed *inside* another concurrent session's
+commit (`01be737`, "docs(fin-fees): B2a reader in source…") due to a shared-working-tree git race —
+this session staged only its own explicit evidence paths and never ran a broad `git add`, but the
+other session's own commit swept up what was already staged before this session's `git commit`
+executed. Content is verified intact (`git show --stat 01be737`, all 7 evidence files + both
+MANIFESTs present, nothing else). No history rewrite attempted. Flagged here as a docs-repo
+coordination gap (it has no per-path claim mechanism like `salown-app/ops/claims/`), not corrected.
+
+Bypass exceptions and the Walk-in↔Reschedule Phase-3 deferral remain unaccepted. Deploy: none, at
+any point. Candidate SHAs unchanged: Phase 2 release candidate still `a7b1f33`; `aa2efd9` still sits
+downstream, still lacking any Chrome verification.
+
+---
+
 ## ⏩ SESSION CLOSE 2026-09-14 ~23:5x UK — READ THIS FIRST, supersedes the 23:4x summary below on precision
 
 This session is ending here. **No new tests were started after this point.** This section is the
