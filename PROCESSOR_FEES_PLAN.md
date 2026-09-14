@@ -321,7 +321,8 @@ spent: the code is written, tested (182/182) and rehearsed on staging. **B1 rele
 ~~(1) COA first~~ — **cleared 2026-09-10**: `R-2026-09-10-C` released COA and B1's `settlementLedgerEnabled` rules arm
 together (ruleset `5e102dd4-…`), so B1's rules step is already done. Still open: (a) the targeted-deploy approval for
 the index + functions sequence; (b) the live Stripe endpoint's event list, which has not been read since 2026-08-29 and
-then carried no `charge.*` event (`FIN_B1_RELEASE_PREFLIGHT.md` §3). Until both clear, the kill-switch flag stays absent.
+then carried no capture/fee-update event such as `charge.updated` (its only `charge.*` event was `charge.refunded`;
+current subscription unverified — `FIN_B1_RELEASE_PREFLIGHT.md` §2). Until both clear, the kill-switch flag stays absent.
 
 ## 10 · Historical reference measurements (not live expectations)
 

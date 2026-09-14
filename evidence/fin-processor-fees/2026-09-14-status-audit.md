@@ -166,7 +166,9 @@ removed (done); live `stripeWebhook` bundle re-proven byte-identical to `6817356
 functions suite 182/182 on an archive of `22850996`; salown-app ops guards 120/120.
 
 **New findings while re-deriving:**
-- The live Stripe endpoint is recorded (2026-08-29) with **no `charge.*` event**. The 2026-09-09 package assumed
+- The live Stripe endpoint is recorded (2026-08-29) with **no capture/fee-update event such as `charge.updated`** (its only
+  `charge.*` event is `charge.refunded`; *wording corrected 2026-09-14 — an earlier version said "no `charge.*` event"*;
+  the current subscription is unverified). The 2026-09-09 package assumed
   `charge.succeeded` was present. B1 still runs on `checkout.session.completed`; the fee then comes from the sweeper
   unless `charge.updated` is added. The endpoint list was not read today (no Stripe credential used).
 - No activation tool exists for `settlementLedgerEnabled`.

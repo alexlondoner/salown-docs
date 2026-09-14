@@ -5,9 +5,10 @@
 > 1. **The rules step is already done.** `R-2026-09-10-C` released GTM A3 (COA) and B1's `settlementLedgerEnabled`
 >    owner-authority arms in one ruleset (`5e102dd4-…`). The "COA first / path R-a" precondition is cleared, and the B1
 >    rules arm can no longer be rolled back separately from A3.
-> 2. **The live Stripe endpoint is not known to carry any `charge.*` event.** The last recorded read (2026-08-29,
->    whitecross-site `docs/REFUND-RELEASE-ANCHORS.md`) listed exactly `charge.refunded`, `checkout.session.completed`,
->    `refund.updated`. The earlier sentence "`charge.succeeded` is expected to be present already" was an assumption, and it
+> 2. **The recorded endpoint list has no capture/fee-update event such as `charge.updated`.** The last recorded read
+>    (2026-08-29, whitecross-site `docs/REFUND-RELEASE-ANCHORS.md`) listed exactly `charge.refunded`,
+>    `checkout.session.completed`, `refund.updated` — `charge.refunded` is the only `charge.*` event, and it serves refunds.
+>    The current subscription is unverified. The earlier sentence "`charge.succeeded` is expected to be present already" was an assumption, and it
 >    contradicts that record.
 >
 > Nothing was deployed, no setting, subscription, flag or production document was changed, no Stripe API call was made.
@@ -126,7 +127,9 @@ swallows its own errors — `functions/index.js:1220-1250`).
   **`b6c325c`** (`firestore.indexes.json` identical to `9a9547a`; `firestore.rules` changed since but is already live).
 - `stripeWebhook` live bundle re-proven byte-identical to `6817356f` by downloading the deployed source zip.
 - Correction: §3 of the 2026-09-09 package assumed `charge.succeeded` was subscribed; the 2026-08-29 endpoint record shows no
-  `charge.*` event. The endpoint list is now an explicit release item.
+  capture/fee-update event such as `charge.succeeded` or `charge.updated` (its only `charge.*` event is `charge.refunded`).
+  The current subscription is unverified; the endpoint list is now an explicit release item. *(Wording corrected
+  2026-09-14 after owner review: an earlier version of this line and of §0 said "no `charge.*` event".)*
 - New finding: no activation tool exists for `settlementLedgerEnabled`.
 - Tests: functions 182/182 (archive of `22850996`), ops guards 120/120.
 
