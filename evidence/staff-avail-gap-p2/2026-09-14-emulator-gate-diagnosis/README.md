@@ -88,6 +88,96 @@ without any process actually being stuck. **This has not been tested and is not 
 cause.** Per the owner's explicit instruction, the full gate is not being re-run to test it without
 a scoped step in between.
 
+## 3a. Round 2 — subset diagnostic, per owner-approved scope (2026-09-14 ~20:4x UK)
+
+Owner-approved 3-point scope: (1) verify sequential-vs-parallel execution to reconcile with the
+aggregate-contention hypothesis, (2) identify files preceding `executor.emulator.test.js` in the
+real gate order and run a small subset with it under the same settings, (3) investigate cross-file
+data/connection/teardown effects with durable logs. No expectations loosened, nothing skipped, full
+gate not started, no production access.
+
+**Point 1 — sequential vs. parallel, empirically verified.** Two throwaway test files, one with
+`--test-concurrency=1` and one without: with the flag, file B's first line printed only after file
+A's last line (a ~65ms gap, zero overlap); without it, both files' first lines printed within 2ms of
+each other. **Confirmed: `--test-concurrency=1` (used by the real gate) makes files run strictly
+one-at-a-time, never in parallel with each other.** This directly **refutes §3's "aggregate parallel
+contention across ~20 files" hypothesis as stated** — files cannot contend with each other at the
+same instant under this setting, so if there is a cross-file effect at all, it cannot be simultaneous
+resource contention between files; it would have to be a *sequential carry-over* effect (leaked
+state, degrading JVM/emulator health run-over-run) instead.
+
+**Point 1a — a second, more consequential ordering finding, found while building the subset.**
+`node --test`, given multiple file arguments, does **not** execute them in the order listed on the
+command line (or in glob-expansion order) — it runs them in **alphabetical order by full path**,
+confirmed by direct observation: 5 files were passed in the order
+`blocks, createWalkIn, importAssignment, rotaWriter, executor`, but the actual execution order in the
+log was `blocks → createWalkIn → executor → importAssignment → rotaWriter` — exactly alphabetical
+(`bookings/blocks` < `bookings/createWalkIn` < `inventory/executor` < `parsers/importAssignment` <
+`staff/rotaWriter`). **This means the original handoff's mental model of "gate order" (reading
+`PHASE1_GLOBS` left to right: bookings, parsers, staff, inventory, …) does not describe what
+actually runs before `inventory/executor.emulator.test.js`.** The real preceding set, by directory
+alphabetical order (`bookings < checkout < finance < inventory < parsers < payments < sales < staff
+< tenants < treatmentSessions`), is only:
+
+| Directory | Files preceding `inventory/executor.emulator.test.js` |
+|---|---|
+| `bookings/` | `blocks`, `createAdminBooking`, `createBooking`, `createStaffBooking`, `createStaffWalkIn`, `createWalkIn`, `reassignBooking` (7) |
+| `checkout/` | `checkoutSettings`, `executor` (2 — note: a DIFFERENT `executor.emulator.test.js`, in `checkout/`, not the inventory one) |
+| `finance/` | `periodClose` (1) |
+
+**10 files total**, not the 20 originally assumed (which wrongly included `parsers/` and `staff/`,
+both of which actually run AFTER `inventory/` alphabetically, not before).
+
+**Point 2 — subset run.** 5 files, spanning the real order: `bookings/blocks.emulator.test.js`,
+`bookings/createWalkIn.emulator.test.js`, `parsers/importAssignment.emulator.test.js`,
+`staff/rotaWriter.emulator.test.js`, `inventory/executor.emulator.test.js` — run together as ONE
+`node --test --test-concurrency=1` invocation against ONE shared emulator (matching the real gate's
+design exactly), same pinned toolchain/heap. Actual order per point 1a:
+blocks → createWalkIn → **executor** → importAssignment → rotaWriter.
+
+**Result: 79/79 PASS, 166s total (`duration_ms 158064.4`), rc=0.** No failures, no hang.
+
+**Executor's own timing, run 3rd in this sequence, compared to running totally alone (round 1):**
+
+| Test | Standalone (round 1) | In this 5-file subset | Δ |
+|---|---|---|---|
+| EMU 5a | 88,183.8 ms | 22,377.0 ms | **~4x faster** |
+| EMU 5b | 25,253.1 ms | 22,292.4 ms | ~same |
+| EMU 5c | 21,351.4 ms | 12,950.7 ms | faster |
+| EMU 8a | 22,928.9 ms | 19,024.3 ms | ~same/faster |
+| **executor file total** | ~160 s | **~79 s** | **~2x faster** |
+
+Nothing got slower when preceded by other files — most got faster or stayed the same. This is
+evidence AGAINST a cross-file degradation effect for this specific sequence, and evidence FOR high
+inherent run-to-run variance in these contention-based tests (the same test, same code, same
+machine, differing by up to 4x between two runs minutes apart) — consistent with real Firestore
+transaction retry/backoff timing being sensitive to exact scheduling, not a symptom pointing at any
+particular file ordering.
+
+**Point 3 — cross-file connection/memory tracking, sampled every 10s for the full 166s run.**
+`lsof -iTCP:8080` established-connection count to the Firestore emulator: **flat at 2 for the entire
+run**, dropping to 0 only after teardown at the very end. Firestore emulator JVM RSS: fluctuated
+262–317 MB with no upward trend — it was actually LOWER in the second half of the run (262–279 MB)
+than the first (297–317 MB), consistent with normal GC, not accumulation. **No connection leak, no
+memory growth signature across these 5 files.**
+
+### What round 2 establishes and does not
+
+**Establishes:** the "aggregate PARALLEL contention" hypothesis from round 1 is wrong (files never
+run concurrently under `--test-concurrency=1`); `node --test`'s real execution order is alphabetical,
+not glob-written order, which changes what "preceding files" even means; the file set genuinely
+tested here (2 real predecessors + 2 non-predecessors + the target) shows no cross-run degradation
+and no resource-leak signature; the timing variance in the contention tests themselves is large
+enough (4x) to be the dominant unexplained factor.
+
+**Does not establish:** what happens with the FULL 10-file real predecessor set (only 2 of the 7
+`bookings/` files were actually tested here, and `checkout/`+`finance/`'s 3 files were not tested at
+all); whether variance of this magnitude, compounded across many files' own contention tests
+sequentially (not in parallel — additive, not simultaneous), could plausibly sum to the scale of the
+original incident's duration; nor anything about the ~20 files that run AFTER `inventory/` in the
+real order, several of which (per round 1's grep) also contain their own `Promise.all`-based
+concurrency tests and were never part of either incident's implicated file.
+
 ## 4. Not done — explicitly, so it isn't assumed
 
 - No full-gate re-run.
@@ -96,19 +186,24 @@ a scoped step in between.
   pass to diff against; `9ea0aca`'s round-2 685/682 result predates this machine's current load
   conditions and was not captured with this level of process/timing detail, so it is not a
   like-for-like comparison without re-running something).
-- No aggregate/multi-file contention test (a bounded step between "one file alone" and "the whole
-  gate" — e.g. running just the handful of files most likely to carry their own concurrency tests,
-  found by grepping for `Promise.all` across `functions/src/**/*.emulator.test.js`, together against
-  one shared emulator, with the SAME real-wall-clock-capped, durable-log design as above). Proposed,
-  not run.
+- ~~No aggregate/multi-file contention test~~ — done in round 2 above (§3a), on a 5-file subset. The
+  full 10-file real predecessor set (§3a's table) was NOT fully tested — only 2 of 7 `bookings/`
+  files were included, and `checkout/`+`finance/` (3 files) were not tested at all.
+- No test of the ~20 files that run AFTER `inventory/` alphabetically in the real gate — several
+  carry their own concurrency tests (per round 1's `Promise.all` grep) and were part of neither
+  incident's implicated file.
 - No deploy, no production access, at any point in this diagnosis.
 
 ## 5. Files in this folder
 
 | File | Contents |
 |---|---|
-| `01-executor-test-output.log` | `node --test`'s real stdout/stderr for the single-file run — durable, complete |
-| `02-firestore-emulator.log` | The Firestore emulator's own log for that run — durable, complete |
-| `03-diag-watch.log` | The diagnostic watchdog's own real-wall-clock check-ins |
+| `01-executor-test-output.log` | Round 1: `node --test`'s real stdout/stderr for the single-file run — durable, complete |
+| `02-firestore-emulator.log` | Round 1: the Firestore emulator's own log for that run — durable, complete |
+| `03-diag-watch.log` | Round 1: the diagnostic watchdog's own real-wall-clock check-ins |
 | `04-full-gate-attempt-2-watch.log` | Attempt 2's watch log, as actually written (survived; attempt 1's was overwritten by reusing the same path — noted, not repeated here) |
 | `05-full-gate-attempt-1-watch-reconstructed.log` | Attempt 1's watch/gate-log content, reconstructed verbatim from the session transcript since the live file was overwritten by attempt 2 reusing the same filename |
+| `06-subset-test-output.log` | Round 2: `node --test`'s real stdout/stderr for the 5-file subset run — durable, complete, 79/79 pass |
+| `07-subset-firestore-emulator.log` | Round 2: the Firestore emulator's own log for the subset run |
+| `08-subset-resource-samples.log` | Round 2: TCP:8080 established-connection count + Firestore JVM RSS, sampled every 10s across the whole run — the cross-file leak/teardown evidence (§3a point 3) |
+| `09-subset-watch.log` | Round 2: the diagnostic watchdog's own real-wall-clock check-ins for the subset run |

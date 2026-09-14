@@ -1,0 +1,26 @@
+20:44:56 REAL wall-clock cap: 900s
+20:44:56 files (real gate order): src/bookings/blocks.emulator.test.js src/bookings/createWalkIn.emulator.test.js src/parsers/importAssignment.emulator.test.js src/staff/rotaWriter.emulator.test.js src/inventory/executor.emulator.test.js
+20:44:56 test output -> /private/tmp/claude-501/-Users-alish/a0fc27d4-d19d-4786-8504-8964dbf64aef/scratchpad/diag-subset-evidence/subset-test-output.log
+20:44:56 emulator log -> /private/tmp/claude-501/-Users-alish/a0fc27d4-d19d-4786-8504-8964dbf64aef/scratchpad/diag-subset-evidence/subset-firestore-emulator.log
+20:44:56 resource samples -> /private/tmp/claude-501/-Users-alish/a0fc27d4-d19d-4786-8504-8964dbf64aef/scratchpad/diag-subset-evidence/subset-resource-samples.log (TCP:8080 connections + java RSS every 10s — the cross-file leak/teardown signal)
+20:44:56 emulator wrapper PID=38929
+20:44:59 emulator ready
+20:44:59 test PID=38966 (covers all 5 files, sequential)
+20:45:09 real_elapsed=13s last_test_line: <empty>
+20:45:19 real_elapsed=23s last_test_line: <empty>
+20:45:29 real_elapsed=33s last_test_line: ✔ EMU: two concurrent same-slot creates → exactly one ok + one SLOT_CONFLICT (x8 rounds) (28718.71ms)
+20:45:39 real_elapsed=43s last_test_line: ✔ EMU: same key + different payload → IDEMPOTENCY_CONFLICT, one block (38.047916ms)
+20:45:50 real_elapsed=53s last_test_line: ✔ EMU: unknown role (no staff doc) rejected even if email matches a barber (16.968083ms)
+20:46:00 real_elapsed=64s last_test_line: ✔ EMU 4b: same mutationId + different payload ⇒ IDEMPOTENCY_CONFLICT, no second mutation (22.727208ms)
+20:46:10 real_elapsed=74s last_test_line: ✔ EMU 4b: same mutationId + different payload ⇒ IDEMPOTENCY_CONFLICT, no second mutation (22.727208ms)
+20:46:20 real_elapsed=84s last_test_line: ✔ EMU 5a: two concurrent SAME-mutation attempts ⇒ exactly one applied stock delta (x8 rounds) (22376.978417ms)
+20:46:30 real_elapsed=94s last_test_line: ✔ EMU 5a: two concurrent SAME-mutation attempts ⇒ exactly one applied stock delta (x8 rounds) (22376.978417ms)
+20:46:40 real_elapsed=104s last_test_line: ✔ EMU 5a: two concurrent SAME-mutation attempts ⇒ exactly one applied stock delta (x8 rounds) (22376.978417ms)
+20:46:50 real_elapsed=114s last_test_line: ✔ EMU 5b: two concurrent DIFFERENT mutations, stock insufficient for both ⇒ exactly one wins (x8 rounds) (22292.428041ms)
+20:47:00 real_elapsed=124s last_test_line: ✔ EMU 7b: successful hook write commits with product update + ledger row (all three atomic) (15.190458ms)
+20:47:10 real_elapsed=134s last_test_line: ✔ EMU 7b: successful hook write commits with product update + ledger row (all three atomic) (15.190458ms)
+20:47:20 real_elapsed=144s last_test_line: ✔ EMU-R 1a: two writers on the same revision — exactly one commits (3305.10575ms)
+20:47:31 real_elapsed=154s last_test_line: ✔ EMU-R 1b: two writers racing the FIRST change — still exactly one (6589.436875ms)
+20:47:41 real_elapsed=165s last_test_line: ℹ duration_ms 158064.431666
+20:47:41 test process exited rc=0
+20:47:42 RESULT: subset finished, rc=0, real_elapsed=166s — see /private/tmp/claude-501/-Users-alish/a0fc27d4-d19d-4786-8504-8964dbf64aef/scratchpad/diag-subset-evidence/subset-test-output.log
