@@ -1,5 +1,40 @@
 # Handoff → next session: STAFF-AVAIL-GAP Phase 2 (Staff App Walk-in)
 
+## ⏩ SCOPE DECISIONS APPROVED 2026-09-15 ~12:1x UK — release plan prepared, NOT executed
+
+Owner approved the three scope decisions from the reconciliation below, with a correction to the
+draft framing first: earlier language calling the Admin-callable/rules gap "zero regression" and
+"low-risk" was **more certain than the tests actually prove** — the gap being pre-existing does not
+remove the risk, it just means this release doesn't introduce it. That correction stands; do not
+repeat the stronger language.
+
+**The three approved decisions, verbatim scope, recorded precisely:**
+1. **Release candidate: `aa2efd9`** (includes the `WALKIN-BACKDATE-FLOOR` checkout-time fix).
+2. **The legacy Admin walk-in callable (`salownCreateWalkIn`) and the `firestore.rules`
+   `isTenantAny` bypass are accepted as NAMED, STANDING EXCEPTIONS for this limited release —
+   explicitly NOT counted as closed.** Separate follow-up items must stay open and tracked in
+   `docs/ROADMAP.md` and `docs/SECURITY.md` until each is actually resolved.
+3. **The Walk-in↔Reschedule race criterion is deferred to Phase 3** — with the explicit
+   consequence, stated by the owner, that this release carries **no system-wide conflict
+   guarantee**.
+
+**Release scope claim, exact wording required:** this release covers protections in the **Staff App
+Walk-in flow only**. Never write "tenant-wide", "zero regression", or "all gaps closed" for this
+release, in any doc.
+
+**Release plan prepared, not executed:**
+`docs/evidence/staff-avail-gap-p2/2026-09-15-release-plan-aa2efd9.md` — exact 2-unit target
+(`functions:salownCreateStaffWalkIn` then `hosting:salown-staff`), why `salownCreateStaffBooking`
+and `hosting:salown` are deliberately NOT touched despite their source having moved, live
+identities read fresh this session (`salownCreateStaffWalkIn` confirmed not-yet-live 404;
+`salownCreateStaffBooking` unchanged since `R-2026-09-13-A`; `hosting:salown-staff` still
+`62aa1ac4a0302593`; `hosting:salown` still `827946e295c69eeb`), rollback identities and order, and
+the post-release checks including the exact "do not claim" list from decisions 2/3 above. **This
+message and the plan document are scope approval, not deploy approval** — no deploy has been run,
+per the owner's own closing line.
+
+---
+
 ## ⏩ OWNER RECONCILIATION 2026-09-15 ~12:0x UK — verification accepted; three release-scope decisions pending; still no deploy
 
 Owner reviewed the ~11:5x session's evidence and confirmed the reported results directly: morning
