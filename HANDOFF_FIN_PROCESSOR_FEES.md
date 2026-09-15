@@ -4,6 +4,20 @@
 > or the fee-day rules. **No deploy, flag, Stripe setting, production write or real refund has been approved.**
 > Automatic refunds (BL-4) are a separate lane and must not be bundled with this work.
 
+> **Update 2026-09-15 evening — read this before §1:**
+> - **B1b:** whitecross-site `95a963fe`, SOURCE_READY_NOT_DEPLOYED. The claim was handed over with owner approval
+>   (`ef17f1f6`) and released (`3668c506`); no claim of this stream is open in either repo.
+> - **B2a UX:** salown-app `9a4925c`, PUSHED_NOT_LIVE.
+> - **The B1 release source stays pinned at `22850996`.** whitecross-site `main` now carries unrehearsed B1b, so never
+>   deploy `stripeWebhook` / `wcSettlementSweeper` from it.
+> - Still open for the owner:
+>   - the T18 write-once first checkout time (not built);
+>   - the no-checkout fee date;
+>   - the open-period refund day;
+>   - B1 release approval;
+>   - a B1b rehearsal and preflight before any release that includes it.
+> - The §1 table below is the morning snapshot.
+
 ## 1. State at hand-off (verified 2026-09-15)
 
 | Repo | HEAD = origin/main | Tree |
@@ -26,7 +40,8 @@ No prototype server is running.
 | Phase 0 online tender leg (gross only) | `LIVE_VERIFIED` | R-2026-09-05-B |
 | B0 data contract | DONE (docs) | `PROCESSOR_FEES_PLAN.md` §2–§7 |
 | **B1** Stripe captures + actual fees | rules arm **LIVE** (ruleset `5e102dd4-…`, R-2026-09-10-C). Functions, index and flag **NOT deployed**; `settlements` count 0 | wc `8137711b`, sa `9a9547a`; release package `FIN_B1_RELEASE_PREFLIGHT.md` (candidates wc `22850996` / sa `b6c325c`, no rules step) |
-| **B1b** refund entries | **BLOCKED** by the claim above — no code | fold already reads `REFUNDED` + `refundsComplete`; missing: writer, `stripe:re_…` ids, partial/full/repeated-event tests |
+| **B1b** refund entries | **SOURCE_READY_NOT_DEPLOYED** (2026-09-15) — *not* in the B1 release pinned at `22850996` | whitecross-site `95a963fe` (claim handed over `ef17f1f6`, index.js `977062bb`, released `3668c506`); 201/201 tests; rules, ids and known limits in plan §8 B1b row |
+| **B2a UX** refund summary + fee cost | **PUSHED_NOT_LIVE** (2026-09-15) | salown-app `9a4925c` (claim `ac19c29` → `9175536`, SYNC `ab6c1dd`); see §4a |
 | **B2a** policy-free reader + booking-detail fee block | **PUSHED_NOT_LIVE** | salown-app `74922bd` (claim `96200b6` → released `7b03fd9`): `src/utils/settlementFacts.ts`, `src/components/OnlinePaymentFees.tsx`, mount in `BookingDetailPanel.tsx`; 37 new tests, panel suites 137/137 |
 | B2 P&L / Bank Balance / fee-day grouping | PLANNED — not started | waits on §4 decisions |
 | B3 history backfill, B4 Reports, B5+ other providers | PLANNED | plan §8 |
@@ -46,7 +61,13 @@ No prototype server is running.
 
 ## 4. Open — needs the owner
 
-1. **B1b claim — a controlled hand-over is needed (checked 2026-09-15, claim NOT touched).**
+1. ~~**B1b claim**~~ — **HANDED OVER 2026-09-15 (owner-approved).** Re-checked immediately before the change: claim
+   blob `4791dfe0` unchanged since `a5da93d4`, no commit to the four files after 2026-09-08, no live session with that
+   owner id. whitecross-site `ef17f1f6` retired `FIN-B1-SETTLEMENTS` (reason recorded in the commit and the new claim)
+   and opened `FIN-B1B-REFUNDS` (`alish/fin-processor-fees`) on the same four files. `977062bb` extended it to
+   `functions/index.js`: the BL-5 refund block answers 200 and returns before the settlement call, so refund events
+   never reached `settlements.js`. **The B1 release source stays pinned at `22850996`; B1b code is not part of it.**
+   The pre-hand-over analysis follows, kept for the record:
    `FIN-B1-SETTLEMENTS--alish--finance-passive-hide.claim` is still on whitecross-site `origin/main` (last change
    `a5da93d4`, 2026-09-08). The owning lane's last registry activity is salown-app `a1f214f` (2026-09-10); no peer
    session in `ListAgents` carries that id. **B1b cannot route around the held files:** `classifyEvent`
@@ -99,6 +120,21 @@ Source `2cb1411` (contains `74922bd`), exported with `git archive` into the scra
 - **Visual observation (screenshot 02), not changed:** on a refunded booking the refund appears twice. The existing
   Payment section shows "Refunded £25.00" in green; the new block shows "Refunded −£25.00" in orange. Same money,
   different sign and colour. Owner decision whether B2 should drop one of them.
+- **Both notes above: FIXED 2026-09-15 (owner direction), salown-app `9a4925c`, PUSHED_NOT_LIVE, no deploy.**
+  - One refund summary: on payments the fee block covers, the legacy Payment-section "Refunded" row is suppressed.
+    Connect and other types are unchanged.
+  - No negative "up to":
+    - exact → "Remaining fee cost £0.58";
+    - incomplete → "Known fee cost · Not final — <missing scope>";
+    - unknown → "Fee cost · Not known yet";
+    - estimate → "Estimated fee cost ≈".
+  - Reader gains `refundsComplete`.
+  - Checks:
+    - suites 82/82, tsc 0; full vitest 5616/5616 in the main repo;
+    - panel check against emulators with 15 synthetic bookings, including a full refund with a complete ledger, a full
+      refund with a pending fee and a Connect refund;
+    - screenshots 03 and 04 in the evidence folder.
+  - **This is display only.** Fees are not written to P&L, and the write-once first checkout time (T18) is not built.
 
 Record corrections made on 2026-09-14/15 are listed in `evidence/fin-processor-fees/2026-09-14-status-audit.md` §8.
 The recorded Stripe endpoint list (2026-08-29) has `charge.refunded` but **no capture/fee-update event such as

@@ -28,6 +28,14 @@ swallows its own errors — `functions/index.js:1220-1250`).
 
 ## 1. Source selection — exact candidates (verified 2026-09-14)
 
+> **Pinned 2026-09-15 (owner).** The B1 release source is whitecross-site
+> **`22850996613cd1a6519b42d11c7bc3a076af1a77`** and stays there. The `FIN-B1-SETTLEMENTS` path lock that froze the
+> rehearsed bytes was handed over (`ef17f1f6`). The freeze is now this SHA: build only from a `git archive` of it.
+> Never deploy from whitecross-site `origin/main`: from `ef17f1f6` on it carries **B1b refund work (`FIN-B1B-REFUNDS`)
+> that is not part of this release** and has not been rehearsed. The §6 re-check compares the four settlement files and
+> `index.js` against this SHA, not against `origin/main`. A candidate that includes B1b is a new rehearsal and a new
+> preflight.
+
 | Unit | Live now (read-only) | Candidate | Delta candidate − live |
 |---|---|---|---|
 | `stripeWebhook` (us-central1, gen2) | revision **`stripewebhook-00106-dof`**, 100 % traffic, `updateTime 2026-08-28T23:50:59Z`, source object `gcf-v2-sources-1050766582653-us-central1/stripeWebhook/function-source.zip#1787960993781215`. Source zip downloaded and compared: `index.js`, `externalCheckout.js`, `refunds.js`, `emailParsers.js`, `package.json` **byte-identical to whitecross-site `6817356f`**. Env: platform variables only (no `WC_STRIPE_ACCOUNT_ID`, `WC_STRIPE_LIVEMODE`, `WC_SETTLEMENT_START_ISO`, `WC_NONPROD_TEST_MODE`). Secrets: `WC_STRIPE_SECRET_KEY` v1, `STRIPE_WEBHOOK_SECRET` v2, `WC_STRIPE_TEST_SECRET_KEY` v1, `STRIPE_TEST_WEBHOOK_SECRET` v1 | **whitecross-site `22850996613cd1a6519b42d11c7bc3a076af1a77`** (= origin/main 2026-09-14). `functions/` is **byte-identical to the previous candidate `101c3c2d`** (empty diff); `settlements.js`, `settlements.fakes.js`, `stripeWebhook.integration.test.js` byte-identical to `8137711b` (the rehearsed commit) | `functions/` 6817356f → 22850996: 7 files, +2457/−50. Shared runtime files that differ: **`index.js` only** (`externalCheckout.js`, `refunds.js`, `emailParsers.js` unchanged). New: `settlements.js` (+tests/fakes) = B1; `loyaltyEnroll.js` (+test) = the loyalty lane already live in `enrollLoyalty`/`wcLoyaltyLookup` (`R-2026-09-09-A`), which a `stripeWebhook` deploy also republishes into its own bundle — record it in the ledger row. The live zip also carries `get-gmail-token.js` and `.DS_Store`, which are gitignored/untracked: an archive-workspace deploy drops them (nothing in `index.js` requires `get-gmail-token.js`) |
