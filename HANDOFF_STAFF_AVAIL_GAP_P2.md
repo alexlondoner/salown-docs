@@ -1,6 +1,85 @@
 # Handoff → next session: STAFF-AVAIL-GAP Phase 2 (Staff App Walk-in)
 
-## ⏩ SESSION UPDATE 2026-09-15 ~00:3x UK — round-12 full gate PASS + callable-level verification, Chrome checks still open — READ THIS FIRST
+## ⏩ SESSION CLOSE 2026-09-15 ~00:5x UK — full gate + callable verification COMPLETE, no new tests to start, only Chrome checks remain — READ THIS FIRST
+
+**Full gate and callable verification are complete. Do not start new tests.** This closes the
+`STAFF-AVAIL-GAP-P2-VERIFY` session at ~289k tokens (context-budget handoff, not a stopping point in
+the work itself). The next session's only job is the two remaining Chrome checks below, then an
+owner release decision. Bypass exceptions and the Walk-in↔Reschedule Phase-3 deferral are still
+**not accepted**. **No deploy approval exists.** This is a verification-gap closure, not a release
+approval — the gate passing does not authorize deploying anything.
+
+### Exact SHA tested this session
+
+`aa2efd9c5efc875bea316c461e47bf0817728c3c` (`WALKIN-BACKDATE-FLOOR: remove untouched-time Save &
+Checkout 09:00 floor`) — both the round-12 full gate and the callable-level harness ran against an
+isolated `git clone --no-hardlinks` checked out **detached** at this exact SHA, under
+`/private/tmp/.../scratchpad/staff-avail-gap-p2/clone-aa2efd9` (deleted at session end, evidence
+copied out first). Nothing in the shared `salown-app` tree was edited. `a7b1f33` (the Phase 2
+release candidate that `aa2efd9` sits downstream of) was not separately re-tested this session —
+everything here is evidence for `aa2efd9`, which is `a7b1f33` plus the backdate-floor commit.
+
+### The 9 UI acceptance scenarios vs. the "two UK Chrome checks" — checklist
+
+The two Chrome checks the owner asked for (UK daytime, UK midnight-crossing Save & Checkout) are
+the **minimum requested scope**, not full coverage of all 9 scenarios in
+`2026-09-14-test-fix-and-uk-checkout/31-future-checkout-scope-options.md` §7. Four of the nine need
+a *third* kind of setup beyond a plain daytime-click / midnight-click pair (a long-duration service,
+a manually-typed time, or a conflict/shift seeded to straddle the boundary itself). Status per item,
+as of this session:
+
+| # | Scenario | Which Chrome check | Coverage before this session | Coverage after this session |
+|---|---|---|---|---|
+| 1 | No-crossing early morning (08:50→08:20 same day) | **A — UK daytime** | none | still none (Chrome only) |
+| 2 | Exact midnight crossing (00:10→23:40 prev. day) | **B — UK midnight** | unit-level only | **+ callable-level** (this session, controlled instant) — Chrome still open |
+| 3 | Boundary just inside same day (00:40→00:10, no rollover) | A-variant (near-midnight, no crossing) | unit-level only | unchanged — Chrome still open |
+| 4 | Long service crossing midnight by hours, `MAX_DURATION_MINS` refuses correctly | **neither — needs its own setup** (long-duration service) | none | none |
+| 5 | Owner-override resubmission reuses identical instant across `CONFLICT_ACK_REQUIRED` retry | A or B + a seeded conflict | none | **+ callable-level, PROVEN generically** (this session — see §2 above: byte-identical instant through conflict→override→record). Chrome still needed to prove the *React prompt UI* reuses it, not just that the server accepts a repeated payload |
+| 6 | Manual-time regression (`timeTouched===true` unchanged) | **neither — needs its own click** (a manually-typed time, not the untouched-time path) | none (existing WYSIWYG tests not re-run against this change) | unchanged |
+| 7 | Historical-day eligibility exemption (passive/not-started barber on a backdated day) | B + a passive/not-started barber | unit-level only (flag mechanics) | **+ callable-level, PROVEN end-to-end** through the real `createWalkIn.ts` staff-surface path (this session: real `STAFF_PASSIVE` refusal, historical exemption correctly disabled). Chrome still needed to see the actual refusal UI |
+| 8 | Conflict correctness across midnight (23:50-yesterday booking vs 23:40-yesterday walk-in) | **B, but with the conflict seeded to straddle the midnight boundary itself** — not the same as item 5's same-day conflict | none | **not fully covered** — this session's conflict test (item 5) used a same-calendar-day conflict window, not one straddling midnight; item 8 needs its own seed |
+| 9 | Shift-fit correctness across midnight (yesterday's shift applies, not today's) | **B, with a barber whose shift differs by day** — this session's seed used all-day (`00:00`-`23:59`) hours, which sidesteps this entirely | none | none |
+
+**Reading this table:** items 2, 5 and 7 are now de-risked by real (non-mocked) server-side
+evidence and only need the *client* half proven. Items 1, 3, 4, 6, 8, 9 have no evidence beyond
+source-reading — items 4, 6, 8, 9 in particular will not be satisfied by just "do the daytime click
+and the midnight click"; each needs its own deliberate seed/setup even after checks A and B are done.
+
+### Git provenance, exact — do not rewrite history
+
+- **`salown-app` SYNC + claim-release commit, actual pushed SHA after rebase onto a concurrent
+  session's `FIN-B2-FEE-READER` work:** `055a020` (`docs(sync): STAFF-AVAIL-GAP-P2 round-12 full
+  gate PASS + callable-level verification note; release claim`). Confirmed via
+  `git log --oneline -5` and the push output `7b03fd9..055a020 main -> main`. This is the correct
+  SHA to cite, not the pre-rebase `6bd279e` (that one was rejected by `origin` as non-fast-forward
+  and never landed).
+- **`docs` (salown-docs) repo — the finance session's commit that this session's evidence landed
+  inside of, via a shared-working-tree git race (documented, not corrected):** `01be737`
+  (`docs(fin-fees): B2a reader in source (74922bd, not deployed); B1b blocked on the
+  FIN-B1-SETTLEMENTS claim`), authored by session `session_01QEUppR9VGp4Y7h49hU5V2A`. Contains, in
+  addition to that session's own `PROCESSOR_FEES_PLAN.md`/`ROADMAP.md` edits, all 7 files of
+  `evidence/staff-avail-gap-p2/2026-09-15-callable-level-verify/` plus the updated aggregate
+  `evidence/staff-avail-gap-p2/MANIFEST.sha256` — verified via `git show --stat 01be737`. **The
+  other session independently added its own provenance note afterward: `0ab4376`
+  ("provenance: 01be737 also carried STAFF-AVAIL-GAP-P2-VERIFY evidence staged by another
+  session").** This session's own clean, single-purpose commit is `5a619e3` (the HANDOFF §1/§2
+  write-up above). No `git commit --amend`, no rebase, no history rewrite was performed on either
+  repo to "fix" the mixed commit — the content is intact and verified; only the commit boundary is
+  imprecise.
+
+### For the next session
+
+Start from the checklist above, not from re-deriving scope. Chrome extension connectivity is the
+only blocker — once connected, checks A and B (with the controlled-instant method from
+`2026-09-15-callable-level-verify/README.md §2`, real midnight not required) plus items 4/6/8/9's
+own setups are the entire remaining scope before an owner release conversation. **Do not re-run the
+full `ops/test-emulator.sh` gate** — round 12 already closed that verification gap; re-running it
+without new information is process waste, and unrelated concurrent sessions' commits may again
+interleave with any docs-repo write, so keep commits narrow and expect to rebase.
+
+---
+
+## ⏩ SESSION UPDATE 2026-09-15 ~00:3x UK — round-12 full gate PASS + callable-level verification, Chrome checks still open
 
 Full record: `docs/evidence/staff-avail-gap-p2/2026-09-15-callable-level-verify/README.md`.
 Isolated clone of `aa2efd9`, no shared-tree edit, no deploy, no production access. Claim
