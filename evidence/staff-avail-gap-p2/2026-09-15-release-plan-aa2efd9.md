@@ -54,15 +54,25 @@ contains for that file. This is intentional — it is the same minimal-blast-rad
 branch's `createBooking.ts` are **not** the same code until a separate, later release redeploys it.
 Do not describe this release as having touched New Booking's server behaviour.
 
-### 2b. The Staff hosting bundle also carries New Booking's client, unchanged server
+### 2b. New Booking's client code moves; its server does not — do not say "New Booking is not touched"
 
-`src/staff/sheets/NewBookingSheet.tsx` changed by 74 lines in the same range (refactored onto the
-shared override-flow module). Deploying `hosting:salown-staff` therefore also updates New Booking's
-**client** code, while its **server** (`salownCreateStaffBooking`, §2a) does not move. This
-combination — new client, old server, for a DIFFERENT flow than the one being released — was
-already checked in round 2 of this work (`RELEASE-EVALUATION-2.md`, `compat-*.json`): 13/13 old-vs-
-new server responses identical for `salownCreateStaffBooking`'s payload shape. Flagged here as a
-blast-radius fact, not a new open question.
+`src/staff/sheets/NewBookingSheet.tsx` changed by 74 lines in the same diff range (refactored onto
+the shared override-flow module `staffOverrideFlow.ts`). **Deploying `hosting:salown-staff` ships
+this changed client code for New Booking, in the same bundle as Walk-in.** Only the New Booking
+**server** (`salownCreateStaffBooking`, §2a) stays unchanged. The correct sentence for the release
+record is "New Booking's server is not redeployed; its client code is" — never "New Booking is not
+touched."
+
+The resulting combination after this release — the NEW client sending payloads to the OLD, already-
+live `salownCreateStaffBooking` — is exactly what was compatibility-tested in round 2, not merely
+"checked" in the abstract:
+`docs/evidence/staff-avail-gap-p2/2026-09-14-release-checks/RELEASE-EVALUATION-2.md` describes the
+method; the raw comparison is
+`docs/evidence/staff-avail-gap-p2/2026-09-13-local-verification/compat-old-server-797c9b3.json` vs
+`compat-new-server-9ea0aca.json`, diffed in `compat-diff-old-vs-new.json` — **13/13 identical
+responses when the new client's payload shape is sent to the old (`797c9b3`) server**, which is the
+live server this release leaves in place. This is existing evidence being cited for its actual
+relevance to this release's blast radius, not a new check run for this plan.
 
 ### 2c. `functions/src/index.ts` diff, confirmed clean
 
@@ -124,10 +134,30 @@ inferred from the line count.
 
 ## 5. Rollback
 
-| Unit | Rollback identity | Method | Order if both must roll back |
-|---|---|---|---|
-| `hosting:salown-staff` | version **`62aa1ac4a0302593`** (§3) | Console → Hosting → site `salown-staff` → Release history → that version → ⋮ → Roll back | **Roll this back FIRST** — it stops the client from calling the new function at all |
-| `functions:salownCreateStaffWalkIn` | none exists (new export, no prior revision) | Delete the function (`gcloud functions delete salownCreateStaffWalkIn --region=europe-west2 --project=havuz-44f70`, or via Console) | Only after the hosting rollback above, and only if actually necessary — deleting first while the old client is still cached in some tab would surface `NOT_FOUND` calls uselessly |
+**Rollback is two separate steps with a real gap between them — do not treat step 2 as automatic.**
+
+**Step 1 — roll back `hosting:salown-staff`, then verify what is actually being served.**
+Console → Hosting → site `salown-staff` → Release history → version **`62aa1ac4a0302593`** (§3) →
+⋮ → Roll back. This stops any *newly-loaded* page from ever fetching the new bundle. It does
+**not** reach a tab that already loaded the new bundle before the rollback and is still open —
+that tab keeps running the new `WalkInFlow.tsx`/`NewBookingSheet.tsx` code, in memory, until it is
+refreshed or closed. Verify the rollback itself the same way §4 step 7 verifies a forward deploy:
+read the served path (`curl staff.salown.com`), confirm the asset filename and its sha256 now match
+`62aa1ac4a0302593`'s own build, not the release just rolled back.
+
+**`functions:salownCreateStaffWalkIn` stays standing after step 1, on purpose.** It exists
+specifically to keep serving any tab that is still running the new bundle from before the rollback
+(§ above). It has no prior revision to roll back to (new export) — the only lever is delete, and
+deleting it while such a tab might still be open would turn that tab's next Walk-in save into a
+hard `NOT_FOUND`, mid-shift, for whoever is holding it.
+
+**Step 2 — deleting the function is a separate decision, not step 1's automatic follow-on.** Make
+it only after assessing client exposure: how long ago the rollback happened relative to typical
+shift/tab lifetimes, and whether any Staff App session is known to still be open on the affected
+tenant(s). If that assessment is inconclusive, leave the function standing rather than delete it —
+an unused function costs nothing; a mid-save `NOT_FOUND` for a real walk-in does. When deletion is
+decided: `gcloud functions delete salownCreateStaffWalkIn --region=europe-west2
+--project=havuz-44f70`, or via Console.
 
 `salownCreateStaffBooking` is not part of this release (§2a) and has no rollback identity to track
 here.
