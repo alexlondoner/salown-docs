@@ -113,7 +113,22 @@ object writes the same document (create-if-absent) and is a no-op:
 | `stripe:po_<id>:txn_<id>` | `PAID_OUT` | Payout membership of a balance transaction |
 | `estimate:v<rateVersion>:ch_<id>` | `FEE_ESTIMATE` | the `railFees` rate table (§4) |
 | `treatwell:<externalId>` | `FEE_ACTUAL` (provider `treatwell`) | parser (later package) |
-| `comp:<uuid>` | `COMPENSATION` (`compensatesEntryId`, `reason`, `batchId?`) | a correction or rollback |
+| `comp:<uuid>` | `COMPENSATION` (`compensatesEntryId`, `reason`, `batchId?`) | a **manual or batch** correction or rollback |
+| `stripe:txn_<id>` (of the **refund's** balance transaction) | `REFUND_FEE_ACTUAL` (`refundId`, `refundEntryId`, `fee_m`) | Balance transaction of a refund — **added by `FIN-B1B-HARDENING` 2026-09-15** |
+| `stripe:ch_<id>:refunds:<fingerprint>` | `REFUND_OBSERVED` (`refunds[]`, `amountRefunded_m`, `fingerprint`) | One **complete** listing of a charge's refunds — **added by `FIN-B1B-HARDENING`**; the fingerprint is sha256(`amount_refunded` + the canonical sorted `re_id:status:amount` list), first 16 hex |
+| `comp:<compensatesEntryId>:<REASON>` | `COMPENSATION` written by an **automated** writer (`REFUND_FAILED`, `REFUND_CANCELED`) | **added by `FIN-B1B-HARDENING`**: a webhook or sweeper cannot use a random uuid and stay idempotent, so an automated compensation id is derived from what it compensates |
+
+**Why a refund's fee is its own entry (2026-09-15).** A `REFUNDED` entry is written when the refund is seen; its fee
+may only be known later. Editing the entry would break "entries are never updated", and the first implementation's
+compensation-plus-replacement pair (`comp:re_…:fee_known`, `stripe:re_<id>:<txn>`) invented two ids outside this
+table. The fee now follows the same shape as a capture's fee: a separate `REFUND_FEE_ACTUAL` entry keyed by Stripe's
+own balance-transaction id. A live refund with no such entry has an **unknown** fee — never 0.
+
+**Why observations are entries.** Completeness cannot be derived from refund entries alone: when Stripe's
+`amount_refunded` changes but no new refund entry is written (a pending refund, or a fee-only change), a snapshot
+carried on other entries goes stale and a booking can look "complete" while a refund is in flight. A `REFUND_OBSERVED`
+entry records each complete listing, so the fold always sees the latest state. Ordering between observations is
+**never** by clock or by an invented status rank — see §2.6 and §3.1.
 
 Every entry carries: `kind`, `rail` (`online_checkout` \| `aggregator_prepaid` \| `desk_card`), `provider`,
 `providerAccountId` (Stripe `acct_…` of the key that took the money), `livemode`, `currency`, the amounts of its kind in
@@ -129,7 +144,7 @@ minor units, the provider timestamps of its kind, `bookingDocId`, `recordedBy`
 | `fee_m` | the rail's fee on the capture | `balance_transaction.fee` |
 | `providerNet_m` | the provider's own net of the capture = `gross_m − fee_m`, **before refunds** | `balance_transaction.net` (Stripe: "amount − fee") |
 | `refunded_m` | Σ refund amounts | Refund objects; cross-check `charge.amount_refunded` |
-| `feeOnRefund_m` | any fee the provider charges on a refund | the refund's own balance transaction `fee` (card refunds: expected 0; modelled, not assumed) |
+| `feeOnRefund_m` | any fee the provider charges on a refund | the refund's own balance transaction `fee`, held in its **own `REFUND_FEE_ACTUAL` entry** since `FIN-B1B-HARDENING` (card refunds: expected 0; modelled, not assumed). Σ over **live** refunds, one entry per refund. A live refund without such an entry has an unknown fee: it adds nothing and blocks completeness — it is never read as 0 |
 | `settledNet_m` | **our** derivation = `providerNet_m − refunded_m − feeOnRefund_m` | fold |
 
 `providerNet_m` is never presented as "net after refunds"; `settledNet_m` is never presented as Stripe's net.
@@ -149,7 +164,17 @@ projection = fold(entries):
       else if any FEE_ESTIMATE                  → Σ estimate fee_m, 'estimate'
       else                                      → null, null            # unknown ≠ 0
   providerNet_m  = gross_m − fee_m             (null when fee_m is null)
-  refunded_m     = Σ REFUNDED.amount_m ; feeOnRefund_m = Σ REFUNDED.feeOnRefund_m
+  refunded_m     = Σ live REFUNDED.amount_m
+  feeOnRefund_m  = Σ REFUND_FEE_ACTUAL.fee_m over LIVE refunds, one entry per refund   # unknown ≠ 0
+  refundsComplete (FIN-B1B-HARDENING, per captured charge, once any refund fact exists):
+      a REFUND_OBSERVED entry exists, and exactly one of them dominates all the others
+        (dominance = the documented Stripe transitions allow only that order — §3.1;
+         no unique dominator ⇒ OBSERVATIONS_CONFLICT ⇒ incomplete + review, never a chosen side)
+      and the latest observation has no in-flight refund
+      and its succeeded refund ids == the live REFUNDED ids, and their Σ == its amount_refunded
+      and every live refund has a REFUND_FEE_ACTUAL entry
+      # "complete" means complete AS OF the latest consistent observation; it is never permanent,
+      # because a succeeded refund can still become requires_action or failed for ~30 days (§3.1)
   settledNet_m   = providerNet_m − refunded_m − feeOnRefund_m   (null when providerNet_m is null)
   paidOut        = { payoutIds, lastPayoutStatus, lastArrivalDate }  (informational; §5 dates)
   version        = count(entries)
@@ -180,6 +205,48 @@ keep folding.
 | A second successful payment for an already-paid booking is returned as `ALREADY_CONFIRMED` **without writing anything** | `externalCheckout.js:1102-1105` | code finding — the money is real and currently unrecorded |
 | whitecross pays on its **own** Stripe account (`WC_STRIPE_SECRET_KEY`), so the fee is entirely the salon's cost; the salOWN Connect path (`salown-app/functions/src/index.ts:4087-4120`) adds `application_fee_amount` and is enabled for no tenant | `whitecross-site/functions/index.js:614-635`; live tenant docs read 2026-09-05 | code + data finding |
 | Only `gbp` is accepted on the live path; Connect hard-codes `gbp` | `externalCheckout.js:70`; `index.ts:4097` | code finding |
+
+### 3.1 Refund statuses and the Events API — verified against the official docs 2026-09-15 (for `FIN-B1B-HARDENING`)
+
+Sources: `docs.stripe.com/api/refunds/object`, `docs.stripe.com/refunds` (sections "Handle failed refunds", "Cancel a
+refund", "Refunds that require action", "Refund events"), `docs.stripe.com/api/events/list`,
+`docs.stripe.com/api/pagination`. Only what the pages state is listed. Nothing here was tested against the live or
+test API.
+
+**Refund `status`:** `pending`, `requires_action`, `succeeded`, `failed`, `canceled`. The docs **do not** name
+terminal statuses.
+
+| Documented transition | Source statement (paraphrased closely) |
+|---|---|
+| `requires_action → pending` | the customer submits bank details and Stripe begins processing |
+| `pending → succeeded` | the refund is expected to arrive in the customer's bank |
+| **`succeeded → requires_action`** | the customer's bank returns the funds to Stripe; the refund "transitions back to `requires_action`" |
+| `requires_action → failed` | the customer does not respond before the expiry threshold |
+| `requires_action → canceled` | canceled while in `requires_action` |
+| `pending → failed` | card refund held pending for insufficient balance past the expiry window (`insufficient_funds`) |
+| **`succeeded → failed`** (read as allowed) | the bank cannot process the refund and returns the amount, "up to 30 days"; status "transitions to `failed`"; `failure_balance_transaction` reverses the initial balance transaction |
+| `pending → canceled` | some card refunds can be canceled for a short period (Dashboard only) |
+
+**No outgoing transition is documented for `failed` or `canceled`.** Cancellations are "a type of refund failure"
+(they carry `failure_reason` and `failure_balance_transaction`).
+
+**Consequences for the ledger:**
+1. The statuses contain a cycle (`requires_action → pending → succeeded → requires_action`), so two observations of
+   one refund on that cycle **cannot be ordered from their statuses**. Only a move into `failed` or `canceled` is
+   order-determinable. Coverage of one observation by another does not prove it is chronologically newer.
+2. `succeeded` is not final. Up to ~30 days later a refund can fail or return to `requires_action`, so
+   "refunds complete" can only mean "complete as of the latest consistent observation".
+
+**Events API:**
+- lists events "going back up to 30 days";
+- `types` takes up to 20 names and cannot be combined with `type`;
+- `limit` is 1–100, with a `created` interval filter;
+- list methods return objects "in reverse chronological order", paged with `starting_after` / `ending_before` and
+  `has_more`;
+- an event's `data` is rendered in the API version at the event's creation time, so read ids from it and re-read
+  the objects;
+- Stripe recommends `refund.created`; `refund.failed` exists; `charge.refund.updated` is deprecated;
+- **the docs say nothing about consistency when objects are created during pagination.**
 
 ## 4 · Rate configuration (later package) — `settings/settings.railFees`
 
@@ -287,6 +354,35 @@ set, because the projection is derived, not incremented.
   charge on a booking already marked done.
 * Two Event objects for one fact, or the same event redelivered: same entry id → no-op.
 
+### 6.3.1 The Stripe Events backstop (`FIN-B1B-HARDENING`, 2026-09-15) — new scope
+
+A refund reaches the ledger from the webhook (the BL-5 refund block hook). If that delivery is lost, nothing else
+would ever find it: the provider charge scan lists charges by `created`, so it never revisits an older charge. The
+sweeper therefore also scans **events**, inside the existing schedule — no new function, no new job.
+
+- **What it lists:** `charge.refunded`, `refund.created`, `refund.updated`, `refund.failed`. Only ids are read from
+  an event (an event's payload is rendered in the API version of its creation time, §3.1); the charge and its full
+  refund list are then re-read, so the written entries are the same deterministic ones the webhook would write.
+- **Cursor:** `platform/settlementScan.refundEvents` — `{ cursor, page, retentionGaps, lastRun }`. The first cursor
+  is `max(WC_SETTLEMENT_START_ISO, now − retention)`; the scan never asks for events before the ledger start.
+- **Closed windows:** `created ∈ [cursor, min(now − lag, cursor + max window)]`, paged with `starting_after`. The
+  cursor advances to the window end **only after every page of that window has been handled**, never per event.
+- **Progress without skipping:** after each fully handled page the resume position (window bounds, `starting_after`,
+  pages done) is committed. A page-budget stop, an API error, a rate limit, a network error or a crash leaves the
+  cursor where it was and the next pass **resumes after the last full page** instead of restarting the window — so a
+  busy window cannot loop on its first pages. A stale, corrupt or Stripe-rejected position rescans that window from
+  its start; it is never skipped.
+- **Gates before any Stripe call:** kill switch, configuration, and the key's account. Then per event `account` and
+  `livemode`, and per charge livemode, currency and the start boundary. Refusals are counted and write nothing.
+- **Retention:** Stripe lists events for 30 days only. A cursor older than that persists an explicit
+  `RETENTION_GAP {from, to}` in the same transaction that moves the cursor to the oldest recoverable second — the
+  span is recorded, never silently skipped. Only a B3-style backfill can close such a gap.
+- **What it cannot recover:** anything older than retention (including an outage or a flag-off period longer than
+  that); refunds on charges before `WC_SETTLEMENT_START_ISO` (out of scope by design); events whose charge resolves
+  to no booking or to two (queued as unmatched until the booking appears); and a refund list too long to page
+  completely, which leaves the marker pending instead of recording a truncated observation.
+- **Cost:** one `events.list` call per window per pass when nothing matches.
+
 ### 6.4 A second collection is never silent
 
 If a capture arrives for a booking that already has a different `CAPTURED` charge (Session metadata `bookingDocId`
@@ -360,7 +456,7 @@ changed by this decision.
 | **0** | Online leg visible | `tenderFacts.online_p`; Finance/Reports/Sales | — | `hosting:salown` — **LIVE** `ff183fbbb067b6b7` | previous version |
 | **B0** | This contract | §2–§7 | — | docs only — **DONE 2026-09-07** | — |
 | **B1** | Stripe captures + actual fees, new payments only | `stripeWebhook`: handle `charge.succeeded`/`charge.updated` (the fee arrives with `charge.updated` — verified on the real test API: `balance_transaction` is `null` in `charge.succeeded`), retrieve outside the transaction, append `CAPTURED` + `FEE_ACTUAL`, recompute projection; **`wcSettlementSweeper`**: due pass + provider scan with persistent page cursor; second-capture flag; kill switch `settlementLedgerEnabled`. Confirmation gates and every existing booking field untouched. **No Finance change, no hosting release.** | B0 · composite index (`settlementSync.state`, `settlementSync.nextAttemptAt`) · `charge.updated` subscription on the live endpoint · env `WC_STRIPE_ACCOUNT_ID`, `WC_STRIPE_LIVEMODE`, **`WC_SETTLEMENT_START_ISO` set once, at first release, and never moved on a redeploy** (it is the ledger's permanent origin) · rules release (`settlementLedgerEnabled` owner authority) | in this order (preflight `FIN_B1_RELEASE_PREFLIGHT.md`, candidate identities are maintained only in preflight §1 and must pass its pre-release re-check): (1) index deploy — **`FIN-B1-INDEX-DRIFT` is closed** (`9a9547a` wrote the two live indexes into `salown-app/firestore.indexes.json`; verified read-only 2026-09-09: live 2, file 3, live-not-in-file none), so this deploy now **creates** the `settlementSync` index and deletes nothing; still never answer a deletion prompt with yes; (2) env values; (3) `charge.updated` subscription; (4) targeted Functions deploy of exactly `stripeWebhook` + `wcSettlementSweeper` with the flag absent/false (both inert, logs show `DISABLED`); (5) ~~rules last~~ — **done 2026-09-10** inside `R-2026-09-10-C` (ruleset `5e102dd4-…`, together with A3; not separately rollbackable), so the 2026-09-14 package has no rules step; (6) owner sets the flag `true` only after (5) is verified | **Stop = flag `false`**: new invocations inert at once; in-flight ones finish (webhook ≤ its timeout, sweeper ≤ 120 s, no retry); then verify quiescence (no new `settlements` entry / marker across two scheduler intervals). Then, if needed: pause the Cloud Scheduler job, `functions:delete wcSettlementSweeper` (there is no earlier revision of a new function to return to), redeploy `stripeWebhook` from the previous source SHA to drop the branch. The index is left in place (it is inert and deleting it is not a rollback step); entries already written are correct facts and stay |
-| B1b | Refund entries — **`SOURCE_READY_NOT_DEPLOYED` (2026-09-15), whitecross-site `95a963fe`**, not part of the B1 release pinned at `22850996`. The claim was handed over with owner approval (`ef17f1f6`) and extended to `index.js` (`977062bb`); released `3668c506`. What landed:<br>• `REFUNDED` entries `stripe:re_<id>` for succeeded refunds, with `amount_m`, `feeOnRefund_m` (null when unknown) and an `amount_refunded` observation.<br>• Provider timestamps stored as facts only; no refund or fee day is chosen.<br>• Routing: `charge.refunded` / `refund.updated`. Before this, the BL-5 refund block in `index.js` answered 200 and returned before the settlement call, so refunds never reached the ledger. Now a guarded hook runs before each 200; reconcile behaviour is unchanged.<br>• Pending refunds → `REFUND_PENDING` marker, retried by the sweeper. Failed or canceled after recording → `COMPENSATION` `comp:re_<id>:<status>`. A fee known later → `comp:re_<id>:fee_known` plus a replacement `stripe:re_<id>:<txn>`. These ids go beyond the §2.4 table because the contract was silent; recorded here.<br>• `refundsComplete` comes only from stored entries: per charge, the latest `amount_refunded` observations agree, live refunds sum to that value, and every refund fee is known. Every recompute uses it, so capture and fee runs keep refund facts. No refund facts → `refunds_not_recorded` as before.<br>• Tests: 201/201 (was 182).<br>• **Known limits:** the `amount_refunded` observation is refreshed only when an entry is written, so a lost refund webhook on a booking already done is caught only by redelivery or a later capture-path run. There is no provider-side refund scan. Whether Stripe's `amount_refunded` counts pending refunds is not verified on the live API.<br>• **Any release needs a new rehearsal and preflight.** | `REFUNDED` entries from the existing `charge.refunded` reconcile (`index.js` BL-5 block) | B1 | same unit | same | `REFUNDED` entries from the existing `charge.refunded` reconcile (`index.js:700-735`) | B1 | same unit | same |
+| B1b | Refund entries — **`SOURCE_READY_NOT_DEPLOYED` (2026-09-15), whitecross-site `95a963fe`**, not part of the B1 release pinned at `22850996`. The claim was handed over with owner approval (`ef17f1f6`) and extended to `index.js` (`977062bb`); released `3668c506`. What landed:<br>• `REFUNDED` entries `stripe:re_<id>` for succeeded refunds, with `amount_m`, `feeOnRefund_m` (null when unknown) and an `amount_refunded` observation.<br>• Provider timestamps stored as facts only; no refund or fee day is chosen.<br>• Routing: `charge.refunded` / `refund.updated`. Before this, the BL-5 refund block in `index.js` answered 200 and returned before the settlement call, so refunds never reached the ledger. Now a guarded hook runs before each 200; reconcile behaviour is unchanged.<br>• Pending refunds → `REFUND_PENDING` marker, retried by the sweeper. Failed or canceled after recording → `COMPENSATION` `comp:re_<id>:<status>`. A fee known later → `comp:re_<id>:fee_known` plus a replacement `stripe:re_<id>:<txn>`. These ids go beyond the §2.4 table because the contract was silent; recorded here.<br>• `refundsComplete` comes only from stored entries: per charge, the latest `amount_refunded` observations agree, live refunds sum to that value, and every refund fee is known. Every recompute uses it, so capture and fee runs keep refund facts. No refund facts → `refunds_not_recorded` as before.<br>• Tests: 201/201 (was 182).<br>• **Known limits:** the `amount_refunded` observation is refreshed only when an entry is written, so a lost refund webhook on a booking already done is caught only by redelivery or a later capture-path run. There is no provider-side refund scan. Whether Stripe's `amount_refunded` counts pending refunds is not verified on the live API.<br>• **Any release needs a new rehearsal and preflight.**<br>• **NEW SCOPE (owner, 2026-09-15): `FIN-B1B-HARDENING`**, which is not part of B1 or of the original B1b. (1) Refund observations become their own append-only entries, so an `amount_refunded` change is not lost while a refund entry already exists. Conflicting observations follow an explicit pairwise-dominance rule, not a clock or a rank sum. (2) Late refund-fee and correction ids are reconciled with the append-only contract. (3) **The Stripe Events API backstop scan in `wcSettlementSweeper` is new scope.** It rescans refund events in a window over a persisted cursor. The cursor never moves past unprocessed events on an error or rate limit. The same kill switch, account and livemode gates apply. A retention gap is recorded, never skipped silently. It adds a new Stripe API use (`events.list`) to a release. Contract changes and the recovery limits are recorded in §2.4/§2.6 once the code lands. | `REFUNDED` entries from the existing `charge.refunded` reconcile (`index.js` BL-5 block) | B1 | same unit | same | `REFUNDED` entries from the existing `charge.refunded` reconcile (`index.js:700-735`) | B1 | same unit | same |
 | B2 | Finance shows fees — **2026-09-15: the policy-free part is in source, `PUSHED_NOT_LIVE`, salown-app `74922bd`.** It adds `src/utils/settlementFacts.ts` (the one reader of `settlementProjection`, `settlementSync`, review flags and refund fields: known / partial / estimate / pending / not recorded / unresolved / unreadable; unknown fee = null) and a Stripe fee block in the booking detail (`OnlinePaymentFees`). No P&L, Bank Balance, fee-day or closed-period change. The parts below are **not started** | *Expenses & Fees* line per provider (actual/estimate labelled; unknown counted, not zeroed), Bank Balance and Net P&L net of fees, `multipleCharges` review strip, `CANONICAL_BASE_MISMATCH` count; Treatwell line becomes the provider rule of §6.5 | B1 (P&L day decided 2026-09-15: checkout day; §9 edge cases still open) | `hosting:salown` | previous version |
 | B3 | History, read-only first | script: every `stripePaymentIntent` since go-live → Balance Transactions → CSV (no writes); then, on approval, a batch-stamped backfill of entries | B1 contract | script; then a production operation with a ledger row | per-batch `COMPENSATION` entries (2.6); nothing nulled |
 | B4 | Reports, all tenants | optional "net of rail fees", provider-neutral | B2 | `hosting:salown` | previous version |
