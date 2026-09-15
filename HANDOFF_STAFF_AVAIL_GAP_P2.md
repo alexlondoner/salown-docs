@@ -1,6 +1,52 @@
 # Handoff → next session: STAFF-AVAIL-GAP Phase 2 (Staff App Walk-in)
 
-## ⏩ SESSION CLOSE 2026-09-15 ~09:5x UK — items 4/8/9 closed callable-level, item 6 independently re-run; ONLY Chrome-dependent items remain — READ THIS FIRST
+## ⏩ SESSION CLOSE 2026-09-15 ~11:5x UK — Chrome connected, both UK checks + items 1/2/3/5/6 closed live; item 7 resolved as a finding; NO acceptance-test item remains open — READ THIS FIRST
+
+Picked up the ~09:5x session below mid-session, once the owner reported the Chrome extension
+connected. This was the exact, sole blocker every prior session recorded. Full record:
+`docs/evidence/staff-avail-gap-p2/2026-09-15-chrome-uk-checks/README.md`. Fresh isolated clone,
+same verified source `aa2efd9c5efc875bea316c461e47bf0817728c3c`, `src/firebase.ts` rewired to local
+emulators in that throwaway clone only (never committed), real `staff.html` served via Vite, driven
+by real clicks through the actual `WalkInFlow.tsx`. No shared-tree source edit, no deploy, no
+production access.
+
+**Check A (UK daytime) and Check B (UK midnight crossing) — the owner's explicit minimum ask —
+both CLOSED with a real click and a real persisted Firestore document**, using a controlled-clock
+technique (`window.Date` patched in the page before each click, verified by the TIME field itself
+showing the expected value) rather than waiting for real wall-clock time. Real midnight/real 08:50
+was never needed.
+
+- Check A = acceptance item 1: 08:50 checkout → recorded start 08:20, same day. Confirmed exactly.
+- Check B = acceptance item 2: 00:10 checkout → recorded start 23:40 **previous** day. Confirmed
+  exactly, including that the booking correctly did NOT appear on "today"'s dashboard.
+- Item 3 (boundary just inside same day, 00:40 → 00:10 same day, no rollover): confirmed exactly.
+- Item 6 (manual-time regression): a manually-picked "09:15" (unrelated to the patched clock) was
+  sent verbatim, not backdated — live-click proof, superseding the unit-only proof from the ~09:5x
+  session below.
+- Item 5 (owner-override re-prompt reuses the identical instant): a real seeded conflict triggered
+  the real denial, which triggered the actual React `staffOverrideFlow.ts` calling the real
+  `window.prompt` with the real server-derived message — first live proof of the client re-prompt UI
+  itself (previously server-simulated only). `window.prompt` was patched to answer synchronously so
+  no native blocking dialog was ever shown. The override reason and the exact backdated instant
+  (`11:30 BST`) landed identically in the booking doc and its audit log — three-way match.
+- Item 7 (passive-barber historical refusal): **not reachable through the normal UI at all** — the
+  Professional picker unconditionally excludes `passive` barbers
+  (`src/utils/bookingUtils.ts:496`), on any date. This is reported as a finding, not a gap: the
+  server's `STAFF_PASSIVE` check (already proven server-side) is genuine defense-in-depth for a
+  stale/bypassed client list, and the UI simply never offers the path a live click could exercise.
+
+**Combined with items 4/8/9 (closed callable-level, `2026-09-15-callable-level-verify-2/`, pure
+server logic with no UI involved by design), every one of the 9 acceptance-test scenarios in
+`31-future-checkout-scope-options.md` §7 is now closed at the level that actually applies to it. No
+acceptance-test item remains open.**
+
+Bypass exceptions and the Walk-in↔Reschedule Phase-3 deferral remain **not accepted**. **No deploy
+approval exists.** This is a verification-gap closure, not a release decision — the next step is an
+owner release conversation for `aa2efd9`/`a7b1f33` (Phase 2 candidate), not further testing.
+
+---
+
+## ⏩ SESSION CLOSE 2026-09-15 ~09:5x UK — items 4/8/9 closed callable-level, item 6 independently re-run; ONLY Chrome-dependent items remain
 
 Picked up the previous session's close (below). **Chrome extension checked first, same result:
 not connected.** Per instruction, did not wait — spent the session closing every remaining
