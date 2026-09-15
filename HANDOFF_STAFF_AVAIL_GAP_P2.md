@@ -1,5 +1,35 @@
 # Handoff → next session: STAFF-AVAIL-GAP Phase 2 (Staff App Walk-in)
 
+## ⏩ OWNER RECONCILIATION 2026-09-15 ~12:0x UK — verification accepted; three release-scope decisions pending; still no deploy
+
+Owner reviewed the ~11:5x session's evidence and confirmed the reported results directly: morning
+checkout 08:50→08:20 correct; midnight 00:10→23:40 previous day correct; manually-picked time
+preserved; the computed start stays unchanged through an owner override; a passive barber cannot be
+selected in the UI and is also refused server-side. **No new test round requested — verification is
+accepted as complete at the levels each scenario was closed at.**
+
+**Owner-flagged evidence limitation, recorded verbatim:** the owner-override reason prompt was
+triggered and answered programmatically (`window.prompt` patched to avoid a blocking native
+dialog) — the actual native dialog was never visually inspected. This does not reopen the proof of
+the server contract or the instant-preservation chain (booking doc + audit log + prompt-call log
+all matched), but the real OS-level dialog rendering specifically was not eyeballed. Noted as a
+minor evidence-scope boundary, not a retraction.
+
+**Three pending decisions — explicitly scope/business calls, not test gaps, and explicitly NOT yet
+made. No deploy has happened.**
+1. Release `aa2efd9` — which bundles the `STAFF-AVAIL-GAP-P2` Phase 2 policy engine together with
+   the separate `WALKIN-BACKDATE-FLOOR` fix — or release `a7b1f33` (Phase 2 only, without the
+   backdate-floor fix)?
+2. Accept, for this limited release, the legacy Admin walk-in callable (`salownCreateWalkIn`) staff
+   bypass and the open `firestore.rules` gap named in the round-2 recommendations
+   (`20-owner-decision-recommendations.md`)?
+3. Defer the Walk-in↔Reschedule race criterion to Phase 3, as recommended?
+
+None of these three has been answered. Recorded here per the owner's own summary; the next session
+must not infer an answer to any of them and must not deploy until they are.
+
+---
+
 ## ⏩ SESSION CLOSE 2026-09-15 ~11:5x UK — Chrome connected, both UK checks + items 1/2/3/5/6 closed live; item 7 resolved as a finding; NO acceptance-test item remains open — READ THIS FIRST
 
 Picked up the ~09:5x session below mid-session, once the owner reported the Chrome extension
