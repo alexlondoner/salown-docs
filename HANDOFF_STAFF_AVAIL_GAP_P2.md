@@ -1,6 +1,50 @@
 # Handoff → next session: STAFF-AVAIL-GAP Phase 2 (Staff App Walk-in)
 
-## ⏩ SESSION CLOSE 2026-09-15 ~00:5x UK — full gate + callable verification COMPLETE, no new tests to start, only Chrome checks remain — READ THIS FIRST
+## ⏩ SESSION CLOSE 2026-09-15 ~09:5x UK — items 4/8/9 closed callable-level, item 6 independently re-run; ONLY Chrome-dependent items remain — READ THIS FIRST
+
+Picked up the previous session's close (below). **Chrome extension checked first, same result:
+not connected.** Per instruction, did not wait — spent the session closing every remaining
+9-scenario checklist item that does NOT require an actual click, in a fresh isolated clone
+detached at the same verified source, `aa2efd9c5efc875bea316c461e47bf0817728c3c`. Full record:
+`docs/evidence/staff-avail-gap-p2/2026-09-15-callable-level-verify-2/README.md`. Claim
+`STAFF-AVAIL-GAP-P2-VERIFY2` released at end of session. No shared-tree source edit, no deploy, no
+production access.
+
+**Items 4, 8, 9 — closed, callable-level (no Chrome), real client SDK + real emulators:**
+- **Item 4** (`MAX_DURATION_MINS` refusal): durationMins=1441 → `INVALID_INPUT` before the
+  transaction opens, zero write. durationMins=1440 (the exact boundary) → NOT rejected by the same
+  guard, reaches the transaction and succeeds — isolates the refusal to precisely the >1440
+  input-validation boundary.
+- **Item 8** (conflict across midnight, seed straddling midnight itself — distinct from the prior
+  session's item-5 same-day conflict): an existing booking whose own interval crosses local
+  midnight (23:50→00:30 BST) is correctly detected as `SLOT_CONFLICT` against a backdated walk-in
+  request on the "yesterday" side, then correctly overridable by the owner with the instant
+  preserved byte-identical into the booking doc AND its audit log (`requestedStartMs` matches
+  exactly).
+- **Item 9** (shift-fit across midnight): a barber with different `shiftChanges` for "yesterday" vs
+  "today" is correctly checked against **yesterday's** shift when the backdated instant rolls back a
+  day — proven by success where today's shift (closed) would have refused it.
+
+**Item 6** (manual-time regression): the handoff's own checklist said this had "no
+change-specific re-verification yet". Corrected — `aa2efd9`'s commit already updated
+`staffTimeContract.test.ts` + `staffCreateCutover.test.ts` to structurally pin the
+`timeTouched === true` branch unchanged; this session **independently re-ran both files** against
+the isolated clone (not just trusted the commit message): **89/89 pass**. This is unit/structural
+proof, not a live click — it closes the "not re-run" gap but does not replace an actual Chrome
+interaction with a manually-typed time.
+
+**What is left is now ONLY Chrome-dependent** — the two UK checks (A: daytime, B: midnight) and
+acceptance items 1, 3, plus the client-UI half of 2/5/7 (all already proven server-side). No
+further non-Chrome work is available to advance this checklist; the next session's entire job,
+once Chrome connects, is those checks — see the checklist table in the 2026-09-15 ~00:5x section
+below (still accurate for what remains, minus items 4/6/8/9 which this session closed).
+
+Bypass exceptions and the Walk-in↔Reschedule Phase-3 deferral remain **not accepted**. **No deploy
+approval exists.**
+
+---
+
+## ⏩ SESSION CLOSE 2026-09-15 ~00:5x UK — full gate + callable verification COMPLETE, no new tests to start, only Chrome checks remain
 
 **Full gate and callable verification are complete. Do not start new tests.** This closes the
 `STAFF-AVAIL-GAP-P2-VERIFY` session at ~289k tokens (context-budget handoff, not a stopping point in

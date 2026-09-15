@@ -1,0 +1,183 @@
+{
+  "label": "before",
+  "capturedAt": "2026-09-15T09:41:04.530Z",
+  "tenant": "p2v2",
+  "timezone": "Europe/London",
+  "documents": [
+    {
+      "path": "(tenant root)",
+      "createTime": "2026-09-15T09:40:56.523Z",
+      "updateTime": "2026-09-15T09:40:56.523Z",
+      "data": {
+        "name": "P2 verify2 — items 4/8/9",
+        "features": {},
+        "presentation": {
+          "timezone": "Europe/London",
+          "language": "en",
+          "locale": "en-GB",
+          "currency": "GBP",
+          "timeFormat": "24h",
+          "countryCode": "GB"
+        }
+      }
+    },
+    {
+      "path": "barbers/alex",
+      "createTime": "2026-09-15T09:40:56.522Z",
+      "updateTime": "2026-09-15T09:40:56.522Z",
+      "data": {
+        "name": "Alex",
+        "status": "active",
+        "hours": {
+          "open": "00:00",
+          "close": "23:59"
+        },
+        "order": 1
+      }
+    },
+    {
+      "path": "barbers/cara",
+      "createTime": "2026-09-15T09:40:56.522Z",
+      "updateTime": "2026-09-15T09:40:56.522Z",
+      "data": {
+        "name": "Cara",
+        "status": "active",
+        "order": 2,
+        "shiftChanges": {
+          "2026-09-14": {
+            "open": "22:00",
+            "close": "23:59"
+          },
+          "2026-09-15": {
+            "closed": true
+          }
+        }
+      }
+    },
+    {
+      "path": "bookings/midStraddleSeed",
+      "createTime": "2026-09-15T09:41:04.019Z",
+      "updateTime": "2026-09-15T09:41:04.019Z",
+      "data": {
+        "bookingId": "SEED-MID-STRADDLE",
+        "status": "CONFIRMED",
+        "barberId": "alex",
+        "barberName": "Alex",
+        "barber": "alex",
+        "clientName": "Previous Client (straddles midnight)",
+        "serviceId": "svc1",
+        "serviceName": "Haircut",
+        "duration": 40,
+        "price": 20,
+        "source": "Walk-in",
+        "bookingType": "walkin",
+        "startTime": {
+          "__ts": "2026-09-14T22:50:00.000Z"
+        },
+        "endTime": {
+          "__ts": "2026-09-14T23:30:00.000Z"
+        },
+        "createdAt": {
+          "__ts": "2026-09-15T09:41:03.844Z"
+        }
+      }
+    },
+    {
+      "path": "public/booking",
+      "createTime": "2026-09-15T09:40:59.671Z",
+      "updateTime": "2026-09-15T09:40:59.671Z",
+      "data": {
+        "salonName": "P2 verify2 — items 4/8/9",
+        "name": "P2 verify2 — items 4/8/9",
+        "businessType": "",
+        "phone": "",
+        "paymentMode": "off",
+        "features": {
+          "stripe": false
+        },
+        "websiteDepositsEnabled": false,
+        "defaultDepositAmount": 0,
+        "updatedAt": {
+          "__ts": "2026-09-15T09:40:59.664Z"
+        }
+      }
+    },
+    {
+      "path": "public/bookingFlags",
+      "createTime": "2026-09-15T09:40:57.864Z",
+      "updateTime": "2026-09-15T09:40:57.864Z",
+      "data": {
+        "c1Cutover": false,
+        "updatedAt": {
+          "__ts": "2026-09-15T09:40:57.855Z"
+        }
+      }
+    },
+    {
+      "path": "public/campaign",
+      "createTime": "2026-09-15T09:40:59.825Z",
+      "updateTime": "2026-09-15T09:40:59.825Z",
+      "data": {
+        "active": false,
+        "startDate": "",
+        "endDate": "",
+        "updatedAt": {
+          "__ts": "2026-09-15T09:40:59.817Z"
+        }
+      }
+    },
+    {
+      "path": "services/svc1",
+      "createTime": "2026-09-15T09:40:56.521Z",
+      "updateTime": "2026-09-15T09:40:56.521Z",
+      "data": {
+        "name": "Haircut",
+        "duration": 30,
+        "price": 20,
+        "active": true,
+        "category": "Hair"
+      }
+    },
+    {
+      "path": "settings/hours",
+      "createTime": "2026-09-15T09:40:56.521Z",
+      "updateTime": "2026-09-15T09:40:56.521Z",
+      "data": {}
+    },
+    {
+      "path": "settings/settings",
+      "createTime": "2026-09-15T09:40:56.523Z",
+      "updateTime": "2026-09-15T09:40:56.523Z",
+      "data": {
+        "presentation": {
+          "timezone": "Europe/London",
+          "language": "en",
+          "locale": "en-GB",
+          "currency": "GBP",
+          "timeFormat": "24h",
+          "countryCode": "GB"
+        }
+      }
+    },
+    {
+      "path": "staff/K6Eyq0GenFeBRQGvpRInE79iYEcR",
+      "createTime": "2026-09-15T09:40:56.466Z",
+      "updateTime": "2026-09-15T09:40:56.466Z",
+      "data": {
+        "role": "owner",
+        "email": "v2-owner@p2.test",
+        "name": "V2 owner"
+      }
+    },
+    {
+      "path": "staff/wCEXwatLdJdlJF6fXeHlSAVbP7Vf",
+      "createTime": "2026-09-15T09:40:56.511Z",
+      "updateTime": "2026-09-15T09:40:56.511Z",
+      "data": {
+        "role": "staff",
+        "email": "v2-staff@p2.test",
+        "name": "V2 staff"
+      }
+    }
+  ]
+}

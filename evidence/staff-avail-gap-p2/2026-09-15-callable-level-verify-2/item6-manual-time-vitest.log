@@ -1,0 +1,98 @@
+
+ RUN  v4.1.9 /private/tmp/claude-501/-Users-alish/6bbe1b50-b9fc-40dd-965b-40fb4ca6bdfa/scratchpad/staff-avail-gap-p2/clone-aa2efd9
+
+ ✓ src/staff/sheets/staffCreateCutover.test.ts > Test 1 — walk-in payload carries a doc-id serviceId + display serviceName > serviceId is the service DOCUMENT id (base.id), not the display name 1ms
+ ✓ src/staff/sheets/staffCreateCutover.test.ts > Test 1 — walk-in payload carries a doc-id serviceId + display serviceName > serviceName carries the display label 0ms
+ ✓ src/staff/sheets/staffCreateCutover.test.ts > Test 1 — walk-in payload carries a doc-id serviceId + display serviceName > barber ref is the canonical barber DOCUMENT id (unambiguous), not the name 0ms
+ ✓ src/staff/sheets/staffCreateCutover.test.ts > Test 2 — idempotency lifecycle: one key per submission, retained on retry, cleared on success > mints the key once, lazily 0ms
+ ✓ src/staff/sheets/staffCreateCutover.test.ts > Test 2 — idempotency lifecycle: one key per submission, retained on retry, cleared on success > passes it to the callable 0ms
+ ✓ src/staff/sheets/staffCreateCutover.test.ts > Test 2 — idempotency lifecycle: one key per submission, retained on retry, cleared on success > clears it only AFTER the create commits (a fresh sale mints a new key) 0ms
+ ✓ src/staff/sheets/staffCreateCutover.test.ts > Test 2 — idempotency lifecycle: one key per submission, retained on retry, cleared on success > never clears the key inside a catch (a network retry must replay the same key) 0ms
+ ✓ src/staff/sheets/staffCreateCutover.test.ts > Test 3 — NO direct-write fallback (raw-source assertion) > creates via the callable 0ms
+ ✓ src/staff/sheets/staffCreateCutover.test.ts > Test 3 — NO direct-write fallback (raw-source assertion) > never references the browser writer createWalkInDetailed anywhere (import or call) 0ms
+ ✓ src/staff/sheets/staffCreateCutover.test.ts > Test 3 — NO direct-write fallback (raw-source assertion) > never writes a booking directly via addDoc 0ms
+ ✓ src/staff/sheets/staffCreateCutover.test.ts > Test 3 — NO direct-write fallback (raw-source assertion) > the create catch surfaces a reason message, it does not fall through to a writer 0ms
+ ✓ src/staff/sheets/staffCreateCutover.test.ts > Test 4 — passive staff filtered from the picker; leave stays assignable > the professional list filters by the server-aligned lifecycle authority 0ms
+ ✓ src/staff/sheets/staffCreateCutover.test.ts > Test 4 — passive staff filtered from the picker; leave stays assignable > isInactiveStaff filters passive but NOT leave (behavioural proof) 2ms
+ ✓ src/staff/sheets/staffCreateCutover.test.ts > Test 6 — package link + checkout reuse the canonical returned ids > createSaleBooking returns the callable result (no fabricated id) 0ms
+ ✓ src/staff/sheets/staffCreateCutover.test.ts > Test 6 — package link + checkout reuse the canonical returned ids > handleSave links the package against the server docId 0ms
+ ✓ src/staff/sheets/staffCreateCutover.test.ts > Test 6 — package link + checkout reuse the canonical returned ids > handleConfirmPayment links + checks out against the same server ids 0ms
+ ✓ src/staff/sheets/staffCreateCutover.test.ts > Test 7 — bookingType / source contract matrix (genuine walk-in) > source is 'Walk-in' and bookingType is 'walkin' 0ms
+ ✓ src/staff/sheets/staffCreateCutover.test.ts > Test 8 — the reschedule writer never touches barber / service / money > the updateDoc payload is date/time/audit only 0ms
+ ✓ src/staff/sheets/staffCreateCutover.test.ts > Test 8 — STAFF-AVAIL-GAP Phase 2: one enforced create step, no click-through confirms > the soft conflict confirm is gone (the server decides; only an owner may override) 0ms
+ ✓ src/staff/sheets/staffCreateCutover.test.ts > Test 8 — STAFF-AVAIL-GAP Phase 2: one enforced create step, no click-through confirms > Save and Save & Checkout both create through the ONE enforced step, exactly once each 1ms
+ ✓ src/staff/sheets/staffCreateCutover.test.ts > Test 8 — STAFF-AVAIL-GAP Phase 2: one enforced create step, no click-through confirms > the off-day confirm survives ONLY for the products-only sale (no chair, not a booking) 0ms
+ ✓ src/staff/sheets/staffCreateCutover.test.ts > Test 8 — STAFF-AVAIL-GAP Phase 2: one enforced create step, no click-through confirms > an override resubmits the SAME start through the SAME create (same retained idempotency key) 0ms
+ ✓ src/staff/sheets/staffCreateCutover.test.ts > Test 8 — STAFF-AVAIL-GAP Phase 2: one enforced create step, no click-through confirms > the Save & Checkout backdate is computed once, before the enforced create, with no floor 0ms
+ ✓ src/staff/lib/staffTimeContract.test.ts > the tenant format Whitecross actually resolves to > is 24-hour, because it has no presentation record and that is the platform default 1ms
+ ✓ src/staff/lib/staffTimeContract.test.ts > timeOptionsWithExtra — the grid always contains its own bound value > with no extra: a plain 5-min grid, 00:00 … 23:55, 288 options 5ms
+ ✓ src/staff/lib/staffTimeContract.test.ts > timeOptionsWithExtra — the grid always contains its own bound value > an ON-grid extra (e.g. 10:00) does not duplicate 0ms
+ ✓ src/staff/lib/staffTimeContract.test.ts > timeOptionsWithExtra — the grid always contains its own bound value > an OFF-grid extra (14:02) is inserted, sorted, exactly once — decision #2/#4 0ms
+ ✓ src/staff/lib/staffTimeContract.test.ts > timeOptionsWithExtra — the grid always contains its own bound value > null/undefined extra behaves exactly like no extra 1ms
+ ✓ src/staff/lib/staffTimeContract.test.ts > timeOptionsWithExtra — the grid always contains its own bound value > every minute of the day, injected off-grid, lands at a valid sorted position 1114ms
+ ✓ src/staff/lib/staffTimeContract.test.ts > timeOptionsWithExtra — the grid always contains its own bound value > an out-of-range extra (e.g. 1442, or -3) normalizes into [0,1440) rather than corrupting the list 0ms
+ ✓ src/staff/lib/staffTimeContract.test.ts > getNowDateTime — date and time round up TOGETHER (decision #3) > mid-day: rounds up within the same date 22ms
+ ✓ src/staff/lib/staffTimeContract.test.ts > getNowDateTime — date and time round up TOGETHER (decision #3) > 23:58 → rolls the DATE forward to tomorrow, not "00:00" against today 1ms
+ ✓ src/staff/lib/staffTimeContract.test.ts > getNowDateTime — date and time round up TOGETHER (decision #3) > 23:58 on the last day of a month rolls the month (and, at Dec 31, the year) 1ms
+ ✓ src/staff/lib/staffTimeContract.test.ts > getNowDateTime — date and time round up TOGETHER (decision #3) > exactly on a grid line does not spuriously advance 1ms
+ ✓ src/staff/lib/staffTimeContract.test.ts > walk-in: every value the picker can produce is accepted by the writer > a 24-hour tenant offers 288 options and NOT ONE contains AM or PM 3ms
+ ✓ src/staff/lib/staffTimeContract.test.ts > walk-in: every value the picker can produce is accepted by the writer > Confirm payment accepts every one of them (toIsoStartTime, the callable path) 45ms
+ ✓ src/staff/lib/staffTimeContract.test.ts > walk-in: every value the picker can produce is accepted by the writer > Save unpaid accepts every one of them — same parser, same boundary 3ms
+ ✓ src/staff/lib/staffTimeContract.test.ts > walk-in: every value the picker can produce is accepted by the writer > a 12-hour tenant’s options stay valid and parseable (compatibility fixture) 45ms
+ ✓ src/staff/lib/staffTimeContract.test.ts > walk-in: every value the picker can produce is accepted by the writer > "Şimdi" preserves the exact unrounded minute — 14:02 stays 14:02, not nearest-5 0ms
+ ✓ src/staff/lib/staffTimeContract.test.ts > walk-in: every value the picker can produce is accepted by the writer > the exact minute "Şimdi" produces is parseable AND is an option once the grid includes it, at every minute of the day 175ms
+ ✓ src/staff/lib/staffTimeContract.test.ts > walk-in: every value the picker can produce is accepted by the writer > the backdated "Confirm payment" instant is a valid ISO string for every duration 0ms
+ ✓ src/staff/lib/staffTimeContract.test.ts > walk-in: every value the picker can produce is accepted by the writer > the backdated instant genuinely rolls the calendar day back across midnight 0ms
+ ✓ src/staff/lib/staffTimeContract.test.ts > walk-in: every value the picker can produce is accepted by the writer > the live getNowMins/getNowTime helpers produce parseable values right now 1ms
+ ✓ src/staff/lib/staffTimeContract.test.ts > New Booking: the initial value is one of its own options > a 24-hour tenant’s options contain no AM/PM and start at 00:00 3ms
+ ✓ src/staff/lib/staffTimeContract.test.ts > New Booking: the initial value is one of its own options > every option is accepted by the writer, in both formats 19ms
+ ✓ src/staff/lib/staffTimeContract.test.ts > New Booking: the initial value is one of its own options > every 5-min value IS in the list — no silent fallback to the first option 9ms
+ ✓ src/staff/lib/staffTimeContract.test.ts > New Booking: the initial value is one of its own options > the INITIAL value is one of the options at every minute of the day 51ms
+ ✓ src/staff/lib/staffTimeContract.test.ts > New Booking: the initial value is one of its own options > the end of the day wraps to a real option instead of "24:00" 0ms
+ ✓ src/staff/lib/staffTimeContract.test.ts > New Booking: the initial value is one of its own options > the live getNowDateTime honours the step it is given, and stays on today mid-day 1ms
+ ✓ src/staff/lib/staffTimeContract.test.ts > New Booking: the initial value is one of its own options > day rollover: mounting at 23:58 advances BOTH date and time together — decision #3 1ms
+ ✓ src/staff/lib/staffTimeContract.test.ts > New Booking: the initial value is one of its own options > the OLD hardcoded 12-hour option list would NOT have contained the 24-hour value — the bug, reproduced 0ms
+ ✓ src/staff/lib/staffTimeContract.test.ts > service duration and its computed end time are never rounded to the step > a 12-minute service starting 14:05 ends 14:17, not snapped to 14:15/14:20 0ms
+ ✓ src/staff/lib/staffTimeContract.test.ts > service duration and its computed end time are never rounded to the step > holds for arbitrary (non-5-multiple) start times and durations, not just 12 from 14:05 0ms
+ ✓ src/staff/lib/staffTimeContract.test.ts > Reschedule: full-day slots ↔ the pre-selected booking time (decision #6) > a 24-hour tenant’s base slots run the WHOLE day, 00:00 → 23:55, no AM/PM 3ms
+ ✓ src/staff/lib/staffTimeContract.test.ts > Reschedule: full-day slots ↔ the pre-selected booking time (decision #6) > the booking label the views produce IS one of the slots, on- or off-grid 0ms
+ ✓ src/staff/lib/staffTimeContract.test.ts > Reschedule: full-day slots ↔ the pre-selected booking time (decision #6) > decision #4 — opening an existing 14:07 booking preserves 14:07 verbatim and it IS a real option 0ms
+ ✓ src/staff/lib/staffTimeContract.test.ts > Reschedule: full-day slots ↔ the pre-selected booking time (decision #6) > every base + injected slot is parseable by the strict parser the writer uses 6ms
+ ✓ src/staff/lib/staffTimeContract.test.ts > Reschedule: full-day slots ↔ the pre-selected booking time (decision #6) > the OLD 08:00–21:45 range no longer applies — early-morning and late-night times are real options 0ms
+ ✓ src/staff/lib/staffTimeContract.test.ts > conflict detection is identical under both label formats > convertTo24 reads both shapes of the same minute identically 12ms
+ ✓ src/staff/lib/staffTimeContract.test.ts > conflict detection is identical under both label formats > an overlap is detected the same way whether the stored label is 24h or 12h 1ms
+ ✓ src/staff/lib/staffTimeContract.test.ts > conflict detection is identical under both label formats > a non-overlap is missed the same way in both shapes 0ms
+ ✓ src/staff/lib/staffTimeContract.test.ts > conflict detection is identical under both label formats > a MIXED day — some records 12h, some 24h — is read consistently 0ms
+ ✓ src/staff/lib/staffTimeContract.test.ts > bookingTimeLabel — tenant format, TENANT timezone > follows the tenant format 0ms
+ ✓ src/staff/lib/staffTimeContract.test.ts > bookingTimeLabel — tenant format, TENANT timezone > follows the TENANT timezone, not the device 0ms
+ ✓ src/staff/lib/staffTimeContract.test.ts > bookingTimeLabel — tenant format, TENANT timezone > is byte-identical to the old hardcoded 12-hour producer for a UK reading 0ms
+ ✓ src/staff/lib/staffTimeContract.test.ts > bookingTimeLabel — tenant format, TENANT timezone > returns an empty string for an unreadable instant rather than a bogus label 0ms
+ ✓ src/staff/lib/staffTimeContract.test.ts > structural guard — no Staff surface may parse or build a time label by hand > sees the Staff tree at all (a guard that scans nothing proves nothing) 0ms
+ ✓ src/staff/lib/staffTimeContract.test.ts > structural guard — no Staff surface may parse or build a time label by hand > exempts exactly one file — the sanctioned producer 0ms
+ ✓ src/staff/lib/staffTimeContract.test.ts > structural guard — no Staff surface may parse or build a time label by hand > no production Staff file contains a AM/PM-only regex literal 4ms
+ ✓ src/staff/lib/staffTimeContract.test.ts > structural guard — no Staff surface may parse or build a time label by hand > no production Staff file contains a AM/PM-only .match() parser 4ms
+ ✓ src/staff/lib/staffTimeContract.test.ts > structural guard — no Staff surface may parse or build a time label by hand > no production Staff file contains a hand-rolled meridiem 4ms
+ ✓ src/staff/lib/staffTimeContract.test.ts > structural guard — no Staff surface may parse or build a time label by hand > no production Staff file contains a unconditional hour12: true 9ms
+ ✓ src/staff/lib/staffTimeContract.test.ts > structural guard — no Staff surface may parse or build a time label by hand > NEGATIVE CONTROL — each detector fires on the code it is meant to catch 0ms
+ ✓ src/staff/lib/staffTimeContract.test.ts > structural guard — no Staff surface may parse or build a time label by hand > NEGATIVE CONTROL — the hour12 detector does NOT fire on the tenant-gated form 0ms
+ ✓ src/staff/lib/staffTimeContract.test.ts > structural guard — the Staff sheets go through the shared formatter > all 4 manual pickers step 5 min — STAFF-SLOT-INTERVAL, owner decision 2026-09-11 0ms
+ ✓ src/staff/lib/staffTimeContract.test.ts > structural guard — the Staff sheets go through the shared formatter > New Booking builds its options from timeLabelFromMins, not a literal list 0ms
+ ✓ src/staff/lib/staffTimeContract.test.ts > structural guard — the Staff sheets go through the shared formatter > New Booking seeds date AND time from ONE getNowDateTime call — decision #3 (day rollover) 0ms
+ ✓ src/staff/lib/staffTimeContract.test.ts > structural guard — the Staff sheets go through the shared formatter > walk-in "Şimdi" and the initial value use the EXACT unrounded minute, not a step rounder — decision #2 0ms
+ ✓ src/staff/lib/staffTimeContract.test.ts > structural guard — the Staff sheets go through the shared formatter > walk-in's option list is built from `timeStr` itself, so an off-grid value is always present — decisions #2/#4 0ms
+ ✓ src/staff/lib/staffTimeContract.test.ts > structural guard — the Staff sheets go through the shared formatter > walk-in's plain (unpaid) Save takes `timeStr` verbatim — WYSIWYG, decision #2 0ms
+ ✓ src/staff/lib/staffTimeContract.test.ts > structural guard — the Staff sheets go through the shared formatter > walk-in's Save & Checkout backdate formula computes ONE absolute instant, with no floor — WALKIN-BACKDATE-FLOOR 0ms
+ ✓ src/staff/lib/staffTimeContract.test.ts > structural guard — the Staff sheets go through the shared formatter > Reschedule derives its slots from `timeStr` itself (off-grid-safe) and the tenant format 0ms
+ ✓ src/staff/lib/staffTimeContract.test.ts > structural guard — the Staff sheets go through the shared formatter > Reschedule's date and time selectors are independent — editing one never touches the other (decision #4) 0ms
+ ✓ src/staff/lib/staffTimeContract.test.ts > structural guard — the Staff sheets go through the shared formatter > Block Time still guarantees step-only input via an offered list, not a native step attribute 0ms
+ ✓ src/staff/lib/staffTimeContract.test.ts > structural guard — the Staff sheets go through the shared formatter > the strict consumers refuse rather than default — no `?? 0`, no `|| 0` 0ms
+ ✓ src/staff/lib/staffTimeContract.test.ts > Admin panel: still 12-hour, still working, not touched by this task > both Admin forms still build their labels with the legacy 12-hour producer 0ms
+ ✓ src/staff/lib/staffTimeContract.test.ts > Admin panel: still 12-hour, still working, not touched by this task > neither Admin form was moved onto the tenant-format producer 0ms
+ ✓ src/staff/lib/staffTimeContract.test.ts > Admin panel: still 12-hour, still working, not touched by this task > every label the Admin forms can emit is accepted by the strict consumers 65ms
+ ✓ src/staff/lib/staffTimeContract.test.ts > Admin panel: still 12-hour, still working, not touched by this task > the Admin ISO boundary is unchanged when no timeZone is passed 0ms
+
+ Test Files  2 passed (2)
+      Tests  89 passed (89)
+   Start at  10:38:01
+   Duration  2.14s (transform 378ms, setup 0ms, import 537ms, tests 1.63s, environment 0ms)
+

@@ -1,0 +1,318 @@
+{
+  "before": "before",
+  "after": "after",
+  "added": [
+    {
+      "path": "auditLogs/2Yb9jbnwN8mqsQrszAas",
+      "data": {
+        "action": "WALK_IN_CREATED",
+        "source": "function",
+        "userId": "K6Eyq0GenFeBRQGvpRInE79iYEcR",
+        "userEmail": "",
+        "userName": "",
+        "userRole": "owner",
+        "actor": {
+          "uid": "K6Eyq0GenFeBRQGvpRInE79iYEcR",
+          "email": "",
+          "name": "",
+          "role": "owner"
+        },
+        "target": {
+          "collection": "bookings",
+          "docId": "TAka3cSXIxYK2Awq9bm8",
+          "label": "WCB-1789465283202-4fc4"
+        },
+        "timestamp": {
+          "__ts": "2026-09-15T09:41:23.260Z"
+        }
+      }
+    },
+    {
+      "path": "auditLogs/MrQg0l3Q7c4llav7wYuk",
+      "data": {
+        "action": "WALK_IN_CREATED",
+        "source": "function",
+        "userId": "K6Eyq0GenFeBRQGvpRInE79iYEcR",
+        "userEmail": "",
+        "userName": "",
+        "userRole": "owner",
+        "actor": {
+          "uid": "K6Eyq0GenFeBRQGvpRInE79iYEcR",
+          "email": "",
+          "name": "",
+          "role": "owner"
+        },
+        "target": {
+          "collection": "bookings",
+          "docId": "y6iw4zynZbGVrn7IsshE",
+          "label": "WCB-1789465283292-b292"
+        },
+        "timestamp": {
+          "__ts": "2026-09-15T09:41:23.346Z"
+        }
+      }
+    },
+    {
+      "path": "auditLogs/uCmMtNaARQMp7Efl3oWQ",
+      "data": {
+        "action": "WALK_IN_CREATED",
+        "source": "function",
+        "userId": "K6Eyq0GenFeBRQGvpRInE79iYEcR",
+        "userEmail": "",
+        "userName": "",
+        "userRole": "owner",
+        "actor": {
+          "uid": "K6Eyq0GenFeBRQGvpRInE79iYEcR",
+          "email": "",
+          "name": "",
+          "role": "owner"
+        },
+        "target": {
+          "collection": "bookings",
+          "docId": "bKoO8tHjoyNwFYdcmktz",
+          "label": "WCB-1789465282832-9da8"
+        },
+        "timestamp": {
+          "__ts": "2026-09-15T09:41:23.138Z"
+        }
+      }
+    },
+    {
+      "path": "auditLogs/yaWXBdKSHSjkeyRYemMq",
+      "data": {
+        "action": "STAFF_BOOKING_POLICY_OVERRIDE",
+        "source": "function",
+        "userId": "K6Eyq0GenFeBRQGvpRInE79iYEcR",
+        "userEmail": "v2-owner@p2.test",
+        "userName": "v2-owner@p2.test",
+        "userRole": "owner",
+        "actor": {
+          "uid": "K6Eyq0GenFeBRQGvpRInE79iYEcR",
+          "email": "v2-owner@p2.test",
+          "name": "v2-owner@p2.test",
+          "role": "owner"
+        },
+        "target": {
+          "collection": "bookings",
+          "docId": "TAka3cSXIxYK2Awq9bm8",
+          "label": "WCB-1789465283202-4fc4"
+        },
+        "tenantId": "p2v2",
+        "meta": {
+          "flow": "walkin",
+          "dimensions": {
+            "conflict": true,
+            "conflictingRecordIds": [
+              "midStraddleSeed"
+            ]
+          },
+          "reason": "item8 harness override across a midnight-straddling seed",
+          "barberId": "alex",
+          "barberName": "Alex",
+          "requestedStartMs": 1789425600000,
+          "requestedEndMs": 1789427400000
+        },
+        "timestamp": {
+          "__ts": "2026-09-15T09:41:23.246Z"
+        }
+      }
+    },
+    {
+      "path": "bookingRequests/walkin_29dd7557c64f927de38c7ecc3124dadc64d823f4bd2ac758f69439fa646099d0",
+      "data": {
+        "op": "walkin-create",
+        "tenantId": "p2v2",
+        "actorUid": "K6Eyq0GenFeBRQGvpRInE79iYEcR",
+        "rawKey": "item8-1789465283193-override",
+        "docId": "TAka3cSXIxYK2Awq9bm8",
+        "bookingId": "WCB-1789465283202-4fc4",
+        "fingerprint": "aa4eac2c6e1c437e167c0349561ef1be78d8724f7c4f201677c4f0d094e26dde",
+        "createdAt": {
+          "__ts": "2026-09-15T09:41:23.246Z"
+        }
+      }
+    },
+    {
+      "path": "bookingRequests/walkin_3c2a06bd991d57746099dba3f530f32f7f067ebdc6a5e08d1f3072467fbe276d",
+      "data": {
+        "op": "walkin-create",
+        "tenantId": "p2v2",
+        "actorUid": "K6Eyq0GenFeBRQGvpRInE79iYEcR",
+        "rawKey": "item9-1789465283266",
+        "docId": "y6iw4zynZbGVrn7IsshE",
+        "bookingId": "WCB-1789465283292-b292",
+        "fingerprint": "6bb656283cea5e80059a2ebc3b3475f7751145336c44c075e9b52052b97c7ba5",
+        "createdAt": {
+          "__ts": "2026-09-15T09:41:23.336Z"
+        }
+      }
+    },
+    {
+      "path": "bookingRequests/walkin_5a36ad26f861580fe04adf61565084bd4cc73c1480c5ea76c22147c8ab1e698b",
+      "data": {
+        "op": "walkin-create",
+        "tenantId": "p2v2",
+        "actorUid": "K6Eyq0GenFeBRQGvpRInE79iYEcR",
+        "rawKey": "item4b-1789465282824",
+        "docId": "bKoO8tHjoyNwFYdcmktz",
+        "bookingId": "WCB-1789465282832-9da8",
+        "fingerprint": "c11a736e0dbac92c7223f30278e7357352124210093ccb7f5547f8c19d7a3a04",
+        "createdAt": {
+          "__ts": "2026-09-15T09:41:23.116Z"
+        }
+      }
+    },
+    {
+      "path": "bookings/TAka3cSXIxYK2Awq9bm8",
+      "data": {
+        "bookingId": "WCB-1789465283202-4fc4",
+        "tenantId": "p2v2",
+        "clientName": "Item8 midnight-straddle conflict client",
+        "clientEmail": "",
+        "clientPhone": "",
+        "barberId": "alex",
+        "barberName": "Alex",
+        "barber": "alex",
+        "serviceId": "svc1",
+        "serviceName": "Haircut",
+        "startTime": {
+          "__ts": "2026-09-14T22:40:00.000Z"
+        },
+        "endTime": {
+          "__ts": "2026-09-14T23:10:00.000Z"
+        },
+        "duration": 30,
+        "status": "CONFIRMED",
+        "paymentType": "CASH",
+        "price": 0,
+        "paidAmount": "",
+        "soldProducts": [],
+        "soldAddOns": [],
+        "source": "Walk-in",
+        "bookingType": "walkin",
+        "createdAt": {
+          "__ts": "2026-09-15T09:41:23.246Z"
+        },
+        "loyaltyPromotionSnapshot": {
+          "eligible": false,
+          "reason": "STAFF_CREATED",
+          "multiplier": 1,
+          "multiplierSource": "none",
+          "campaignId": null,
+          "campaignStartDate": null,
+          "campaignEndDate": null,
+          "evaluatedDate": null,
+          "timezone": "Europe/London",
+          "source": "walk-in",
+          "policyVersion": 1,
+          "evaluatedAt": {
+            "__ts": "2026-09-15T09:41:23.365Z"
+          }
+        }
+      }
+    },
+    {
+      "path": "bookings/bKoO8tHjoyNwFYdcmktz",
+      "data": {
+        "bookingId": "WCB-1789465282832-9da8",
+        "tenantId": "p2v2",
+        "clientName": "Item4 negative-control at-boundary client",
+        "clientEmail": "",
+        "clientPhone": "",
+        "barberId": "alex",
+        "barberName": "Alex",
+        "barber": "alex",
+        "serviceId": "svc1",
+        "serviceName": "Haircut",
+        "startTime": {
+          "__ts": "2026-09-12T23:00:00.000Z"
+        },
+        "endTime": {
+          "__ts": "2026-09-13T23:00:00.000Z"
+        },
+        "duration": 1440,
+        "status": "CONFIRMED",
+        "paymentType": "CASH",
+        "price": 0,
+        "paidAmount": "",
+        "soldProducts": [],
+        "soldAddOns": [],
+        "source": "Walk-in",
+        "bookingType": "walkin",
+        "createdAt": {
+          "__ts": "2026-09-15T09:41:23.116Z"
+        },
+        "loyaltyPromotionSnapshot": {
+          "eligible": false,
+          "reason": "STAFF_CREATED",
+          "multiplier": 1,
+          "multiplierSource": "none",
+          "campaignId": null,
+          "campaignStartDate": null,
+          "campaignEndDate": null,
+          "evaluatedDate": null,
+          "timezone": "Europe/London",
+          "source": "walk-in",
+          "policyVersion": 1,
+          "evaluatedAt": {
+            "__ts": "2026-09-15T09:41:23.189Z"
+          }
+        }
+      }
+    },
+    {
+      "path": "bookings/y6iw4zynZbGVrn7IsshE",
+      "data": {
+        "bookingId": "WCB-1789465283292-b292",
+        "tenantId": "p2v2",
+        "clientName": "Item9 shift-fit-across-midnight client",
+        "clientEmail": "",
+        "clientPhone": "",
+        "barberId": "cara",
+        "barberName": "Cara",
+        "barber": "cara",
+        "serviceId": "svc1",
+        "serviceName": "Haircut",
+        "startTime": {
+          "__ts": "2026-09-14T22:00:00.000Z"
+        },
+        "endTime": {
+          "__ts": "2026-09-14T22:30:00.000Z"
+        },
+        "duration": 30,
+        "status": "CONFIRMED",
+        "paymentType": "CASH",
+        "price": 0,
+        "paidAmount": "",
+        "soldProducts": [],
+        "soldAddOns": [],
+        "source": "Walk-in",
+        "bookingType": "walkin",
+        "createdAt": {
+          "__ts": "2026-09-15T09:41:23.336Z"
+        },
+        "loyaltyPromotionSnapshot": {
+          "eligible": false,
+          "reason": "STAFF_CREATED",
+          "multiplier": 1,
+          "multiplierSource": "none",
+          "campaignId": null,
+          "campaignStartDate": null,
+          "campaignEndDate": null,
+          "evaluatedDate": null,
+          "timezone": "Europe/London",
+          "source": "walk-in",
+          "policyVersion": 1,
+          "evaluatedAt": {
+            "__ts": "2026-09-15T09:41:23.432Z"
+          }
+        }
+      }
+    }
+  ],
+  "contentChanged": [
+    {
+      "path": "bookings/midStraddleSeed"
+    }
+  ]
+}

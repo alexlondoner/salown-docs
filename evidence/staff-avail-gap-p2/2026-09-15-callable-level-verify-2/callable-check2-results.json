@@ -1,0 +1,170 @@
+[
+  {
+    "label": "item4-long-duration-refused",
+    "at": "2026-09-15T09:41:22.824Z",
+    "ok": false,
+    "claims": {
+      "tenantId": "p2v2",
+      "tenantRole": "owner",
+      "email": "v2-owner@p2.test",
+      "email_verified": false,
+      "auth_time": 1789465281,
+      "user_id": "K6Eyq0GenFeBRQGvpRInE79iYEcR",
+      "firebase": {
+        "identities": {
+          "email": [
+            "v2-owner@p2.test"
+          ]
+        },
+        "sign_in_provider": "password"
+      },
+      "iat": 1789465281,
+      "exp": 1789468881,
+      "aud": "demo-c1",
+      "iss": "https://securetoken.google.com/demo-c1",
+      "sub": "K6Eyq0GenFeBRQGvpRInE79iYEcR"
+    },
+    "code": "functions/invalid-argument",
+    "message": "INVALID_INPUT",
+    "details": {
+      "reason": "INVALID_INPUT",
+      "errors": [
+        "durationMins must be a positive integer ≤ 1440"
+      ]
+    }
+  },
+  {
+    "label": "item4b-at-boundary-not-input-rejected",
+    "at": "2026-09-15T09:41:23.147Z",
+    "ok": true,
+    "claims": {
+      "tenantId": "p2v2",
+      "tenantRole": "owner",
+      "email": "v2-owner@p2.test",
+      "email_verified": false,
+      "auth_time": 1789465282,
+      "user_id": "K6Eyq0GenFeBRQGvpRInE79iYEcR",
+      "firebase": {
+        "identities": {
+          "email": [
+            "v2-owner@p2.test"
+          ]
+        },
+        "sign_in_provider": "password"
+      },
+      "iat": 1789465282,
+      "exp": 1789468882,
+      "aud": "demo-c1",
+      "iss": "https://securetoken.google.com/demo-c1",
+      "sub": "K6Eyq0GenFeBRQGvpRInE79iYEcR"
+    },
+    "data": {
+      "ok": true,
+      "bookingId": "WCB-1789465282832-9da8",
+      "documentId": "bKoO8tHjoyNwFYdcmktz",
+      "replayed": false
+    }
+  },
+  {
+    "label": "item8-conflict-across-midnight",
+    "at": "2026-09-15T09:41:23.193Z",
+    "startTimeIso": "2026-09-14T22:40:00.000Z",
+    "ok": false,
+    "claims": {
+      "tenantId": "p2v2",
+      "tenantRole": "owner",
+      "email": "v2-owner@p2.test",
+      "email_verified": false,
+      "auth_time": 1789465283,
+      "user_id": "K6Eyq0GenFeBRQGvpRInE79iYEcR",
+      "firebase": {
+        "identities": {
+          "email": [
+            "v2-owner@p2.test"
+          ]
+        },
+        "sign_in_provider": "password"
+      },
+      "iat": 1789465283,
+      "exp": 1789468883,
+      "aud": "demo-c1",
+      "iss": "https://securetoken.google.com/demo-c1",
+      "sub": "K6Eyq0GenFeBRQGvpRInE79iYEcR"
+    },
+    "code": "functions/failed-precondition",
+    "message": "SLOT_CONFLICT",
+    "details": {
+      "reason": "SLOT_CONFLICT",
+      "conflictingRecordIds": [
+        "midStraddleSeed"
+      ]
+    }
+  },
+  {
+    "label": "item8b-owner-override-success",
+    "at": "2026-09-15T09:41:23.266Z",
+    "startTimeIso": "2026-09-14T22:40:00.000Z",
+    "ok": true,
+    "claims": {
+      "tenantId": "p2v2",
+      "tenantRole": "owner",
+      "email": "v2-owner@p2.test",
+      "email_verified": false,
+      "auth_time": 1789465283,
+      "user_id": "K6Eyq0GenFeBRQGvpRInE79iYEcR",
+      "firebase": {
+        "identities": {
+          "email": [
+            "v2-owner@p2.test"
+          ]
+        },
+        "sign_in_provider": "password"
+      },
+      "iat": 1789465283,
+      "exp": 1789468883,
+      "aud": "demo-c1",
+      "iss": "https://securetoken.google.com/demo-c1",
+      "sub": "K6Eyq0GenFeBRQGvpRInE79iYEcR"
+    },
+    "data": {
+      "ok": true,
+      "bookingId": "WCB-1789465283202-4fc4",
+      "documentId": "TAka3cSXIxYK2Awq9bm8",
+      "replayed": false
+    }
+  },
+  {
+    "label": "item9-shift-fit-across-midnight",
+    "at": "2026-09-15T09:41:23.351Z",
+    "startTimeIso": "2026-09-14T22:00:00.000Z",
+    "expectedIfBuggy": "STAFF_UNAVAILABLE (would mean \"today\"'s closed shift was used)",
+    "ok": true,
+    "claims": {
+      "tenantId": "p2v2",
+      "tenantRole": "owner",
+      "email": "v2-owner@p2.test",
+      "email_verified": false,
+      "auth_time": 1789465283,
+      "user_id": "K6Eyq0GenFeBRQGvpRInE79iYEcR",
+      "firebase": {
+        "identities": {
+          "email": [
+            "v2-owner@p2.test"
+          ]
+        },
+        "sign_in_provider": "password"
+      },
+      "iat": 1789465283,
+      "exp": 1789468883,
+      "aud": "demo-c1",
+      "iss": "https://securetoken.google.com/demo-c1",
+      "sub": "K6Eyq0GenFeBRQGvpRInE79iYEcR"
+    },
+    "data": {
+      "ok": true,
+      "bookingId": "WCB-1789465283292-b292",
+      "documentId": "y6iw4zynZbGVrn7IsshE",
+      "replayed": false
+    }
+  }
+]
