@@ -148,6 +148,10 @@ where the fee and the refund land:
 day. A fee that arrives later keeps that checkout day. A closed period is corrected only through the existing post-close
 adjustment. No `checkedOutAt` means review, with no fallback. A fee on a payment cancelled or refunded without a checkout
 is a separate decision. The canonical text and acceptance tests are in `PROCESSOR_FEES_PLAN.md` §9 and §7.1.
+**Added 2026-09-15 (owner):** a re-checkout keeps the **first successful checkout time** (a real date change is a separate
+audited operation; a first time the data cannot show is not estimated — T18). The no-checkout fee date stays open and is
+to be chosen from a worked example where cancellation and refund fall on different days. Closed periods: confirmed as
+above. The open-period refund day is still undecided.
 **Caution — option A in the table below means the *service* day.** Finance revenue still books on the appointment
 (`startTime`) day, so revenue and fee land on different days whenever a checkout is late or re-done
 (measured in `PROCESSOR_FEES_PLAN.md` §5.1). The refund-day rows below remain open.
@@ -164,8 +168,10 @@ switched on this becomes routine. Proposal: book that fee on the **cancellation 
 ## 4 · Decisions needed before B2 is built
 
 1. ~~Fee day: A (service) or B (payment)~~ — **decided 2026-09-15: the day the customer came = checkout day (A).** Still
-   open under it: a checkout recorded on a different calendar day from the booking's start time.
-2. Refund day rule, including closed months — §3.
-3. The cancelled-and-refunded fee case — §3.
+   open under it: a checkout recorded on a different calendar day from the booking's start time. Re-checkout: **decided
+   2026-09-15 — first successful checkout time** (`PROCESSOR_FEES_PLAN.md` T18; needs a write-once time from the writer).
+2. Refund day rule — closed months **confirmed** (post-close adjustment only); the open-period refund day is still open — §3.
+3. The cancelled-and-refunded fee case — date deliberately open; decide from a worked example with different cancel and
+   refund days — §3.
 4. Whether Bank Balance should show Online at net in B2 (§2.2) or wait for payout data.
 5. Whether B3 (history backfill) should run before B2 ships, so the screen does not open with months of "not recorded".
