@@ -35,6 +35,48 @@ Every incident opens with `## YYYY-MM-DD — short title`, immediately followed 
 
 **Tag dictionary (CANONICAL — only these; sprawl forbidden):** `#security` `#stripe` `#secrets` `#config` `#deploy` `#normalization` `#permission` `#race` `#timezone` `#parser` `#email` `#data-loss` `#shared-infra`. A new tag is added only if a genuinely new class emerges (e.g. twins like `#payment`+`#payments`+`#stripe-payment` are FORBIDDEN → all `#stripe`). Every entry carries a `**Tags:**` line.
 
+## 2026-09-16 — A deployed Functions source package still carries `functions/.secret.local`
+
+**Severity:** 🔴 Critical (secrets at rest outside Secret Manager; exposure scope not yet measured) · **Owner:** owner (rotation + bucket decision) · alish/treatwell (discovery) · **Status:** 🟡 Open — contained going forward by config, the stored package is NOT cleaned · **Affected area:** Functions deploy archive → GCS bucket `gcf-v2-sources-1050766582653-europe-west2`
+
+**Tags:** `#security` `#secrets` `#deploy`
+
+**Discovery:** release research for `TW-UNPAID` — the deployed source packages of the seven target functions were downloaded (read-only) to pin their real live source; the listing of `salownNotifyBookingCreated/function-source.zip` (generation `1786352745775301`, deployed 2026-08-10T09:05Z, source `c6a5c79`) contains `.secret.local` (231 bytes, dated 2026-07-28) and `.claude/settings.local.json`. The file content was NOT read: its SHA-256 was compared with the machine's current `functions/.secret.local` and they MATCH — the same file this document's 2026-09-10 outbound-guard entry describes as holding real provider keys (e.g. `ANTHROPIC_API_KEY`). The six other packages inspected (the parser trio at `7aa716f`, the push pair at `dc0f6ae`, `…Updated` at `c8a64d6`) do not contain it.
+**Impact:** real API keys sit inside a Functions source archive in a project bucket — readable by any principal with storage read on that bucket, retained across redeploys (bucket versioning is ON, soft delete 7 days). No evidence of misuse was looked for or found.
+**Root Cause:** `firebase.json` `functions.ignore` did not exclude `*.local` until `d64f098` (2026-08-14, "release hygiene"). A deploy run from the developer checkout before that date archived the whole `functions/` directory, local secrets included. `salownNotifyBookingCreated` has not been redeployed since 2026-08-10, so its stored package is the pre-fix one. The ignore fix protected future deploys; nobody went back to what was already stored.
+**Bug Class:** Deploy-artifact hygiene — secret file in build context (fix applied forward only).
+**Resolution:** none yet in production. Today's config already excludes `*.local`, and release workspaces cut from `git archive` never contain the untracked file. The `TW-UNPAID` notification release will write a NEW package for this function, but with versioning on it does not remove the old object.
+**Prevention (proposed, owner decision):** (1) rotate every key that was in `functions/.secret.local` on or before 2026-08-14; (2) scan the remaining pre-2026-08-14 packages — 59 of 94 `europe-west2` functions have `updateTime` before that date (list-only scan was started and stopped by the session's permission classifier, so only one package is verified); (3) delete noncurrent object versions that carry the file once rotation is done; (4) a deploy guard that fails when the archive would contain `.secret*`, `.env*`, `*.local*` or key material.
+**Regression Tests:** yok — config-level fix only (`firebase.json` ignore); no test asserts the archive contents.
+**Related:** commits `d64f098` (ignore fix) · `c6a5c79` (Created's live source) · roadmap `TW-UNPAID` (where it surfaced) · files `firebase.json`, `functions/.secret.local` (untracked) · earlier entry "outbound guard" (what that file holds)
+
+**What happened / Diagnosis / Fix:** see Discovery. The finding came from matching deployed packages to git commits by blob hash; `.secret.local` showed up as one of only two non-source entries in the oldest package. Only file NAMES and one hash comparison were used; no secret value was printed, copied or sent anywhere, and the downloaded package was deleted from the scratch directory.
+
+**Lessons Learned:**
+- An ignore-list fix is forward-only. When a secret could have entered an artifact, the stored artifacts are part of the fix.
+- "The function has not been redeployed for weeks" also means "its package predates every hygiene fix since".
+
+## 2026-09-16 — A Treatwell pay-at-venue booking landed silently and at £0
+
+**Severity:** 🟠 High (a real booking with no bell/Telegram/push, and the desk could only check it out at £0) · **Owner:** alish · **Status:** 🟡 Open — fixed in source and reviewed, NOT merged, NOT deployed; the live booking is not repaired · **Affected area:** Treatwell parser (webhook shape) + new-booking notification triggers
+
+**Tags:** `#parser` `#normalization`
+
+**Discovery:** owner report on whitecross `TREATWELL-T2193479090` (2026-09-16 09:00, pay-at-venue): on the grid, nobody told, panel "Service total £0.00 / Total collected £0.00".
+**Impact:** staff were not told about a real appointment, and £40 to collect read as £0.
+**Root Cause:** two independent defects. (1) The pay-at-venue email labels its Booking Details price **"Price:"** — only the prepaid one says "Price paid:". The field terminator and the price regex knew only "Price paid:", so on the flattened inbound-webhook body the service capture ran through the label ("The Full Experience Price: £40.00") and no price was read → `price ''`, `twGrossPrice 0`. (2) All three staff channels opened with `status !== 'CONFIRMED' → return`; Booksy/Fresha always write CONFIRMED, Treatwell pay-at-venue writes UNPAID, so only Treatwell went quiet.
+**Bug Class:** Parser label coverage (two spellings of one field) + status-gate assumption (CONFIRMED = "a real booking").
+**Resolution:** cloud branch `856e99b` (parser `102c9e6`, gate `2046670`). Local review found and fixed two more gaps in `bf97f95`: **F1** `salownManualImport` runs the parser with `isHistorical=true`, and UNPAID keeps its status there, so an operator import would have announced every today/future pay-at-venue row — now every document such a run creates carries `importRun: 'OPERATOR_MAILBOX_IMPORT'` + `suppressNewBookingNotification: true`, which the gate refuses by name; **F2** a NaN/infinite/invalid `startTime` passed the date guard ("Invalid Date" sorts after every day key) — now refused. Release-only trees: parser on its live source `7aa716f` (`d331e79`), notifications on `17b7a48` (`8f48667`). Deploy order: parser first (the gate relies on its mark). Not deployed.
+**Prevention:** one shared `newBookingCreateDecision` for both create triggers and one `confirmedTransitionDecision` for both update triggers (UNPAID→CONFIRMED never announces twice); an explicit operator-import mark instead of inferring intent from dates; trigger-level tests that drive the real parser into the real compiled triggers.
+**Regression Tests:** `functions/src/parsers/treatwellUnpaid.test.js` (both body shapes, prepaid unchanged, fixture proven to fail pre-fix, single `isHistorical=true` caller) · `functions/src/notifications/newBookingGate.test.js` · `functions/src/notifications/newBookingTriggers.test.js` (operator import today/future silent on panel/Telegram/push; live UNPAID announced once; invalid starts refused; PENDING→CONFIRMED still announces). Each F1/F2 fix was reverted in turn and these tests failed.
+**Related:** commits `102c9e6` `2046670` `856e99b` `bf97f95` `d45fd3b` `d331e79` `8f48667` · roadmap `TW-UNPAID` · files `functions/src/parsers/treatwell.ts`, `functions/src/notifications/index.ts`, `functions/src/index.ts`
+
+**What happened / Diagnosis / Fix:** fixtures are reconstructed from the owner's two rendered emails (raw MIME not available), so the live booking's cause is consistent with, not verified against, its stored document. The unpaid fee fields (`twFeeTotal` £16.80, `twNetPayout` £23.20) are display/cost only — the till reads `paidAmount` 0 and opens at £40, provided the tenant's Treatwell mode is `both` (set 2026-06-26, not re-checked live). Deploying does not repair `TREATWELL-T2193479090`; that booking and its real takings are a separate, owner-verified job.
+
+**Lessons Learned:**
+- A status gate written as "CONFIRMED means a booking" silently excludes every writer that uses another live status.
+- A date is not an intent signal: an operator import's window reaches today and the future. Mark the intent on the record.
+
 ## 2026-09-12 — One `language` field served two audiences, so a Turkish-speaking owner's London clients were emailed in Turkish
 
 **Severity:** 🟠 High — every customer-facing surface of a live UK salon was in a language its clients do not read; booking abandonment and inbound "what is this?" calls are the business cost · **Owner:** alish · **Status:** ✅ Resolved — booking page `LIVE_VERIFIED`, emails `ARTIFACT_VERIFIED` (end-to-end send still unproven, see below) · **Affected area:** TR-A presentation contract → public booking page, public profile, all transactional emails
