@@ -1,0 +1,827 @@
+stripeWebhook: no matching booking and insufficient metadata {
+  email: '',
+  metadataBookingId: '',
+  sessionId: null,
+  paymentIntent: 'pi_1'
+}
+stripeWebhook[B1] settlement recorded {
+  eventType: 'charge.succeeded',
+  created: [ 'stripe:ch_1' ],
+  secondCapture: false,
+  feeSource: null,
+  refusals: []
+}
+{"step":"1a capture, fee unknown","entries":["CAPTURED:stripe:ch_1"],"projection":{"providerAccountIds":["acct_1WhitecrossA1"],"captures":1,"feeSource":null,"feeComplete":false,"providerNet_m":null,"version":1,"gross_m":3200,"refunded_m":0,"chargeIds":["ch_1"],"feeOnRefund_m":0,"multipleCharges":false,"payoutIds":[],"settledNet_m":null,"fee_m":null,"currency":"gbp","settledNetStatus":"refunds_not_recorded"},"sync":{"state":"pending","lastError":"FEE_PENDING"},"refundReview":null,"refundState":null,"money":{"status":"CONFIRMED","paymentState":"PAID","paidAmount":32,"refundedAmount":null},"readerFacts":{"status":"pending","netKind":"upper_bound","net_p":3200,"refunded_p":0,"refundsComplete":false,"needsReview":false},"readerAcceptsProjection":true,"http":200}
+stripeWebhook[B1] settlement recorded {
+  eventType: 'charge.updated',
+  created: [ 'stripe:txn_1' ],
+  secondCapture: false,
+  feeSource: 'actual',
+  refusals: []
+}
+{"step":"1b fee arrives","entries":["CAPTURED:stripe:ch_1","FEE_ACTUAL:stripe:txn_1"],"projection":{"providerAccountIds":["acct_1WhitecrossA1"],"captures":1,"gross_m":3200,"refunded_m":0,"chargeIds":["ch_1"],"feeOnRefund_m":0,"multipleCharges":false,"payoutIds":[],"settledNet_m":null,"currency":"gbp","settledNetStatus":"refunds_not_recorded","feeSource":"actual","feeComplete":true,"fee_m":68,"providerNet_m":3132,"version":2},"sync":{"state":"done","lastError":null},"refundReview":null,"refundState":null,"money":{"status":"CONFIRMED","paymentState":"PAID","paidAmount":32,"refundedAmount":null},"readerFacts":{"status":"known","netKind":"exact","net_p":3132,"refunded_p":0,"refundsComplete":false,"needsReview":false},"readerAcceptsProjection":true,"http":200}
+stripeWebhook: refund event handled {
+  eventId: 'evt_re1',
+  eventType: 'charge.refunded',
+  reflected: 1,
+  skipped: []
+}
+stripeWebhook[B1b] refund settlement recorded {
+  eventType: 'charge.refunded',
+  created: [ 'stripe:re_1', 'stripe:txn_re_1' ],
+  refundsComplete: true,
+  refusals: []
+}
+{"step":"2 partial refund re_1 (webhook)","entries":["CAPTURED:stripe:ch_1","REFUNDED:stripe:re_1","FEE_ACTUAL:stripe:txn_1","REFUND_FEE_ACTUAL:stripe:txn_re_1"],"projection":{"providerAccountIds":["acct_1WhitecrossA1"],"captures":1,"gross_m":3200,"chargeIds":["ch_1"],"feeOnRefund_m":0,"multipleCharges":false,"payoutIds":[],"currency":"gbp","feeSource":"actual","feeComplete":true,"fee_m":68,"providerNet_m":3132,"settledNet_m":2132,"version":4,"settledNetStatus":"complete","refunded_m":1000},"sync":{"state":"done","lastError":null},"refundReview":null,"refundState":{"ch_1":{"generation":1,"state":"ok","amountRefunded_m":1000,"refunds":["re_1:succeeded"],"lastReason":null}},"money":{"status":"CONFIRMED","paymentState":"PARTIALLY_REFUNDED","paidAmount":32,"refundedAmount":10},"readerFacts":{"status":"known","netKind":"exact","net_p":2132,"refunded_p":1000,"refundsComplete":true,"needsReview":false},"readerAcceptsProjection":true,"http":200}
+wcSettlementSweeper[refundEvents]: page budget spent, resuming next pass { from: 1788328800, to: 1788350400, pagesDone: 0 }
+wcSettlementSweeper: pass complete {
+  enabled: true,
+  due: 0,
+  applied: 0,
+  noop: 0,
+  refused: 0,
+  errors: 0,
+  configOk: true,
+  scan: {
+    from: 1788220800,
+    to: 1788242400,
+    pages: 1,
+    listed: 0,
+    applied: 0,
+    noop: 0,
+    refused: 0,
+    unmatched: 0,
+    transient: 0,
+    pagesCommitted: 1,
+    advanced: true,
+    error: null
+  },
+  unmatched: { due: 0, resolved: 0, still: 0, errors: 0 },
+  refundEvents: {
+    from: 1788220800,
+    to: 1788350400,
+    windows: 5,
+    pages: 5,
+    listed: 0,
+    charges: 0,
+    applied: 0,
+    noop: 0,
+    refused: 0,
+    unmatched: 0,
+    transient: 0,
+    ignored: 0,
+    duplicate: 0,
+    beforeStart: 0,
+    advanced: true,
+    error: 'PAGE_LIMIT',
+    retentionGap: null,
+    refusals: []
+  }
+}
+wcSettlementSweeper[refundEvents]: page budget spent, resuming next pass { from: 1788436800, to: 1788458400, pagesDone: 0 }
+wcSettlementSweeper: pass complete {
+  enabled: true,
+  due: 0,
+  applied: 0,
+  noop: 0,
+  refused: 0,
+  errors: 0,
+  configOk: true,
+  scan: {
+    from: 1788242400,
+    to: 1788264000,
+    pages: 1,
+    listed: 0,
+    applied: 0,
+    noop: 0,
+    refused: 0,
+    unmatched: 0,
+    transient: 0,
+    pagesCommitted: 1,
+    advanced: true,
+    error: null
+  },
+  unmatched: { due: 0, resolved: 0, still: 0, errors: 0 },
+  refundEvents: {
+    from: 1788328800,
+    to: 1788458400,
+    windows: 5,
+    pages: 5,
+    listed: 0,
+    charges: 0,
+    applied: 0,
+    noop: 0,
+    refused: 0,
+    unmatched: 0,
+    transient: 0,
+    ignored: 0,
+    duplicate: 0,
+    beforeStart: 0,
+    advanced: true,
+    error: 'PAGE_LIMIT',
+    retentionGap: null,
+    refusals: []
+  }
+}
+wcSettlementSweeper[refundEvents]: page budget spent, resuming next pass { from: 1788544800, to: 1788566400, pagesDone: 0 }
+wcSettlementSweeper: pass complete {
+  enabled: true,
+  due: 0,
+  applied: 0,
+  noop: 0,
+  refused: 0,
+  errors: 0,
+  configOk: true,
+  scan: {
+    from: 1788264000,
+    to: 1788285600,
+    pages: 1,
+    listed: 0,
+    applied: 0,
+    noop: 0,
+    refused: 0,
+    unmatched: 0,
+    transient: 0,
+    pagesCommitted: 1,
+    advanced: true,
+    error: null
+  },
+  unmatched: { due: 0, resolved: 0, still: 0, errors: 0 },
+  refundEvents: {
+    from: 1788436800,
+    to: 1788566400,
+    windows: 5,
+    pages: 5,
+    listed: 0,
+    charges: 0,
+    applied: 0,
+    noop: 0,
+    refused: 0,
+    unmatched: 0,
+    transient: 0,
+    ignored: 0,
+    duplicate: 0,
+    beforeStart: 0,
+    advanced: true,
+    error: 'PAGE_LIMIT',
+    retentionGap: null,
+    refusals: []
+  }
+}
+wcSettlementSweeper[refundEvents]: page budget spent, resuming next pass { from: 1788652800, to: 1788674400, pagesDone: 0 }
+wcSettlementSweeper: pass complete {
+  enabled: true,
+  due: 0,
+  applied: 0,
+  noop: 0,
+  refused: 0,
+  errors: 0,
+  configOk: true,
+  scan: {
+    from: 1788285600,
+    to: 1788307200,
+    pages: 1,
+    listed: 0,
+    applied: 0,
+    noop: 0,
+    refused: 0,
+    unmatched: 0,
+    transient: 0,
+    pagesCommitted: 1,
+    advanced: true,
+    error: null
+  },
+  unmatched: { due: 0, resolved: 0, still: 0, errors: 0 },
+  refundEvents: {
+    from: 1788544800,
+    to: 1788674400,
+    windows: 5,
+    pages: 5,
+    listed: 0,
+    charges: 0,
+    applied: 0,
+    noop: 0,
+    refused: 0,
+    unmatched: 0,
+    transient: 0,
+    ignored: 0,
+    duplicate: 0,
+    beforeStart: 0,
+    advanced: true,
+    error: 'PAGE_LIMIT',
+    retentionGap: null,
+    refusals: []
+  }
+}
+wcSettlementSweeper[refundEvents]: page budget spent, resuming next pass { from: 1788760800, to: 1788782400, pagesDone: 0 }
+wcSettlementSweeper: pass complete {
+  enabled: true,
+  due: 0,
+  applied: 0,
+  noop: 0,
+  refused: 0,
+  errors: 0,
+  configOk: true,
+  scan: {
+    from: 1788307200,
+    to: 1788328800,
+    pages: 1,
+    listed: 0,
+    applied: 0,
+    noop: 0,
+    refused: 0,
+    unmatched: 0,
+    transient: 0,
+    pagesCommitted: 1,
+    advanced: true,
+    error: null
+  },
+  unmatched: { due: 0, resolved: 0, still: 0, errors: 0 },
+  refundEvents: {
+    from: 1788652800,
+    to: 1788782400,
+    windows: 5,
+    pages: 5,
+    listed: 1,
+    charges: 1,
+    applied: 1,
+    noop: 0,
+    refused: 0,
+    unmatched: 0,
+    transient: 0,
+    ignored: 0,
+    duplicate: 0,
+    beforeStart: 0,
+    advanced: true,
+    error: 'PAGE_LIMIT',
+    retentionGap: null,
+    refusals: []
+  }
+}
+wcSettlementSweeper[refundEvents]: page budget spent, resuming next pass { from: 1788868800, to: 1788890400, pagesDone: 0 }
+wcSettlementSweeper: pass complete {
+  enabled: true,
+  due: 0,
+  applied: 0,
+  noop: 0,
+  refused: 0,
+  errors: 0,
+  configOk: true,
+  scan: {
+    from: 1788328800,
+    to: 1788350400,
+    pages: 1,
+    listed: 0,
+    applied: 0,
+    noop: 0,
+    refused: 0,
+    unmatched: 0,
+    transient: 0,
+    pagesCommitted: 1,
+    advanced: true,
+    error: null
+  },
+  unmatched: { due: 0, resolved: 0, still: 0, errors: 0 },
+  refundEvents: {
+    from: 1788760800,
+    to: 1788890400,
+    windows: 5,
+    pages: 5,
+    listed: 0,
+    charges: 0,
+    applied: 0,
+    noop: 0,
+    refused: 0,
+    unmatched: 0,
+    transient: 0,
+    ignored: 0,
+    duplicate: 0,
+    beforeStart: 0,
+    advanced: true,
+    error: 'PAGE_LIMIT',
+    retentionGap: null,
+    refusals: []
+  }
+}
+wcSettlementSweeper[refundEvents]: page budget spent, resuming next pass { from: 1788976800, to: 1788998400, pagesDone: 0 }
+wcSettlementSweeper: pass complete {
+  enabled: true,
+  due: 0,
+  applied: 0,
+  noop: 0,
+  refused: 0,
+  errors: 0,
+  configOk: true,
+  scan: {
+    from: 1788350400,
+    to: 1788372000,
+    pages: 1,
+    listed: 0,
+    applied: 0,
+    noop: 0,
+    refused: 0,
+    unmatched: 0,
+    transient: 0,
+    pagesCommitted: 1,
+    advanced: true,
+    error: null
+  },
+  unmatched: { due: 0, resolved: 0, still: 0, errors: 0 },
+  refundEvents: {
+    from: 1788868800,
+    to: 1788998400,
+    windows: 5,
+    pages: 5,
+    listed: 0,
+    charges: 0,
+    applied: 0,
+    noop: 0,
+    refused: 0,
+    unmatched: 0,
+    transient: 0,
+    ignored: 0,
+    duplicate: 0,
+    beforeStart: 0,
+    advanced: true,
+    error: 'PAGE_LIMIT',
+    retentionGap: null,
+    refusals: []
+  }
+}
+wcSettlementSweeper[refundEvents]: page budget spent, resuming next pass { from: 1789084800, to: 1789106400, pagesDone: 0 }
+wcSettlementSweeper: pass complete {
+  enabled: true,
+  due: 0,
+  applied: 0,
+  noop: 0,
+  refused: 0,
+  errors: 0,
+  configOk: true,
+  scan: {
+    from: 1788372000,
+    to: 1788393600,
+    pages: 1,
+    listed: 0,
+    applied: 0,
+    noop: 0,
+    refused: 0,
+    unmatched: 0,
+    transient: 0,
+    pagesCommitted: 1,
+    advanced: true,
+    error: null
+  },
+  unmatched: { due: 0, resolved: 0, still: 0, errors: 0 },
+  refundEvents: {
+    from: 1788976800,
+    to: 1789106400,
+    windows: 5,
+    pages: 5,
+    listed: 0,
+    charges: 0,
+    applied: 0,
+    noop: 0,
+    refused: 0,
+    unmatched: 0,
+    transient: 0,
+    ignored: 0,
+    duplicate: 0,
+    beforeStart: 0,
+    advanced: true,
+    error: 'PAGE_LIMIT',
+    retentionGap: null,
+    refusals: []
+  }
+}
+wcSettlementSweeper[refundEvents]: page budget spent, resuming next pass { from: 1789192800, to: 1789214400, pagesDone: 0 }
+wcSettlementSweeper: pass complete {
+  enabled: true,
+  due: 0,
+  applied: 0,
+  noop: 0,
+  refused: 0,
+  errors: 0,
+  configOk: true,
+  scan: {
+    from: 1788393600,
+    to: 1788415200,
+    pages: 1,
+    listed: 0,
+    applied: 0,
+    noop: 0,
+    refused: 0,
+    unmatched: 0,
+    transient: 0,
+    pagesCommitted: 1,
+    advanced: true,
+    error: null
+  },
+  unmatched: { due: 0, resolved: 0, still: 0, errors: 0 },
+  refundEvents: {
+    from: 1789084800,
+    to: 1789214400,
+    windows: 5,
+    pages: 5,
+    listed: 0,
+    charges: 0,
+    applied: 0,
+    noop: 0,
+    refused: 0,
+    unmatched: 0,
+    transient: 0,
+    ignored: 0,
+    duplicate: 0,
+    beforeStart: 0,
+    advanced: true,
+    error: 'PAGE_LIMIT',
+    retentionGap: null,
+    refusals: []
+  }
+}
+wcSettlementSweeper[refundEvents]: page budget spent, resuming next pass { from: 1789300800, to: 1789322400, pagesDone: 0 }
+wcSettlementSweeper: pass complete {
+  enabled: true,
+  due: 0,
+  applied: 0,
+  noop: 0,
+  refused: 0,
+  errors: 0,
+  configOk: true,
+  scan: {
+    from: 1788415200,
+    to: 1788436800,
+    pages: 1,
+    listed: 0,
+    applied: 0,
+    noop: 0,
+    refused: 0,
+    unmatched: 0,
+    transient: 0,
+    pagesCommitted: 1,
+    advanced: true,
+    error: null
+  },
+  unmatched: { due: 0, resolved: 0, still: 0, errors: 0 },
+  refundEvents: {
+    from: 1789192800,
+    to: 1789322400,
+    windows: 5,
+    pages: 5,
+    listed: 0,
+    charges: 0,
+    applied: 0,
+    noop: 0,
+    refused: 0,
+    unmatched: 0,
+    transient: 0,
+    ignored: 0,
+    duplicate: 0,
+    beforeStart: 0,
+    advanced: true,
+    error: 'PAGE_LIMIT',
+    retentionGap: null,
+    refusals: []
+  }
+}
+wcSettlementSweeper[refundEvents]: page budget spent, resuming next pass { from: 1789408800, to: 1789430400, pagesDone: 0 }
+wcSettlementSweeper: pass complete {
+  enabled: true,
+  due: 0,
+  applied: 0,
+  noop: 0,
+  refused: 0,
+  errors: 0,
+  configOk: true,
+  scan: {
+    from: 1788436800,
+    to: 1788458400,
+    pages: 1,
+    listed: 0,
+    applied: 0,
+    noop: 0,
+    refused: 0,
+    unmatched: 0,
+    transient: 0,
+    pagesCommitted: 1,
+    advanced: true,
+    error: null
+  },
+  unmatched: { due: 0, resolved: 0, still: 0, errors: 0 },
+  refundEvents: {
+    from: 1789300800,
+    to: 1789430400,
+    windows: 5,
+    pages: 5,
+    listed: 0,
+    charges: 0,
+    applied: 0,
+    noop: 0,
+    refused: 0,
+    unmatched: 0,
+    transient: 0,
+    ignored: 0,
+    duplicate: 0,
+    beforeStart: 0,
+    advanced: true,
+    error: 'PAGE_LIMIT',
+    retentionGap: null,
+    refusals: []
+  }
+}
+wcSettlementSweeper[refundEvents]: page budget spent, resuming next pass { from: 1789516800, to: 1789538400, pagesDone: 0 }
+wcSettlementSweeper: pass complete {
+  enabled: true,
+  due: 0,
+  applied: 0,
+  noop: 0,
+  refused: 0,
+  errors: 0,
+  configOk: true,
+  scan: {
+    from: 1788458400,
+    to: 1788480000,
+    pages: 1,
+    listed: 0,
+    applied: 0,
+    noop: 0,
+    refused: 0,
+    unmatched: 0,
+    transient: 0,
+    pagesCommitted: 1,
+    advanced: true,
+    error: null
+  },
+  unmatched: { due: 0, resolved: 0, still: 0, errors: 0 },
+  refundEvents: {
+    from: 1789408800,
+    to: 1789538400,
+    windows: 5,
+    pages: 5,
+    listed: 0,
+    charges: 0,
+    applied: 0,
+    noop: 0,
+    refused: 0,
+    unmatched: 0,
+    transient: 0,
+    ignored: 0,
+    duplicate: 0,
+    beforeStart: 0,
+    advanced: true,
+    error: 'PAGE_LIMIT',
+    retentionGap: null,
+    refusals: []
+  }
+}
+wcSettlementSweeper: pass complete {
+  enabled: true,
+  due: 0,
+  applied: 0,
+  noop: 0,
+  refused: 0,
+  errors: 0,
+  configOk: true,
+  scan: {
+    from: 1788480000,
+    to: 1788501600,
+    pages: 1,
+    listed: 0,
+    applied: 0,
+    noop: 0,
+    refused: 0,
+    unmatched: 0,
+    transient: 0,
+    pagesCommitted: 1,
+    advanced: true,
+    error: null
+  },
+  unmatched: { due: 0, resolved: 0, still: 0, errors: 0 },
+  refundEvents: {
+    from: 1789516800,
+    to: 1789546349,
+    windows: 2,
+    pages: 2,
+    listed: 0,
+    charges: 0,
+    applied: 0,
+    noop: 0,
+    refused: 0,
+    unmatched: 0,
+    transient: 0,
+    ignored: 0,
+    duplicate: 0,
+    beforeStart: 0,
+    advanced: true,
+    error: null,
+    retentionGap: null,
+    refusals: []
+  }
+}
+{"step":"3 lost webhook recovered by the events backstop","entries":["CAPTURED:stripe:ch_1","REFUNDED:stripe:re_1","REFUNDED:stripe:re_2","FEE_ACTUAL:stripe:txn_1","REFUND_FEE_ACTUAL:stripe:txn_re_1","REFUND_FEE_ACTUAL:stripe:txn_re_2"],"projection":{"providerAccountIds":["acct_1WhitecrossA1"],"captures":1,"gross_m":3200,"chargeIds":["ch_1"],"feeOnRefund_m":0,"multipleCharges":false,"payoutIds":[],"currency":"gbp","feeSource":"actual","feeComplete":true,"fee_m":68,"providerNet_m":3132,"settledNetStatus":"complete","settledNet_m":1532,"version":6,"refunded_m":1600},"sync":{"state":"done","lastError":null},"refundReview":null,"refundState":{"ch_1":{"generation":2,"state":"ok","amountRefunded_m":1600,"refunds":["re_1:succeeded","re_2:succeeded"],"lastReason":null}},"money":{"status":"CONFIRMED","paymentState":"PARTIALLY_REFUNDED","paidAmount":32,"refundedAmount":10},"readerFacts":{"status":"known","netKind":"exact","net_p":1532,"refunded_p":1600,"refundsComplete":true,"needsReview":false},"readerAcceptsProjection":true,"sweep":{"passes":13,"listed":0,"applied":0,"error":null,"cursor":1789546349,"retentionGaps":0}}
+wcSettlementSweeper: pass complete {
+  enabled: true,
+  due: 0,
+  applied: 0,
+  noop: 0,
+  refused: 0,
+  errors: 0,
+  configOk: true,
+  scan: {
+    from: 1788501600,
+    to: 1788523200,
+    pages: 1,
+    listed: 0,
+    applied: 0,
+    noop: 0,
+    refused: 0,
+    unmatched: 0,
+    transient: 0,
+    pagesCommitted: 1,
+    advanced: true,
+    error: null
+  },
+  unmatched: { due: 0, resolved: 0, still: 0, errors: 0 },
+  refundEvents: {
+    from: 1789545749,
+    to: 1789546349,
+    windows: 1,
+    pages: 1,
+    listed: 1,
+    charges: 1,
+    applied: 1,
+    noop: 0,
+    refused: 0,
+    unmatched: 0,
+    transient: 0,
+    ignored: 0,
+    duplicate: 0,
+    beforeStart: 0,
+    advanced: true,
+    error: null,
+    retentionGap: null,
+    refusals: []
+  }
+}
+{"step":"4 pending re_3 seen: no new REFUNDED entry, completeness drops","entries":["CAPTURED:stripe:ch_1","REFUNDED:stripe:re_1","REFUNDED:stripe:re_2","FEE_ACTUAL:stripe:txn_1","REFUND_FEE_ACTUAL:stripe:txn_re_1","REFUND_FEE_ACTUAL:stripe:txn_re_2"],"projection":{"providerAccountIds":["acct_1WhitecrossA1"],"captures":1,"gross_m":3200,"chargeIds":["ch_1"],"feeOnRefund_m":0,"multipleCharges":false,"payoutIds":[],"currency":"gbp","feeSource":"actual","feeComplete":true,"fee_m":68,"providerNet_m":3132,"version":6,"refunded_m":1600,"settledNet_m":null,"settledNetStatus":"refunds_not_recorded"},"sync":{"state":"pending","lastError":"REFUND_PENDING"},"refundReview":null,"refundState":{"ch_1":{"generation":3,"state":"ok","amountRefunded_m":2000,"refunds":["re_1:succeeded","re_2:succeeded","re_3:pending"],"lastReason":null}},"money":{"status":"CONFIRMED","paymentState":"PARTIALLY_REFUNDED","paidAmount":32,"refundedAmount":10},"readerFacts":{"status":"known","netKind":"upper_bound","net_p":1532,"refunded_p":1600,"refundsComplete":false,"needsReview":false},"readerAcceptsProjection":true,"sweep":{"passes":1,"listed":1,"applied":1,"error":null,"cursor":1789546349,"retentionGaps":0}}
+wcSettlementSweeper: pass complete {
+  enabled: true,
+  due: 0,
+  applied: 0,
+  noop: 0,
+  refused: 0,
+  errors: 0,
+  configOk: true,
+  scan: {
+    from: 1788523200,
+    to: 1788544800,
+    pages: 1,
+    listed: 0,
+    applied: 0,
+    noop: 0,
+    refused: 0,
+    unmatched: 0,
+    transient: 0,
+    pagesCommitted: 1,
+    advanced: true,
+    error: null
+  },
+  unmatched: { due: 0, resolved: 0, still: 0, errors: 0 },
+  refundEvents: {
+    from: 1789545749,
+    to: 1789546349,
+    windows: 1,
+    pages: 1,
+    listed: 1,
+    charges: 1,
+    applied: 1,
+    noop: 0,
+    refused: 0,
+    unmatched: 0,
+    transient: 0,
+    ignored: 0,
+    duplicate: 0,
+    beforeStart: 0,
+    advanced: true,
+    error: null,
+    retentionGap: null,
+    refusals: []
+  }
+}
+{"step":"5 re_3 canceled — complete again, no REFUNDED entry for it","entries":["CAPTURED:stripe:ch_1","REFUNDED:stripe:re_1","REFUNDED:stripe:re_2","FEE_ACTUAL:stripe:txn_1","REFUND_FEE_ACTUAL:stripe:txn_re_1","REFUND_FEE_ACTUAL:stripe:txn_re_2"],"projection":{"providerAccountIds":["acct_1WhitecrossA1"],"captures":1,"gross_m":3200,"chargeIds":["ch_1"],"feeOnRefund_m":0,"multipleCharges":false,"payoutIds":[],"currency":"gbp","feeSource":"actual","feeComplete":true,"fee_m":68,"providerNet_m":3132,"version":6,"refunded_m":1600,"settledNet_m":1532,"settledNetStatus":"complete"},"sync":{"state":"done","lastError":null},"refundReview":null,"refundState":{"ch_1":{"generation":4,"state":"ok","amountRefunded_m":1600,"refunds":["re_1:succeeded","re_2:succeeded","re_3:canceled"],"lastReason":null}},"money":{"status":"CONFIRMED","paymentState":"PARTIALLY_REFUNDED","paidAmount":32,"refundedAmount":10},"readerFacts":{"status":"known","netKind":"exact","net_p":1532,"refunded_p":1600,"refundsComplete":true,"needsReview":false},"readerAcceptsProjection":true,"sweep":{"passes":1,"listed":1,"applied":1,"error":null,"cursor":1789546349,"retentionGaps":0}}
+wcSettlementSweeper: pass complete {
+  enabled: true,
+  due: 0,
+  applied: 0,
+  noop: 0,
+  refused: 0,
+  errors: 0,
+  configOk: true,
+  scan: {
+    from: 1788544800,
+    to: 1788566400,
+    pages: 1,
+    listed: 0,
+    applied: 0,
+    noop: 0,
+    refused: 0,
+    unmatched: 0,
+    transient: 0,
+    pagesCommitted: 1,
+    advanced: true,
+    error: null
+  },
+  unmatched: { due: 0, resolved: 0, still: 0, errors: 0 },
+  refundEvents: {
+    from: 1789545749,
+    to: 1789546349,
+    windows: 1,
+    pages: 1,
+    listed: 1,
+    charges: 1,
+    applied: 1,
+    noop: 0,
+    refused: 0,
+    unmatched: 0,
+    transient: 0,
+    ignored: 0,
+    duplicate: 0,
+    beforeStart: 0,
+    advanced: true,
+    error: null,
+    retentionGap: null,
+    refusals: []
+  }
+}
+{"step":"6 re_1 failed after succeeding — compensated","entries":["COMPENSATION:comp:stripe:re_1:REFUND_FAILED","CAPTURED:stripe:ch_1","REFUNDED:stripe:re_1","REFUNDED:stripe:re_2","FEE_ACTUAL:stripe:txn_1","REFUND_FEE_ACTUAL:stripe:txn_re_1","REFUND_FEE_ACTUAL:stripe:txn_re_2"],"projection":{"providerAccountIds":["acct_1WhitecrossA1"],"captures":1,"gross_m":3200,"chargeIds":["ch_1"],"feeOnRefund_m":0,"multipleCharges":false,"payoutIds":[],"currency":"gbp","feeSource":"actual","feeComplete":true,"fee_m":68,"providerNet_m":3132,"settledNetStatus":"complete","settledNet_m":2532,"version":7,"refunded_m":600},"sync":{"state":"done","lastError":null},"refundReview":null,"refundState":{"ch_1":{"generation":5,"state":"ok","amountRefunded_m":600,"refunds":["re_1:failed","re_2:succeeded","re_3:canceled"],"lastReason":null}},"money":{"status":"CONFIRMED","paymentState":"PARTIALLY_REFUNDED","paidAmount":32,"refundedAmount":10},"readerFacts":{"status":"known","netKind":"exact","net_p":2532,"refunded_p":600,"refundsComplete":true,"needsReview":false},"readerAcceptsProjection":true,"sweep":{"passes":1,"listed":1,"applied":1,"error":null,"cursor":1789546349,"retentionGaps":0}}
+stripeWebhook: refund event handled {
+  eventId: 'evt_re1',
+  eventType: 'charge.refunded',
+  reflected: 0,
+  skipped: [ 'DUPLICATE_EVENT' ]
+}
+stripeWebhook[B1b] refund settlement recorded {
+  eventType: 'charge.refunded',
+  created: [],
+  refundsComplete: true,
+  refusals: []
+}
+wcSettlementSweeper: pass complete {
+  enabled: true,
+  due: 0,
+  applied: 0,
+  noop: 0,
+  refused: 0,
+  errors: 0,
+  configOk: true,
+  scan: {
+    from: 1788566400,
+    to: 1788588000,
+    pages: 1,
+    listed: 1,
+    applied: 1,
+    noop: 0,
+    refused: 0,
+    unmatched: 0,
+    transient: 0,
+    pagesCommitted: 1,
+    advanced: true,
+    error: null
+  },
+  unmatched: { due: 0, resolved: 0, still: 0, errors: 0 },
+  refundEvents: {
+    from: null,
+    to: null,
+    windows: 0,
+    pages: 0,
+    listed: 0,
+    charges: 0,
+    applied: 0,
+    noop: 0,
+    refused: 0,
+    unmatched: 0,
+    transient: 0,
+    ignored: 0,
+    duplicate: 0,
+    beforeStart: 0,
+    advanced: false,
+    error: null,
+    retentionGap: null,
+    refusals: []
+  }
+}
+{"step":"7 replay: webhook + sweep again","entries":["COMPENSATION:comp:stripe:re_1:REFUND_FAILED","CAPTURED:stripe:ch_1","REFUNDED:stripe:re_1","REFUNDED:stripe:re_2","FEE_ACTUAL:stripe:txn_1","REFUND_FEE_ACTUAL:stripe:txn_re_1","REFUND_FEE_ACTUAL:stripe:txn_re_2"],"projection":{"providerAccountIds":["acct_1WhitecrossA1"],"captures":1,"gross_m":3200,"chargeIds":["ch_1"],"feeOnRefund_m":0,"multipleCharges":false,"payoutIds":[],"currency":"gbp","feeSource":"actual","feeComplete":true,"fee_m":68,"providerNet_m":3132,"settledNetStatus":"complete","settledNet_m":2532,"version":7,"refunded_m":600},"sync":{"state":"done","lastError":null},"refundReview":null,"refundState":{"ch_1":{"generation":7,"state":"ok","amountRefunded_m":600,"refunds":["re_1:failed","re_2:succeeded","re_3:canceled"],"lastReason":null}},"money":{"status":"CONFIRMED","paymentState":"PARTIALLY_REFUNDED","paidAmount":32,"refundedAmount":10},"readerFacts":{"status":"known","netKind":"exact","net_p":2532,"refunded_p":600,"refundsComplete":true,"needsReview":false},"readerAcceptsProjection":true,"entriesBefore":7,"entriesAfter":7,"versionStable":true}
+wcSettlementSweeper: pass complete {
+  enabled: false,
+  due: 0,
+  applied: 0,
+  noop: 0,
+  refused: 0,
+  errors: 0,
+  configOk: false,
+  scan: null,
+  unmatched: null,
+  refundEvents: null,
+  reason: 'DISABLED'
+}
+{"step":"8 kill switch off","entries":7,"projection":{"providerAccountIds":["acct_1WhitecrossA1"],"captures":1,"gross_m":3200,"chargeIds":["ch_1"],"feeOnRefund_m":0,"multipleCharges":false,"payoutIds":[],"currency":"gbp","feeSource":"actual","feeComplete":true,"fee_m":68,"providerNet_m":3132,"settledNetStatus":"complete","settledNet_m":2532,"version":7,"refunded_m":600},"sync":{"state":"done","lastError":null},"refundReview":null,"refundState":{"ch_1":{"generation":7,"state":"ok","amountRefunded_m":600,"refunds":["re_1:failed","re_2:succeeded","re_3:canceled"],"lastReason":null}},"money":{"status":"CONFIRMED","paymentState":"PARTIALLY_REFUNDED","paidAmount":32,"refundedAmount":10},"readerFacts":{"status":"known","netKind":"exact","net_p":2532,"refunded_p":600,"refundsComplete":true,"needsReview":false},"readerAcceptsProjection":true,"stripeCalls":0,"sweep":{"scanState":{"page":null,"refundEvents":{"page":null,"cursor":1789546349,"lastRun":{"ignored":0,"refused":0,"refusals":[],"duplicate":0,"unmatched":0,"noop":0,"retentionGap":null,"transient":0,"beforeStart":0,"error":null,"to":1789546349,"charges":1,"pages":1,"listed":1,"advanced":false,"applied":1,"from":1789545749,"windows":0,"at":"2026-09-16T08:14:29.463Z"}},"lastRun":{"refused":0,"advanced":false,"pagesCommitted":0,"error":null,"unmatched":0,"noop":0,"pages":1,"transient":0,"at":"2026-09-16T08:14:29.550Z","listed":1,"applied":1,"from":1788566400,"to":1788588000},"scannedUntil":1788588000,"updatedAt":{"_seconds":1789546469,"_nanoseconds":557000000}},"refundEvents":{"cursor":1789546349,"page":null,"retentionGaps":0,"lastRun":{"ignored":0,"refused":0,"refusals":[],"duplicate":0,"unmatched":0,"noop":0,"retentionGap":null,"transient":0,"beforeStart":0,"error":null,"to":1789546349,"charges":1,"pages":1,"listed":1,"advanced":false,"applied":1,"from":1789545749,"windows":0,"at":"2026-09-16T08:14:29.463Z"}},"lastRunError":null}}
+{"SUMMARY":{"rehearsal":"B1b local — real Firestore emulator + real handler/sweeper + real reader, FAKE Stripe","candidate":"FIN-B1B-RECENCY","steps":9,"refundEventsCursor":{"cursor":1789546349,"page":null,"retentionGaps":0},"finalProjection":{"providerAccountIds":["acct_1WhitecrossA1"],"captures":1,"gross_m":3200,"chargeIds":["ch_1"],"feeOnRefund_m":0,"multipleCharges":false,"payoutIds":[],"currency":"gbp","feeSource":"actual","feeComplete":true,"fee_m":68,"providerNet_m":3132,"settledNetStatus":"complete","settledNet_m":2532,"version":7,"refunded_m":600}}}

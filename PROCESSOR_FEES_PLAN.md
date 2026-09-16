@@ -115,7 +115,7 @@ object writes the same document (create-if-absent) and is a no-op:
 | `treatwell:<externalId>` | `FEE_ACTUAL` (provider `treatwell`) | parser (later package) |
 | `comp:<uuid>` | `COMPENSATION` (`compensatesEntryId`, `reason`, `batchId?`) | a **manual or batch** correction or rollback |
 | `stripe:txn_<id>` (of the **refund's** balance transaction) | `REFUND_FEE_ACTUAL` (`refundId`, `refundEntryId`, `fee_m`) | Balance transaction of a refund — **added by `FIN-B1B-HARDENING` 2026-09-15** |
-| `stripe:ch_<id>:refunds:<fingerprint>` | `REFUND_OBSERVED` (`refunds[]`, `amountRefunded_m`, `fingerprint`) | One **complete** listing of a charge's refunds — **added by `FIN-B1B-HARDENING`**; the fingerprint is sha256(`amount_refunded` + the canonical sorted `re_id:status:amount` list), first 16 hex |
+| ~~`stripe:ch_<id>:refunds:<fingerprint>`~~ | ~~`REFUND_OBSERVED`~~ | **Withdrawn 2026-09-16 (`FIN-B1B-RECENCY`), never released.** A refund listing is coordination state, not a money fact, and an immutable entry keyed by its own content cannot carry "how recent is this read" — see the box below |
 | `comp:<compensatesEntryId>:<REASON>` | `COMPENSATION` written by an **automated** writer (`REFUND_FAILED`, `REFUND_CANCELED`) | **added by `FIN-B1B-HARDENING`**: a webhook or sweeper cannot use a random uuid and stay idempotent, so an automated compensation id is derived from what it compensates |
 
 **Why a refund's fee is its own entry (2026-09-15).** A `REFUNDED` entry is written when the refund is seen; its fee
@@ -124,11 +124,36 @@ compensation-plus-replacement pair (`comp:re_…:fee_known`, `stripe:re_<id>:<tx
 table. The fee now follows the same shape as a capture's fee: a separate `REFUND_FEE_ACTUAL` entry keyed by Stripe's
 own balance-transaction id. A live refund with no such entry has an **unknown** fee — never 0.
 
-**Why observations are entries.** Completeness cannot be derived from refund entries alone: when Stripe's
-`amount_refunded` changes but no new refund entry is written (a pending refund, or a fee-only change), a snapshot
-carried on other entries goes stale and a booking can look "complete" while a refund is in flight. A `REFUND_OBSERVED`
-entry records each complete listing, so the fold always sees the latest state. Ordering between observations is
-**never** by clock or by an invented status rank — see §2.6 and §3.1.
+**Why refund completeness needs one mutable field (`FIN-B1B-RECENCY`, 2026-09-16).** Completeness cannot come from
+refund entries alone: when Stripe's `amount_refunded` changes but no new refund entry is written (a pending refund, a
+fee-only change), a booking would look "complete" while a refund is in flight. The first attempt recorded each
+listing as an immutable `REFUND_OBSERVED` entry and ordered those entries by Stripe's documented status transitions.
+**That was withdrawn, for three reasons found by working the timelines:**
+1. `pending` and `succeeded` sit on a documented cycle (§3.1), so an ordinary sequence could not be ordered at all
+   and became a permanent "conflict";
+2. an entry id derived from its own content cannot carry *how recent the read was* — a re-read of the same state is
+   a no-op and can never add that information;
+3. a worker whose read was stale but whose commit landed later still produced a second, equally-ranked view.
+
+**The contract now separates the two kinds of state.** Money stays immutable and append-only in `settlements/`.
+*Coordination* state is one mutable field on the booking, `settlementRefundState.<chargeId>`:
+`{ generation, amountRefunded_m, refunds[{refundId,status,amount_m}], readAt, source, triggerEventId, state
+(ok|recheck|review), attempts, lastReason }`.
+
+**The fence.** Every writer reads the per-charge `generation`, then reads Stripe, then in **one** transaction
+re-checks that generation: if it moved, it writes **nothing** — no entry, no compensation, no snapshot, no partial
+marker — and the work is retried from a fresh read (bounded in-process, then handed to the sweeper via a
+`REFUND_FENCED` marker). A plain Firestore transaction cannot do this, because the Stripe read happens outside it.
+Every accepted reconciliation advances the generation, even when the read is identical, so a late worker can never
+slip in. Entry ids are still content-derived, so a replay writes no entry at all.
+
+**Contradiction, not ordering.** A read that contradicts what is already known (a refund the triggering event names
+but the fresh listing does not show, or a status change no documented transition allows) is **not** accepted as the
+new "as of" state: the generation does not move, the charge goes to bounded recheck, and then to review with its own
+reason. The transition table is a health check, never a clock (§3.1).
+
+**Completeness** is therefore derived from the entries **plus the current snapshot** — see §2.6. It means "complete
+as of the latest accepted read", and it is never permanent.
 
 Every entry carries: `kind`, `rail` (`online_checkout` \| `aggregator_prepaid` \| `desk_card`), `provider`,
 `providerAccountId` (Stripe `acct_…` of the key that took the money), `livemode`, `currency`, the amounts of its kind in
@@ -166,14 +191,16 @@ projection = fold(entries):
   providerNet_m  = gross_m − fee_m             (null when fee_m is null)
   refunded_m     = Σ live REFUNDED.amount_m
   feeOnRefund_m  = Σ REFUND_FEE_ACTUAL.fee_m over LIVE refunds, one entry per refund   # unknown ≠ 0
-  refundsComplete (FIN-B1B-HARDENING, per captured charge, once any refund fact exists):
-      a REFUND_OBSERVED entry exists, and exactly one of them dominates all the others
-        (dominance = the documented Stripe transitions allow only that order — §3.1;
-         no unique dominator ⇒ OBSERVATIONS_CONFLICT ⇒ incomplete + review, never a chosen side)
-      and the latest observation has no in-flight refund
+  refundsComplete (FIN-B1B-RECENCY, per captured charge, once any refund fact exists) —
+  from the entries AND the current snapshot `booking.settlementRefundState.<chargeId>` (§2.4):
+      a snapshot exists for the charge, and its state is `ok` (not `recheck`, not `review`)
+      and it has no in-flight refund
       and its succeeded refund ids == the live REFUNDED ids, and their Σ == its amount_refunded
       and every live refund has a REFUND_FEE_ACTUAL entry
-      # "complete" means complete AS OF the latest consistent observation; it is never permanent,
+      # The snapshot is the "as of" record, never a money authority: every amount above comes
+      # from entries. It is only replaced by a read that passed the generation fence, so a
+      # stale or contradicting read can never become the authority.
+      # "complete" means complete AS OF the latest accepted read; it is never permanent,
       # because a succeeded refund can still become requires_action or failed for ~30 days (§3.1)
   settledNet_m   = providerNet_m − refunded_m − feeOnRefund_m   (null when providerNet_m is null)
   paidOut        = { payoutIds, lastPayoutStatus, lastArrivalDate }  (informational; §5 dates)
