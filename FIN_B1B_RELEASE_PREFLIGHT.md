@@ -1,143 +1,113 @@
-# FIN-B1b RELEASE PREFLIGHT — refund entries + hardening + fenced reconciliation
+# FIN_B1B_RELEASE_PREFLIGHT.md — refunds in the settlement ledger
 
-> Sibling of `FIN_B1_RELEASE_PREFLIGHT.md`, which stays the authority for the **B1** release pinned at
-> whitecross-site **`22850996`**. **That pin does not move.** This file prepares a **separate, later** release of a
-> candidate that also contains B1b.
+> **Status 2026-09-17: LOCALLY VERIFIED CANDIDATE, NOT RELEASED.** Nothing in this document has been
+> executed against Stripe, staging or production. Every numbered step in §4 is a **step to be taken**,
+> not a step taken. No real Stripe call, no webhook-subscription change, no flag flip, no deploy has
+> happened in the sessions that produced the candidate.
 >
-> **No deploy, no production read, no Stripe call has been made for this candidate.** The live values in §1 are the
-> last recorded ones from B1's preflight (2026-09-14) and are marked as such: they must be re-read by an
-> owner-approved session before any "go" (§7).
+> **This release must not be bundled with the Treatwell/Booksy parser releases**, and it does not touch
+> the B1 release, which stays pinned at whitecross-site `22850996`.
+>
+> Companion documents: [`PROCESSOR_FEES_PLAN.md`](PROCESSOR_FEES_PLAN.md) (the contract, §2.4/§2.6/§3.1/§6.3.1),
+> [`FIN_B1_RELEASE_PREFLIGHT.md`](FIN_B1_RELEASE_PREFLIGHT.md) (B1, a separate release lane),
+> [`TESTS.md`](TESTS.md) §0-B (the gates that ran).
 
-## 0. What this release would ship, and what it would not
+## 0. What B1b ships, and what it does not
 
-**Ships (on top of B1):**
-- refund entries — `REFUNDED` `stripe:re_<id>` for succeeded refunds, and the refund's own fee as its own
-  `REFUND_FEE_ACTUAL` `stripe:txn_<id>` entry (an unknown fee writes no entry and is never read as 0);
-- automated corrections `comp:<compensatesEntryId>:<REASON>` when a recorded refund later fails or is canceled
-  (`comp:<uuid>` stays reserved for manual and batch corrections);
-- a hook in the existing BL-5 refund block of `stripeWebhook`, without which refund events never reached the ledger
-  at all (they were answered with 200 and returned before the settlement call);
-- **fenced reconciliation**: one mutable per-charge record `booking.settlementRefundState.<chargeId>` (generation,
-  the refund snapshot, `readAt`, source, trigger event, state `ok|recheck|review`), with every writer fenced by the
-  generation it read before calling Stripe. Money stays immutable in `settlements/`;
-- **new scope:** a Stripe **Events API backstop** inside `wcSettlementSweeper` for lost refund webhooks, with its own
-  persisted cursor and resume position in `platform/settlementScan.refundEvents`.
+**Ships (source only, not deployed):** refunds reach the settlement ledger.
 
-**Does not ship:** any screen; any P&L, Bank Balance or fee-day behaviour; any refund *action* (the module never
-calls `refunds.create`, and a test asserts it); any change to confirmation or refund-reconcile behaviour — the hook
-only adds a swallowed ledger call before the same 200 responses, with the same bodies.
+* `REFUNDED` entries `stripe:re_<id>` for refunds Stripe reports `succeeded`, with `amount_m` from the
+  Refund object;
+* `REFUND_FEE_ACTUAL` entries `stripe:txn_<id>` for the refund's own balance transaction — an unknown
+  fee is never 0, it blocks completeness instead;
+* automated `COMPENSATION` entries `comp:<entryId>:REFUND_FAILED|REFUND_CANCELED` when a recorded
+  refund later fails or is canceled; entries are never edited;
+* per-charge reconciliation metadata `booking.settlementRefundState.<chargeId>` (generation fence,
+  "as of" snapshot, `state`/`attempts`), which is the only mutable part;
+* the webhook hook in the BL-5 refund block of `functions/index.js` (runs before each 200; the refund
+  reconcile's own responses and writes are unchanged);
+* a Stripe **Events API backstop** inside the existing `wcSettlementSweeper` (`events.list` over a
+  persisted cursor with a resume position and an explicit retention gap) — **this is a new Stripe API
+  use** in this lane;
+* refund completeness feeding `settledNet_m` / `settledNetStatus` in the existing projection.
 
-## 1. Source selection — candidate
+**Does not ship:** any screen (B2 owns the reader), any change to confirmation, checkout or the
+existing refund reconcile behaviour, any date policy (refund day and the no-checkout fee date remain
+open owner decisions), any new Firestore query or composite index, any change to B1's entries.
 
-| Unit | Live now — **last recorded 2026-09-14, NOT re-read for this candidate** | Candidate | Delta |
+## 1. Source identity (to be re-checked on the day)
+
+| Unit | Live now | Candidate | Delta |
 |---|---|---|---|
-| `stripeWebhook` (us-central1, gen2) | revision `stripewebhook-00106-dof`, bundle = whitecross-site `6817356f` | **whitecross-site `925debde`** (`origin/main` head `0e6de132`, which only removes a claim file; `functions/` identical) | B1 + B1b + hardening + recency. `functions/index.js` differs from `22850996` **only** by the refund-block hook (+26 lines) |
-| `wcSettlementSweeper` | does not exist | same commit | new function + Scheduler job; it now also runs the events backstop |
-| Firestore indexes | 2 composite READY; the B1 `settlementSync` index is file-only | salown-app `b6c325c` (unchanged) | **no new index.** B1b adds no query — the query set is identical to the pinned B1 source, verified by reading every `.where`/`.orderBy` in the diff |
-| Firestore rules | ruleset `5e102dd4-…` (B1's arm already live) | none | no rules change |
+| `stripeWebhook` (us-central1, gen2) | revision **`stripewebhook-00106-dof`** (as recorded 2026-09-14; **re-verify**) | whitecross-site **`925debde`** | the B1 branch **plus** the B1b refund path and the `index.js` BL-5 hook |
+| `wcSettlementSweeper` | **does not exist** | same SHA | new function; now also runs the refund events backstop |
+| Firestore indexes | 2 composite `bookings` indexes | **unchanged by B1b** | B1b adds **no** query and **no** index (verified: the query set is byte-identical to `22850996`) |
+| Firestore rules | ruleset `5e102dd4-…` | **unchanged** | B1b needs no rules change; the `settlementLedgerEnabled` arm is already live |
 
-`functions/settlements.js` at the candidate: sha256 `61e1ebb4764eb983…`.
+**B1 relationship:** B1b is a superset of B1 in source. If B1 has not been released when B1b is
+approved, the two ship as one deploy of the same two functions; if B1 is already live, B1b is a
+redeploy of `stripeWebhook` + `wcSettlementSweeper` from `925debde`. Either way the pinned B1
+candidate `22850996` is not modified.
 
-## 2. Env, flag and Stripe readiness
+## 2. Environment, flag and Stripe readiness — **all TODO**
 
-`FIN_B1_RELEASE_PREFLIGHT.md` §2 applies unchanged (the env file in the archive workspace,
-`WC_SETTLEMENT_START_ISO` chosen once and never moved, the owner-only kill switch, the endpoint event list). On top
-of it:
+| Item | State | Step to take |
+|---|---|---|
+| `WC_STRIPE_ACCOUNT_ID`, `WC_STRIPE_LIVEMODE`, `WC_SETTLEMENT_START_ISO` | unchanged from B1; B1b introduces no new variable | reuse exactly the B1 values; `WC_SETTLEMENT_START_ISO` is the ledger's permanent origin and must never move on a redeploy |
+| Kill switch `settings/settings.settlementLedgerEnabled` | **absent** (B1 never released) | B1b is inert while it is absent or false — every refund path checks it before any Stripe call. Flip it only as the B1 lane prescribes |
+| Live endpoint event list | last recorded 2026-08-29: `charge.refunded`, `checkout.session.completed`, `refund.updated` — **unverified since** | **TODO:** read the live endpoint in the Dashboard, record id + sorted list, and confirm `charge.refunded` and `refund.updated` are present. B1b needs no new subscription: the backstop pulls `refund.created`/`refund.failed` from `events.list` itself rather than by delivery |
+| Stripe API surface | `events.list` is new to this codebase | **TODO:** owner approval for the new API use; the call is bounded (`types` ≤ 20, `limit` ≤ 100, one window per pass) |
+| Staging project | B1 rehearsed there 2026-09-08 | **TODO:** repeat for B1b with Stripe **test mode**: a real refund on a test charge, a redelivered refund webhook, a deliberately lost webhook recovered by the backstop, and a sweeper pass |
 
-| Item | Requirement |
-|---|---|
-| Live endpoint event list | B1 needs `charge.updated` added. B1b's webhook path uses the refund events the endpoint already carries (`charge.refunded`, `refund.updated`). The owner re-reads the list and records it; Stripe **replaces** the whole list on update, so re-send everything plus `charge.updated` |
-| New Stripe API uses | `refunds.list` (with `expand[]=data.balance_transaction`) and **`events.list`**. Both are reads on the existing secret key; no new key, no write API |
-| `platform/settlementScan.refundEvents` | created by the first enabled sweeper pass: `cursor`, `page` (resume position), `lastRun` (counters **and** stop reason), `retentionGaps`, `lastRetentionGap` |
-| `booking.settlementRefundState` | created per charge on the first refund reconciliation; it is coordination state, never money |
-| Kill switch | one flag for everything, the backstop included: absent or false ⇒ no Stripe call and no write on either path (asserted by tests and by rehearsal step 8) |
+## 3. Tests — what has run, and what has not
 
-## 3. Tests and rehearsal — what ran, and what did NOT
+| Gate | Result | Where |
+|---|---|---|
+| Unit suite at `925debde` | **220 / 220 pass, 0 skipped** | `cd functions && npm test` |
+| B1 parity | never-refunded bookings byte-identical to `22850996` | inside that run (the test loads the pinned source) |
+| Reader contract | every projection passes salown-app `readProjection` | inside that run |
+| **Local Firestore emulator rehearsal** | **7 / 7 scenarios** (both writer-race orders, a parallel race, fencing after an unchanged snapshot, retry exhaustion → sweeper takeover, two charges keeping both totals, `pending → succeeded` with no human step) | `whitecross-site/ops/rehearsal/`, evidence `evidence/2026-09-17-925debde.txt` |
+| Staging, real GCP + Stripe test mode | **NOT RUN** | — |
+| Production live-verify | **NEVER RUN**; nothing is deployed | — |
 
-| Gate | Result |
-|---|---|
-| whitecross-site `functions` suite at the candidate (`npm test`, node:test) | **220/220 pass, 0 skipped** — re-run by the coordinator, not only reported. settlements 83 · stripeWebhook integration 8 · refunds 40 · externalCheckout 73 · loyaltyEnroll 16 |
-| Race and fence tests | written **before** the implementation; 25 of them failed against the previous code |
-| B1 parity | in-suite, against `git show 22850996:functions/settlements.js`: a booking that never had a refund produces byte-identical entries, projection, marker and scan cursor |
-| salown-app reader compatibility | in-suite, against the pinned validator **and** the real `src/utils/settlementFacts.ts` |
-| Local rehearsal — real Firestore emulator, real `stripeWebhook` handler and sweeper, real reader, **fake Stripe** | **8/8 steps pass**: `evidence/fin-processor-fees/2026-09-16-b1b-local-rehearsal/` (README, harness, scenario, full output) |
-| **Stripe test-mode / staging rehearsal (real HTTP, real Stripe objects, real delivery)** | **NOT RUN.** Needs an owner approval — §6 |
-| Live `amount_refunded` semantics (does it count a pending refund; does it drop when one fails) | **unverified** — not stated in Stripe's docs. The code never depends on it: completeness compares the snapshot with the recorded refunds |
-| Composite-index behaviour of the due-pass query | unchanged from B1, which was rehearsed on `salown-staging` (`STAGING_PROJECT_PLAN.md` §10). The emulator does not enforce indexes |
+## 4. The approval package — ordered steps, **none of them taken**
 
-## 4. The approval package — ordered steps (all with `--project havuz-44f70`)
+0. **Same-day re-check.** Confirm `925debde` is still the candidate, the live `stripeWebhook`
+   revision, the live ruleset id and the index list. Stop if any identity moved.
+1. **Stripe endpoint.** Record the live endpoint's event list; confirm `charge.refunded` and
+   `refund.updated`. Change nothing else. (No new subscription is required by B1b.)
+2. **Staging rehearsal** with Stripe test mode, from an isolated `git archive` workspace of the
+   candidate: partial refund, full refund, a refund that fails after succeeding, a deliberately
+   dropped webhook recovered by the backstop, a sweeper pass, and the kill switch off → on.
+3. **Functions deploy** (only after 0–2 pass and the owner approves): from an isolated archive
+   workspace of `925debde`, `./scripts/deploy-functions.sh whitecross stripeWebhook wcSettlementSweeper`.
+   The flag decides whether anything runs; with it absent both are inert.
+4. **Live verification:** the first real refund after the flag is on produces `stripe:re_…` and
+   `stripe:txn_…` entries, `settlementRefundState.<charge>.generation` ≥ 1 with `state: ok`, the
+   projection's `refunded_m` equal to Stripe's `amount_refunded`, `settledNetStatus: complete`, and no
+   `refundReview`. The booking's confirmation and money fields are unchanged.
+5. **Ledger row.** Record the release in `RELEASE_LEDGER.md` with the rollback identity.
 
-0. **Same-day re-check** (§7). Stop if any identity moved.
-1. **Indexes** — as in B1's §4 step 1. **B1b adds none.**
-2. **Env** — record `WC_SETTLEMENT_START_ISO`; write `functions/.env.havuz-44f70` in the archive workspace.
-3. **Stripe** — the owner records the live endpoint event list, then sets it to that list **plus `charge.updated`**,
-   keeping the refund events.
-4. **Functions** — from a `git archive` of `925debde`:
-   `./scripts/deploy-functions.sh whitecross stripeWebhook wcSettlementSweeper`. Flag absent ⇒ both inert.
-   Expected: a new `stripeWebhook` revision after `00106-dof`; confirmation and refund behaviour unchanged; the B1
-   and B1b branches log `DISABLED`; `wcSettlementSweeper: pass complete { enabled: false, reason: 'DISABLED' }`; no
-   `settlements` document anywhere; `platform/settlementScan` still absent.
-5. ~~Rules~~ — already live (`5e102dd4-…`); only confirm the id is unchanged.
-6. **Flag** — the owner sets `settlementLedgerEnabled: true` by the mechanism decided in B1's §2.
+## 5. Rollback
 
-**LIVE_VERIFIED criteria, B1b's own:**
-- the first enabled sweeper pass writes `platform/settlementScan.refundEvents` with a window, `advanced: true`, no
-  `RETENTION_GAP`, and `lastRun.error: null`;
-- the first live refund that occurs naturally — **no refund is issued to test this** — produces `REFUNDED` +
-  `REFUND_FEE_ACTUAL`, a `settlementRefundState.<chargeId>` with `state: ok`, and `settledNetStatus: complete`;
-- no booking money field changes on any of these paths; the refund reconcile's own fields behave exactly as before;
-- no `refundReview` opens without a matching `recheck` history.
+* **Stop first:** set `settlementLedgerEnabled` to `false`. Every refund path is inert at the next
+  invocation; in-flight ones finish. Confirm quiescence across two scheduler intervals.
+* **Code:** re-point `stripeWebhook` traffic to the previous revision, or redeploy the previous source
+  SHA from an isolated workspace; `functions:delete wcSettlementSweeper` if it must go entirely.
+* **Data:** entries already written are correct facts and stay. `settlementRefundState` is
+  coordination metadata; it can be left in place (it is inert without the code) and is never a money
+  authority.
 
-## 5. Rollback, per unit
+## 6. Known limits carried into the release conversation
 
-B1's §5 applies unchanged: **flag false first** (new invocations inert at once; in-flight ones finish), then
-`stripeWebhook` traffic back to `stripewebhook-00106-dof`, then delete `wcSettlementSweeper` and pause its job.
-B1b adds nothing that needs its own rollback: `settlementRefundState`, `refundReview` and
-`platform/settlementScan.refundEvents` are inert once the flag is off, and entries already written are correct
-facts that stay.
-
-## 6. The staging rehearsal package — prepared, NOT executed
-
-B1 was rehearsed on `salown-staging` with real Stripe test-mode HTTP delivery (`STAGING_PROJECT_PLAN.md` §10).
-B1b's webhook hook, the refund listing, the fence and the events backstop have **not** been exercised that way. The
-package to approve, when wanted:
-1. deploy `stripeWebhook` + `wcSettlementSweeper` from `925debde` to `salown-staging` (test-mode keys, its own
-   endpoint secret, `WC_NONPROD_TEST_MODE=1`);
-2. a test-mode payment, then a **test-mode partial refund** and a second refund with the endpoint enabled — the
-   webhook path end to end, including a real `refund.updated` sequence;
-3. the same with the endpoint disabled — the events backstop alone must recover both refunds and advance its cursor;
-4. a kill-switch pass (flag false ⇒ no Stripe call, no write);
-5. cleanup as in `STAGING_PROJECT_PLAN.md` §7 D.
-This **deploys code and touches Stripe test mode**, so it needs an explicit owner approval. It is also the only way
-to observe the real `amount_refunded` semantics and real delivery ordering.
-
-## 7. Same-day re-check before "go" (read-only)
-
-1. `git rev-parse origin/main` in whitecross-site and salown-app; if either moved, re-pin §1 and repeat the byte
-   checks (`functions/` against the candidate; `firestore.indexes.json` against `9a9547a`).
-2. Live identities, **which this work never read**: `stripeWebhook` revision and source generation, the function and
-   scheduler inventory, the rules release id, the index list, and that the flag is still absent.
-3. The Stripe endpoint event list (owner, Dashboard).
-4. Re-run the suite and the local rehearsal against the pinned candidate; both must reproduce §3.
-
-## 8. Out of scope, kept separate
-
-Automatic refunds (BL-4) — separate lane, separate approval. B2 P&L / Bank Balance / fee-day — waits on the owner's
-open date decisions and on the T18 write-once first-checkout time, which does not exist yet. B3 history backfill —
-the only way to close a `RETENTION_GAP` older than Stripe's 30-day event retention.
-
-## 9. Known gaps of this candidate
-
-1. **Stripe read consistency is not guaranteed by anything we can build.** The fence orders *our* writers; if Stripe
-   returns a stale read, the contradiction is detected against the triggering event, goes to bounded recheck and
-   then to review. It is never silently accepted.
-2. **Retention:** events older than 30 days cannot be recovered by the backstop; the span is recorded as
-   `RETENTION_GAP` and only a B3-style backfill could close it. A flag-off or outage period longer than that
-   becomes such a gap.
-3. **Unmatched:** an event whose charge resolves to no booking (or to two) waits in the unmatched queue.
-4. **Before the start boundary:** refunds on charges created before `WC_SETTLEMENT_START_ISO` are out of scope and
-   write nothing.
-5. **Truncated refund list:** a charge with more refunds than the page budget records no snapshot and stays pending
-   rather than recording a partial one.
-6. Some documented status transitions (notably `succeeded → requires_action`) come from Stripe's public docs, not
-   from a test against the API. They are used only as a health check, never to order anything.
+* **Stripe read consistency is not guaranteed by anything in this design.** The fence orders *our*
+  writers only. A stale read from Stripe is detected as a contradiction and re-read (bounded), then
+  raised for review — it is never resolved by guessing.
+* The refund status transition table is a health check built on **tier-B evidence**
+  (`PROCESSOR_FEES_PLAN.md` §3.1) — coordinator-fetched doc pages that the implementing session could
+  not re-verify. No ordinary-flow guarantee rests on it.
+* The events backstop can only recover what Stripe still lists: **30-day retention**, charges after
+  `WC_SETTLEMENT_START_ISO`, and events whose charge resolves to exactly one booking. Everything else
+  is recorded as a retention gap or an unmatched row rather than silently skipped.
+* Refund day and the no-checkout fee date remain **open owner decisions** (§9 of the plan). B1b stores
+  provider timestamps only and picks no day.
