@@ -11,18 +11,44 @@ Evidence: `evidence/tw-pay-at-venue-ui/2026-09-17-candidates/`.
 
 | Target | Candidate | Branch | Built from |
 |---|---|---|---|
-| `hosting:salown` (Admin) | **`6b3f19f`** | `claude/tw-pay-at-venue-admin-on-live-c8a64d6` | live Admin source `c8a64d6` + the fix |
+| `hosting:salown` (Admin) | **`503bdff`** | `release/admin-tw-ui-and-discount-on-live-c8a64d6` | live Admin source `c8a64d6` + the fix + the platform-discount breakdown (see below) |
 | `hosting:salown-staff` (Staff) | **`76e58fe`** | `claude/tw-pay-at-venue-staff-on-live-aa2efd9` | live Staff source `aa2efd9` + the fix |
 
 **Not in this package:**
 
 - Finance/Stripe code. The candidate diffs contain no `OnlinePaymentFees`, `settlementFacts` or
   Stripe lines, while main's `74922bd`/`9a4925c` are PUSHED_NOT_LIVE.
-- The Booksy discount (Happy Hours) UI. Neither candidate adds or changes a line of it.
+- The Booksy discount (Happy Hours) UI **is now part of the ADMIN candidate** (owner decision,
+  2026-09-17) — see "Why one Admin candidate" below. The Staff candidate is unchanged and does not
+  contain it.
 - Any Functions, rules or index change.
 - The Treatwell parser/notification release.
 
-Each candidate's source delta over its base equals the fix delta (`0d31b79` + `6d00628`) at hunk level.
+The Staff candidate's source delta over its base equals the fix delta (`0d31b79` + `6d00628`) at hunk
+level. The Admin candidate is that same delta plus the discount delta, and nothing else.
+
+### Why one Admin candidate
+
+`PLATFORM-DISCOUNT-BREAKDOWN` (`feat/platform-discount-breakdown` @ `982a683`, built on `main`) and
+this fix (`6b3f19f`, built on the live Admin source) both change
+`src/components/BookingDetailPanel.tsx`. Released one after the other from their own bases, whichever
+went second would carry its base's version of that file and silently revert the other. So they are
+released once, together:
+
+`release/admin-tw-ui-and-discount-on-live-c8a64d6` @ **`503bdff`** = `6b3f19f` + `3910aa7` + `982a683`
+(cherry-picks, clean). Containment checked mechanically on the candidate: the whole TW src delta
+`c8a64d6 → 6b3f19f` reverse-applies, and so does each file of the discount delta. `BookingDetailPanel`
+carries both (`PlatformDepositRows`/`readPlatformDepositSummary` and the unpaid-state classification).
+
+Gates on the candidate: `tsc` 0 · touched-area suites 91/91 (`platformPaymentSummary`, `unpaidState`,
+`salesPeriod`) · full vitest 5562 passed, the only failure being the `functionsArchiveManifest`
+negative control that depends on the developer checkout's own untracked files · `vite build` OK.
+
+What the salon sees from the discount half: a platform deposit booking shows Normal price → Discount
+· N% → Total → Deposit paid → Remaining at venue, with the normal price taken from the import-time
+snapshot (never today's catalogue), the total unchanged and no reason claimed unless the import
+recorded a verified match. Post-release check §3 should therefore also look for `Remaining at venue`
+plus `Normal price` on a Booksy deposit booking.
 
 **Deploy order:** the two targets are independent. Recommended: Admin first, then Staff, one at a
 time, following the one-change-per-release habit. Staff may wait. The only mismatch meanwhile is
