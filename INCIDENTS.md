@@ -53,6 +53,8 @@ Every incident opens with `## YYYY-MM-DD — short title`, immediately followed 
 
 **Follow-up (2026-09-17, after the release):** the recovery plan assumed the IMAP cron re-reads a week of mail; it has not reached the mailbox in at least four weeks. Nobody noticed because the inbound pipe carries every live import and the per-parser canary records only runs that reach a parser. A manual "Fwd:" of the email is not a safe substitute yet: the subject parser takes everything before the first colon as the client name ("Fwd").
 
+**IMAP stage, measured (2026-09-17, owner-approved read-only probe, no mailbox opened):** the failure is at LOGIN — Gmail answers `AUTHENTICATE` with `NO [AUTHENTICATIONFAILED] Invalid credentials (Failure)`; the SELECT and SEARCH stages are never reached. `settings/emailConfig` targets the salon's own Gmail and was last written 2026-06-04; the stored app password is present (19 characters, Google's spaced 4×4 shape). Why Google now rejects it is not known (a revoked app password is the usual cause — not assumed). No credential was changed and no further login was attempted.
+
 **Lessons Learned:**
 - Before relying on a pipe to heal data, prove the pipe runs: a recovery plan that says "the cron will re-read it" needs the cron's last successful run, not its schedule.
 - A derived identity is a claim that two emails describe one booking. When the provider sends no id, that claim needs time ordering, not just string equality.
