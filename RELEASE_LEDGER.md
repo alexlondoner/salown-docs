@@ -1,6 +1,18 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
 
+## R-2026-09-18-A — `QP-UTF8`: quoted-printable decoded as bytes, so a "£" survives the raw-MIME path · 1-unit release (`functions:salown`, 3 functions) · **ARTIFACT_VERIFIED · behaviour covered by tests; no live raw-MIME traffic exists today (IMAP stays off by owner decision)**
+
+- **Why:** Booksy's text/plain part is utf-8 quoted-printable; "£20.40" arrives as "=C2=A320.40". The ASCII-only decoder left it, the price regex missed and the import stored the CATALOGUE price (£24.00 measured on the 17 Sep 09:15 booking). INCIDENTS 2026-09-17.
+- **Owner approval:** targeted deploy of the parser trio from the passenger-free candidate; **no IMAP re-enablement follows** — the salon stays on forwarding/inbound.
+- **Source:** `release/qp-utf8-on-live-9f03daa` @ **`2439e37`** = previous live source `9f03daa` + the QP fix ONLY (`functions/src/utils/emailText.ts` +55/−4, `functions/src/utils/emailTextQp.test.js` new). The main-based branch `2dc3702` was NOT used: against live it carried 76 files / ~12.8k lines of unrelated main work.
+- **Pre-deploy:** all three still on the `9f03daa` packages (generations `…074104` / `…251643` / `…006591`, hash `34fbbb97…`); guard OK; `tsc` 0; functions 2282 tests / 0 fail / 43 skipped; targeted parser+QP 255/255; archive manifest clean; canonical emulator gate **625/625 PASS** (general 598 + packages 27 — fewer than the main-based branch's 695 because the live base carries fewer test files).
+- **Deploy:** `./scripts/deploy-functions.sh salownParseEmails salownParseInboxDispatch salownManualImport` from an isolated workspace, 2026-09-18 00:40 UK. New revisions **`salownparseemails-00130-riy`**, **`salownparseinboxdispatch-00013-nev`**, **`salownmanualimport-00119-fic`**; source generations `1789688419367624` / `1789688419372496` / `1789688371401923`; memory/timeout unchanged.
+- **Post-deploy:** inventory 124 → 124, only these three changed revision; each deployed package's `lib/` byte-identical to the candidate and its source 96/96 files equal to `2439e37`; no secret/env/log entry in any package.
+- **Not changed:** hosting, rules, data, tenant settings, the Cloud Scheduler job. The recovered 17 Sep booking untouched.
+- **Rollback:** redeploy `9f03daa` for the same three functions (previous revisions `-00129-yik` / `-00012-cay` / `-00118-juw`).
+- **Note (no action taken):** the whitecross IMAP cron inside `salownParseEmails` still runs every 5 minutes and still logs `IMAP error: Command failed` (Gmail rejects the stored app password at LOGIN). The owner has decided against re-enabling IMAP; the salon is on forwarding/inbound. Silencing or disabling that scheduled path is a separate, unapproved change — tracked here so the recurring error log is not mistaken for a new fault.
+
 ## R-2026-09-17-C — `TW-PAY-AT-VENUE-UI` (Staff) · 1-site release (`hosting:salown-staff`) · **ARTIFACT_VERIFIED (served bytes 25/25 + marker strings) · owner live test pending**
 
 - **Why:** the Staff app still showed a Treatwell pay-at-venue booking as "Unpaid" after the Admin release — the one mismatch the plan named.
