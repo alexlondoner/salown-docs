@@ -1,0 +1,71 @@
+emulator: 127.0.0.1:8099  project: demo-b1b-recency
+
+PASS  1a  race, fresh-first: the stale worker is fenced and writes NOTHING
+PASS  1b  race, stale-first: the newer worker is fenced, the work is redone from a fresh read
+PASS  1c  parallel race: exactly one reconciliation wins, the ledger is written once
+PASS  2   fencing after an unchanged snapshot: an identical re-read still fences the slow worker
+PASS  3   retry exhaustion: no partial write, a durable marker, then the sweeper completes it
+PASS  4   two charges on one booking: independent generations, both totals kept
+PASS  5   pending → succeeded completes with NO human intervention
+
+--- persisted shape (booking b1) ---
+{
+  "settlementRefundState": {
+    "ch_1": {
+      "generation": 1,
+      "lastReason": null,
+      "triggerEventId": "evt_sample",
+      "source": "stripe-webhook",
+      "state": "ok",
+      "readAt": "2026-09-07T12:01:00.000Z",
+      "amountRefunded_m": 1000,
+      "attempts": 0,
+      "refunds": [
+        {
+          "refundId": "re_1",
+          "status": "succeeded",
+          "amount_m": 1000
+        }
+      ]
+    }
+  },
+  "settlementSync": {
+    "lastError": null,
+    "nextAttemptAt": null,
+    "state": "done",
+    "attempts": 0,
+    "lastAttemptAt": "2026-09-07T12:01:00.000Z",
+    "updatedAt": "2026-09-07T12:01:00.000Z"
+  },
+  "settlementProjection": {
+    "providerAccountIds": [
+      "acct_1WhitecrossA1"
+    ],
+    "captures": 1,
+    "feeSource": "actual",
+    "feeComplete": true,
+    "providerNet_m": 3132,
+    "gross_m": 3200,
+    "chargeIds": [
+      "ch_1"
+    ],
+    "feeOnRefund_m": 0,
+    "multipleCharges": false,
+    "payoutIds": [],
+    "fee_m": 68,
+    "currency": "gbp",
+    "settledNet_m": 2132,
+    "version": 4,
+    "settledNetStatus": "complete",
+    "refunded_m": 1000
+  }
+}
+--- ledger entry ids ---
+stripe:ch_1
+stripe:re_1
+stripe:txn_1
+stripe:txn_re_1
+
+7/7 scenarios passed
+
+[exited with code 0]
