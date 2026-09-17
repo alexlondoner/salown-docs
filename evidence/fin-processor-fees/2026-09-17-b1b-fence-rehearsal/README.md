@@ -31,9 +31,21 @@ delivery or ordering, composite indexes (the emulator does not enforce them), th
 production behaviour. The staging rehearsal with real Stripe test-mode deliveries is still unrun and needs owner
 approval: `FIN_B1B_RELEASE_PREFLIGHT.md` §6.
 
+## Where the runnable copy lives
+
+The same rehearsal was afterwards committed **next to the code it exercises**, in whitecross-site
+`ops/rehearsal/` (`settlements-fence.rehearsal.js`, its own README, the emulator config and
+`evidence/2026-09-17-925debde.txt`). That copy is the one to run and to keep in step with the module; the files here
+are the frozen artefact of the 2026-09-17 run, kept with the rest of this work stream's evidence.
+
 ## Re-running
 
 ```bash
+# canonical copy, repo-relative paths:
+cd whitecross-site && firebase emulators:exec --only firestore --project demo-b1b-recency \
+  'node ops/rehearsal/settlements-fence.rehearsal.js'
+
+# or the frozen copy here, against a checkout of 925debde:
 firebase emulators:start --only firestore --project demo-b1b-recency   # emulator-firebase.json, port 8099
-node rehearse.js                                                       # against a checkout of 925debde
+node rehearse.js
 ```

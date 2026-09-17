@@ -33,7 +33,7 @@
 
 **Does not ship:** any screen (B2 owns the reader), any change to confirmation, checkout or the
 existing refund reconcile behaviour, any date policy (refund day and the no-checkout fee date remain
-open owner decisions), any new Firestore query or composite index, any change to B1's entries.
+open owner decisions), any new Firestore query or composite index, and no refund-creating API call — a test asserts that `refunds.create` is unreachable from the settlement path. Nor any change to B1's entries.
 
 ## 1. Source identity (to be re-checked on the day)
 
@@ -43,6 +43,10 @@ open owner decisions), any new Firestore query or composite index, any change to
 | `wcSettlementSweeper` | **does not exist** | same SHA | new function; now also runs the refund events backstop |
 | Firestore indexes | 2 composite `bookings` indexes | **unchanged by B1b** | B1b adds **no** query and **no** index (verified: the query set is byte-identical to `22850996`) |
 | Firestore rules | ruleset `5e102dd4-…` | **unchanged** | B1b needs no rules change; the `settlementLedgerEnabled` arm is already live |
+
+**Byte identity of the candidate:** `functions/settlements.js` at `925debde` is sha256 `61e1ebb4764eb983…`; the
+`origin/main` head at the time, `0e6de132`, differs from it only by removing a claim file, so `functions/` is
+identical. Re-check both on the day.
 
 **B1 relationship:** B1b is a superset of B1 in source. If B1 has not been released when B1b is
 approved, the two ship as one deploy of the same two functions; if B1 is already live, B1b is a
@@ -56,7 +60,7 @@ candidate `22850996` is not modified.
 | `WC_STRIPE_ACCOUNT_ID`, `WC_STRIPE_LIVEMODE`, `WC_SETTLEMENT_START_ISO` | unchanged from B1; B1b introduces no new variable | reuse exactly the B1 values; `WC_SETTLEMENT_START_ISO` is the ledger's permanent origin and must never move on a redeploy |
 | Kill switch `settings/settings.settlementLedgerEnabled` | **absent** (B1 never released) | B1b is inert while it is absent or false — every refund path checks it before any Stripe call. Flip it only as the B1 lane prescribes |
 | Live endpoint event list | last recorded 2026-08-29: `charge.refunded`, `checkout.session.completed`, `refund.updated` — **unverified since** | **TODO:** read the live endpoint in the Dashboard, record id + sorted list, and confirm `charge.refunded` and `refund.updated` are present. B1b needs no new subscription: the backstop pulls `refund.created`/`refund.failed` from `events.list` itself rather than by delivery |
-| Stripe API surface | `events.list` is new to this codebase | **TODO:** owner approval for the new API use; the call is bounded (`types` ≤ 20, `limit` ≤ 100, one window per pass) |
+| Stripe API surface | **two** new reads in this lane: `events.list` (the backstop) and `refunds.list` with `expand[]=data.balance_transaction` (the refund listing). Both are reads on the existing secret key; no new key and no write API | **TODO:** owner approval for the new API use; the call is bounded (`types` ≤ 20, `limit` ≤ 100, one window per pass) |
 | Staging project | B1 rehearsed there 2026-09-08 | **TODO:** repeat for B1b with Stripe **test mode**: a real refund on a test charge, a redelivered refund webhook, a deliberately lost webhook recovered by the backstop, and a sweeper pass |
 
 ## 3. Tests — what has run, and what has not
@@ -67,6 +71,7 @@ candidate `22850996` is not modified.
 | B1 parity | never-refunded bookings byte-identical to `22850996` | inside that run (the test loads the pinned source) |
 | Reader contract | every projection passes salown-app `readProjection` | inside that run |
 | **Local Firestore emulator rehearsal** | **7 / 7 scenarios** (both writer-race orders, a parallel race, fencing after an unchanged snapshot, retry exhaustion → sweeper takeover, two charges keeping both totals, `pending → succeeded` with no human step) | `whitecross-site/ops/rehearsal/`, evidence `evidence/2026-09-17-925debde.txt` |
+| **Local scenario rehearsal** (real `stripeWebhook` handler + sweeper + salown-app reader, fake Stripe) | **8 / 8 steps** — capture, fee, refund by webhook, a lost webhook recovered by the backstop, a pending refund dropping completeness, a cancellation restoring it, a refund that failed after succeeding, replay, kill switch | `docs/evidence/fin-processor-fees/2026-09-16-b1b-local-rehearsal/` |
 | Staging, real GCP + Stripe test mode | **NOT RUN** | — |
 | Production live-verify | **NEVER RUN**; nothing is deployed | — |
 
