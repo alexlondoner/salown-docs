@@ -40,6 +40,19 @@
 | **FIN-B1** | rules emulator | `ops/test-rules-emulator.sh` at `9a9547a` | **221 / 221**, incl. 35 for the flag | `salown-app/test/rules/settlementLedgerFlag.emulator.test.js` (registered in the runner) | — |
 | **FIN-B1** | **staging, real GCP + real Stripe test mode** | `salown-staging`, 2026-09-08 | **all rehearsals passed** — real composite index, real HTTP webhook delivery + redelivery, scheduler-driven sweeper recovery, kill-switch drain | [`STAGING_PROJECT_PLAN.md`](STAGING_PROJECT_PLAN.md) §10, the durable execution record | live mode; live keys; production data; any production deploy |
 | **FIN-B1** | production live-verify | — | **NEVER RUN.** Nothing is deployed | read-only checks 2026-09-09: no `wcSettlementSweeper` among 121 live functions · `settlementLedgerEnabled` ×0 in live ruleset · `settlementSync` index absent | everything |
+
+## 0-B. FIN-B1b refunds (`FIN-B1B-RECENCY`, candidate whitecross-site `925debde`) — 2026-09-17
+
+| Work | Gate | Command / where | Result | Durable evidence | What it does NOT prove |
+|---|---|---|---|---|---|
+| **B1b** | unit (node:test) | `cd whitecross-site/functions && npm test` at `925debde` | **220 / 220 pass**, 0 skipped (settlements 83 · webhook integration 8 · refunds 40 · externalCheckout 73 · loyalty 16) | the suite files `settlements.test.js`, `stripeWebhook.integration.test.js`, `settlements.fakes.js` | anything about real Stripe or production |
+| **B1b** | B1 parity | inside the run above | a booking that never had a refund is **byte-identical** to `git show 22850996:functions/settlements.js` (entries, projection, marker, scan cursor) | the parity test loads the pinned source itself | that B1b is safe to deploy — B1 stays pinned at `22850996` |
+| **B1b** | reader contract | inside the run above | every projection written passes the pinned copy **and** the live `salown-app/src/utils/settlementFacts.ts` `readProjection` | the reader test imports the real TS file when salown-app is present | Finance UI behaviour (B2) |
+| **B1b** | **local Firestore emulator rehearsal** | `firebase emulators:start --only firestore --project demo-b1b-recency` (port 8099) + `node rehearse.js`; Stripe entirely faked | **7 / 7 scenarios pass** — ① writer race, fresh-read commits first: the stale worker is fenced and writes nothing ② the other order: the newer worker is fenced and its work is redone from a fresh read ③ a genuinely parallel race: exactly one reconciliation wins, the refund is recorded once ④ fencing after an **unchanged** snapshot (the generation still advances) ⑤ retry exhaustion: no partial write, `REFUND_FENCED` marker, then the sweeper's due pass completes it ⑥ two charges on one booking: independent generations, `gross_m` 6400 and `refunded_m` 1500 both kept ⑦ `pending → succeeded` completes with **no** review flag and no human step | the rehearsal script and its output live in the session scratchpad (`scratchpad/rehearsal/rehearse.js`, `…/tasks/b8fsl6leh.output`); it is **not** committed — re-running it reproduces the result from the committed module | real Stripe (all Stripe calls are the fake), webhook HTTP delivery, the composite index, the scheduler, live mode, or any production behaviour |
+
+**Why the emulator run exists:** the unit suite drives a hermetic Firestore fake. The fence is a claim about *real*
+transaction semantics — a read outside the transaction, a re-check inside it, and two writers contending on one
+document — so it is rehearsed against the real Firestore engine before any release conversation.
 | **COA** (`CHECKOUT-OVER-ALLOCATION`, GTM gate A3) | rules emulator | at `edfa6e7` | suite registered and green | `salown-app/test/rules/checkoutOverAllocation.emulator.test.js`, line 103 of `ops/test-rules-emulator.sh` | production — `[COA]` appears **0 times** in the live ruleset; it is `PUSHED_NOT_LIVE` |
 
 **The trap this table exists to prevent:** B1 is the most heavily tested unreleased thing in the repo.
