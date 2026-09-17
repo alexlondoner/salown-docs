@@ -1,0 +1,7 @@
+
+/private/tmp/claude-501/-Users-alish/13d96fc5-b41b-4b10-9523-d174a1d0178b/scratchpad/pav/src/utils/unpaidState.test.ts
+   87:28  error  '_drop' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  135:28  error  '_drop' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+✖ 2 problems (2 errors, 0 warnings)
+

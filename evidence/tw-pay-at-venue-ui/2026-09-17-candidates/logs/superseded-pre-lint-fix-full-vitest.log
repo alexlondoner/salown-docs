@@ -1,0 +1,3092 @@
+
+ RUN  v4.1.9 /private/tmp/claude-501/-Users-alish/13d96fc5-b41b-4b10-9523-d174a1d0178b/scratchpad/pav
+
+ ❯ ops/functions-ownership.test.js (62 tests | 6 failed) 2327ms
+     × there is no same-name/same-region collision live right now 55ms
+     × reports no workspace problem, and prints a matrix naming name+region+codebase+repo 3ms
+     × a valid salown target passes 3ms
+     × several valid salown targets pass together 1ms
+     × a valid bare function name passes and is normalised to the three-part selector 256ms
+     × the wrapper accepts the shape every DEPLOYMENT_STATUS.md release used 3ms
+ ❯ ops/rules-authority.test.js (30 tests | 8 failed) 414ms
+     × finds exactly one config declaring a firestore rules/indexes target 186ms
+     × no other firebase*.json declares a firestore block 3ms
+     × no file outside salown-app is named firestore.rules 2ms
+     × no script outside salown-app runs a Firestore deploy 7ms
+     × whitecross-site still deploys Hosting, Functions and Storage 1ms
+     × whitecross-site/barber-panel still declares its hosting target 1ms
+     × salown-panel still declares its hosting target 0ms
+     × a rules deploy from either stale directory fails LOCALLY, before any network call 50ms
+ ❯ src/staff/lib/staffTimeContract.test.ts (66 tests | 1 failed) 8612ms
+     × every minute of the day, injected off-grid, lands at a valid sorted position 5484ms
+ ❯ scripts/functionsArchiveManifest.test.js (12 tests | 2 failed) 851ms
+     × the pre-A1.3 ignore list would have shipped the local secrets file 11ms
+     × …and a pile of test files, preview output and editor state 6ms
+
+⎯⎯⎯⎯⎯⎯ Failed Tests 17 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  ops/functions-ownership.test.js > the workspace collision matrix > there is no same-name/same-region collision live right now
+AssertionError: expected [ …(92) ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   {
++     "name": "addToWaitlist",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "addToWaitlist",
++         "region": "europe-west2",
++         "repo": "live-ui/admin",
++         "trigger": "onRequest",
++       },
++       {
++         "codebase": "salown",
++         "name": "addToWaitlist",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onRequest",
++       },
++       {
++         "codebase": "salown",
++         "name": "addToWaitlist",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onRequest",
++       },
++     ],
++     "region": "europe-west2",
++   },
++   {
++     "name": "adminGetOwnerActivity",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "adminGetOwnerActivity",
++         "region": "europe-west2",
++         "repo": "live-ui/admin",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "adminGetOwnerActivity",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "adminGetOwnerActivity",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onCall",
++       },
++     ],
++     "region": "europe-west2",
++   },
++   {
++     "name": "adminPurgeTenant",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "adminPurgeTenant",
++         "region": "europe-west2",
++         "repo": "live-ui/admin",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "adminPurgeTenant",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "adminPurgeTenant",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onCall",
++       },
++     ],
++     "region": "europe-west2",
++   },
++   {
++     "name": "approveApplication",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "approveApplication",
++         "region": "europe-west2",
++         "repo": "live-ui/admin",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "approveApplication",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "approveApplication",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onCall",
++       },
++     ],
++     "region": "europe-west2",
++   },
++   {
++     "name": "askAI",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "askAI",
++         "region": "europe-west2",
++         "repo": "live-ui/admin",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "askAI",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "askAI",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onCall",
++       },
++     ],
++     "region": "europe-west2",
++   },
++   {
++     "name": "createStaffUser",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "createStaffUser",
++         "region": "europe-west2",
++         "repo": "live-ui/admin",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "createStaffUser",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "createStaffUser",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onCall",
++       },
++     ],
++     "region": "europe-west2",
++   },
++   {
++     "name": "dailyFirestoreBackup",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "dailyFirestoreBackup",
++         "region": "europe-west2",
++         "repo": "live-ui/admin",
++         "trigger": "onSchedule",
++       },
++       {
++         "codebase": "salown",
++         "name": "dailyFirestoreBackup",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onSchedule",
++       },
++       {
++         "codebase": "salown",
++         "name": "dailyFirestoreBackup",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onSchedule",
++       },
++     ],
++     "region": "europe-west2",
++   },
++   {
++     "name": "deleteStaffUser",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "deleteStaffUser",
++         "region": "europe-west2",
++         "repo": "live-ui/admin",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "deleteStaffUser",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "deleteStaffUser",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onCall",
++       },
++     ],
++     "region": "europe-west2",
++   },
++   {
++     "name": "provisionTenant",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "provisionTenant",
++         "region": "europe-west2",
++         "repo": "live-ui/admin",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "provisionTenant",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "provisionTenant",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onCall",
++       },
++     ],
++     "region": "europe-west2",
++   },
++   {
++     "name": "salownBookingConfirmationTrigger",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "salownBookingConfirmationTrigger",
++         "region": "europe-west2",
++         "repo": "live-ui/admin",
++         "trigger": "onDocumentCreated",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownBookingConfirmationTrigger",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onDocumentCreated",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownBookingConfirmationTrigger",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onDocumentCreated",
++       },
++     ],
++     "region": "europe-west2",
++   },
++   {
++     "name": "salownBookingConfirmedEmailTrigger",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "salownBookingConfirmedEmailTrigger",
++         "region": "europe-west2",
++         "repo": "live-ui/admin",
++         "trigger": "onDocumentUpdated",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownBookingConfirmedEmailTrigger",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onDocumentUpdated",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownBookingConfirmedEmailTrigger",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onDocumentUpdated",
++       },
++     ],
++     "region": "europe-west2",
++   },
++   {
++     "name": "salownBrevoWebhook",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "salownBrevoWebhook",
++         "region": "europe-west2",
++         "repo": "live-ui/admin",
++         "trigger": "onRequest",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownBrevoWebhook",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onRequest",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownBrevoWebhook",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onRequest",
++       },
++     ],
++     "region": "europe-west2",
++   },
++   {
++     "name": "salownCancelByToken",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "salownCancelByToken",
++         "region": "europe-west2",
++         "repo": "live-ui/admin",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownCancelByToken",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownCancelByToken",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onCall",
++       },
++     ],
++     "region": "europe-west2",
++   },
++   {
++     "name": "salownCancelClientPackage",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "salownCancelClientPackage",
++         "region": "europe-west2",
++         "repo": "live-ui/admin",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownCancelClientPackage",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownCancelClientPackage",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onCall",
++       },
++     ],
++     "region": "europe-west2",
++   },
++   {
++     "name": "salownCheckoutBooking",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "salownCheckoutBooking",
++         "region": "europe-west2",
++         "repo": "live-ui/admin",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownCheckoutBooking",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownCheckoutBooking",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onCall",
++       },
++     ],
++     "region": "europe-west2",
++   },
++   {
++     "name": "salownCleanupExpiredPending",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "salownCleanupExpiredPending",
++         "region": "europe-west2",
++         "repo": "live-ui/admin",
++         "trigger": "onSchedule",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownCleanupExpiredPending",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onSchedule",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownCleanupExpiredPending",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onSchedule",
++       },
++     ],
++     "region": "europe-west2",
++   },
++   {
++     "name": "salownCloseFinancePeriod",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "salownCloseFinancePeriod",
++         "region": "europe-west2",
++         "repo": "live-ui/admin",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownCloseFinancePeriod",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownCloseFinancePeriod",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onCall",
++       },
++     ],
++     "region": "europe-west2",
++   },
++   {
++     "name": "salownConnectCallback",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "salownConnectCallback",
++         "region": "europe-west2",
++         "repo": "live-ui/admin",
++         "trigger": "onRequest",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownConnectCallback",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onRequest",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownConnectCallback",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onRequest",
++       },
++     ],
++     "region": "europe-west2",
++   },
++   {
++     "name": "salownConnectDisconnect",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "salownConnectDisconnect",
++         "region": "europe-west2",
++         "repo": "live-ui/admin",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownConnectDisconnect",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownConnectDisconnect",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onCall",
++       },
++     ],
++     "region": "europe-west2",
++   },
++   {
++     "name": "salownConnectStart",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "salownConnectStart",
++         "region": "europe-west2",
++         "repo": "live-ui/admin",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownConnectStart",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownConnectStart",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onCall",
++       },
++     ],
++     "region": "europe-west2",
++   },
++   {
++     "name": "salownConnectStatus",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "salownConnectStatus",
++         "region": "europe-west2",
++         "repo": "live-ui/admin",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownConnectStatus",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownConnectStatus",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onCall",
++       },
++     ],
++     "region": "europe-west2",
++   },
++   {
++     "name": "salownConnectWebhook",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "salownConnectWebhook",
++         "region": "europe-west2",
++         "repo": "live-ui/admin",
++         "trigger": "onRequest",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownConnectWebhook",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onRequest",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownConnectWebhook",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onRequest",
++       },
++     ],
++     "region": "europe-west2",
++   },
++   {
++     "name": "salownCreateAdminBooking",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "salownCreateAdminBooking",
++         "region": "europe-west2",
++         "repo": "live-ui/admin",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownCreateAdminBooking",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownCreateAdminBooking",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onCall",
++       },
++     ],
++     "region": "europe-west2",
++   },
++   {
++     "name": "salownCreateBlock",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "salownCreateBlock",
++         "region": "europe-west2",
++         "repo": "live-ui/admin",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownCreateBlock",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownCreateBlock",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onCall",
++       },
++     ],
++     "region": "europe-west2",
++   },
++   {
++     "name": "salownCreateBooking",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "salownCreateBooking",
++         "region": "europe-west2",
++         "repo": "live-ui/admin",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownCreateBooking",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownCreateBooking",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onCall",
++       },
++     ],
++     "region": "europe-west2",
++   },
++   {
++     "name": "salownCreateCheckoutSession",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "salownCreateCheckoutSession",
++         "region": "europe-west2",
++         "repo": "live-ui/admin",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownCreateCheckoutSession",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownCreateCheckoutSession",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onCall",
++       },
++     ],
++     "region": "europe-west2",
++   },
++   {
++     "name": "salownCreateProductSale",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "salownCreateProductSale",
++         "region": "europe-west2",
++         "repo": "live-ui/admin",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownCreateProductSale",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownCreateProductSale",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onCall",
++       },
++     ],
++     "region": "europe-west2",
++   },
++   {
++     "name": "salownCreateStaffBooking",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "salownCreateStaffBooking",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownCreateStaffBooking",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onCall",
++       },
++     ],
++     "region": "europe-west2",
++   },
++   {
++     "name": "salownCreateStaffProductSale",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "salownCreateStaffProductSale",
++         "region": "europe-west2",
++         "repo": "live-ui/admin",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownCreateStaffProductSale",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownCreateStaffProductSale",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onCall",
++       },
++     ],
++     "region": "europe-west2",
++   },
++   {
++     "name": "salownCreateStaffWalkIn",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "salownCreateStaffWalkIn",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownCreateStaffWalkIn",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onCall",
++       },
++     ],
++     "region": "europe-west2",
++   },
++   {
++     "name": "salownCreateTreatmentSession",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "salownCreateTreatmentSession",
++         "region": "europe-west2",
++         "repo": "live-ui/admin",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownCreateTreatmentSession",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownCreateTreatmentSession",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onCall",
++       },
++     ],
++     "region": "europe-west2",
++   },
++   {
++     "name": "salownCreateWalkIn",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "salownCreateWalkIn",
++         "region": "europe-west2",
++         "repo": "live-ui/admin",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownCreateWalkIn",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownCreateWalkIn",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onCall",
++       },
++     ],
++     "region": "europe-west2",
++   },
++   {
++     "name": "salownDeleteBlock",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "salownDeleteBlock",
++         "region": "europe-west2",
++         "repo": "live-ui/admin",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownDeleteBlock",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownDeleteBlock",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onCall",
++       },
++     ],
++     "region": "europe-west2",
++   },
++   {
++     "name": "salownEditBookingForm",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "salownEditBookingForm",
++         "region": "europe-west2",
++         "repo": "live-ui/admin",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownEditBookingForm",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownEditBookingForm",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onCall",
++       },
++     ],
++     "region": "europe-west2",
++   },
++   {
++     "name": "salownEmailExitAgreement",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "salownEmailExitAgreement",
++         "region": "europe-west2",
++         "repo": "live-ui/admin",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownEmailExitAgreement",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownEmailExitAgreement",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onCall",
++       },
++     ],
++     "region": "europe-west2",
++   },
++   {
++     "name": "salownEmailOptOut",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "salownEmailOptOut",
++         "region": "europe-west2",
++         "repo": "live-ui/admin",
++         "trigger": "onRequest",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownEmailOptOut",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onRequest",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownEmailOptOut",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onRequest",
++       },
++     ],
++     "region": "europe-west2",
++   },
++   {
++     "name": "salownGetBookingByToken",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "salownGetBookingByToken",
++         "region": "europe-west2",
++         "repo": "live-ui/admin",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownGetBookingByToken",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownGetBookingByToken",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onCall",
++       },
++     ],
++     "region": "europe-west2",
++   },
++   {
++     "name": "salownGetBusySlots",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "salownGetBusySlots",
++         "region": "europe-west2",
++         "repo": "live-ui/admin",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownGetBusySlots",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownGetBusySlots",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onCall",
++       },
++     ],
++     "region": "europe-west2",
++   },
++   {
++     "name": "salownGetExitByToken",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "salownGetExitByToken",
++         "region": "europe-west2",
++         "repo": "live-ui/admin",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownGetExitByToken",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownGetExitByToken",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onCall",
++       },
++     ],
++     "region": "europe-west2",
++   },
++   {
++     "name": "salownIcalFeed",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "salownIcalFeed",
++         "region": "europe-west2",
++         "repo": "live-ui/admin",
++         "trigger": "onRequest",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownIcalFeed",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onRequest",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownIcalFeed",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onRequest",
++       },
++     ],
++     "region": "europe-west2",
++   },
++   {
++     "name": "salownInboundEmail",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "salownInboundEmail",
++         "region": "europe-west2",
++         "repo": "live-ui/admin",
++         "trigger": "onRequest",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownInboundEmail",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onRequest",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownInboundEmail",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onRequest",
++       },
++     ],
++     "region": "europe-west2",
++   },
++   {
++     "name": "salownLandingChat",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "salownLandingChat",
++         "region": "europe-west2",
++         "repo": "live-ui/admin",
++         "trigger": "onRequest",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownLandingChat",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onRequest",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownLandingChat",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onRequest",
++       },
++     ],
++     "region": "europe-west2",
++   },
++   {
++     "name": "salownManualImport",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "salownManualImport",
++         "region": "europe-west2",
++         "repo": "live-ui/admin",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownManualImport",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownManualImport",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onCall",
++       },
++     ],
++     "region": "europe-west2",
++   },
++   {
++     "name": "salownNotifyBookingConfirmedPush",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "salownNotifyBookingConfirmedPush",
++         "region": "europe-west2",
++         "repo": "live-ui/admin",
++         "trigger": "onDocumentUpdated",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownNotifyBookingConfirmedPush",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onDocumentUpdated",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownNotifyBookingConfirmedPush",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onDocumentUpdated",
++       },
++     ],
++     "region": "europe-west2",
++   },
++   {
++     "name": "salownNotifyBookingCreated",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "salownNotifyBookingCreated",
++         "region": "europe-west2",
++         "repo": "live-ui/admin",
++         "trigger": "onDocumentCreated",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownNotifyBookingCreated",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onDocumentCreated",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownNotifyBookingCreated",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onDocumentCreated",
++       },
++     ],
++     "region": "europe-west2",
++   },
++   {
++     "name": "salownNotifyBookingPush",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "salownNotifyBookingPush",
++         "region": "europe-west2",
++         "repo": "live-ui/admin",
++         "trigger": "onDocumentCreated",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownNotifyBookingPush",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onDocumentCreated",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownNotifyBookingPush",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onDocumentCreated",
++       },
++     ],
++     "region": "europe-west2",
++   },
++   {
++     "name": "salownNotifyBookingUpdated",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "salownNotifyBookingUpdated",
++         "region": "europe-west2",
++         "repo": "live-ui/admin",
++         "trigger": "onDocumentUpdated",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownNotifyBookingUpdated",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onDocumentUpdated",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownNotifyBookingUpdated",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onDocumentUpdated",
++       },
++     ],
++     "region": "europe-west2",
++   },
++   {
++     "name": "salownPackageSession",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "salownPackageSession",
++         "region": "europe-west2",
++         "repo": "live-ui/admin",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownPackageSession",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownPackageSession",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onCall",
++       },
++     ],
++     "region": "europe-west2",
++   },
++   {
++     "name": "salownParseEmails",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "salownParseEmails",
++         "region": "europe-west2",
++         "repo": "live-ui/admin",
++         "trigger": "onSchedule",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownParseEmails",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onSchedule",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownParseEmails",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onSchedule",
++       },
++     ],
++     "region": "europe-west2",
++   },
++   {
++     "name": "salownParseInboxDispatch",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "salownParseInboxDispatch",
++         "region": "europe-west2",
++         "repo": "live-ui/admin",
++         "trigger": "onDocumentCreated",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownParseInboxDispatch",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onDocumentCreated",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownParseInboxDispatch",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onDocumentCreated",
++       },
++     ],
++     "region": "europe-west2",
++   },
++   {
++     "name": "salownPatchBookingDetails",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "salownPatchBookingDetails",
++         "region": "europe-west2",
++         "repo": "live-ui/admin",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownPatchBookingDetails",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownPatchBookingDetails",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onCall",
++       },
++     ],
++     "region": "europe-west2",
++   },
++   {
++     "name": "salownProvisionParseAddress",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "salownProvisionParseAddress",
++         "region": "europe-west2",
++         "repo": "live-ui/admin",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownProvisionParseAddress",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownProvisionParseAddress",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onCall",
++       },
++     ],
++     "region": "europe-west2",
++   },
++   {
++     "name": "salownProvisionTeamMember",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "salownProvisionTeamMember",
++         "region": "europe-west2",
++         "repo": "live-ui/admin",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownProvisionTeamMember",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownProvisionTeamMember",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onCall",
++       },
++     ],
++     "region": "europe-west2",
++   },
++   {
++     "name": "salownPublishProfile",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "salownPublishProfile",
++         "region": "europe-west2",
++         "repo": "live-ui/admin",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownPublishProfile",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownPublishProfile",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onCall",
++       },
++     ],
++     "region": "europe-west2",
++   },
++   {
++     "name": "salownPublishPublicBookingFlags",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "salownPublishPublicBookingFlags",
++         "region": "europe-west2",
++         "repo": "live-ui/admin",
++         "trigger": "onDocumentWritten",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownPublishPublicBookingFlags",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onDocumentWritten",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownPublishPublicBookingFlags",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onDocumentWritten",
++       },
++     ],
++     "region": "europe-west2",
++   },
++   {
++     "name": "salownPublishPublicCampaign",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "salownPublishPublicCampaign",
++         "region": "europe-west2",
++         "repo": "live-ui/admin",
++         "trigger": "onDocumentWritten",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownPublishPublicCampaign",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onDocumentWritten",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownPublishPublicCampaign",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onDocumentWritten",
++       },
++     ],
++     "region": "europe-west2",
++   },
++   {
++     "name": "salownReassignBooking",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "salownReassignBooking",
++         "region": "europe-west2",
++         "repo": "live-ui/admin",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownReassignBooking",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownReassignBooking",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onCall",
++       },
++     ],
++     "region": "europe-west2",
++   },
++   {
++     "name": "salownRecordFollowUp",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "salownRecordFollowUp",
++         "region": "europe-west2",
++         "repo": "live-ui/admin",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownRecordFollowUp",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownRecordFollowUp",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onCall",
++       },
++     ],
++     "region": "europe-west2",
++   },
++   {
++     "name": "salownRecordPackagePayment",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "salownRecordPackagePayment",
++         "region": "europe-west2",
++         "repo": "live-ui/admin",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownRecordPackagePayment",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownRecordPackagePayment",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onCall",
++       },
++     ],
++     "region": "europe-west2",
++   },
++   {
++     "name": "salownRepublishOnSettingsEdit",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "salownRepublishOnSettingsEdit",
++         "region": "europe-west2",
++         "repo": "live-ui/admin",
++         "trigger": "onDocumentUpdated",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownRepublishOnSettingsEdit",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onDocumentUpdated",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownRepublishOnSettingsEdit",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onDocumentUpdated",
++       },
++     ],
++     "region": "europe-west2",
++   },
++   {
++     "name": "salownRepublishProfileOnEdit",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "salownRepublishProfileOnEdit",
++         "region": "europe-west2",
++         "repo": "live-ui/admin",
++         "trigger": "onDocumentUpdated",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownRepublishProfileOnEdit",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onDocumentUpdated",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownRepublishProfileOnEdit",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onDocumentUpdated",
++       },
++     ],
++     "region": "europe-west2",
++   },
++   {
++     "name": "salownRescheduleByToken",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "salownRescheduleByToken",
++         "region": "europe-west2",
++         "repo": "live-ui/admin",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownRescheduleByToken",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownRescheduleByToken",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onCall",
++       },
++     ],
++     "region": "europe-west2",
++   },
++   {
++     "name": "salownReviewProfile",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "salownReviewProfile",
++         "region": "europe-west2",
++         "repo": "live-ui/admin",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownReviewProfile",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownReviewProfile",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onCall",
++       },
++     ],
++     "region": "europe-west2",
++   },
++   {
++     "name": "salownRevokeParseAddress",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "salownRevokeParseAddress",
++         "region": "europe-west2",
++         "repo": "live-ui/admin",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownRevokeParseAddress",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownRevokeParseAddress",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onCall",
++       },
++     ],
++     "region": "europe-west2",
++   },
++   {
++     "name": "salownRotaBootstrapTenant",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "salownRotaBootstrapTenant",
++         "region": "europe-west2",
++         "repo": "live-ui/admin",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownRotaBootstrapTenant",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownRotaBootstrapTenant",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onCall",
++       },
++     ],
++     "region": "europe-west2",
++   },
++   {
++     "name": "salownRotaSeedTenantHistory",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "salownRotaSeedTenantHistory",
++         "region": "europe-west2",
++         "repo": "live-ui/admin",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownRotaSeedTenantHistory",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownRotaSeedTenantHistory",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onCall",
++       },
++     ],
++     "region": "europe-west2",
++   },
++   {
++     "name": "salownRotaTransaction",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "salownRotaTransaction",
++         "region": "europe-west2",
++         "repo": "live-ui/admin",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownRotaTransaction",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownRotaTransaction",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onCall",
++       },
++     ],
++     "region": "europe-west2",
++   },
++   {
++     "name": "salownSaveCheckoutSettings",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "salownSaveCheckoutSettings",
++         "region": "europe-west2",
++         "repo": "live-ui/admin",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownSaveCheckoutSettings",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownSaveCheckoutSettings",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onCall",
++       },
++     ],
++     "region": "europe-west2",
++   },
++   {
++     "name": "salownSavePackageDefinition",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "salownSavePackageDefinition",
++         "region": "europe-west2",
++         "repo": "live-ui/admin",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownSavePackageDefinition",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownSavePackageDefinition",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onCall",
++       },
++     ],
++     "region": "europe-west2",
++   },
++   {
++     "name": "salownSavePackageSettings",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "salownSavePackageSettings",
++         "region": "europe-west2",
++         "repo": "live-ui/admin",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownSavePackageSettings",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownSavePackageSettings",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onCall",
++       },
++     ],
++     "region": "europe-west2",
++   },
++   {
++     "name": "salownSellPackage",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "salownSellPackage",
++         "region": "europe-west2",
++         "repo": "live-ui/admin",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownSellPackage",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownSellPackage",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onCall",
++       },
++     ],
++     "region": "europe-west2",
++   },
++   {
++     "name": "salownSendBookingConfirmation",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "salownSendBookingConfirmation",
++         "region": "europe-west2",
++         "repo": "live-ui/admin",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownSendBookingConfirmation",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownSendBookingConfirmation",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onCall",
++       },
++     ],
++     "region": "europe-west2",
++   },
++   {
++     "name": "salownSendCancellationEmail",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "salownSendCancellationEmail",
++         "region": "europe-west2",
++         "repo": "live-ui/admin",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownSendCancellationEmail",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownSendCancellationEmail",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onCall",
++       },
++     ],
++     "region": "europe-west2",
++   },
++   {
++     "name": "salownSendExitSignLink",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "salownSendExitSignLink",
++         "region": "europe-west2",
++         "repo": "live-ui/admin",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownSendExitSignLink",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownSendExitSignLink",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onCall",
++       },
++     ],
++     "region": "europe-west2",
++   },
++   {
++     "name": "salownSendLoyaltyEmail",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "salownSendLoyaltyEmail",
++         "region": "europe-west2",
++         "repo": "live-ui/admin",
++         "trigger": "onDocumentUpdated",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownSendLoyaltyEmail",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onDocumentUpdated",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownSendLoyaltyEmail",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onDocumentUpdated",
++       },
++     ],
++     "region": "europe-west2",
++   },
++   {
++     "name": "salownSendManualLoyaltyAdjustmentEmail",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "salownSendManualLoyaltyAdjustmentEmail",
++         "region": "europe-west2",
++         "repo": "live-ui/admin",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownSendManualLoyaltyAdjustmentEmail",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownSendManualLoyaltyAdjustmentEmail",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onCall",
++       },
++     ],
++     "region": "europe-west2",
++   },
++   {
++     "name": "salownSendReminder",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "salownSendReminder",
++         "region": "europe-west2",
++         "repo": "live-ui/admin",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownSendReminder",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownSendReminder",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onCall",
++       },
++     ],
++     "region": "europe-west2",
++   },
++   {
++     "name": "salownSetEmailConsent",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "salownSetEmailConsent",
++         "region": "europe-west2",
++         "repo": "live-ui/admin",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownSetEmailConsent",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownSetEmailConsent",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onCall",
++       },
++     ],
++     "region": "europe-west2",
++   },
++   {
++     "name": "salownSetStaffRole",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "salownSetStaffRole",
++         "region": "europe-west2",
++         "repo": "live-ui/admin",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownSetStaffRole",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownSetStaffRole",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onCall",
++       },
++     ],
++     "region": "europe-west2",
++   },
++   {
++     "name": "salownSignExitByToken",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "salownSignExitByToken",
++         "region": "europe-west2",
++         "repo": "live-ui/admin",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownSignExitByToken",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownSignExitByToken",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onCall",
++       },
++     ],
++     "region": "europe-west2",
++   },
++   {
++     "name": "salownStaffLifecycle",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "salownStaffLifecycle",
++         "region": "europe-west2",
++         "repo": "live-ui/admin",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownStaffLifecycle",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownStaffLifecycle",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onCall",
++       },
++     ],
++     "region": "europe-west2",
++   },
++   {
++     "name": "salownStripeWebhook",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "salownStripeWebhook",
++         "region": "europe-west2",
++         "repo": "live-ui/admin",
++         "trigger": "onRequest",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownStripeWebhook",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onRequest",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownStripeWebhook",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onRequest",
++       },
++     ],
++     "region": "europe-west2",
++   },
++   {
++     "name": "salownSyncPublicBooking",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "salownSyncPublicBooking",
++         "region": "europe-west2",
++         "repo": "live-ui/admin",
++         "trigger": "onDocumentWritten",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownSyncPublicBooking",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onDocumentWritten",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownSyncPublicBooking",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onDocumentWritten",
++       },
++     ],
++     "region": "europe-west2",
++   },
++   {
++     "name": "salownTransitionTreatmentSession",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "salownTransitionTreatmentSession",
++         "region": "europe-west2",
++         "repo": "live-ui/admin",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownTransitionTreatmentSession",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownTransitionTreatmentSession",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onCall",
++       },
++     ],
++     "region": "europe-west2",
++   },
++   {
++     "name": "salownWhatsAppOnBookingConfirmed",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "salownWhatsAppOnBookingConfirmed",
++         "region": "europe-west2",
++         "repo": "live-ui/admin",
++         "trigger": "onDocumentUpdated",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownWhatsAppOnBookingConfirmed",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onDocumentUpdated",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownWhatsAppOnBookingConfirmed",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onDocumentUpdated",
++       },
++     ],
++     "region": "europe-west2",
++   },
++   {
++     "name": "salownWhatsAppOnBookingCreated",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "salownWhatsAppOnBookingCreated",
++         "region": "europe-west2",
++         "repo": "live-ui/admin",
++         "trigger": "onDocumentCreated",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownWhatsAppOnBookingCreated",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onDocumentCreated",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownWhatsAppOnBookingCreated",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onDocumentCreated",
++       },
++     ],
++     "region": "europe-west2",
++   },
++   {
++     "name": "salownWhatsAppWebhook",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "salownWhatsAppWebhook",
++         "region": "europe-west2",
++         "repo": "live-ui/admin",
++         "trigger": "onRequest",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownWhatsAppWebhook",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onRequest",
++       },
++       {
++         "codebase": "salown",
++         "name": "salownWhatsAppWebhook",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onRequest",
++       },
++     ],
++     "region": "europe-west2",
++   },
++   {
++     "name": "sendAbandonedCart",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "sendAbandonedCart",
++         "region": "europe-west2",
++         "repo": "live-ui/admin",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "sendAbandonedCart",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "sendAbandonedCart",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onCall",
++       },
++     ],
++     "region": "europe-west2",
++   },
++   {
++     "name": "sendCampaignBulk",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "sendCampaignBulk",
++         "region": "europe-west2",
++         "repo": "live-ui/admin",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "sendCampaignBulk",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "sendCampaignBulk",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onCall",
++       },
++     ],
++     "region": "europe-west2",
++   },
++   {
++     "name": "sendMarketingEmail",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "sendMarketingEmail",
++         "region": "europe-west2",
++         "repo": "live-ui/admin",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "sendMarketingEmail",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "sendMarketingEmail",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onCall",
++       },
++     ],
++     "region": "europe-west2",
++   },
++   {
++     "name": "sendPasswordResetPublic",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "sendPasswordResetPublic",
++         "region": "europe-west2",
++         "repo": "live-ui/admin",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "sendPasswordResetPublic",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "sendPasswordResetPublic",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onCall",
++       },
++     ],
++     "region": "europe-west2",
++   },
++   {
++     "name": "sendStaffPasswordReset",
++     "owners": [
++       {
++         "codebase": "salown",
++         "name": "sendStaffPasswordReset",
++         "region": "europe-west2",
++         "repo": "live-ui/admin",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "sendStaffPasswordReset",
++         "region": "europe-west2",
++         "repo": "live-ui/staff",
++         "trigger": "onCall",
++       },
++       {
++         "codebase": "salown",
++         "name": "sendStaffPasswordReset",
++         "region": "europe-west2",
++         "repo": "salown-app",
++         "trigger": "onCall",
++       },
++     ],
++     "region": "europe-west2",
++   },
++ ]
+
+ ❯ ops/functions-ownership.test.js:206:31
+    204|
+    205|   it('there is no same-name/same-region collision live right now', () …
+    206|     expect(report.collisions).toEqual([]);
+       |                               ^
+    207|   });
+    208|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/17]⎯
+
+ FAIL  ops/functions-ownership.test.js > the workspace collision matrix > reports no workspace problem, and prints a matrix naming name+region+codebase+repo
+AssertionError: expected [ …(93) ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   "codebase 'salown' is declared by 3 repos (live-ui/admin, live-ui/staff, salown-app) — the codebase label no longer identifies an owner",
++   "COLLISION: 'addToWaitlist' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "COLLISION: 'adminGetOwnerActivity' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "COLLISION: 'adminPurgeTenant' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "COLLISION: 'approveApplication' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "COLLISION: 'askAI' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "COLLISION: 'createStaffUser' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "COLLISION: 'dailyFirestoreBackup' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "COLLISION: 'deleteStaffUser' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "COLLISION: 'provisionTenant' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "COLLISION: 'salownBookingConfirmationTrigger' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "COLLISION: 'salownBookingConfirmedEmailTrigger' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "COLLISION: 'salownBrevoWebhook' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "COLLISION: 'salownCancelByToken' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "COLLISION: 'salownCancelClientPackage' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "COLLISION: 'salownCheckoutBooking' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "COLLISION: 'salownCleanupExpiredPending' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "COLLISION: 'salownCloseFinancePeriod' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "COLLISION: 'salownConnectCallback' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "COLLISION: 'salownConnectDisconnect' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "COLLISION: 'salownConnectStart' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "COLLISION: 'salownConnectStatus' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "COLLISION: 'salownConnectWebhook' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "COLLISION: 'salownCreateAdminBooking' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "COLLISION: 'salownCreateBlock' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "COLLISION: 'salownCreateBooking' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "COLLISION: 'salownCreateCheckoutSession' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "COLLISION: 'salownCreateProductSale' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "COLLISION: 'salownCreateStaffBooking' is exported by salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "COLLISION: 'salownCreateStaffProductSale' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "COLLISION: 'salownCreateStaffWalkIn' is exported by salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "COLLISION: 'salownCreateTreatmentSession' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "COLLISION: 'salownCreateWalkIn' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "COLLISION: 'salownDeleteBlock' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "COLLISION: 'salownEditBookingForm' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "COLLISION: 'salownEmailExitAgreement' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "COLLISION: 'salownEmailOptOut' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "COLLISION: 'salownGetBookingByToken' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "COLLISION: 'salownGetBusySlots' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "COLLISION: 'salownGetExitByToken' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "COLLISION: 'salownIcalFeed' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "COLLISION: 'salownInboundEmail' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "COLLISION: 'salownLandingChat' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "COLLISION: 'salownManualImport' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "COLLISION: 'salownNotifyBookingConfirmedPush' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "COLLISION: 'salownNotifyBookingCreated' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "COLLISION: 'salownNotifyBookingPush' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "COLLISION: 'salownNotifyBookingUpdated' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "COLLISION: 'salownPackageSession' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "COLLISION: 'salownParseEmails' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "COLLISION: 'salownParseInboxDispatch' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "COLLISION: 'salownPatchBookingDetails' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "COLLISION: 'salownProvisionParseAddress' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "COLLISION: 'salownProvisionTeamMember' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "COLLISION: 'salownPublishProfile' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "COLLISION: 'salownPublishPublicBookingFlags' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "COLLISION: 'salownPublishPublicCampaign' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "COLLISION: 'salownReassignBooking' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "COLLISION: 'salownRecordFollowUp' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "COLLISION: 'salownRecordPackagePayment' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "COLLISION: 'salownRepublishOnSettingsEdit' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "COLLISION: 'salownRepublishProfileOnEdit' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "COLLISION: 'salownRescheduleByToken' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "COLLISION: 'salownReviewProfile' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "COLLISION: 'salownRevokeParseAddress' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "COLLISION: 'salownRotaBootstrapTenant' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "COLLISION: 'salownRotaSeedTenantHistory' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "COLLISION: 'salownRotaTransaction' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "COLLISION: 'salownSaveCheckoutSettings' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "COLLISION: 'salownSavePackageDefinition' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "COLLISION: 'salownSavePackageSettings' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "COLLISION: 'salownSellPackage' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "COLLISION: 'salownSendBookingConfirmation' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "COLLISION: 'salownSendCancellationEmail' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "COLLISION: 'salownSendExitSignLink' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "COLLISION: 'salownSendLoyaltyEmail' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "COLLISION: 'salownSendManualLoyaltyAdjustmentEmail' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "COLLISION: 'salownSendReminder' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "COLLISION: 'salownSetEmailConsent' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "COLLISION: 'salownSetStaffRole' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "COLLISION: 'salownSignExitByToken' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "COLLISION: 'salownStaffLifecycle' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "COLLISION: 'salownStripeWebhook' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "COLLISION: 'salownSyncPublicBooking' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "COLLISION: 'salownTransitionTreatmentSession' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "COLLISION: 'salownWhatsAppOnBookingConfirmed' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "COLLISION: 'salownWhatsAppOnBookingCreated' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "COLLISION: 'salownWhatsAppWebhook' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "COLLISION: 'sendAbandonedCart' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "COLLISION: 'sendCampaignBulk' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "COLLISION: 'sendMarketingEmail' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "COLLISION: 'sendPasswordResetPublic' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "COLLISION: 'sendStaffPasswordReset' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++ ]
+
+ ❯ ops/functions-ownership.test.js:246:29
+    244|
+    245|   it('reports no workspace problem, and prints a matrix naming name+re…
+    246|     expect(report.problems).toEqual([]);
+       |                             ^
+    247|     expect(report.ok).toBe(true);
+    248|     const text = formatMatrix(report);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/17]⎯
+
+ FAIL  ops/functions-ownership.test.js > POSITIVE CONTROL — the same name in a distinct region follows existing policy > a valid salown target passes
+AssertionError: expected [ …(93) ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   "workspace: codebase 'salown' is declared by 3 repos (live-ui/admin, live-ui/staff, salown-app) — the codebase label no longer identifies an owner",
++   "workspace: COLLISION: 'addToWaitlist' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'adminGetOwnerActivity' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'adminPurgeTenant' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'approveApplication' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'askAI' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'createStaffUser' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'dailyFirestoreBackup' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'deleteStaffUser' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'provisionTenant' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownBookingConfirmationTrigger' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownBookingConfirmedEmailTrigger' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownBrevoWebhook' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownCancelByToken' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownCancelClientPackage' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownCheckoutBooking' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownCleanupExpiredPending' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownCloseFinancePeriod' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownConnectCallback' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownConnectDisconnect' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownConnectStart' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownConnectStatus' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownConnectWebhook' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownCreateAdminBooking' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownCreateBlock' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownCreateBooking' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownCreateCheckoutSession' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownCreateProductSale' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownCreateStaffBooking' is exported by salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownCreateStaffProductSale' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownCreateStaffWalkIn' is exported by salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownCreateTreatmentSession' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownCreateWalkIn' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownDeleteBlock' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownEditBookingForm' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownEmailExitAgreement' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownEmailOptOut' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownGetBookingByToken' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownGetBusySlots' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownGetExitByToken' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownIcalFeed' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownInboundEmail' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownLandingChat' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownManualImport' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownNotifyBookingConfirmedPush' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownNotifyBookingCreated' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownNotifyBookingPush' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownNotifyBookingUpdated' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownPackageSession' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownParseEmails' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownParseInboxDispatch' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownPatchBookingDetails' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownProvisionParseAddress' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownProvisionTeamMember' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownPublishProfile' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownPublishPublicBookingFlags' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownPublishPublicCampaign' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownReassignBooking' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownRecordFollowUp' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownRecordPackagePayment' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownRepublishOnSettingsEdit' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownRepublishProfileOnEdit' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownRescheduleByToken' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownReviewProfile' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownRevokeParseAddress' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownRotaBootstrapTenant' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownRotaSeedTenantHistory' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownRotaTransaction' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownSaveCheckoutSettings' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownSavePackageDefinition' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownSavePackageSettings' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownSellPackage' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownSendBookingConfirmation' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownSendCancellationEmail' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownSendExitSignLink' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownSendLoyaltyEmail' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownSendManualLoyaltyAdjustmentEmail' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownSendReminder' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownSetEmailConsent' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownSetStaffRole' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownSignExitByToken' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownStaffLifecycle' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownStripeWebhook' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownSyncPublicBooking' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownTransitionTreatmentSession' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownWhatsAppOnBookingConfirmed' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownWhatsAppOnBookingCreated' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownWhatsAppWebhook' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'sendAbandonedCart' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'sendCampaignBulk' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'sendMarketingEmail' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'sendPasswordResetPublic' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'sendStaffPasswordReset' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++ ]
+
+ ❯ ops/functions-ownership.test.js:413:24
+    411|   it('a valid salown target passes', () => {
+    412|     const v = validateSelectors(['functions:salown:salownRotaTransacti…
+    413|     expect(v.failures).toEqual([]);
+       |                        ^
+    414|     expect(v.ok).toBe(true);
+    415|     expect(v.targets).toEqual([{ selector: 'functions:salown:salownRot…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/17]⎯
+
+ FAIL  ops/functions-ownership.test.js > POSITIVE CONTROL — the same name in a distinct region follows existing policy > several valid salown targets pass together
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ ops/functions-ownership.test.js:420:18
+    418|   it('several valid salown targets pass together', () => {
+    419|     const v = validateSelectors(['functions:salown:askAI,functions:sal…
+    420|     expect(v.ok).toBe(true);
+       |                  ^
+    421|     expect(v.targets.map((t) => t.fn)).toEqual(['askAI', 'approveAppli…
+    422|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/17]⎯
+
+ FAIL  ops/functions-ownership.test.js > scripts/deploy-functions.sh — the guard runs before firebase-tools > a valid bare function name passes and is normalised to the three-part selector
+AssertionError: expected 1 to be +0 // Object.is equality
+
+- Expected
++ Received
+
+- 0
++ 1
+
+ ❯ ops/functions-ownership.test.js:526:20
+    524|   it('a valid bare function name passes and is normalised to the three…
+    525|     const r = runCheck(['salownRotaTransaction']);
+    526|     expect(r.code).toBe(0);
+       |                    ^
+    527|     expect(r.out).toContain('functions:salown:salownRotaTransaction');
+    528|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/17]⎯
+
+ FAIL  ops/functions-ownership.test.js > every existing valid targeted deploy command still stands > the wrapper accepts the shape every DEPLOYMENT_STATUS.md release used
+AssertionError: historical selector list rejected: functions:salown:salownGetBusySlots: expected [ …(93) ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   "workspace: codebase 'salown' is declared by 3 repos (live-ui/admin, live-ui/staff, salown-app) — the codebase label no longer identifies an owner",
++   "workspace: COLLISION: 'addToWaitlist' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'adminGetOwnerActivity' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'adminPurgeTenant' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'approveApplication' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'askAI' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'createStaffUser' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'dailyFirestoreBackup' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'deleteStaffUser' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'provisionTenant' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownBookingConfirmationTrigger' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownBookingConfirmedEmailTrigger' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownBrevoWebhook' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownCancelByToken' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownCancelClientPackage' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownCheckoutBooking' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownCleanupExpiredPending' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownCloseFinancePeriod' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownConnectCallback' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownConnectDisconnect' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownConnectStart' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownConnectStatus' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownConnectWebhook' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownCreateAdminBooking' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownCreateBlock' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownCreateBooking' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownCreateCheckoutSession' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownCreateProductSale' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownCreateStaffBooking' is exported by salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownCreateStaffProductSale' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownCreateStaffWalkIn' is exported by salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownCreateTreatmentSession' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownCreateWalkIn' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownDeleteBlock' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownEditBookingForm' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownEmailExitAgreement' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownEmailOptOut' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownGetBookingByToken' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownGetBusySlots' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownGetExitByToken' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownIcalFeed' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownInboundEmail' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownLandingChat' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownManualImport' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownNotifyBookingConfirmedPush' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownNotifyBookingCreated' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownNotifyBookingPush' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownNotifyBookingUpdated' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownPackageSession' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownParseEmails' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownParseInboxDispatch' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownPatchBookingDetails' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownProvisionParseAddress' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownProvisionTeamMember' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownPublishProfile' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownPublishPublicBookingFlags' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownPublishPublicCampaign' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownReassignBooking' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownRecordFollowUp' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownRecordPackagePayment' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownRepublishOnSettingsEdit' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownRepublishProfileOnEdit' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownRescheduleByToken' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownReviewProfile' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownRevokeParseAddress' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownRotaBootstrapTenant' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownRotaSeedTenantHistory' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownRotaTransaction' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownSaveCheckoutSettings' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownSavePackageDefinition' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownSavePackageSettings' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownSellPackage' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownSendBookingConfirmation' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownSendCancellationEmail' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownSendExitSignLink' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownSendLoyaltyEmail' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownSendManualLoyaltyAdjustmentEmail' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownSendReminder' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownSetEmailConsent' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownSetStaffRole' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownSignExitByToken' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownStaffLifecycle' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownStripeWebhook' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownSyncPublicBooking' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownTransitionTreatmentSession' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownWhatsAppOnBookingConfirmed' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownWhatsAppOnBookingCreated' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'salownWhatsAppWebhook' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'sendAbandonedCart' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'sendCampaignBulk' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'sendMarketingEmail' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'sendPasswordResetPublic' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++   "workspace: COLLISION: 'sendStaffPasswordReset' is exported by salown (live-ui/admin) and salown (live-ui/staff) and salown (salown-app), both in europe-west2 — one Cloud Function, two builds, last deploy wins",
++ ]
+
+ ❯ ops/functions-ownership.test.js:584:82
+    582|     ]) {
+    583|       const v = validateSelectors(past, report);
+    584|       expect(v.failures, `historical selector list rejected: ${past.jo…
+       |                                                                                  ^
+    585|       expect(v.targets).toHaveLength(past.length);
+    586|     }
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/17]⎯
+
+ FAIL  ops/rules-authority.test.js > exactly one deployable Firestore rules authority > finds exactly one config declaring a firestore rules/indexes target
+AssertionError: firestore-declaring configs: live-ui/admin/firebase.json, live-ui/staff/firebase.json, salown-app/firebase.json: expected [ 'live-ui/admin/firebase.json', …(2) ] to deeply equal [ 'salown-app/firebase.json' ]
+
+- Expected
++ Received
+
+  [
++   "live-ui/admin/firebase.json",
++   "live-ui/staff/firebase.json",
+    "salown-app/firebase.json",
+  ]
+
+ ❯ ops/rules-authority.test.js:83:8
+     81|     const paths = report.firestoreAuthorities.map((c) => c.path);
+     82|     expect(paths, `firestore-declaring configs: ${paths.join(', ') || …
+     83|       .toEqual([CANONICAL_CONFIG]);
+       |        ^
+     84|   });
+     85|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/17]⎯
+
+ FAIL  ops/rules-authority.test.js > no other entrypoint can publish a ruleset > no other firebase*.json declares a firestore block
+AssertionError: a second config that COULD deploy rules is a second thing to keep in sync, and the copy that drifts is found by an outage: expected [ …(2) ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   "live-ui/admin/firebase.json → live-ui/admin/firestore.rules, live-ui/admin/firestore.indexes.json",
++   "live-ui/staff/firebase.json → live-ui/staff/firestore.rules, live-ui/staff/firestore.indexes.json",
++ ]
+
+ ❯ ops/rules-authority.test.js:115:59
+    113|     );
+    114|     expect(offenders, 'a second config that COULD deploy rules is a se…
+    115|       + 'and the copy that drifts is found by an outage').toEqual([]);
+       |                                                           ^
+    116|   });
+    117|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/17]⎯
+
+ FAIL  ops/rules-authority.test.js > no other entrypoint can publish a ruleset > no file outside salown-app is named firestore.rules
+AssertionError: expected [ …(2) ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   "live-ui/admin/firestore.rules",
++   "live-ui/staff/firestore.rules",
++ ]
+
+ ❯ ops/rules-authority.test.js:134:43
+    132|     // `firestore` block away from being live authority again — which …
+    133|     // how three stale copies survived four years of "don't deploy fro…
+    134|     expect(report.strayDefaultNamedRules).toEqual([]);
+       |                                           ^
+    135|   });
+    136|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/17]⎯
+
+ FAIL  ops/rules-authority.test.js > no other entrypoint can publish a ruleset > no script outside salown-app runs a Firestore deploy
+AssertionError: expected [ …(6) ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   "live-ui/admin/ops/functionsOwnership.mjs (<no --only: blanket deploy>)",
++   "live-ui/admin/ops/rulesAuthority.mjs (<no --only: blanket deploy>,firestore:rules,firestore:rules`,<no --only: blanket deploy>,<no --only: blanket deploy>)",
++   "live-ui/admin/scripts/availabilityRulesParity.cjs (<no --only: blanket deploy>)",
++   "live-ui/staff/ops/functionsOwnership.mjs (<no --only: blanket deploy>)",
++   "live-ui/staff/ops/rulesAuthority.mjs (<no --only: blanket deploy>,firestore:rules,firestore:rules`,<no --only: blanket deploy>,<no --only: blanket deploy>)",
++   "live-ui/staff/scripts/availabilityRulesParity.cjs (<no --only: blanket deploy>)",
++ ]
+
+ ❯ ops/rules-authority.test.js:139:23
+    137|   it('no script outside salown-app runs a Firestore deploy', () => {
+    138|     const offenders = report.foreignDeployInvocations.map((f) => `${f.…
+    139|     expect(offenders).toEqual([]);
+       |                       ^
+    140|   });
+    141|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/17]⎯
+
+ FAIL  ops/rules-authority.test.js > sibling repos on a developer machine > whitecross-site still deploys Hosting, Functions and Storage
+AssertionError: whitecross-site/firebase.json missing: expected undefined to be defined
+ ❯ ops/rules-authority.test.js:372:57
+    370|     // outage for another.
+    371|     const wc = report.configs.find((c) => c.path === 'whitecross-site/…
+    372|     expect(wc, 'whitecross-site/firebase.json missing').toBeDefined();
+       |                                                         ^
+    373|     expect(wc.declaresHosting).toBe(true);
+    374|     expect(wc.declaresFunctions).toBe(true);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[11/17]⎯
+
+ FAIL  ops/rules-authority.test.js > sibling repos on a developer machine > whitecross-site/barber-panel still declares its hosting target
+AssertionError: expected undefined to be defined
+ ❯ ops/rules-authority.test.js:381:16
+    379|   it('whitecross-site/barber-panel still declares its hosting target',…
+    380|     const bp = report.configs.find((c) => c.path === 'whitecross-site/…
+    381|     expect(bp).toBeDefined();
+       |                ^
+    382|     expect(bp.declaresHosting).toBe(true);
+    383|     expect([...bp.rules, ...bp.indexes]).toEqual([]);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[12/17]⎯
+
+ FAIL  ops/rules-authority.test.js > sibling repos on a developer machine > salown-panel still declares its hosting target
+AssertionError: expected undefined to be defined
+ ❯ ops/rules-authority.test.js:388:16
+    386|   it('salown-panel still declares its hosting target', () => {
+    387|     const sp = report.configs.find((c) => c.path === 'salown-panel/fir…
+    388|     expect(sp).toBeDefined();
+       |                ^
+    389|     expect(sp.declaresHosting).toBe(true);
+    390|     expect([...sp.rules, ...sp.indexes]).toEqual([]);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[13/17]⎯
+
+ FAIL  ops/rules-authority.test.js > sibling repos on a developer machine > a rules deploy from either stale directory fails LOCALLY, before any network call
+AssertionError: /private/tmp/claude-501/-Users-alish/13d96fc5-b41b-4b10-9523-d174a1d0178b/scratchpad/salown-panel: unexpected failure mode
+spawnSync npx ENOENT: expected 'spawnSync npx ENOENT' to match /not currently deploying|cannot under…/i
+
+- Expected:
+/not currently deploying|cannot understand what targets|no targets|couldn't find firebase\.json|command not found|could not determine executable/i
+
++ Received:
+"spawnSync npx ENOENT"
+
+ ❯ ops/rules-authority.test.js:420:10
+    418|       // the network means it got further than it should have.
+    419|       expect(combined, `${cwd}: unexpected failure mode\n${combined.sl…
+    420|         .toMatch(/not currently deploying|cannot understand what targe…
+       |          ^
+    421|       expect(combined).not.toMatch(/authentication|credential|permissi…
+    422|     }
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[14/17]⎯
+
+ FAIL  scripts/functionsArchiveManifest.test.js > NEGATIVE CONTROL — the old policy really did leak > the pre-A1.3 ignore list would have shipped the local secrets file
+AssertionError: expected [ …(155) ] to include '.secret.local'
+ ❯ scripts/functionsArchiveManifest.test.js:109:19
+    107|     // or the tool stopped looking.
+    108|     const paths = OLD.untracked.concat(OLD.forbidden.map((f) => f.path…
+    109|     expect(paths).toContain('.secret.local');
+       |                   ^
+    110|     expect(paths).toContain('firestore-debug.log');
+    111|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[15/17]⎯
+
+ FAIL  scripts/functionsArchiveManifest.test.js > NEGATIVE CONTROL — the old policy really did leak > …and a pile of test files, preview output and editor state
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ scripts/functionsArchiveManifest.test.js:117:61
+    115|     expect(forbidden.some((p) => p.endsWith('.test.js'))).toBe(true);
+    116|     expect(forbidden.some((p) => p.startsWith('_preview/'))).toBe(true…
+    117|     expect(forbidden.some((p) => p.startsWith('.claude/'))).toBe(true);
+       |                                                             ^
+    118|     expect(OLD.ok).toBe(false);
+    119|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[16/17]⎯
+
+ FAIL  src/staff/lib/staffTimeContract.test.ts > timeOptionsWithExtra — the grid always contains its own bound value > every minute of the day, injected off-grid, lands at a valid sorted position
+Error: Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+ ❯ src/staff/lib/staffTimeContract.test.ts:85:3
+     83|   });
+     84|
+     85|   it('every minute of the day, injected off-grid, lands at a valid sor…
+       |   ^
+     86|     for (let m = 0; m <= 1439; m += 3) {
+     87|       const opts = timeOptionsWithExtra(5, '24h', m);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[17/17]⎯
+
+
+ Test Files  4 failed | 189 passed (193)
+      Tests  17 failed | 5623 passed | 2 skipped (5642)
+   Start at  14:13:02
+   Duration  28.33s (transform 29.57s, setup 0ms, import 65.95s, tests 58.93s, environment 46ms)
+

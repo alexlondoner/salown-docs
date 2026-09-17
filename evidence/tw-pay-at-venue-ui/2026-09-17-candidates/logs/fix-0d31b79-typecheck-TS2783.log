@@ -1,0 +1,5 @@
+
+> salown-app@0.0.0 typecheck
+> tsc --noEmit
+
+src/utils/unpaidState.test.ts(59,53): error TS2783: 'status' is specified more than once, so this usage will be overwritten.
