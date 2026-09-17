@@ -1,6 +1,16 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
 
+## R-2026-09-17-C — `TW-PAY-AT-VENUE-UI` (Staff) · 1-site release (`hosting:salown-staff`) · **ARTIFACT_VERIFIED (served bytes 25/25 + marker strings) · owner live test pending**
+
+- **Why:** the Staff app still showed a Treatwell pay-at-venue booking as "Unpaid" after the Admin release — the one mismatch the plan named.
+- **Source:** `claude/tw-pay-at-venue-staff-on-live-aa2efd9` @ **`76e58fe`** = live Staff source `aa2efd9` + the fix. It does NOT contain the discount breakdown (Admin-only).
+- **Pre-release (read-only):** live release/version still `1789477084532000` / `27b0c5187cb9976b`; **live bytes still equal the base** — `git archive aa2efd9` + `vite build --config vite.staff.config.js` compared file-by-file against `https://staff.salown.com/`: **25/25 identical**.
+- **Release:** `npx firebase deploy --only hosting:salown-staff --project havuz-44f70 --non-interactive` from its own isolated `git archive` workspace with `npm ci`, 2026-09-17 22:19 UK. New live **version `4c0ce013b1e45dfa`**, release `1789679980588000`.
+- **Post-release:** page loads `/assets/staff-BVUJwYTL.js`; candidate build vs served bytes **25/25 identical, 0 differ, 0 missing**; the served chunk carries `Pay at venue` and `AWAITING_VENUE_PAYMENT`.
+- **Not changed:** `hosting:salown` (released separately as `R-2026-09-17-B`), functions, rules, data.
+- **Rollback:** Console → Hosting → site `salown-staff` → Release history → **`27b0c5187cb9976b`** → Roll back.
+
 ## R-2026-09-17-B — `TW-PAY-AT-VENUE-UI` (Admin) + `PLATFORM-DISCOUNT-BREAKDOWN` · 1-site release (`hosting:salown`) · **ARTIFACT_VERIFIED (served bytes 55/55 + marker strings) · owner live test pending**
 
 - **Why:** a Treatwell pay-at-venue booking looked like a debt (filters, panel wording, No Show), and a Booksy deposit booking showed a bare total with no sign of the platform discount behind it.
