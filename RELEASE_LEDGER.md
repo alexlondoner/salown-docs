@@ -1,6 +1,17 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
 
+## R-2026-09-17-B — `TW-PAY-AT-VENUE-UI` (Admin) + `PLATFORM-DISCOUNT-BREAKDOWN` · 1-site release (`hosting:salown`) · **ARTIFACT_VERIFIED (served bytes 55/55 + marker strings) · owner live test pending**
+
+- **Why:** a Treatwell pay-at-venue booking looked like a debt (filters, panel wording, No Show), and a Booksy deposit booking showed a bare total with no sign of the platform discount behind it.
+- **Owner approval (2026-09-17):** release `503bdff` to `hosting:salown` only, then Staff, then the Treatwell notification functions; verify each target's served files and record the result before moving on.
+- **Source:** `release/admin-tw-ui-and-discount-on-live-c8a64d6` @ **`503bdff`** = live Admin source `c8a64d6` + `6b3f19f` (TW UI fix) + `3910aa7`/`982a683` (discount breakdown). One candidate on purpose: both change `BookingDetailPanel.tsx`, so separate releases from separate bases would revert one another.
+- **Pre-release (read-only):** live release/version still `1789224104649000` / `827946e295c69eeb`; **live bytes still equal the base** — `git archive c8a64d6` + `vite build` compared file-by-file against `https://salown.com/public-bundle/`: **55/55 identical, 0 differ, 0 missing**; candidate branches unchanged at `503bdff` / `76e58fe`; release claim taken.
+- **Release:** `npx firebase deploy --only hosting:salown --project havuz-44f70 --non-interactive` from an isolated `git archive` workspace with its own `npm ci`, 2026-09-17 22:15 UK. New live **version `3d090f91a64cea18`**, release `1789679753178000`.
+- **Post-release:** page loads `/public-bundle/assets/index-DYUKBSbN.js` (HTTP 200); every file of the candidate build compared against the served bytes — **55/55 identical, 0 differ, 0 missing**. Marker strings in the served index chunk: `Pay at venue` ×2, `AWAITING_VENUE_PAYMENT`, `Remaining at venue`, `Normal price` — both halves of the candidate are in the served code.
+- **Not changed:** `hosting:salown-staff`, functions, rules, data. No synthetic booking, no customer message.
+- **Rollback:** Console → Hosting → site `salown` → Release history → **`827946e295c69eeb`** → Roll back.
+
 ## R-2026-09-17-A — `BOOKSY-REBOOK-EXTRAS` + `TW-UNPAID` parser half: the three parser functions from `9f03daa` · 1-unit release (`functions:salown`, 3 functions) · **ARTIFACT_VERIFIED · new Booksy behaviour NOT yet exercised in production · the lost booking was NOT recovered (the whitecross IMAP cron is failing, pre-existing)**
 
 - **Why:** a Booksy client booked "Extras: Face Steam", cancelled, and re-booked the same slot for "Full Facial Treatment"; the re-booking was dropped as a duplicate and "Extras" left the service empty (INCIDENTS 2026-09-17). This candidate also carries the Treatwell parser half of `TW-UNPAID-F1F2` (`d331e79`), replacing step 1 of that plan.
