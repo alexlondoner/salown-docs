@@ -154,6 +154,8 @@ Correction of an earlier over-statement: it is proven that THIS email is parsed 
 - An ignore-list fix is forward-only. When a secret could have entered an artifact, the stored artifacts are part of the fix.
 - "The function has not been redeployed for weeks" also means "its package predates every hygiene fix since".
 
+**Partial closure (2026-09-18, `R-2026-09-18-B`):** `salownNotifyBookingCreated` was redeployed from a candidate that carries the A1.3 upload filter. Its live package went from **165 source files including `functions/.secret.local`** to **72 files with none** (verified on the uploaded package). The exposure remains for every other function still serving a package built before the filter landed, and the stored older packages are untouched — rotation and bucket cleanup are still open.
+
 ## 2026-09-16 — A Treatwell pay-at-venue booking landed silently and at £0
 
 **Severity:** 🟠 High (a real booking with no bell/Telegram/push, and the desk could only check it out at £0) · **Owner:** alish · **Status:** 🟡 Open — fixed in source and reviewed, NOT merged, NOT deployed; the live booking is not repaired · **Affected area:** Treatwell parser (webhook shape) + new-booking notification triggers
