@@ -1,6 +1,24 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
 
+## R-2026-09-18-B — `TW-UNPAID` notification half · 1-unit release (`functions:salown`, 4 functions, 3 targeted deploys from 3 narrow candidates) · **ARTIFACT_VERIFIED · behaviour NOT yet seen on a real Treatwell booking**
+
+- **Why:** a Treatwell pay-at-venue booking is written `status: 'UNPAID'`; all three staff channels opened with `status !== 'CONFIRMED' → return`, so the booking landed on the grid and nobody was told. The shared gate also suppresses an operator-mailbox import and refuses an unreadable UNPAID `startTime`. Its precondition — the parser's operator-import mark — has been live since `R-2026-09-17-A`.
+- **Owner approval:** the three narrow candidates only, update triggers first, then create triggers; gates completed for each; no synthetic booking in production.
+- **Candidates — each built on ITS OWN function's live source, so no unrelated drift ships:**
+  | Target | Candidate | Base |
+  |---|---|---|
+  | `salownNotifyBookingUpdated` | `release/tw-notify-on-live-c8a64d6` @ `007c868` | `c8a64d6` |
+  | `salownNotifyBookingConfirmedPush`, `salownNotifyBookingPush` | `release/tw-notify-on-live-dc0f6ae` @ `1e4127f` | `dc0f6ae` |
+  | `salownNotifyBookingCreated` | `release/tw-notify-on-live-c6a5c79` @ `40d3fc4` | `c6a5c79` |
+- **Gates:** emulator gate PASS on all three candidates — 645/645 (`007c868`), 645/645 (`1e4127f`), 419/419 (`40d3fc4`, whose older base carries fewer emulator tests). `tsc` 0 each; functions suites 2757 / 2745 / 1308, 0 fail. Real-handler evidence (`newBookingTriggers.test.js`, run in the workspaces, never committed or shipped): with the live parser file overlaid — the composition production has — **27/27 on all three**: a live UNPAID Treatwell booking announces once on bell + Telegram + push, an operator-mailbox import announces nothing, `PENDING → CONFIRMED` still announces, `UNPAID → CONFIRMED` does not announce again, malformed `startTime` refused.
+- **Releases (isolated `git archive` workspaces, fixed SHAs, own `npm ci`), 2026-09-18 UK:** `salownnotifybookingupdated-00112-rah` (gen `1789742262475728`) · `salownnotifybookingconfirmedpush-00041-xak` (gen `1789745196462360`) · `salownnotifybookingpush-00041-xic` (gen `1789746099902992`) · `salownnotifybookingcreated-00107-wul` (gen `1789755313942771`). Memory/timeout unchanged on all four.
+- **Post-deploy:** inventory 124 → 124; exactly these four changed revision. Each deployed package: `lib/` byte-identical to its workspace build; source equal to its candidate SHA (115/115, 115/115, 115/115, 72/72); **no secret-like, test or log entry in any package**.
+- **Security side effect, deliberate:** the Created candidate also carries the A1.3 upload filter (its live base still had the pre-A1.3 `["node_modules",".git"]`). The live `salownNotifyBookingCreated` package went from **165 source files including `functions/.secret.local`** to **72 files with none** — that function's copy of the INCIDENTS 2026-09-16 exposure is gone. The other functions' packages are unaffected by this release.
+- **Not changed:** parsers, hosting, rules, data, tenant settings, IMAP. No synthetic booking created.
+- **Rollback, per function:** `salownnotifybookingupdated-00111-yog` · `salownnotifybookingconfirmedpush-00040-jil` · `salownnotifybookingpush-00040-qit` · `salownnotifybookingcreated-00106-xat` (redeploy their bases `c8a64d6` / `dc0f6ae` / `c6a5c79`).
+- **Open:** behaviour on a REAL Treatwell pay-at-venue booking has not been observed yet — the next such booking should announce once on the bell, Telegram and push. Until then this row stays ARTIFACT_VERIFIED.
+
 ## R-2026-09-18-A — `QP-UTF8`: quoted-printable decoded as bytes, so a "£" survives the raw-MIME path · 1-unit release (`functions:salown`, 3 functions) · **ARTIFACT_VERIFIED · behaviour covered by tests; no live raw-MIME traffic exists today (IMAP stays off by owner decision)**
 
 - **Why:** Booksy's text/plain part is utf-8 quoted-printable; "£20.40" arrives as "=C2=A320.40". The ASCII-only decoder left it, the price regex missed and the import stored the CATALOGUE price (£24.00 measured on the 17 Sep 09:15 booking). INCIDENTS 2026-09-17.
