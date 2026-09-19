@@ -1,7 +1,7 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
 
-## R-2026-09-19-D — `PANEL-PAID-ONLINE-LABEL` (Admin) · 1-site release (`hosting:salown`) · **ARTIFACT_VERIFIED · label not yet seen by the owner on a real booking**
+## R-2026-09-19-D — `PANEL-PAID-ONLINE-LABEL` (Admin) · 1-site release (`hosting:salown`) · **LIVE_VERIFIED (owner, Ben Hayes booking, 2026-09-19 ~20:00 UK: no longer "Deposit paid")**
 
 - **Why:** the till stamps `platformDepositAmount` with the pre-paid figure on every rail, and the booking detail called any such amount a deposit — so a FULL online payment read "Deposit paid" after checkout (Ben Hayes, R-2026-09-19-C owner check: £40 online + £8 CARD).
 - **Owner approval (2026-09-19):** `fix/panel-paid-online-label-on-live-09401a2` @ `56ceccc` → `hosting:salown` only; no main merge, no other PUSHED_NOT_LIVE work, no booking/payment write.
