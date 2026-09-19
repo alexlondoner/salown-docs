@@ -137,7 +137,7 @@ The rule that survives: **never add anything to `salown-panel`**, and never depl
 
 > **Status corrected 2026-09-09.** This section used to be headed `PUSHED_NOT_LIVE`. It is deployed:
 > `salownRotaTransaction` runs in production (`-00003-gov`, release `R-2026-08-20-A`) and the `[R2b]` and
-> `[R2c]` rules bodies are in the live ruleset `a0a10819-…` (read-only verification 2026-09-09).
+> `[R2c]` rules bodies are in the live ruleset **`5e102dd4-e7e7-4950-b12a-14a74daa82e8`** (read-only verification 2026-09-19; the live ruleset is byte-identical to this repo's `firestore.rules`). The earlier reading named `a0a10819-…`, which was superseded on 2026-09-10 and is now only the rollback identity.
 > **`FIN-DATED-ROTA-R2d` — the activator — is still `PLANNED`**, so everything below about future-dated
 > rotas and `ROTA_END` being refused remains exactly true in production.
 

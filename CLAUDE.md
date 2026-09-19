@@ -225,8 +225,15 @@ it is not a data migration, and nothing about TR-C's lifecycle or continuity eng
 > a salon can now configure this checkout, but the Admin and Staff checkout screens are unchanged.
 >
 > **`checkoutSettings` is owner-only in `firestore.rules` as of Phase 3** (released then as ruleset `b30abf64…`;
-> still true in the ruleset live today, `a0a10819-3b62-46d5-9f95-9ea048701c59`, verified read-only 2026-09-09 —
-> `checkoutSettings` on all four owner-gated arms) — the gap Phase 1 recorded is closed. **The stored `schemaVersion` is now the monotonic settings version**
+> still true in the ruleset live today, **`5e102dd4-e7e7-4950-b12a-14a74daa82e8`**, re-verified read-only 2026-09-19 —
+> `checkoutSettings` on all four owner-gated arms) — the gap Phase 1 recorded is closed.
+> ⚠️ **Ruleset id correction (2026-09-19):** this note used to name `a0a10819-3b62-46d5-9f95-9ea048701c59`
+> as the ruleset "live today". That was already stale — it was superseded on 2026-09-10 by
+> `R-2026-09-10-C` and is now only the rollback identity. The live ruleset is
+> `5e102dd4-e7e7-4950-b12a-14a74daa82e8` (released 2026-09-10T13:39:16Z), and its 79,060 bytes are
+> **byte-identical to this repo's `firestore.rules`**. Fetch it with the Firebase Rules REST API and
+> an `x-goog-user-project: havuz-44f70` header — without that header the call fails 403 on quota
+> project, which reads like "no access" and is what made an earlier session record this as unverified. **The stored `schemaVersion` is now the monotonic settings version**
 > (contract version moved to `contractVersion`), because the deployed executor compares exactly that
 > field; every owner save increments it, so a till opened before a change cannot commit under it.
 
