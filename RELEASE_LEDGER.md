@@ -1,6 +1,25 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
 
+## R-2026-09-19-E — `RECEIPT-TENDER-LABEL`: the receipt no longer says a cash tip was paid "by card" · 1-unit release (`functions:salown`, 1 function) · **ARTIFACT_VERIFIED** (no real receipt observed yet)
+
+| Field | Value |
+|---|---|
+| **Work item** | Whitecross 2026-09-19: website-prepaid £28 + £5 CASH tip → receipt "£5.00 paid today (by card)". Stored money correct (`paymentAllocation.collected` cash 500 / card 0, `tipPaymentMethod` CASH); the label read the legacy service `paymentMethod`. Display-only fix: `PA.buildPaidTodayMethodLabel()` names the tenders from the believed allocation's `collected` legs; legacy label unchanged with no believed allocation or nothing collected today. INCIDENTS 2026-09-19 |
+| **Source SHA** | **`c67da9e`** on `release/receipt-tender-on-live-c8a64d6` = live base **`c8a64d6`** + cherry-pick of `9c7bf91` (patch identical). Diff vs base: `functions/src/index.ts` (1 line inside `salownSendLoyaltyEmail`), `functions/src/payments/paymentAllocation.ts` (+44, additive), its test (+120). **`9c7bf91` is NOT merged to main (owner decision)** |
+| **Owner approval** | Explicit, 2026-09-19: deploy `c67da9e`, `salownSendLoyaltyEmail` only, from a clean archive workspace; no main merge; no hosting/Staff/checkout/payment/refund/loyalty/booking change |
+| **Deployed unit** | `functions:salown:salownSendLoyaltyEmail` via `./scripts/deploy-functions.sh salownSendLoyaltyEmail` (namespace guard passed offline). Claim `REL-RECEIPT-TENDER-C67DA9E` (`6076093`) |
+| **Workspace** | `git archive c67da9e` into a scratch dir outside `~/Desktop/alex` + fresh `whitecross-site` clone as the only sibling; `git init` + one commit; `npm ci` (no symlinked node_modules); no `functions/.secret.local`. Build 0, `tsc --noEmit` 0. Archive manifest: 226 files, 5.07 MiB, digest `0ed5e2d72cc973b39a7d8eaf0bf8598358c830f2b019ae96787e3c01cc0ce713`, no secret/test artefact |
+| **Pre-deploy gates** (same candidate, clean clone) | `npm test` 2735 / 2693 pass / **0 fail** / 42 skipped (emulator-gated) → `npm run test:emulator` **645/645, 0 fail, 0 skip** (firebase-tools 15.26.0, emulator v1.22.0) |
+| **Pre-deploy live (read-only)** | `salownsendloyaltyemail-00066-cej`, ACTIVE, updated 2026-09-12T14:36:33Z, source generation `1789223781242179`, hash label `21e7fda5…`; its `src/`+package/lock/tsconfig byte-identical to `c8a64d6`. Inventory 124 functions |
+| **Live identity — new** | **`salownsendloyaltyemail-00067-bem`**, ACTIVE, updated 2026-09-19T19:50:44Z, source generation **`1789847386381762`**, hash label `335efa9e8bd59b701df61e0a4de26ab6f8759ad6`, zip sha256 `eaa4f69e40df8f6549c4af4bc1428164640626127abba151718320dd52cb8d8b` |
+| **Rollback identity** | **`salownsendloyaltyemail-00066-cej`** (source `c8a64d6`, generation `1789223781242179`) — code-based redeploy of `c8a64d6` for this one function, per team practice |
+| **Served-code evidence** | Deployed zip downloaded back: 226 files; `src/` and `lib/` **byte-identical** to the `c67da9e` archive build; package.json / lock / tsconfig identical; `src/` identical to `git archive c67da9e` (tests excluded by the ignore list). Versus the previous live package exactly 4 files differ (`src/index.ts`, `src/payments/paymentAllocation.ts` + their `lib/` twins). Marker `buildPaidTodayMethodLabel`: 1 call in `lib/index.js` (inside the trigger), 1 definition in `lib/payments/paymentAllocation.js`; absent from the previous live package |
+| **Inventory** | 124 → 124; names identical; only `salownSendLoyaltyEmail`'s row changed; us-central1 30 → 30 |
+| **Behaviour (offline, read-only)** | The Whitecross booking of the report (`bEbTjkaNAHOHflTtWQA1`, fields read earlier read-only) through the DEPLOYED `lib/`: allocation believed, label **"Paid by cash"** (previous live: "Paid by card"). ERROR logs on the service since the deploy: 0 |
+| **Why not LIVE_VERIFIED** | No new receipt has been sent through `-00067-bem` yet; no booking was created or checked out to force one. Promotion needs the next real checkout with a cash tip (or any receipt) read from the inbox |
+| **Known exclusions** | main merge (`9c7bf91` stays unmerged) · hosting (Admin + Staff) · every other function · rules · indexes · checkout writer · Staff App (writes no allocation → its receipts keep the legacy label) · the £0-balance tender prompt · fully-prepaid-no-tip "£0.00 (by card)" wording · every production document |
+
 ## R-2026-09-19-D — `PANEL-PAID-ONLINE-LABEL` (Admin) · 1-site release (`hosting:salown`) · **LIVE_VERIFIED (owner, Ben Hayes booking, 2026-09-19 ~20:00 UK: no longer "Deposit paid")**
 
 - **Why:** the till stamps `platformDepositAmount` with the pre-paid figure on every rail, and the booking detail called any such amount a deposit — so a FULL online payment read "Deposit paid" after checkout (Ben Hayes, R-2026-09-19-C owner check: £40 online + £8 CARD).

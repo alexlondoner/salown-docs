@@ -37,7 +37,7 @@ Every incident opens with `## YYYY-MM-DD — short title`, immediately followed 
 
 ## 2026-09-19 — The receipt told a customer his cash tip was paid "by card"
 
-**Severity:** 🟡 Medium (wrong display on a customer email; money and records correct) · **Owner:** alish/receipt-tender · **Status:** 🟡 Open — fix on branch `fix/receipt-paid-today-tender` @ `9c7bf91`, NOT merged, NOT deployed · **Affected area:** loyalty receipt email (`salownSendLoyaltyEmail`), Admin checkout
+**Severity:** 🟡 Medium (wrong display on a customer email; money and records correct) · **Owner:** alish/receipt-tender · **Status:** ✅ Resolved (ARTIFACT_VERIFIED) — deployed 2026-09-19 as `R-2026-09-19-E` from `c67da9e` (live base `c8a64d6` + fix), `salownsendloyaltyemail-00067-bem`; `9c7bf91` not merged to main by owner decision · **Affected area:** loyalty receipt email (`salownSendLoyaltyEmail`), Admin checkout
 **Tags:** `#email`
 
 **Discovery:** owner read the receipt a Whitecross client received (2026-09-19) and noticed the tip method was wrong.
