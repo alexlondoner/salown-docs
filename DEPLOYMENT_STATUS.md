@@ -1687,11 +1687,11 @@ deployed in the security order **functions → hosting → rules LAST**, then th
 |---|---|
 | `salownBookingConfirmationTrigger` | `-00043-zom` |
 | `salownBookingConfirmedEmailTrigger` | `-00041-fon` |
-| `salownCancelByToken` | `-00068-jur` |
+| `salownCancelByToken` | `-00071-xaw` (R-2026-09-19-A) |
 | `salownNotifyBookingUpdated` | `-00109-vux` |
 | `salownRescheduleByToken` | `-00074-zab` |
 | `salownSendBookingConfirmation` | `-00108-nof` |
-| `salownSendCancellationEmail` | `-00103-yif` |
+| `salownSendCancellationEmail` | `-00105-hiz` (R-2026-09-19-A) |
 | `salownSendLoyaltyEmail` | `-00062-hok` |
 | `salownSendManualLoyaltyAdjustmentEmail` | `-00050-buj` |
 
