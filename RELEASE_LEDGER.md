@@ -1,6 +1,16 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
 
+## R-2026-09-19-D — `PANEL-PAID-ONLINE-LABEL` (Admin) · 1-site release (`hosting:salown`) · **ARTIFACT_VERIFIED · label not yet seen by the owner on a real booking**
+
+- **Why:** the till stamps `platformDepositAmount` with the pre-paid figure on every rail, and the booking detail called any such amount a deposit — so a FULL online payment read "Deposit paid" after checkout (Ben Hayes, R-2026-09-19-C owner check: £40 online + £8 CARD).
+- **Owner approval (2026-09-19):** `fix/panel-paid-online-label-on-live-09401a2` @ `56ceccc` → `hosting:salown` only; no main merge, no other PUSHED_NOT_LIVE work, no booking/payment write.
+- **Source:** `56ceccc` = live Admin `09401a2` + one commit (new `src/components/prepaidPaymentRows.tsx`, 2 panel call sites, test). Label only: FULL on EXTERNAL_CHECKOUT/SALOWN_CONNECT → "Paid online"; any DEPOSIT, platform or manual deposit → "Deposit paid"; "Paid at venue" + recorded method and Total unchanged. Gates: tsc 0 · new suite 19/19 · negative control 3 wiring rows fail on the unchanged panel · full vitest 5612 pass, same 7 environmental failures as the untouched base.
+- **Release:** `firebase deploy --only hosting:salown` from an isolated `git archive 56ceccc` workspace, no emulator env → version **`07c90b756c541a6a`**, release `1789843984606000` (18:53:04Z).
+- **Verification:** `/app` loads `/public-bundle/assets/index-CiEeRNFs.js` → 200; all 32 assets + `public-bundle/index.html` byte-identical to the workspace build; the served bundle carries the label helper (`…paymentType)===\`FULL\`}function …{return …?\`Paid online\`:\`Deposit paid\`}`), previous live bundle had 0 "Paid online"; `EMULATOR MODE` 0; version diff vs `8d2a5e503ab761b9` only under `/public-bundle/` (122 → 122 files). `salown-staff` unchanged `4c0ce013b1e45dfa`.
+- **Rollback:** version **`8d2a5e503ab761b9`** (release `1789836519866000`).
+- **main:** NOT aligned (no merge), same as R-2026-09-19-C.
+
 ## R-2026-09-19-C — `BOOKING-EDIT-ONLINE-LANE` (BUG-1, functions) + `BOOKING-EDIT-ADDON-SAVE` (BUG-2, Admin) · 2-unit release (`functions:salown` 1 function, then `hosting:salown`) · **BUG-1 `LIVE_VERIFIED` (owner, Ben Hayes, 2026-09-19 19:27 UK) · BUG-2 `ARTIFACT_VERIFIED` (no real add-on/product edit observed yet)**
 
 - **Why:** (BUG-1) a CONFIRMED, fully settled website booking paid online could not have its service changed: `salownPatchBookingDetails` refused every price-affecting edit on an `EXTERNAL_CHECKOUT` booking as FOREIGN_PREPAYMENT. (BUG-2) in the Admin BookingDetailPanel a same-count add-on/product swap or a qty edit showed as dirty but was dropped on save (`changed()` compared arrays with `String()`).
