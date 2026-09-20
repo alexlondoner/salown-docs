@@ -1,6 +1,6 @@
 # SEC — `salown.com/staff-bundle/`: a pre-enforcement Staff app on the public landing site
 
-**Work ID candidate:** `SHADOW-STAFF-BUNDLE` · **Raised:** 2026-09-20 · **Fix shape APPROVED 2026-09-20** (§7) · **Status:** `SOURCE_READY_NOT_DEPLOYED` —
+**Work ID:** `SHADOW-STAFF-BUNDLE` · **Raised:** 2026-09-20 · **Fix shape APPROVED** (§7) · **Candidate `5be583c`** off `56ceccc` (§8) · **Status:** `SOURCE_READY_NOT_DEPLOYED` —
 patches and a guard test exist in an isolated archive workspace; **nothing is committed to `salown-app`,
 nothing is deployed, nothing is untracked or deleted, no branch was switched and no merge was made.**
 
@@ -184,25 +184,32 @@ gives anyone with a bookmark the correct destination instead of a bare 404. Comb
 
 ## 5. The guard that makes it stay fixed
 
-Proposed new file `ops/hosting-shadow-bundle.test.js` (full source in the candidate workspace, syntax-checked;
-style matched to `ops/deploy-policy.test.js`). It asserts, using firebase-tools' own listing semantics:
+New file `ops/hosting-shadow-bundle.test.js`, style matched to `ops/deploy-policy.test.js`.
 
-- the `salown` site ignores `staff-bundle/**` **and** its publish set contains zero `staff-bundle/` files;
-- the same set still contains `index.html` — so the ignore rule is not over-broad;
-- `salown-staff` still publishes `index.html` **and** an `assets/` chunk — the Staff release is untouched;
-- both stale paths redirect to `https://staff.salown.com/`, and **no** redirect on this site is a `301`.
+> **Correction of record (2026-09-20, written with the candidate).** This section first described a guard
+> that computed the publish set with `glob`, mirroring firebase-tools' `listFiles()`. **The repo has no
+> `glob` dependency** (and no `fast-glob`/`tinyglobby`; CI runs Node 20, so `fs.globSync` is not available
+> either), and adding one so a config assertion could re-implement the uploader would be a worse trade than
+> asserting the contract directly. The shipped guard is dependency-free — node builtins + vitest — and the
+> upload-set proof lives in the probe (§8), where it runs against firebase-tools' real function.
 
-**Firing negative control** (assertions run standalone against each config):
+It asserts:
 
-| Config | Result |
-|---|---|
-| `firebase.json` unpatched | **3 FAILING** (ignore missing · 25 files published · no redirects) |
-| (a) only | 1 failing (no redirects) |
-| (c) only | 2 failing (ignore missing · 25 files published) |
-| **(a)+(c)** | **ALL PASS** |
+- the shadow path **derived** as `relative(adminPublic, staffPublic)` — so the guard cannot be satisfied by
+  the repo-root spelling `hosting/staff-bundle/**`, which ignores nothing, and it follows the Staff bundle
+  if that directory ever moves;
+- the artefact really is on disk at that path, so the guard is not vacuous;
+- `hosting[salown].ignore` contains `${shadow}/**`, and contains no pattern (`*`, `**`, `**/*`) broad
+  enough to swallow the landing page;
+- both `/staff-bundle` and `/staff-bundle/**` redirect to `https://staff.salown.com/`, with **every**
+  redirect on this site a `302` — never a `301`;
+- the `salown-staff` config is untouched: its own `public`, its unchanged `ignore`, its single SPA rewrite,
+  and **no** redirects of its own.
 
-The guard fails today, which is what makes it a guard rather than a decoration. It belongs in `npm test`,
-and it is cheap enough for the deploy workflow's policy step.
+**Firing negative control**, measured against the unpatched `56ceccc`: **2 failed / 10 passed**, and the two
+failures are exactly the ignore rule and the redirect pair. The guard fails without the fix, which is what
+makes it a guard rather than a decoration. It runs inside `npm test`, and is cheap enough for the deploy
+workflow's policy step.
 
 ---
 
@@ -256,7 +263,63 @@ and it is cheap enough for the deploy workflow's policy step.
 | Release path | wait for the next approved Admin release, or cut an isolated release of the live Admin base + this config change only |
 | Record | open an `INCIDENTS.md` entry now, or when the fix goes live |
 
-## 8. How to reproduce every claim here
+## 8. The candidate — `5be583c`
+
+**Branch `security/shadow-staff-bundle-on-live-56ceccc`, one commit on top of `56ceccc`, pushed 2026-09-20.
+Not merged to `main`. Not deployed.** Built in a clean local clone (not a worktree) with its own
+`npm ci` for the app and for `functions/`.
+
+**Diff = 2 files, +105 / −1**
+
+| File | Change |
+|---|---|
+| `firebase.json` | +5 / −1 — `hosting[salown].ignore` gains `staff-bundle/**`; `hosting[salown].redirects` gains `/staff-bundle` and `/staff-bundle/**` → `https://staff.salown.com/`, **302** |
+| `ops/hosting-shadow-bundle.test.js` | +100, new — dependency-free (node builtins + vitest) |
+
+`firebase.json` is byte-identical between `56ceccc` and `main`, so the patch is the same on both — but the
+**base is the live Admin source**, so a release of this candidate ships no `main`-only work.
+
+The guard derives the shadow path as `relative(adminPublic, staffPublic)` rather than hard-coding it, so
+the repo-root spelling (`hosting/staff-bundle/**`, which ignores nothing) cannot pass, and it asserts the
+Staff site's own config is untouched. It needs no `glob`: the repo has no such dependency, and inventing
+one for a config assertion would be a worse trade than asserting the contract directly. The upload-set
+proof stays where it belongs — in the probe, below.
+
+### Acceptance gates — all met
+
+| Gate | Result |
+|---|---|
+| Admin publish set carries no `staff-bundle/**` | `listFiles()` (firebase-tools' own): `salown` **120 → 95 files**, `staff-bundle/` **25 → 0** |
+| `salown-staff` unaffected | publish set **25 → 25**; config untouched; `hosting/staff-bundle` checksum identical before and after `npm run build`; `git status` clean on that path |
+| `/staff-bundle/` and asset paths redirect | emulator: `/staff-bundle/`, `/staff-bundle/index.html`, `/staff-bundle/assets/staff-*.js`, `/staff-bundle/sw.js` → **302 → `https://staff.salown.com/`** |
+| `/` and the Staff site keep working | emulator: `/` **200**, `/app` **200**, `/book/**` **200**, Staff site root **200** serving its own chunk |
+| No `301` anywhere | asserted by the guard over every redirect on this site |
+| Admin build | `npm run build` **OK** |
+| Test suite | **5619 pass / 16 fail / 2 skipped** vs pristine `56ceccc` **5607 / 16 / 2** — identical failures, **+12 = the new guard**. The 16 are the sibling-repo scanners (`ops/rules-authority`, `ops/functions-ownership`, `scripts/functionsArchiveManifest`), which fail the same way on the untouched base in this workspace |
+| Negative control | guard against the **unpatched** base: **2 failed / 10 passed**, and the two failures are exactly the ignore rule and the redirect pair |
+| Deploy-policy gate | `ops/deploy-policy.test.js` **passes** (it would not under the rejected `site`→`target` variant) |
+
+### What a release of it would do, and would not do
+
+- `hosting:salown` only. After it, `salown.com/staff-bundle/**` returns a **302** to the Staff site and the
+  files are no longer published at all. Landing, `/app`, `/book/**`, `/s/**` unchanged.
+- It ships **no** `main`-only work: no FIN-PROCESSOR-FEES B2/B2a, no Staff availability changes in the Admin
+  bundle, no Reports fix.
+- `hosting:salown-staff` is not deployed and its bundle is not rebuilt into the release.
+- **Rollback:** redeploy `hosting:salown` from `56ceccc` — the exact source the site is already running.
+  The redirect is a 302, so nothing is cached permanently on the client side.
+- Still required: an owner approval naming tenant + URL, per Quick Rule 1, and a `RELEASE_LEDGER.md` row
+  afterwards. Neither exists yet.
+
+### Bookkeeping done with it
+
+`ops/claims/SHADOW-STAFF-BUNDLE--alish--shadow-bundle.claim` (paths: `firebase.json`,
+`ops/hosting-shadow-bundle.test.js`, `SYNC.md`) and a `SYNC.md` entry, both on `main` — neither path is in
+the deploy workflow's trigger list, so neither started a release.
+
+---
+
+## 9. How to reproduce every claim here
 
 ```
 git archive origin/main | tar -x -C <workspace>          # isolated, not a worktree
