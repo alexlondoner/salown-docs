@@ -151,8 +151,12 @@ configstoreProject(dir) {                                  // dir = options.proj
 
 `~/.config/configstore/firebase-tools.json` holds `/Users/alish/Desktop/alex/whitecross-site → havuz-44f70`,
 so the walk from `ops/rehearsal/` hits the repo root and returns production. `applyRC()` then does
-`options.project = options.project ?? activeProject`, and only falls through to `.firebaserc` aliases if that
-is null — which is why the scratch copies, whose paths have no ancestor in the map, fail with
+`options.project = options.project ?? activeProject` (`:216`), and only falls through to `.firebaserc`
+aliases if that is null — via two branches that are easy to miss, because the obvious one at `:221-225`
+(`rcProject = options.project ? aliases[options.project] : undefined`) requires a project to already be
+set: `:226-229` takes the sole alias when the file declares exactly one, and `:230-233` takes
+`aliases["default"]`. That is why a `.firebaserc` sitting **beside** `firebase.json` resolves even with the
+configstore walk returning null, and it is a fall-back, never the thing that reaches across directories — which is why the scratch copies, whose paths have no ancestor in the map, fail with
 `No active project` no matter where a `.firebaserc` sits. All four observations above are explained by this
 one rule, with no unexplained residue.
 
