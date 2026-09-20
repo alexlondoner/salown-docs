@@ -338,12 +338,23 @@ workspace with its own `npm ci`. Full row with every number: [RELEASE_LEDGER.md]
 **Rollback:** redeploy `hosting:salown` from `56ceccc`, or promote version `07c90b756c541a6a`. The redirect
 is a `302`, so no client caches it permanently.
 
-### ⚠️ The one thing left open
+### The follow-up — closed 2026-09-20 15:15 UK
 
-`main` does **not** carry these two config lines. A future Admin deploy from `main` would republish the
-shadow bundle — the same 25 files, under the same URL. Cherry-picking `5be583c`'s `firebase.json` change and
-the guard onto `main` is a separate decision and is **not** done. Until it is, treat it as a release trap:
-any `main`-based `hosting:salown` release must carry this fix or re-open this finding.
+`main` did **not** carry these two config lines when the fix went live, because the release was cut from
+`56ceccc` rather than `main` (deliberately — see §7). A future Admin deploy from `main` would have
+republished the shadow bundle: the same 25 files, under the same URL.
+
+**Carried onto `main` at `06dc7e4`** (owner-approved, `[skip ci]`, source-only, nothing live changed).
+`git diff 5be583c origin/main -- firebase.json ops/hosting-shadow-bundle.test.js` is **empty** — main now
+holds byte-for-byte what is deployed. Gates on main + the port: guard 12/12, `ops/deploy-policy.test.js`
+28/28, publish set `salown` 120 → 95 and `staff-bundle/` 25 → 0 while `salown-staff` stays 25, emulator
+302s on every shadow path with `/` and the Staff site 200, and a negative control on main without the port
+failing exactly the two fix assertions.
+
+**⛔ Still frozen, for a different reason.** `main` carries `CLIENT-IDENTITY-P1` (`a2a627b`), unreleased and
+not owner-approved, in `src/**` *and* `functions/src`. Until that is decided, no `main`-based release of
+either kind: a `hosting:salown` deploy ships its frontend, and a targeted `functions:salown:<fn>` deploy
+ships its server code.
 
 **Compounded 2026-09-20 14:xx:** `main` now also carries **unreleased, un-approved Admin source** — `CLIENT-IDENTITY-P1` (`a2a627b`, `src/utils/clientIdentity.ts`, `clientTombstone`, `clientWriter`, `Clients.tsx`, `firestoreActions.ts` + `functions/src`), which reached `main` when a claim-only push named a SHA that descended from the code commit. Source-only and gated, never released. So a `main`-based Admin deploy today would republish the shadow bundle **and** ship client-identity Phase 1 — two unreviewed payloads in one release. **And it is not only a hosting risk:** `a2a627b` also lands 17 files under `functions/src` (`clients/{identity,identityTokens,ensureClient,ensureClientCompat,tombstone,reviewQueue,mergeJournal}`, `parsers/{importClientLink,booksy,fresha,treatwell}` and the two `resolveClientDocId` call sites in `index.ts`) — verified present on `main`. A functions release cuts its archive from the **working tree**, not from a pinned tree (`scripts/deploy-functions.sh` → `firebase deploy --only functions:salown:<fn>`, whose predeploy is `npm --prefix "$RESOURCE_DIR" run build`), so **a single targeted function deploy taken from `main` would ship Phase 1's server code with no hosting release involved at all** — the same shared-module ride-along recorded as M5 in the closing-coordination record. Nothing of it is deployed today: `functions/lib` was only rebuilt locally by an emulator gate. Live is unaffected: version `be573ea0498fc71f` still serves `index-CiEeRNFs.js` with zero Phase 1 markers, and no CI run followed (every commit carried `[skip ci]`).
 
