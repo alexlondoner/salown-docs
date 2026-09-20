@@ -1,6 +1,6 @@
 # SEC — `salown.com/staff-bundle/`: a pre-enforcement Staff app on the public landing site
 
-**Work ID candidate:** `SHADOW-STAFF-BUNDLE` · **Raised:** 2026-09-20 · **Status:** `SOURCE_READY_NOT_APPROVED` —
+**Work ID candidate:** `SHADOW-STAFF-BUNDLE` · **Raised:** 2026-09-20 · **Fix shape APPROVED 2026-09-20** (§7) · **Status:** `SOURCE_READY_NOT_DEPLOYED` —
 patches and a guard test exist in an isolated archive workspace; **nothing is committed to `salown-app`,
 nothing is deployed, nothing is untracked or deleted, no branch was switched and no merge was made.**
 
@@ -223,7 +223,30 @@ and it is cheap enough for the deploy workflow's policy step.
 
 ---
 
-## 7. Owner decision
+## 7. Owner decision — TAKEN 2026-09-20
+
+**(a) + (c), cut as an independent security release from the last live Admin source `56ceccc`, not from `main`.**
+
+- Scope is exactly three things: `hosting[salown].ignore` gains `staff-bundle/**`; `/staff-bundle` and
+  `/staff-bundle/**` redirect **302** to `https://staff.salown.com/`; `ops/hosting-shadow-bundle.test.js`
+  plus the documentation. Nothing else travels.
+- **`main` is not the base.** `main` carries M1 Finance, M3 Staff availability and M4 Reports as unreleased
+  work; a `main`-based Admin deploy would ship them alongside this fix. `56ceccc` is not an ancestor of
+  `main` (branch `origin/fix/panel-paid-online-label-on-live-09401a2`, merge-base `c8a64d6`), but the
+  alignment audit proved it **byte-identical to the live Admin site (95/95 files)** — so it is the correct
+  base, and this fix can reach production **before** the main-alignment release decisions are settled.
+- **`hosting:salown-staff` and the Staff bundle stay byte-identical.** No Staff deploy, no untrack, no
+  artefact deletion, no merge to `main`.
+- **(a2) is declined for now** — it breaks `ops/deploy-policy.test.js`, a gate inside the deploy workflow.
+  **(b) is declined as a fix** — it closes nothing (it remains available later as hygiene).
+- Acceptance gates for the candidate: the Admin publish set contains no `staff-bundle/**`; `/staff-bundle/`
+  and its asset paths return **302**; `/` and `staff.salown.com` keep working; **no `301` anywhere**;
+  the Admin build and the hosting emulator/upload-set probes pass.
+- Handed to session `alish-88` on 2026-09-20 to prepare in a clean `git archive` workspace, reporting the
+  candidate SHA, the file diffs and the test results for a **separate `hosting:salown`-only owner approval**.
+  No merge and no deploy on that handover.
+
+### Options as they were presented
 
 | Question | Options |
 |---|---|
