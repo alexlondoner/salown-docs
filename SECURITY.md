@@ -97,6 +97,50 @@ not hold, so it cannot quietly be forgotten or mistaken for closed.
 
 </details>
 
+## 🔴 OPEN 2026-09-20 — a second publishable Firestore config is back: `whitecross-site/ops/rehearsal/`
+
+**`FIRESTORE-RULES-SSOT-P0` was closed on 2026-08-16 by removing every `firestore` block outside
+`salown-app`. One has since returned**, in `whitecross-site`, committed `0f7cada7` on 2026-09-17 as part of
+the FIN-B1B recency-fence rehearsal evidence. Found 2026-09-20 while verifying a peer session's report that
+`ops/rules-authority.test.js` fails **3/30** from the shared checkout; the guard is firing correctly and
+this is what it is firing at.
+
+**What exists (read-only, verified on `whitecross-site` `origin/main`):**
+
+| Path | Content |
+|---|---|
+| `ops/rehearsal/firebase.json` | keys `['firestore', 'emulators']` · `"firestore": {"rules": "firestore.rules"}` |
+| `ops/rehearsal/firestore.rules` | **10 lines, 321 bytes** — `match /{document=**} { allow read, write: if false; }` |
+
+**Why it matters more than it looks.** `FIRESTORE-RULES-SSOT-P0`'s original three copies were *permissive*
+(`allow read, write: if isAuth()` across all tenants). This one is the opposite and is **not** safer:
+`firebase deploy --only firestore:rules --project havuz-44f70` typed in that directory replaces the live
+**1,168-line** canonical ruleset with a **deny-everything** one. That is not a data leak, it is a total
+production lockout — every booking page, panel, staff app and public salon page loses Firestore in one
+command, with no error to warn the operator, because the command is correct and the project is correct.
+
+**Why the existing locks do not cover it:** `whitecross-site/scripts/check-rules-authority.sh` is invoked
+from `deploy.sh` and `scripts/deploy-functions.sh`, so it guards those wrappers — a bare `firebase deploy`
+run inside `ops/rehearsal/` never reaches it. The August fix worked by ensuring `--only firestore:rules`
+**fails locally at config parse** because no config declared a target; this directory restores a target.
+
+**Decision required (not taken here — different repo, no claim held, nothing changed):**
+
+1. Rename the rehearsal ruleset so no config can point at it, and delete the `firestore` block from
+   `ops/rehearsal/firebase.json` (the emulator can be pointed at a rules file by flag or by an
+   `emulators`-only config). Restores the August invariant exactly: **no second deployable target exists.**
+2. Or keep the block and rely on a new guard. Weaker, and the recorded reason stands: *"pointing a second
+   config at the canonical file would have been the same defect with better manners."*
+
+Until then, `ops/rules-authority.test.js` stays red, which is the correct signal and should not be
+suppressed or allowlisted — the August record says explicitly: **no allowlist.**
+
+**Evidence:** `whitecross-site` `0f7cada7` (2026-09-17) · guard `salown-app/ops/rules-authority.test.js`
+3/30 failing from the shared checkout · canonical ruleset `salown-app/firestore.rules` 1,168 lines, live
+ruleset `5e102dd4-e7e7-4950-b12a-14a74daa82e8`.
+
+---
+
 ## 0. Quick status table
 
 | # | Topic | Status | Risk |
