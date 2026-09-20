@@ -1,8 +1,8 @@
 # SEC — `salown.com/staff-bundle/`: a pre-enforcement Staff app on the public landing site
 
-**Work ID:** `SHADOW-STAFF-BUNDLE` · **Raised:** 2026-09-20 · **Fix shape APPROVED** (§7) · **Candidate `5be583c`** off `56ceccc` (§8) · **Status:** `SOURCE_READY_NOT_DEPLOYED` —
-patches and a guard test exist in an isolated archive workspace; **nothing is committed to `salown-app`,
-nothing is deployed, nothing is untracked or deleted, no branch was switched and no merge was made.**
+**Work ID:** `SHADOW-STAFF-BUNDLE` · **Raised:** 2026-09-20 · **Fix shape APPROVED** (§7) · **Candidate `5be583c`** off `56ceccc` (§8) · **Status: `LIVE_VERIFIED`** — released 2026-09-20 as
+`R-2026-09-20-A`, `hosting:salown` version **`be573ea0498fc71f`** (§9). Nothing was merged to `main`,
+no artefact was untracked or deleted, and `hosting:salown-staff` was not touched.
 
 Parent record: [CLOSING_COORDINATION_2026-09-20.md](CLOSING_COORDINATION_2026-09-20.md) §2 ·
 Source finding: [LIVE_MAIN_ALIGNMENT_AUDIT_2026-09-20.md](LIVE_MAIN_ALIGNMENT_AUDIT_2026-09-20.md) §5.1
@@ -319,7 +319,35 @@ the deploy workflow's trigger list, so neither started a release.
 
 ---
 
-## 9. How to reproduce every claim here
+## 9. Released — `R-2026-09-20-A`, 2026-09-20 13:06 UK
+
+`firebase deploy --only hosting:salown --project havuz-44f70`, from a clean `git archive 5be583c`
+workspace with its own `npm ci`. Full row with every number: [RELEASE_LEDGER.md](RELEASE_LEDGER.md)
+`R-2026-09-20-A`. Incident record: [INCIDENTS.md](INCIDENTS.md) 2026-09-20.
+
+| Check | Before | After |
+|---|---|---|
+| `hosting:salown` version | `07c90b756c541a6a` (1789843984606000) | **`be573ea0498fc71f`** (1789909611896000) |
+| Version contents | 122 files / 5,443,903 B | **97 files / 3,937,077 B** (−25 files, −1,506,826 B = the artefact) |
+| CLI upload enumeration | — | *"found 95 files in hosting"* |
+| `/staff-bundle/`, `index.html`, `assets/staff-*.js`, `sw.js`, `site.webmanifest` | 200, pre-enforcement Staff app | **302 → `https://staff.salown.com/`**, no `301` anywhere |
+| `/`, `/app`, `/book/whitecross`, `/login`, `/features` | 200 | **200** |
+| Admin bundle vs pinned build | 55/55 identical (pre-deploy anchor, proving live was `56ceccc`) | **55/55 identical**, plus `index.html` and `features.html` |
+| `hosting:salown-staff` | `4c0ce013b1e45dfa` / 27 files / `staff-BVUJwYTL.js` | **unchanged**, all three |
+
+**Rollback:** redeploy `hosting:salown` from `56ceccc`, or promote version `07c90b756c541a6a`. The redirect
+is a `302`, so no client caches it permanently.
+
+### ⚠️ The one thing left open
+
+`main` does **not** carry these two config lines. A future Admin deploy from `main` would republish the
+shadow bundle — the same 25 files, under the same URL. Cherry-picking `5be583c`'s `firebase.json` change and
+the guard onto `main` is a separate decision and is **not** done. Until it is, treat it as a release trap:
+any `main`-based `hosting:salown` release must carry this fix or re-open this finding.
+
+---
+
+## 10. How to reproduce every claim here
 
 ```
 git archive origin/main | tar -x -C <workspace>          # isolated, not a worktree
