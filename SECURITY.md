@@ -221,9 +221,41 @@ content scan — verified here against all three trees. `ops/rules-authority.tes
 (30/30 from the shared checkout). It was red for the right reason and **must never be allowlisted** — the
 August record says so explicitly, and this episode is why.
 
-**Live was untouched throughout:** `hosting:salown` still `be573ea0498fc71f`; no ruleset was published from
-this session (the live ruleset was not re-fetched here — that identity is carried from the 2026-09-19
-read and the peer session's report, not re-measured).
+**Live was untouched throughout, measured not inferred.** `hosting:salown` still `be573ea0498fc71f`, and
+the live ruleset was re-fetched through the Rules API on **2026-09-20T16:53:26Z**, HTTP 200 (read taken by
+the peer session that did the fix; this session holds no API token and did not re-run it):
+
+```
+GET https://firebaserules.googleapis.com/v1/projects/havuz-44f70/releases/cloud.firestore
+     header: x-goog-user-project: havuz-44f70     # without it the call 403s on quota project,
+                                                  # which reads like "no access"
+name        projects/havuz-44f70/releases/cloud.firestore
+rulesetName projects/havuz-44f70/rulesets/5e102dd4-e7e7-4950-b12a-14a74daa82e8
+createTime  2026-04-20T10:17:59.446393Z
+updateTime  2026-09-10T13:39:16.896425Z
+```
+
+Carry **both** timestamps, because they answer different questions: `createTime` belongs to the release
+object, `updateTime` is when the ruleset behind it last changed — and `updateTime` is the one that proves
+nothing was published. It is ten days old and did not move across three reads taken during this work.
+
+### The near-miss that proves the August invariant in anger
+
+While writing its claim file, the peer session's **unquoted heredoc executed a literal
+`firebase deploy --only firestore:rules`** (its stderr is still visible, spliced mid-sentence, in
+`REHEARSAL-CONFIG-DISARM--alish--client-identity.claim`). It ran from the `whitecross-site` **repo root**,
+whose configs declare no Firestore target — verified here: `firebase.json` holds only
+`storage`/`hosting`/`functions`, and `firebase.admin.json`, `firebase.owner.json`, `firebase.saas.json`
+likewise declare none — so firebase-tools refused it at **config parse, before any network call**:
+*"Cannot understand what targets to deploy/serve. No targets in firebase.json match '--only
+firestore:rules'."* Nothing was published.
+
+**One directory deeper, that same accident was the outage.** In `ops/rehearsal/` the config did declare a
+target and the project resolved to `havuz-44f70` through the configstore ancestor walk. The August
+`FIRESTORE-RULES-SSOT-P0` removal is what made the repo root fail closed, and an agent's malformed heredoc
+is exactly the kind of "correct command in the wrong directory" that removal was written for. It is also
+the strongest argument for why the fix had to be removal rather than a rename: a renamed config still
+declares a target, and an accident does not care what the file is called.
 
 **Evidence:** `whitecross-site` `0f7cada7` (2026-09-17) · guard `salown-app/ops/rules-authority.test.js`
 3/30 failing from the shared checkout · canonical ruleset `salown-app/firestore.rules` 1,168 lines, live
