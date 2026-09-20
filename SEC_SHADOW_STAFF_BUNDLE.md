@@ -345,6 +345,8 @@ shadow bundle — the same 25 files, under the same URL. Cherry-picking `5be583c
 the guard onto `main` is a separate decision and is **not** done. Until it is, treat it as a release trap:
 any `main`-based `hosting:salown` release must carry this fix or re-open this finding.
 
+**Compounded 2026-09-20 14:xx:** `main` now also carries **unreleased, un-approved Admin source** — `CLIENT-IDENTITY-P1` (`a2a627b`, `src/utils/clientIdentity.ts`, `clientTombstone`, `clientWriter`, `Clients.tsx`, `firestoreActions.ts` + `functions/src`), which reached `main` when a claim-only push named a SHA that descended from the code commit. Source-only and gated, never released. So a `main`-based Admin deploy today would republish the shadow bundle **and** ship client-identity Phase 1 — two unreviewed payloads in one release. Live is unaffected: version `be573ea0498fc71f` still serves `index-CiEeRNFs.js` with zero Phase 1 markers, and no CI run followed (every commit carried `[skip ci]`).
+
 ---
 
 ## 10. How to reproduce every claim here
