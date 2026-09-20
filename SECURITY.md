@@ -250,12 +250,25 @@ likewise declare none — so firebase-tools refused it at **config parse, before
 *"Cannot understand what targets to deploy/serve. No targets in firebase.json match '--only
 firestore:rules'."* Nothing was published.
 
-**One directory deeper, that same accident was the outage.** In `ops/rehearsal/` the config did declare a
-target and the project resolved to `havuz-44f70` through the configstore ancestor walk. The August
-`FIRESTORE-RULES-SSOT-P0` removal is what made the repo root fail closed, and an agent's malformed heredoc
-is exactly the kind of "correct command in the wrong directory" that removal was written for. It is also
-the strongest argument for why the fix had to be removal rather than a rename: a renamed config still
-declares a target, and an accident does not care what the file is called.
+**Keep the two halves apart, because they carry different lessons.**
+
+- **The refusal was structural.** All five configs in the repo declare no Firestore target — verified
+  independently by both sessions: `firebase.json` `['storage','hosting','functions']`,
+  `firebase.admin.json` `['hosting']`, `firebase.owner.json` `['hosting']`, `firebase.saas.json`
+  `['_comment','hosting']`, `barber-panel/firebase.json` `['hosting']`. The repo root is safe **by
+  construction**, and it is the August `FIRESTORE-RULES-SSOT-P0` removal that made it so. Nothing about
+  that outcome was luck.
+- **The directory was luck.** The heredoc happened to run at the repo root; the same session ran other
+  commands that `cd`'d into `ops/rehearsal/`, where the config *did* declare a target and the project
+  resolved to `havuz-44f70` through the configstore ancestor walk. **Nothing made `ops/rehearsal/` safe by
+  construction until the block came out today.**
+
+Stated as one sentence only, a reader would conclude the repo was already fine. It was fine in four of its
+five directories and one command away from an outage in the fifth.
+
+That is also why the fix had to be removal rather than a rename — and the argument is the accident, not the
+precedent: **an accident does not care what the file is called.** A renamed config still declares a target,
+and the next malformed heredoc reads `--config` or a path, not a filename policy.
 
 **Evidence:** `whitecross-site` `0f7cada7` (2026-09-17) · guard `salown-app/ops/rules-authority.test.js`
 3/30 failing from the shared checkout · canonical ruleset `salown-app/firestore.rules` 1,168 lines, live
