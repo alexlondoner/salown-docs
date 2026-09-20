@@ -490,3 +490,95 @@ changed to use it. Repairing the data alone fixes points and totals, not the bad
    system only ever suggests.
 5. **Unmerge in v1** — recommended **design now, ship later**; the journal fields it needs cost
    nothing to write from day one.
+
+---
+
+## 16. Phase 1 — delivered (SOURCE ONLY, 2026-09-20)
+
+**Branch:** `feat/client-identity-phase1` · **Claim:** `CLIENT-IDENTITY-P1--alish--client-identity`
+
+**Not done, deliberately:** no merge executed, no booking relinked, no statistic
+rebuilt, no Conrad repair, no migration, no deploy, and no write to production
+client, booking or loyalty data at any point in the session.
+
+### 16.1 What landed
+
+| Concern | Module | Note |
+|---|---|---|
+| normalization + tokens (§3) | `functions/src/clients/identityTokens.ts` · `src/utils/clientIdentity.ts` | mirrored pair, parity-pinned over `test/fixtures/clientIdentityGolden.json` |
+| tombstone following (§4) | `functions/src/clients/tombstone.ts` · `src/lib/clientTombstone.ts` | multi-hop, cycle guard, depth cap 8 |
+| identity index (§2.2) | `clientIdentities/{tokenDocId}` | the token string IS the document id |
+| ONE resolver (§4) | `identity.ts resolveIdentity` | `resolveClientIdentity` is now a narrowing projection of it |
+| create-time dedup (§5) | `functions/src/clients/ensureClient.ts` | transactional token claim + self-heal |
+| conflict / review (§9) | `functions/src/clients/reviewQueue.ts` | derived ids, so re-raising is a no-op |
+| merge journal (§2.3, §10.3) | `functions/src/clients/mergeJournal.ts` | **data model only** — a test asserts it exports no way to APPLY a merge |
+| replay harness (§10.2, §11-A) | `scripts/clientStatsReplay.cjs` | read-only; its test pins that it has no write or network vocabulary |
+
+### 16.2 Deviations from this plan, and why
+
+1. **§9 said ">1 visible candidate ⇒ review" (do not link).** Implemented as
+   **deterministic link + review flag**. Refusing to link would regress the five
+   live duplicate pairs from "linked to an arbitrary doc" to "not linked at
+   all". The tier now picks the lowest doc id — stable across runs, unlike
+   Firestore snapshot order — and raises the duplicate. Deterministic-and-flagged
+   beats both arbitrary and unlinked.
+
+2. **A name can still create (not match) a client, in exactly two places.**
+   `functions/src/clients/ensureClientCompat.ts` and
+   `clientWriter.resolveOrCreateClient`. Both call sites document the behaviour
+   as intended — `salownSetEmailConsent` exists so staff can mark a *named
+   walk-in* as opted out. The residue is confined, flagged in its return value,
+   and filtered to VISIBLE records (the old scan was not). Closing it is an
+   owner decision, not a refactor.
+
+3. **Parsers LINK but never CREATE.** A parsed aggregator email is not consent
+   to mint a customer record, and one bad parse would otherwise create hundreds.
+   Whether an import may create is an open owner question.
+
+4. **iCal is not wired.** The Treatwell iCal feed carries no email or phone at
+   all, so there is no identity to resolve. Booksy, Fresha and Treatwell (both
+   of its create paths) are wired.
+
+### 16.3 One real defect found and fixed on the way
+
+`canonicalClientFields` stamps ANY non-empty trimmed+lowercased string as
+`emailCanonical`. A placeholder like `n/a` therefore became a **queryable
+identity** on the canonical-equality tier — the token rule refuses it, so it
+never reached the index, but the two layers disagreed and the query tier would
+have matched two strangers who both typed it. Both writers now gate the stamp on
+the token rule. New documents only; nothing existing is rewritten.
+
+### 16.4 Replay result (read-only, tenant `whitecross`)
+
+`17 of 17` comparable untouched clients reproduce **exactly** under the WRITER
+fold (`paidAmount + preDesk`), money to the penny. The harness exits non-zero on
+any mismatch, so the stop is mechanical.
+
+Only 17 of 471 clients are comparable, and that is itself the finding — the
+exclusions are: 333 with no linked booking at all, 47 with partly-unlinked
+history, 38 with a manual points adjustment, 28 members (membership resets
+points), 2 tombstones, 2 merge targets, and:
+
+> **4 clients have linked CHECKED_OUT bookings but NO stats fields at all —
+> absent, not zero.** Contact-less walk-ins from before STAFF-WALKIN-IDENTITY-1,
+> when checkout was gated on `phone || email`. Their visits, spend and loyalty
+> were never written. Phase 2 must size this cohort across all tenants before a
+> rebuild runs, because a rebuild will *create* stats where none existed.
+
+### 16.5 Phase 2 risks this leaves open
+
+- **`checkoutBooking` still creates clients client-side.** Its resolution now
+  follows tombstones, but the create itself cannot be transactional: the
+  Firestore **client** SDK cannot run a query inside a transaction. Two tills
+  can still mint two records for one new person. Closing it needs the server
+  callable, which is Phase 2.
+- **`functions/src/checkout/executor.ts` does not follow tombstones.** Low risk
+  by construction — after Phase 1 `createBooking` resolves through the
+  tombstone-following resolver, so a NEW booking's `clientManualId` cannot point
+  at one. Legacy bookings still can, and that is a backfill concern.
+- **The 1,769 unlinked historical bookings are untouched.** Phase 1 stops the
+  backlog growing; it does not repair it.
+- **No Firestore rules were changed, and none are needed yet.** The three new
+  collections are written only by the Admin SDK, and the `[G4]` catch-all is
+  read-only for super-admin with unlisted collections default-denied. If a panel
+  surface is ever to READ the review queue, that needs its own rule.
