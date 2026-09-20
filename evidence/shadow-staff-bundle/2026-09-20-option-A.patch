@@ -1,0 +1,11 @@
+--- a/firebase.json
++++ b/firebase.json
+@@ -4,7 +4,7 @@
+       "site": "salown",
+       "public": "hosting",
+       "predeploy": ["npm --prefix \"$PROJECT_DIR\" run build"],
+-      "ignore": ["firebase.json", "**/.*", "schema.html"],
++      "ignore": ["firebase.json", "**/.*", "schema.html", "staff-bundle/**"],
+       "headers": [
+         {
+           "source": "/**",

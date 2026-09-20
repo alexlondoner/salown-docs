@@ -1,0 +1,15 @@
+--- a/firebase.json
++++ b/firebase.json
+@@ -4,7 +4,11 @@
+       "site": "salown",
+       "public": "hosting",
+       "predeploy": ["npm --prefix \"$PROJECT_DIR\" run build"],
+-      "ignore": ["firebase.json", "**/.*", "schema.html"],
++      "ignore": ["firebase.json", "**/.*", "schema.html", "staff-bundle/**"],
++      "redirects": [
++        { "source": "/staff-bundle",    "destination": "https://staff.salown.com/", "type": 302 },
++        { "source": "/staff-bundle/**", "destination": "https://staff.salown.com/", "type": 302 }
++      ],
+       "headers": [
+         {
+           "source": "/**",

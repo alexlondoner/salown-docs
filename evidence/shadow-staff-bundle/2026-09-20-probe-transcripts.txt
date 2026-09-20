@@ -1,0 +1,91 @@
+# Probe transcripts — 2026-09-20 (isolated git-archive workspace from origin/main 9020560)
+
+## upload set (firebase-tools listFiles)
+
+### firebase.base.json
+  salown  public=hosting
+    files uploaded      : 65
+    under staff-bundle/ : 25  e.g. staff-bundle/sw.js, staff-bundle/site.webmanifest
+    index.html present  : true
+  salown-staff  public=hosting/staff-bundle
+    files uploaded      : 25
+    under staff-bundle/ : 0
+    index.html present  : true
+
+### patchA.json
+  salown  public=hosting
+    files uploaded      : 40
+    under staff-bundle/ : 0
+    index.html present  : true
+  salown-staff  public=hosting/staff-bundle
+    files uploaded      : 25
+    under staff-bundle/ : 0
+    index.html present  : true
+
+### patchC.json
+  salown  public=hosting
+    files uploaded      : 65
+    under staff-bundle/ : 25  e.g. staff-bundle/sw.js, staff-bundle/site.webmanifest
+    index.html present  : true
+  salown-staff  public=hosting/staff-bundle
+    files uploaded      : 25
+    under staff-bundle/ : 0
+    index.html present  : true
+
+### patchAC.json
+  salown  public=hosting
+    files uploaded      : 40
+    under staff-bundle/ : 0
+    index.html present  : true
+  salown-staff  public=hosting/staff-bundle
+    files uploaded      : 25
+    under staff-bundle/ : 0
+    index.html present  : true
+
+## predeploy dispatcher (firebase-tools lifecycleHooks, echo-stubbed)
+### firebase.base.json   --only hosting:salown
+    HOOK FIRED -> salown (npm --prefix /private/tmp/claude-501/-Users-alish/98d3b44c-c616-4480-bab6-c0936a5f958e/scratchpad/shadow run build)
+    HOOK FIRED -> salown-staff (npm --prefix /private/tmp/claude-501/-Users-alish/98d3b44c-c616-4480-bab6-c0936a5f958e/scratchpad/shadow run build:staff)
+### firebase.optA2.json   --only hosting:salown
+    HOOK FIRED -> salown (npm --prefix /private/tmp/claude-501/-Users-alish/98d3b44c-c616-4480-bab6-c0936a5f958e/scratchpad/shadow run build)
+### firebase.optA2.json   --only hosting
+    HOOK FIRED -> salown (npm --prefix /private/tmp/claude-501/-Users-alish/98d3b44c-c616-4480-bab6-c0936a5f958e/scratchpad/shadow run build)
+    HOOK FIRED -> salown-staff (npm --prefix /private/tmp/claude-501/-Users-alish/98d3b44c-c616-4480-bab6-c0936a5f958e/scratchpad/shadow run build:staff)
+
+## proposed guard assertions (negative control first)
+
+### firebase.base.json  →  3 FAILING
+  FAIL  salown ignores staff-bundle/**
+  FAIL  salown publishes 0 staff-bundle files
+  PASS  salown still publishes index.html
+  PASS  salown-staff still publishes index.html
+  PASS  salown-staff still publishes assets/
+  FAIL  both stale paths redirect to staff.salown.com (302)
+  PASS  no permanent (301) redirect
+
+### patchA.json  →  1 FAILING
+  PASS  salown ignores staff-bundle/**
+  PASS  salown publishes 0 staff-bundle files
+  PASS  salown still publishes index.html
+  PASS  salown-staff still publishes index.html
+  PASS  salown-staff still publishes assets/
+  FAIL  both stale paths redirect to staff.salown.com (302)
+  PASS  no permanent (301) redirect
+
+### patchC.json  →  2 FAILING
+  FAIL  salown ignores staff-bundle/**
+  FAIL  salown publishes 0 staff-bundle files
+  PASS  salown still publishes index.html
+  PASS  salown-staff still publishes index.html
+  PASS  salown-staff still publishes assets/
+  PASS  both stale paths redirect to staff.salown.com (302)
+  PASS  no permanent (301) redirect
+
+### patchAC.json  →  ALL PASS
+  PASS  salown ignores staff-bundle/**
+  PASS  salown publishes 0 staff-bundle files
+  PASS  salown still publishes index.html
+  PASS  salown-staff still publishes index.html
+  PASS  salown-staff still publishes assets/
+  PASS  both stale paths redirect to staff.salown.com (302)
+  PASS  no permanent (301) redirect

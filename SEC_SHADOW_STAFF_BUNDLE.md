@@ -1,0 +1,248 @@
+# SEC — `salown.com/staff-bundle/`: a pre-enforcement Staff app on the public landing site
+
+**Work ID candidate:** `SHADOW-STAFF-BUNDLE` · **Raised:** 2026-09-20 · **Status:** `SOURCE_READY_NOT_APPROVED` —
+patches and a guard test exist in an isolated archive workspace; **nothing is committed to `salown-app`,
+nothing is deployed, nothing is untracked or deleted, no branch was switched and no merge was made.**
+
+Parent record: [CLOSING_COORDINATION_2026-09-20.md](CLOSING_COORDINATION_2026-09-20.md) §2 ·
+Source finding: [LIVE_MAIN_ALIGNMENT_AUDIT_2026-09-20.md](LIVE_MAIN_ALIGNMENT_AUDIT_2026-09-20.md) §5.1
+(where it was recorded as "an unversioned, publicly reachable Staff entry point" — this document is the
+part the audit left open: **it is also an un-enforced one**).
+
+---
+
+## 1. The finding, in live facts (read-only, 2026-09-20)
+
+| Probe | Result |
+|---|---|
+| `GET https://salown.com/staff-bundle/index.html` | **200**, loads `assets/staff-CRqN2rBX.js` (1,124,215 B) |
+| `GET https://staff.salown.com/index.html` | 200, loads `assets/staff-BVUJwYTL.js` (1,122,493 B) |
+| `main` (`9020560`), tracked artefact | `hosting/staff-bundle/assets/staff-CxdWlU6-.js` — **a third hash** |
+
+Callable-name **string literals survive minification**, and that is where the two live bundles part:
+
+| Literal | `salown.com/staff-bundle/` (`CRqN2rBX`) | `staff.salown.com` (`BVUJwYTL`) |
+|---|---|---|
+| `salownCreateStaffBooking` | **absent** | present |
+| `salownCreateStaffWalkIn` | **absent** | present |
+| `salownCreateWalkIn` (legacy, no D1-D7 enforcement) | **present** | absent |
+
+So the landing site publishes a **Staff app build from before `STAFF-AVAIL-GAP` Phase 1 + Phase 2**
+(`R-2026-09-13-A`, `R-2026-09-15-A`). It is a working SPA: it signs in against the same Firebase project
+and routes walk-ins through the legacy callable that has **no** passive/leave/conflict/hours enforcement —
+the callable whose gap is a *named standing exception* in `ROADMAP` precisely because the Staff App
+surface was supposed to be the enforced one.
+
+**Severity: 🟠.** Not a data leak and not privilege escalation — the same person, the same auth, the same
+rules. What it defeats is a *shipped safety control*: bookings and walk-ins that the server would now
+refuse or force through a logged owner override can be written from a URL nobody publishes and nobody
+monitors. It is also, silently, the reason a "released" protection can be true and untrue at once.
+
+### Two things it is NOT (checked, so the fix does not carry cargo)
+
+- **No service worker is installed from it.** The shadow `index.html` registers `'/sw.js'` — a *root-absolute*
+  path, i.e. `https://salown.com/sw.js`, which returns **404**. (`/staff-bundle/sw.js` exists and is
+  byte-identical to the Staff site's, but nothing on `salown.com` ever registers it.) There is therefore no
+  cached offline copy, no push registration, and **no kill-switch service worker is needed** — removing the
+  files is enough. On `staff.salown.com` the same relative registration resolves correctly, which is why the
+  real Staff app's SW is unaffected by everything below.
+- **`/public-bundle/index.html` is not a second instance of this problem.** It is reachable (200) but serves
+  `assets/index-CiEeRNFs.js` — byte-identical to what `/app` serves. Same artefact, no version skew.
+  Hygiene at most; out of scope here.
+
+---
+
+## 2. Root cause, proven from the CLI's own code
+
+Two independent mechanisms, and **only the second one is the hole**:
+
+1. **Why the file is regenerated.** `firebase-tools` `lib/deploy/lifecycleHooks.js` → `getReleventConfigs()`
+   filters hosting configs with `config.target || onlyTargets.includes(config.target)` — it keys on
+   **`target`**. This repo's two hosting entries declare **`site`**, never `target`, so `!config.target` is
+   always true and **every** hosting `predeploy` hook runs under **any** `--only`. An Admin-only deploy
+   therefore executes `npm run build:staff`, which rewrites `hosting/staff-bundle/` (`vite.staff.config.js`
+   → `outDir: './hosting/staff-bundle'`, `emptyOutDir: true`). This is the `REL-1` observation, now with its
+   mechanism. *(Note: `lib/hosting/config.js` → `filterOnly()` matches on `site` correctly, so the deploy
+   itself is properly scoped. Only the hook dispatcher is target-keyed.)*
+2. **Why the file is published.** `hosting[salown].public = "hosting"`, and `staff-bundle/` sits inside it.
+   The upload set is `listFiles(publicDir, config.ignore)` (`lib/deploy/hosting/deploy.js`), and `ignore`
+   does not mention it — so all 25 files go up with the landing site.
+
+**Probe, run against the shipped dispatcher with the real hook commands replaced by `echo`** (no network,
+no build, no deploy):
+
+```
+### firebase.json (unpatched)   --only hosting:salown
+    HOOK FIRED -> salown        (npm ... run build)
+    HOOK FIRED -> salown-staff  (npm ... run build:staff)      ← regenerates the shadow artefact
+```
+
+---
+
+## 3. What a fix has to achieve
+
+1. `salown.com/staff-bundle/**` must stop serving an old, enforcement-free Staff bundle.
+2. `staff.salown.com` and its normal deploy flow must be **unchanged**.
+3. An Admin deploy must not put it back.
+
+Goals 1 and 3 are the same property at two different times: the upload set must exclude it, permanently
+and by assertion, not by anyone remembering.
+
+---
+
+## 4. Options — separate diffs, each verified
+
+All patches are against `firebase.json` at `origin/main` `9020560`, in an isolated `git archive` workspace
+(deliberately **not** a git worktree: `ops/rulesAuthority.mjs` treats any worktree carrying a deployable
+rules config as a permanent finding, so an agent worktree would trip this repo's own security guard).
+
+### Option (a) — stop publishing it from the Admin target
+
+```diff
+--- a/firebase.json
++++ b/firebase.json
+@@ -4,7 +4,7 @@
+       "site": "salown",
+       "public": "hosting",
+       "predeploy": ["npm --prefix \"$PROJECT_DIR\" run build"],
+-      "ignore": ["firebase.json", "**/.*", "schema.html"],
++      "ignore": ["firebase.json", "**/.*", "schema.html", "staff-bundle/**"],
+       "headers": [
+```
+
+*The pattern is `staff-bundle/**`, not `hosting/staff-bundle/**`: `listFiles` globs with `cwd` set to the
+site's `public` dir, so an ignore path is relative to `hosting/`. The wrong spelling silently ignores nothing.*
+
+| | |
+|---|---|
+| **Live behaviour after the next Admin deploy** | `salown.com/staff-bundle/**` → **404** (there is no catch-all rewrite on this site; `/nonexistent-xyz` already returns 404 today). Landing, `/app`, `/book/**` unchanged. |
+| **Effect on the Staff site** | None. Publish set of `salown-staff` stays **25 files incl. `index.html` + `assets/`**. |
+| **Verification** | `listFiles()` — the exact function the deploy uses — over each site: `salown` **65 → 40 files**, `staff-bundle/` **25 → 0**; `salown-staff` **25 → 25**. |
+| **Rollback** | Delete the one array entry, redeploy `hosting:salown`. No data, no build, no client state involved. |
+| **Limit, stated plainly** | The hosting **emulator does not apply `ignore`** (it is an upload filter; `lib/emulator/hostingEmulator.js` never reads it). Local HTTP still returns 200 under this patch — that is expected and is **not** evidence against it. This option is provable only at the upload-set level. |
+
+### Option (a2) — also stop *regenerating* it (`site` → `target`) — **not recommended now**
+
+Renaming both hosting entries' `site` key to `target` and committing a `targets` map in `.firebaserc`
+(`rc.target()` reads it, so no per-machine `firebase target:apply` is needed) makes the hook dispatcher
+scope correctly.
+
+```
+### patched   --only hosting:salown
+    HOOK FIRED -> salown            ← only one
+### patched   --only hosting        (control)
+    HOOK FIRED -> salown
+    HOOK FIRED -> salown-staff      ← a full deploy is still unchanged
+```
+
+**Cost, measured:** `ops/deploy-policy.test.js` builds `DECLARED_SITES = firebaseJson.hosting.map(h => h.site)`.
+Under this patch that becomes `[null, null]` and its *"names a site that actually exists"* assertion **FAILS** —
+and that test is a gate inside the deploy workflow, so CI would refuse to release. It is a correct change
+made for the wrong reason: it fixes tree-dirtying, not the exposure, and it costs a rewrite of the one guard
+that keeps CI target-scoped. Keep it as a separate, later cleanup.
+
+### Option (b) — untrack the artefact — **hygiene, not a fix**
+
+`git rm -r --cached hosting/staff-bundle` + `.gitignore`. It removes the "stash before pull" friction and
+the third hash in `main`. **It does not close the hole:** the upload set is built from the working directory
+at deploy time, and the `salown-staff` predeploy hook regenerates the directory immediately before the
+upload — so an untracked artefact is published exactly as a tracked one is. It also makes `main` unable to
+show what the Staff site was built from. **Do not take (b) as a substitute for (a).** Not executed here.
+
+### Option (c) — redirect the stale path to the real Staff site
+
+```diff
+--- a/firebase.json
++++ b/firebase.json
+@@ -5,6 +5,10 @@
+       "public": "hosting",
+       "predeploy": ["npm --prefix \"$PROJECT_DIR\" run build"],
+       "ignore": ["firebase.json", "**/.*", "schema.html"],
++      "redirects": [
++        { "source": "/staff-bundle",    "destination": "https://staff.salown.com/", "type": 302 },
++        { "source": "/staff-bundle/**", "destination": "https://staff.salown.com/", "type": 302 }
++      ],
+       "headers": [
+```
+
+| | |
+|---|---|
+| **Live behaviour** | Firebase Hosting evaluates redirects **before** static content, so this wins even while the files are still published — it stops the stale app on its own. Everything under the path goes to the Staff root, **not** to a path-preserving `:splat`: the asset hashes differ between the two bundles, so preserving the path would only produce a 404 with extra steps. |
+| **Effect on the Staff site** | None — redirects live on the `salown` config only. Proven on the local emulator: the `salown-staff` server still returns 200 and serves its own entry chunk. |
+| **Verification** | Local hosting emulator (`--only hosting`, isolated workspace): `/staff-bundle/index.html` → **302 → `https://staff.salown.com/`**, `/staff-bundle/assets/staff-*.js` → **302**, `/` → **200**, Staff site port → **200**. |
+| **Rollback** | Remove the two entries, redeploy. **`type: 302` is deliberate** — a `301` is cached by browsers indefinitely, which would make rollback ineffective for anyone who had already hit it. |
+| **Limit** | A redirect is a *server* instruction: it does not remove the files, so anything already open in a tab keeps running until reload. Pair it with (a). |
+
+### Recommended: **(a) + (c)**, one commit
+
+(a) removes it from the published set; (c) closes the window between now and the next Admin deploy and
+gives anyone with a bookmark the correct destination instead of a bare 404. Combined patch verified:
+`salown` 40 files / 0 under `staff-bundle/`, `salown-staff` 25 files unchanged, `/staff-bundle/**` → 302,
+`/` → 200.
+
+---
+
+## 5. The guard that makes it stay fixed
+
+Proposed new file `ops/hosting-shadow-bundle.test.js` (full source in the candidate workspace, syntax-checked;
+style matched to `ops/deploy-policy.test.js`). It asserts, using firebase-tools' own listing semantics:
+
+- the `salown` site ignores `staff-bundle/**` **and** its publish set contains zero `staff-bundle/` files;
+- the same set still contains `index.html` — so the ignore rule is not over-broad;
+- `salown-staff` still publishes `index.html` **and** an `assets/` chunk — the Staff release is untouched;
+- both stale paths redirect to `https://staff.salown.com/`, and **no** redirect on this site is a `301`.
+
+**Firing negative control** (assertions run standalone against each config):
+
+| Config | Result |
+|---|---|
+| `firebase.json` unpatched | **3 FAILING** (ignore missing · 25 files published · no redirects) |
+| (a) only | 1 failing (no redirects) |
+| (c) only | 2 failing (ignore missing · 25 files published) |
+| **(a)+(c)** | **ALL PASS** |
+
+The guard fails today, which is what makes it a guard rather than a decoration. It belongs in `npm test`,
+and it is cheap enough for the deploy workflow's policy step.
+
+---
+
+## 6. Release consequences — read before committing anything
+
+- `.github/workflows/deploy.yml` releases `hosting:salown` on push to `main`, but its path filter lists
+  `index.html`, `vite.config.js`, `package.json`, `package-lock.json`, `public/**`, `packages/**`,
+  `src/**` (minus `src/staff/**`) and `hosting/**` (minus `hosting/staff-bundle/**`). **`firebase.json` is
+  not in that list**, so a commit of this patch alone does **not** trigger a deploy. It sits inert until the
+  next Admin release. A commit that also touches `ops/` or a test does not trigger it either.
+- **The removal only happens at that deploy.** Nothing in this document changes production by itself, and
+  the deploy that applies it is a normal `hosting:salown` release — which, per §2, also rebuilds the Staff
+  artefact locally (harmless once it is no longer published) and ships whatever else `main` carries for the
+  Admin bundle. That is the **M1/M3/M4 release-scope decision** in the closing-coordination record: this fix
+  cannot ride to production without it, and must not be used as a reason to wave it through.
+- Therefore: **commit needs a claim** on `firebase.json` (+ the new `ops/` test), and **production needs the
+  Admin release decision**. Both are owner calls. Neither was taken here.
+
+---
+
+## 7. Owner decision
+
+| Question | Options |
+|---|---|
+| Fix shape | **(a)+(c) recommended** · (a) alone · (c) alone · accept the exposure |
+| Hygiene | take (b) later as its own change, or leave the artefact tracked |
+| Hook scoping | take (a2) later with the `ops/deploy-policy.test.js` update, or leave it |
+| Release path | wait for the next approved Admin release, or cut an isolated release of the live Admin base + this config change only |
+| Record | open an `INCIDENTS.md` entry now, or when the fix goes live |
+
+## 8. How to reproduce every claim here
+
+```
+git archive origin/main | tar -x -C <workspace>          # isolated, not a worktree
+curl -s https://salown.com/staff-bundle/index.html       # 200 + entry chunk
+curl -s .../assets/staff-CRqN2rBX.js | grep -o 'salown[A-Za-z]\{3,40\}' | sort -u
+node upload-set.mjs <variant>...                         # firebase-tools listFiles(), per site
+node predeploy-probe.mjs <variant> hosting:salown        # firebase-tools lifecycleHooks(), echo-stubbed
+node guard-probe.mjs <variant>...                        # the proposed assertions, incl. negative control
+firebase emulators:start --only hosting --project havuz-44f70   # local only; redirects honoured, ignore NOT
+```
+
+No step touches production, and none of them may be run as `firebase deploy`.
