@@ -114,10 +114,32 @@ this is what it is firing at.
 
 **Why it matters more than it looks.** `FIRESTORE-RULES-SSOT-P0`'s original three copies were *permissive*
 (`allow read, write: if isAuth()` across all tenants). This one is the opposite and is **not** safer:
-`firebase deploy --only firestore:rules --project havuz-44f70` typed in that directory replaces the live
-**1,168-line** canonical ruleset with a **deny-everything** one. That is not a data leak, it is a total
+`firebase deploy --only firestore:rules` typed in that directory replaces the live **1,168-line**
+(80,896 B) canonical ruleset with a **deny-everything** one.
+
+**And no `--project` flag is needed on this machine** — corrected 2026-09-20 after a peer session
+challenged the first wording, which said `--project havuz-44f70`, making the dangerous command read like a
+deliberate act. It is the ordinary flagless one. The mechanism is *not* the one first proposed
+(inheritance from `whitecross-site/.firebaserc`), and the difference matters, so it was tested both ways:
+
+| Test | Result |
+|---|---|
+| `firebase use` in the real `whitecross-site/ops/rehearsal/` | **`havuz-44f70`** |
+| Same two files copied to a scratch dir, no `.firebaserc` anywhere | `Error: No active project` |
+| Same two files under a scratch parent that *does* carry a copy of `whitecross-site/.firebaserc` | `Error: No active project` |
+
+So `.firebaserc` does **not** inherit upward past the detected project root: `detectProjectRoot()` walks up
+only until it finds a `firebase.json` — which `ops/rehearsal/` has — and `loadRC()` then reads `.firebaserc`
+from **that** directory only, where none exists. The project instead comes from machine-local CLI state
+(`~/.config/configstore/firebase-tools.json` → `activeProjects`, which holds
+`/Users/alish/Desktop/alex/whitecross-site → havuz-44f70`).
+
+**Read that as worse, not better.** A fresh clone on a new machine fails with `No active project`, but
+*this* machine — the one the releases are run from — resolves production silently from that directory, and
+so will any machine where someone has ever selected a project for this repo. The safety of a stranger's
+laptop is not a control. That is not a data leak, it is a total
 production lockout — every booking page, panel, staff app and public salon page loses Firestore in one
-command, with no error to warn the operator, because the command is correct and the project is correct.
+command, with no error to warn the operator, because the command is correct and the project resolves.
 
 **Why the existing locks do not cover it:** `whitecross-site/scripts/check-rules-authority.sh` is invoked
 from `deploy.sh` and `scripts/deploy-functions.sh`, so it guards those wrappers — a bare `firebase deploy`
