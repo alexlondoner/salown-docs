@@ -130,9 +130,36 @@ deliberate act. It is the ordinary flagless one. The mechanism is *not* the one 
 
 So `.firebaserc` does **not** inherit upward past the detected project root: `detectProjectRoot()` walks up
 only until it finds a `firebase.json` — which `ops/rehearsal/` has — and `loadRC()` then reads `.firebaserc`
-from **that** directory only, where none exists. The project instead comes from machine-local CLI state
-(`~/.config/configstore/firebase-tools.json` → `activeProjects`, which holds
-`/Users/alish/Desktop/alex/whitecross-site → havuz-44f70`).
+from **that** directory only, where none exists.
+
+**The exact rule, pinned in the CLI source** (`firebase-tools` `lib/command.js` → `Command.applyRC()` →
+`configstoreProject(dir)`): what inherits upward is not the repo file, it is the CLI's own
+**`activeProjects` map**, and it inherits *by ancestor path*:
+
+```js
+configstoreProject(dir) {                                  // dir = options.projectRoot (here: ops/rehearsal)
+  const projectMap = configstore.get("activeProjects") ?? {};
+  let currentDir = path.resolve(dir);
+  while (true) {
+    if (projectMap[currentDir]) return projectMap[currentDir];   // ← ancestor hit wins
+    const parentDir = path.dirname(currentDir);
+    if (parentDir === currentDir) return null;
+    currentDir = parentDir;
+  }
+}
+```
+
+`~/.config/configstore/firebase-tools.json` holds `/Users/alish/Desktop/alex/whitecross-site → havuz-44f70`,
+so the walk from `ops/rehearsal/` hits the repo root and returns production. `applyRC()` then does
+`options.project = options.project ?? activeProject`, and only falls through to `.firebaserc` aliases if that
+is null — which is why the scratch copies, whose paths have no ancestor in the map, fail with
+`No active project` no matter where a `.firebaserc` sits. All four observations above are explained by this
+one rule, with no unexplained residue.
+
+**That is the part that makes this ordinary rather than exotic.** The `activeProjects` entry is written by
+`firebase use` / `firebase init` at the repo root — the first thing anyone does in a Firebase repo. So on any
+working machine, production is inherited into **every nested directory that contains a `firebase.json`**,
+including this rehearsal one. No flag, no alias, no deliberate act.
 
 **Read that as worse, not better.** A fresh clone on a new machine fails with `No active project`, but
 *this* machine — the one the releases are run from — resolves production silently from that directory, and
