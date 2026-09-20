@@ -97,7 +97,7 @@ not hold, so it cannot quietly be forgotten or mistaken for closed.
 
 </details>
 
-## 🔴 OPEN 2026-09-20 — a second publishable Firestore config is back: `whitecross-site/ops/rehearsal/`
+## ✅ CLOSED 2026-09-20 — a second publishable Firestore config was back: `whitecross-site/ops/rehearsal/`
 
 **`FIRESTORE-RULES-SSOT-P0` was closed on 2026-08-16 by removing every `firestore` block outside
 `salown-app`. One has since returned**, in `whitecross-site`, committed `0f7cada7` on 2026-09-17 as part of
@@ -185,8 +185,45 @@ run inside `ops/rehearsal/` never reaches it. The August fix worked by ensuring 
 2. Or keep the block and rely on a new guard. Weaker, and the recorded reason stands: *"pointing a second
    config at the canonical file would have been the same defect with better manners."*
 
-Until then, `ops/rules-authority.test.js` stays red, which is the correct signal and should not be
-suppressed or allowlisted — the August record says explicitly: **no allowlist.**
+### How it was closed, and a correction I owe the record
+
+**Fixed in `whitecross-site` `202e002f`** — the `firestore` block is **removed**, not redirected; both files
+keep non-deployable names and the deny-all ruleset survives byte-identical as rehearsal evidence
+(`da82ab80` corrects the README, `a4c4b724` releases the claim). The matching guard landed in `salown-app`
+`335c0b7` + `a1bd4ec`.
+
+**Correction — this entry previously said the repo's own `check-rules-authority.sh` "never caught the
+original" and implied it was blind. That is wrong, and the error is mine.** I ran the script at a moment
+when another session's in-flight rename was already on disk, so I measured a tree that no longer had the
+offending filename and reported the ✓ as if it were the pre-fix state. Measured properly, against trees
+extracted with `git archive`:
+
+| Tree | `check-rules-authority.sh` | `salown-app` content scan (`findFirestoreDeclaringFiles`) |
+|---|---|---|
+| **A** pre-fix (`202e002f^`) — block + default names | **exit 1**: *"a file named 'firestore.rules' exists at ops/rehearsal/firestore.rules"* | catches `ops/rehearsal/firebase.json` |
+| **B** rename-only (block kept, both files renamed) | **exit 0** | **catches** `firebase.json.rehearsal-example` |
+| **C** current `main` — block removed | exit 0, honestly | clean, `[]` |
+
+So the repo script was **not blind; it was never run.** It executes only from `deploy.sh` /
+`deploy-functions.sh`, and nothing was deployed from `whitecross-site` between the rehearsal landing
+(2026-09-17) and the fix. That is a different defect from a hole, and it has a different remedy: a guard
+with no automatic trigger, not a guard that cannot see.
+
+**Row B is the one worth remembering.** The rename-only fix — the first one proposed, and the one this
+entry argued against on the August "removal, not redirection" precedent — would have turned a *correctly
+failing* guard green while leaving the config reachable through `--config`. A detectable hazard traded for
+an undetectable one, which is worse than doing nothing. The argument was right for a better reason than
+the one given at the time.
+
+**What now covers what:** the repo script cannot distinguish B from C (it reads names, not contents), so the
+property "no file anywhere declares a `firestore` target, whatever it is called" belongs to `salown-app`'s
+content scan — verified here against all three trees. `ops/rules-authority.test.js` is green again
+(30/30 from the shared checkout). It was red for the right reason and **must never be allowlisted** — the
+August record says so explicitly, and this episode is why.
+
+**Live was untouched throughout:** `hosting:salown` still `be573ea0498fc71f`; no ruleset was published from
+this session (the live ruleset was not re-fetched here — that identity is carried from the 2026-09-19
+read and the peer session's report, not re-measured).
 
 **Evidence:** `whitecross-site` `0f7cada7` (2026-09-17) · guard `salown-app/ops/rules-authority.test.js`
 3/30 failing from the shared checkout · canonical ruleset `salown-app/firestore.rules` 1,168 lines, live
