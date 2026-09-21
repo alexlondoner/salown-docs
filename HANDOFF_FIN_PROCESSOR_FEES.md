@@ -94,7 +94,8 @@ No prototype server is running.
    refund lands on is still open.
 5. B1 production release approval — **its own release lane, the one that starts fee collection.** B2a verification does
    not wait for it. Before it: re-run preflight §6, read the live Stripe endpoint event list (Dashboard), decide how
-   `settlementLedgerEnabled` is written (no tool exists).
+   `settlementLedgerEnabled` is written — **a tool now exists**, `whitecross-site/scripts/activateSettlementLedger.mjs`
+   (2026-09-21, `c2f29b6f`, 29 tests, never run against production).
 6. When to start B2 P&L / Bank Balance (after 3–4, the T18 writer, and B1 live).
 
 ### 4a. B2a local verification — 2026-09-15 (no deploy, no production read or write)
