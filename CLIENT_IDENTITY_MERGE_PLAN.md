@@ -516,12 +516,17 @@ client, booking or loyalty data at any point in the session.
 
 ### 16.2 Deviations from this plan, and why
 
-1. **§9 said ">1 visible candidate ⇒ review" (do not link).** Implemented as
-   **deterministic link + review flag**. Refusing to link would regress the five
-   live duplicate pairs from "linked to an arbitrary doc" to "not linked at
-   all". The tier now picks the lowest doc id — stable across runs, unlike
-   Firestore snapshot order — and raises the duplicate. Deterministic-and-flagged
-   beats both arbitrary and unlinked.
+1. ~~**§9 said ">1 visible candidate ⇒ review" (do not link).** Implemented as
+   **deterministic link + review flag**.~~ **REVERSED 2026-09-21 by owner
+   decision — §9 is now implemented as written.** See §17.
+
+   The original reasoning was that refusing would regress the five live duplicate
+   pairs from "linked to an arbitrary doc" to "not linked at all". Measurement
+   retired it. The lowest document id is a fact about Firestore, not evidence
+   about a person, and the Phase A dry run showed that every whitecross duplicate
+   pair holds real checked-out money — so a wrong pick writes a visit, a spend
+   and a loyalty point onto the wrong customer's lifetime record. **An unlinked
+   booking can be merged later; a wrongly linked one cannot be found.**
 
 2. **A name can still create (not match) a client, in exactly two places.**
    `functions/src/clients/ensureClientCompat.ts` and
@@ -582,3 +587,71 @@ points), 2 tombstones, 2 merge targets, and:
   collections are written only by the Admin SDK, and the `[G4]` catch-all is
   read-only for super-admin with unlisted collections default-denied. If a panel
   surface is ever to READ the review queue, that needs its own rule.
+
+
+---
+
+## 17. §9 as implemented (2026-09-21) — refuse rather than guess
+
+**Candidate:** `wip/client-identity-p1-rebuild` — server half at `4ca0179`, panel
+half at `f32e4ef`. Source only; nothing merged, deployed, migrated or written.
+
+### 17.1 The rule, in both halves
+
+Each identifier resolves to a **set of living people**, not to a pick.
+
+| Step | Rule |
+|---|---|
+| count by PERSON, not by document | a tombstone and the survivor it points at are ONE person — otherwise every merged pair would look like a conflict and the alias flow would break the moment it began to work |
+| combine two identifiers by INTERSECTION | §4 L2 read literally. A household phone shared by two people, plus an email owned by one of them, still resolves to that one — the email says which of them booked |
+| anything else | **conflict**: link nothing, create nothing, claim no identity token, and name both people for review |
+
+Implemented twice, deliberately, in the two places that decide identity:
+
+- `functions/src/clients/identity.ts` `settle()` — the server ladder.
+- `src/lib/clientWriter.ts` `pickDuplicate()` — the panel and Staff App.
+
+### 17.2 Why the panel half was not optional
+
+`pickDuplicate` returned the **first visible candidate in query order**, and
+Firestore does not promise that order. The whitecross survey found **seven**
+identity tokens owned by two visible client documents each (Paul Kay on both his
+email and his phone, Gerry Steele, Klyde Gironella, Daniel/Dan Smethurst, Nigel,
+Thomas/Tom Featherstone), so the branch is reachable today.
+
+The id it returns is **written to**. `Clients.tsx resolveMemberDocId` feeds it
+into `updateDoc(..., { isMember: true, loyaltyPoints: 0 })` on a membership
+grant, and uses it as the **target of a merge**. Demonstrated on the old source:
+given a shared household phone and the email `kid@`, it returned **`mum`** — and
+flipped its answer when the same two candidates were passed in the other order.
+
+### 17.3 A correction to the §7 change
+
+Seeding **every** token a client doc owns made `buildAudience` and
+`canonicalBookingKeys` fuse the **unmerged** duplicate pairs: two visible docs
+sharing an email both joined that token, so their booking groups merged and the
+pair appeared as one person — five fewer "people" across Reports, Home and the
+Customers panel, and a Clients row showing one doc's loyalty balance beside both
+docs' visits and spend, with no sign that a duplicate existed.
+
+A client doc now bridges only the tokens it owns **alone among visible records**.
+A merge the operator actually performed still bridges, because a tombstone is not
+a visible owner.
+
+### 17.4 Adoption status of the merge-aware grouping — MEASURED, NOT CHANGED
+
+`canonicalBookingKeys(bookings, clientDocs)` takes the client docs as an
+**optional** second argument. Only `Clients.tsx` passes them. Measured with the
+corrected seeding:
+
+| call site | passes docs? | whitecross | herohairs |
+|---|---|---|---|
+| `src/pages/Clients.tsx:222` | **yes** | — | — |
+| `src/pages/Reports.tsx:384` | no | over-counts by **4 people** (476 → 472), 19 bookings regroup | **0** |
+| `src/components/CustomersPanel.tsx:54` | no | over-counts by **4** (478 → 474), 20 bookings regroup | **0** |
+| `src/utils/homeMetrics.ts:281,419,528` | no | over-counts by **4** (476 → 472), 19 bookings regroup | **0** |
+
+The remaining difference is entirely the two **approved** merges plus explicit
+`clientManualId` links; no unmerged pair fuses. Adopting the second argument in
+those four call sites is a separate, owner-approved step — it moves numbers on
+three live screens.
