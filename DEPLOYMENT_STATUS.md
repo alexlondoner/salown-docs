@@ -60,6 +60,18 @@
 
 ---
 
+
+## 2026-09-22 — STAFF-AVAILABILITY-UNTIL, both halves live
+
+| Unit | Source | Live identity | Rollback |
+|---|---|---|---|
+| `functions:salown` → `salownStaffLifecycle` | `a82b5bd` (`integ/staff-availability-until`) | `salownstafflifecycle-00004-saz`, 100% traffic, 19:40:55Z | `salownstafflifecycle-00003-bij` |
+| `hosting:salown` | `57aba20` (`release/admin-b2a-availability-until`, cut from live B2a `daf1244`) | version `b6a9c8f40bafe558`, release `1790106543165000`, 19:49:03Z | version `8ad0529e5e7be72e` |
+
+**`origin/main` is `a85bcf1` and carries NEITHER.** This work was deployed from branches on the owner's instruction: `main` does not contain the live Admin B2a/F2 source, so an Admin release built from it would have reverted that fix. The push-vs-live gap this file exists to track is therefore **deliberate and open** — closing it means merging `release/fin-b2a-only` and these two branches, which is a separate owner decision.
+
+Verified from the artefact in both cases: the deployed function-source zip (six `lib/` files byte-identical to the local build, `IMPLEMENTED_OPS` carrying `SET_AVAILABILITY_UNTIL`) and the served Admin bytes (`index-mviNGuAN.js` + `Barbers-i-FmL0tj.js` byte-identical to the local build; the live settlement condition still excludes `EXTERNAL_CHECKOUT`). Detail: `RELEASE_LEDGER.md` `R-2026-09-22-C` / `R-2026-09-22-D`.
+
 ## 💷 C1 — BOOKING-PRICE-EDIT-AUTHORITY · **PARTIALLY_LIVE_VERIFIED** (2026-09-10) · panel service/price path LIVE_VERIFIED · panel date/time intent LIVE_UNPROVEN · form callable DEPLOYED_UNREACHABLE
 
 **2026-09-10 — evidence-level correction (narrowing only; nothing below is withdrawn).** The 2026-09-09 18:00 header read
