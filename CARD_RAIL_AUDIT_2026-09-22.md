@@ -442,3 +442,101 @@ These are not alternatives to 12.3; 12.3 is due either way.
 **Audit status: CLOSED.** Read-only throughout. No code written, no branch, no worktree change, no
 settings file touched, no Stripe or Monzo API call, no production write, no migration, no backfill, no
 merge, no deploy.
+
+## 13. Owner decision, 2026-09-22 evening — an APPROXIMATE fee, checked monthly against Stripe
+
+The owner has decided, after the §5/§12 objections were put: **an approximate fee is what the business
+needs, and it is enough.** The decision carries its own control, and that control is what makes it
+sound: **the monthly estimated total is to be compared against Stripe's actual monthly fee figure.**
+
+This answers the objection rather than overriding it. A rate-card number is dangerous when nobody ever
+checks it; a rate-card number with a monthly reconciliation against the real total is an estimate that
+can be falsified and corrected. §5's prohibition stands where it matters — **no guess is ever presented
+as, or summed into, an actual fee** — and this design keeps that line.
+
+### 13.1 The reader already separates the two totals — this is why it is cheap and safe
+
+`src/utils/settlementFacts.ts` was built with the estimate case as a first-class state, and nothing
+currently produces it:
+
+- `FeeStatus` already includes `'estimate'` (`:26`), `NetKind` already includes `'estimate'` (`:32`).
+- `SettlementCoverage` carries **two separate totals**: `actualFee_p` — commented *"Sum of ACTUAL fees
+  only … Never includes a guess for the rest"* — and `estimatedFee_p` (`:246-248`).
+- `summariseSettlementFacts` routes `status === 'estimate'` into `estimatedFee_p` and **never** into
+  `actualFee_p` (`:266`), and `complete` stays false unless every payment has an actual fee (`:274`).
+- The ledger reserves `KIND.FEE_ESTIMATE` (`whitecross-site/functions/settlements.js:157`) and the fold
+  reads it (`:672`, `feeSource: 'estimate'`), but **no writer ever creates one.**
+
+So the contamination the prohibition exists to prevent is structurally impossible: an estimate cannot
+reach the actual-fee total by construction. The work is to feed a state the system already understands.
+
+### 13.2 Compute at READ time — which is how "the old ones" get covered with no migration
+
+The estimate is **derived when the booking is read**, not written to any document. Consequences:
+
+- The 559 historical unlinked card payments show an estimate **immediately**, with **no backfill, no
+  migration and no write to a single money record** — which is also what §5/§9 require.
+- A rate correction changes every displayed estimate at once, because nothing was frozen into a doc.
+- The day a payment gets a real fee, the actual value simply wins — no stored guess to clean up.
+
+### 13.3 The rate, and what the owner's chosen constant costs
+
+Owner's instruction: **1.5% / 2.5% + 40p**, with *"we actually pay a bit more fee, never mind"* — i.e. a
+deliberately conservative constant. That is the safe direction for a P&L (it understates profit rather
+than overstating it) and it removes the one-directional-understatement objection from §5.
+
+Worth stating plainly, because the salon's basket is small: **the average in-salon card payment is
+£30.00** (£16,767.95 / 559). At that ticket the fixed component dominates — 20p is 0.67% of the sale,
+40p is 1.33%.
+
+| rate used | 4-month estimate on £16,767.95 / 559 payments | effective rate |
+|---|---|---|
+| 1.5% + 20p (Stripe's published UK standard) | £363.32 | 2.17% |
+| **1.5% + 40p (owner's choice)** | **£475.12** | **2.83%** |
+| 2.5% + 20p | £531.00 | 3.17% |
+| 2.5% + 40p | £642.80 | 3.83% |
+
+The 20p → 40p change alone adds **£111.80** over this period. This is not an argument against it — the
+monthly comparison in 13.4 is precisely what will settle whether 40p is right — but the constant should
+be an **owner-editable setting with an `effectiveFrom` date**, never a hardcoded number, so that
+correcting it later does not silently rewrite what past months appeared to cost.
+
+### 13.4 The control that makes this legitimate: the monthly comparison
+
+Finance shows, per month:
+
+> Estimated card fees: **£X** (N payments, rate 1.5% + 40p) · Stripe's actual: **£Y** · difference **£Z**
+
+`£Y` is real and requires **no booking-level matching at all** — it is an account-level total. If the
+gap is consistently one-sided, the owner changes the rate setting and the estimate tracks reality from
+that month forward. That loop is the whole justification for the estimate, so it is not optional
+polish: **the estimate and its monthly check ship together, or the estimate is exactly the unverified
+guess §5 warned about.**
+
+### 13.5 The acquirer/rail option — owner accepted, and it is the same setting
+
+Owner: *"if we take payments with another card machine, we add that company as an option too — the TR
+package already had `providers`, we can adapt it."* Accepted, with one adjustment from §11.3: do not
+reuse `CardProviderConfig`, which is the TR **bank-instalment** structure (`supportedInstalmentCounts`,
+`commissionMode`, commission bps by instalment count) and is consumed only through
+`BankInstalmentMeta.providerId`. Overloading it would put two unrelated meanings on one id.
+
+A separate, small list — one row per card machine the salon uses, each with its own name, percentage,
+fixed amount and `effectiveFrom` — gives the owner exactly what was asked for and makes the estimate
+correct per rail instead of assuming Stripe's rate for a Monzo payment. This is the acquirer stamp and
+the rate in one setting, which is why it stops being a separate piece of work.
+
+### 13.6 Revised order of work
+
+1. **Cap the `unmatched` retry** — unchanged, still independent of everything here, still the only item
+   with a deadline (§12.3).
+2. **The estimate**: rail + rate setting, read-time estimate, `status: 'estimate'` on every unlinked
+   in-salon card payment, **together with** the monthly Stripe comparison (13.4).
+3. **Candidate reconciliation in Finance** (§12.4.1) — only if the owner later wants per-booking actual
+   fees rather than a monthly check.
+4. **Stripe Terminal integration** (§12.4.2) — the endgame, unchanged.
+
+Still forbidden, unchanged: no estimate summed into an actual fee · no acquirer inferred from
+`paymentMethod` · no amount/time auto-matching · no rewrite of the 170 `MONZO` rows · no backfill.
+
+**Status: design agreed, implementation NOT started and NOT yet approved.**
