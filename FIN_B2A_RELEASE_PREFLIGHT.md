@@ -1,5 +1,23 @@
 # FIN_B2A_RELEASE_PREFLIGHT.md — the Finance fee **display** release
 
+> # ✅ CANDIDATE PINNED — `daf1244`. Owner decisions taken 2026-09-22. **Still not deployed.**
+>
+> The owner chose, and the candidate was built and gated accordingly:
+>
+> 1. **`origin/main` is NOT used.** `main` is untouched by this work — still `55ec9df`.
+> 2. **The candidate is cut from the live Admin source `5be583c`**, so the Reports passive-barber
+>    change and the Staff override-flow copy are **not** carried.
+> 3. **F2 is fixed inside this release** — an abandoned `EXTERNAL_CHECKOUT` booking no longer draws a
+>    fee block. See §10.
+> 4. **F3 and F5 are deliberately out of scope**, recorded as follow-ups in §11.
+>
+> **Final SHA: `daf124499c836d7896fbb5ea794072767d7a2e17`**, branch `release/fin-b2a-only`
+> (pushed to the remote so the SHA is durable — a branch push triggers **no** workflow; both
+> workflows are `branches: [main]` only). Nothing was merged, deployed, migrated or written.
+>
+> **The next step is a separate, explicit owner approval for `hosting:salown` alone.** Functions,
+> rules, indexes and Staff stay out of scope — this release publishes none of them.
+
 > **Status: READ-ONLY PREFLIGHT COMPLETE. NOTHING RELEASED. NOTHING WRITTEN.**
 > Prepared 2026-09-22. No deploy, no merge, no migration or backfill, no Stripe call, no Firestore
 > production write, and no change to Functions, rules, indexes or any flag was made by the session
@@ -358,45 +376,36 @@ display on day one**, not just synthetic states.
 
 ---
 
-## 7. What the owner has to decide before anything is deployed
+## 7. The owner's decisions, as taken (2026-09-22)
 
-**Decision 1 — which candidate.**
-
-- **(a) B2a-only, cut from the live source** *(recommended)*. Changes one chunk's content. Nothing
-  but the fee block moves. Matches how this work was prepared and keeps "one change → deploy →
-  live test → next". Needs a real commit of the §3 cherry-pick first.
-- **(b) `origin/main` as it stands.** Also ships Reports passive-barber and the Staff override copy,
-  neither of which has been released or live-tested, and neither of which is in this preflight's
-  scope. If the owner wants those, they should be a named release with their own verification, not
-  passengers on a fee-display deploy.
-
-**Decision 2 — F2, the abandoned-checkout block.** Ship as-is and fix later, or fix first. It is
-display-only and never wrong about money, so shipping as-is is defensible; the owner should simply
-not be surprised by an "Online payment · Stripe" heading on a cancelled, never-paid booking.
-
-Optional, and cheap if either is wanted before the release: **F3** (date-based "before tracking
-began") and **F5** (the £0-fee test).
-
----
+| # | Decision | Effect on this package |
+|---|---|---|
+| 1 | **Do not use `origin/main`** | `main` stays at `55ec9df` and is not touched. No merge. |
+| 2 | **Cut from the live source `5be583c`** | Reports passive-barber and the Staff override copy are **not** in the candidate. The bundle delta is one chunk (§9). |
+| 3 | **Fix F2 in this release** | Done — §10. Reader change + 13 tests, 5 of which are a measured negative control. |
+| 4 | **F3 and F5 out of scope** | Recorded as follow-ups — §11. Neither is touched by `daf1244`. |
 
 ## 8. If it is approved — the deploy shape, and the rollback
 
 Not steps taken. Steps to take, and only after an explicit approval that names the candidate.
 
-1. Pin the candidate SHA and commit it properly (for (a), the §3 cherry-pick onto a real branch;
-   for (b), `55ec9df` or later `origin/main`).
+1. **Done.** The candidate is `daf1244` on `release/fin-b2a-only`, three real commits on top of the
+   live source `5be583c`. Re-check it is still what the remote holds before building.
 2. Re-read all six identities in §1 immediately before deploying, and **record the rollback identity
    first**: `hosting:salown` is at **`be573ea0498fc71f`** today — that is the rollback anchor and it
    cannot be recovered afterwards without guessing.
-3. Build from a `git archive` copy of the pinned SHA in an isolated workspace with its own `npm ci`.
-   **Never from the shared checkout.** Confirm the built `hosting/public-bundle` differs from the
-   live bytes in exactly the chunks §2.1 predicts before uploading anything.
+3. Build from a `git archive` copy of `daf1244` in an isolated workspace with its own `npm ci`.
+   **Never from the shared checkout, and never with a second workspace as its sibling** (§5.2).
+   Confirm the built `hosting/public-bundle` changes exactly **one** chunk's content against the
+   live bytes — the entry chunk, **+7,923 B** — before uploading anything (§9).
 4. Deploy **`--only hosting:salown`**. Nothing else. No Functions, no rules, no indexes, no flag.
 5. Verify in production by served bytes, not by a commit: the new entry chunk must contain
    `online-payment-fees`, `Awaiting Stripe` and `Remaining fee cost`, and the site must still answer
-   200 on `/`, `/app` and `/book/**`. Then open booking `jgyXnVAcMkQxdiNfsctO` in the Admin drawer
-   and confirm it reads `+£40.00 / −£0.80 / £39.20` — the first end-to-end proof that the ledger and
-   the display agree on a real payment.
+   200 on `/`, `/app` and `/book/**`. Then two live checks in the Admin drawer:
+   - booking **`jgyXnVAcMkQxdiNfsctO`** must read `+£40.00 / −£0.80 / £39.20` — the first end-to-end
+     proof that the ledger and the display agree on a real payment;
+   - booking **`bjku8ZxN…`** (or any of the other three abandoned checkouts) must show **no**
+     "Online payment · Stripe" section at all — the F2 fix, live.
 6. Record the release in `RELEASE_LEDGER.md` and `DEPLOYMENT_STATUS.md`, in the same commit as the
    `ROADMAP.md` status change.
 
@@ -424,3 +433,161 @@ recording either way — B2a only decides whether the owner can see it.
   inventories and the flag document were re-read after all gates finished and were **identical** to
   §1.
 - The shared Vite dev server on port 5173 was left running and untouched.
+
+---
+
+## 9. The pinned candidate — `daf1244`
+
+Three commits on top of the live Admin source. Nothing else.
+
+```
+daf1244  fix(finance): FIN-PROCESSOR-FEES B2a/F2 — an abandoned checkout is not a payment
+f2cd77a  fix(finance): FIN-PROCESSOR-FEES B2a — one refund summary per Stripe payment; …   (= 9a4925c)
+a4ad274  feat(finance): FIN-PROCESSOR-FEES B2 — policy-free Stripe fee reader and …        (= 74922bd)
+5be583c  security(hosting): stop publishing the Staff bundle under salown.com             (= LIVE)
+```
+
+`a4ad274` and `f2cd77a` are `74922bd` / `9a4925c` replayed onto the live base; the only conflict was
+two adjacent import lines in `BookingDetailPanel.tsx`, resolved by keeping both. The five non-panel
+B2a files are byte-identical to `origin/main`'s.
+
+**Exact diff, `5be583c` → `daf1244` — six files, all under `src/`:**
+
+```
+ src/components/BookingDetailPanel.tsx                    |  26 +-    (mount + read-once + one refund summary)
+ src/components/OnlinePaymentFees.tsx                     | 116 ++++  (new — the block)
+ src/components/bookingDetailPanel.refundSummary.test.ts  |  43 ++++  (new — the panel contract)
+ src/components/onlinePaymentFees.test.tsx                | 173 ++++  (new — the render cases, incl. F2)
+ src/utils/settlementFacts.test.ts                        | 262 ++++  (new — the reader cases, incl. F2)
+ src/utils/settlementFacts.ts                             | 286 ++++  (new — the reader)
+ 6 files changed, 902 insertions(+), 4 deletions(-)
+```
+
+No writer, no `functions/`, no `firestore.rules`, no `firestore.indexes.json`, no flag, no date
+policy, no translation file, no `firestoreActions.ts`, no `src/staff/**`, no `hosting/**`.
+
+**Built artifact vs the live bytes** — the baseline tree reproduced the live bundle exactly
+(33/33 text assets) in the same run, so this is a like-for-like measurement:
+
+| | |
+|---|---|
+| chunks byte-identical | **5** |
+| chunks differing **only** by the renamed entry-import path | **26** |
+| chunks with a real content change | **1** — the entry chunk, `1,291,812 → 1,299,735 B` (**+7,923 B**) |
+| CSS | byte-identical |
+
+**F2 proven in the shipped artifact**, not just in source. The built reader's evidence test:
+
+```
+before:  if(!(n||r||i>0||eR(t.paymentProvider).toUpperCase()===`EXTERNAL_CHECKOUT`||eR(t.stripePaymentIntent)!==``))
+after:   if(!(n||r||i>0||eR(t.stripePaymentIntent)!==``))
+```
+
+Everything around it is unchanged, including the Connect branch on the next line.
+
+---
+
+## 10. F2, as fixed
+
+**The defect.** `paymentProvider: 'EXTERNAL_CHECKOUT'` counted as evidence that a Stripe payment
+exists. It is written when a booking is *sent* to checkout — `functions/src/bookings/createBooking.ts`
+sets it at creation — so a customer who abandoned the Stripe page left a booking that drew:
+
+> **Online payment · Stripe** — Stripe fee · There is no Stripe fee record for this payment · **Not recorded**
+
+with no amount in it, on a booking where nobody paid anything.
+
+**What the live data showed, and the trap in it.** Re-reading the sample with `stripeSessionId`
+included changed the fix. Of the 28 `EXTERNAL_CHECKOUT` bookings in 300:
+
+| amount | intent | **session** | ledger | paymentState | status | n |
+|---|---|---|---|---|---|---|
+| ✓ | ✓ | ✓ | — | `PAID` | `CHECKED_OUT` | 16 |
+| ✓ | ✓ | ✓ | — | `DEPOSIT_PAID` | `CHECKED_OUT` | 7 |
+| ✓ | ✓ | ✓ | ✓ | `PAID` | `CONFIRMED` | 1 |
+| — | — | **✓** | — | *(absent)* | `CANCELLED` | **3** |
+| — | — | — | — | *(absent)* | `CANCELLED` | **1** |
+
+**`stripeSessionId` is present on three of the four abandoned bookings.** It is written at session
+creation, alongside `stripeSessionCreatedAt` and `stripeMode`. Treating it as evidence — which was
+the obvious first draft of this fix — would have left F2 almost entirely unfixed.
+
+**The rule.** Evidence is what the *webhook* writes: a ledger record, `stripeAmountPaid`, or
+`stripePaymentIntent`. The rail label is not evidence and is removed from `stripeEvidence`. This is
+the principle the codebase already states for this rail, in `functions/src/checkout/executor.ts`:
+*"`stripeAmountPaid` is never written by a browser, so its presence is the rail."*
+
+**Tests — 47 → 60.**
+
+- **5 pin the new behaviour**, and they are a *measured* negative control: reverting only the source
+  line in the gate workspace turns exactly those five red and leaves the other 52 green. Restoring
+  it returns 57/57. The tests bite.
+- **8 are negative controls in the other direction** — the fix must never hide money. Each adds one
+  piece of webhook evidence to the abandoned shape and requires the block back: an amount alone, an
+  intent alone, a ledger record alone, a full capture, and the **2026-09-10 census shape** (20 of 25
+  exposed DEPOSIT bookings hold a webhook-written `stripeAmountPaid` with *no* `paymentProvider` —
+  removing the label as evidence must not touch them). One more asserts the decision is made on
+  evidence, not on `status`, so an unfinished checkout on a `CONFIRMED` booking is also untracked.
+
+**Against real production data, candidate vs baseline reader:**
+
+| | baseline | candidate |
+|---|---|---|
+| untracked (no block) | 265 | **269** |
+| tracked | 35 | **31** |
+| — `known` | 1 | **1** (unchanged: £40.00 / £0.80 / £39.20) |
+| — `not_recorded` | 34 | **30** |
+| `unreadable` / `needsReview` | 0 / 0 | **0 / 0** |
+
+Exactly the four abandoned checkouts dropped off. Nothing else moved.
+
+---
+
+## 11. Follow-ups, deliberately **not** in this release
+
+Neither is touched by `daf1244`. Both are small, and both are display-only.
+
+**F3 — historical payments say "no record", not "paid before tracking began".**
+30 of the 31 tracked bookings predate `WC_SETTLEMENT_START_ISO` and carry no `settlementSync` marker
+at all, because the sweeper only marks bookings it processes. So `reason` is `null` and the copy is
+the generic *"There is no Stripe fee record for this payment"* instead of *"Paid before fee tracking
+began"*. The kind copy exists and fires correctly whenever the writer does mark a booking
+`out_of_scope`. Making it fire on date alone would put a policy date inside a deliberately
+policy-free reader — that is the design question to settle first, not the code.
+
+**F5 — no test pins a genuine £0 actual fee.**
+`fee_m: 0` with `feeSource: 'actual'` renders `−£0.00 · Confirmed by Stripe`, which is correct and
+distinguishable from an unknown fee (which renders a state and no amount). The behaviour is right;
+only the lock is missing. One test case in `onlinePaymentFees.test.tsx`.
+
+---
+
+## 12. Release-ready verdict
+
+**Release-ready for `hosting:salown` alone, pending explicit owner approval.**
+
+Everything the owner asked for is measured, on clean pinned trees under separate parents:
+
+| Gate | A — baseline `5be583c` (= live) | B — candidate `daf1244` |
+|---|---|---|
+| `tsc --noEmit` | **0 errors** | **0 errors** |
+| `eslint src` | 6 (pre-existing) | **6 — no delta** |
+| `eslint` on the six B2a files | — | **0** |
+| `vitest run` (whole repo) | **5619 passed** | **5679 passed** |
+| failing test cases | **0** | **0** |
+| skipped | **6** | **6 — identical set** |
+| suites that failed to load | 1 (environment) | 1 (same) |
+| `vite build` | OK | OK |
+| B2a + F2 suites alone | — | **60/60** |
+| F2 negative control (fix reverted) | — | **5 red / 52 green**, then 57/57 restored |
+
+B − A = **+60 tests**, exactly the three B2a suites. Skip sets are identical, so nothing was skipped
+into a pass. The one suite that fails to load — `scripts/functionsArchiveManifest.test.js`,
+`git ls-files` in a non-git `git archive` copy — fails identically on the live source and is not B2a.
+
+**Not run, and not counted:** the emulator gate (§5.3) — B2a touches no Functions code, so it has
+zero coverage here, and starting an emulator sits badly against "no Stripe call, no production
+write". It remains required for any Functions release.
+
+**Out of scope of this release and untouched by it:** Functions, `firestore.rules`,
+`firestore.indexes.json`, every feature flag, `hosting:salown-staff`, and `origin/main`.
