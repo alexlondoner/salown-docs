@@ -540,3 +540,73 @@ Still forbidden, unchanged: no estimate summed into an actual fee · no acquirer
 `paymentMethod` · no amount/time auto-matching · no rewrite of the 170 `MONZO` rows · no backfill.
 
 **Status: design agreed, implementation NOT started and NOT yet approved.**
+
+## 14. Taking the payment inside salOWN — verified against Stripe's current docs (2026-09-22)
+
+Owner's question: *can the Staff app talk to Stripe directly, so that pressing checkout opens Tap to
+Pay and the payment lands on the right booking at the right moment?* Checked against Stripe's
+documentation rather than answered from memory.
+
+**Both routes below end in the same place, and that place is already built.** If salOWN creates the
+PaymentIntent, it can put `bookingDocId` in its metadata, and metadata is copied onto the charge when
+the charge is created. That is **key #1 of the existing matcher** (`resolveBookingRef`,
+`whitecross-site/functions/settlements.js:1190-1191`). No new matching logic, no reconciliation screen,
+no estimate: the fee is actual and binds at birth. The ledger has been waiting for this input.
+
+### 14.1 Route A — a smart reader driven from the server (no app store, no native app)
+
+Stripe's **JavaScript SDK supports smart readers only** — BBPOS WisePOS E, Reader S700/S710, supported
+Verifone — connected over the internet. Better still, for exactly these readers Stripe recommends a
+**server-driven integration** that uses the Stripe API instead of any Terminal SDK, and for which *"you
+don't need to create a connection token."*
+
+For salOWN that means: the Staff app calls a callable → a Cloud Function creates the PaymentIntent
+(`payment_method_types: ['card_present']`, `metadata.bookingDocId`) and pushes it to the reader → the
+customer taps the reader → the webhook/sweeper binds it automatically.
+
+- **No native app, no Capacitor, no Apple entitlement, no App Store review.**
+- Works with the Staff app exactly as it is deployed today.
+- Cost: buying a reader, and the operator presents the reader instead of the phone.
+
+### 14.2 Route B — Tap to Pay on iPhone inside the Staff app
+
+Verified requirements:
+
+- **Tap to Pay is NOT available in the JavaScript SDK.** It ships only in the Terminal **iOS**,
+  **Android** and **React Native** SDKs — so it requires a native app. (Capacitor is already on the
+  Staff-app roadmap, but bridging the Terminal SDK is real work, not a wrapper flag.)
+- **GB is supported** (Tap to Pay availability list).
+- **iPhone XS or later**, on an iOS version no more than about a year old.
+- An **Apple entitlement** is mandatory — `com.apple.developer.proximity-reader.payment.acceptance` —
+  requested first as a development entitlement, then again as a **distribution** entitlement. Stripe's
+  own wording: *"Implementing Tap to Pay on iPhone is a complex process that requires submitting your
+  app to Apple for approval."*
+- Apple requires a **"How to Tap" instructional overlay** in the app before review.
+- **UK-specific operational gotcha:** depending on the issuer, SCA can require some UK cards to be
+  *inserted*; with Tap to Pay the payment is then declined as `offline_pin_required` before the PIN
+  screen. A salon therefore still needs a fallback — a physical reader or another method.
+
+### 14.3 What this changes about the plan
+
+- **The fee question dissolves for new payments.** Actual fee, bound by reference, no rate card and no
+  monthly check needed for anything taken this way. §13's estimate becomes a **transitional measure for
+  history** (the 559 past payments and everything up to the switch-over), which is a reason to keep it
+  small and not to build more of it than that.
+- **The unmatched retry cap (§12.3) is still due** — the backlog exists either way.
+- **This is a change in what salOWN is,** not only in what it stores: taking the payment brings
+  refunds, disputes, declines, offline behaviour, receipts and PCI scope into the product. That is the
+  real cost of both routes, and it is larger than the code.
+- Multi-tenant note: Terminal works with Connect, which is the shape salOWN would need for other
+  salons. Whitecross would run on its own existing account (`acct_1T3CrpRfgDnpYJzP`), so the fee lands
+  in the same ledger the sweeper already reads.
+
+**Recommendation: Route A.** It reaches the owner's stated goal — right payment, right booking, right
+moment — with no App Store dependency, no Apple approval cycle and no native app, and it can be built
+against the Staff app that is live today. Route B is the better *product* one day; it is not the
+cheaper way to close this gap.
+
+**Status: informational. Nothing approved, nothing started.**
+
+**Sources:** Stripe docs — Tap to Pay setup (`/terminal/payments/setup-reader/tap-to-pay`, iOS
+variant), Select a reader (`/terminal/payments/setup-reader`), Connect to a reader (JS/internet),
+Set up your integration, Collect card payments, Terminal with Connect.
