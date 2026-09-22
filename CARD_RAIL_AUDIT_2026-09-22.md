@@ -193,3 +193,73 @@ count the `unmatched` documents per day. If they match, everything is going thro
 till count is higher, the difference is exactly the Monzo volume. **Today: 2 till card payments, 2
 unmatched Stripe charges — 2 of 2, so both of today's were Stripe.** A week of this gives the real
 split without a single line of code or one Stripe call.
+
+---
+
+## 9. The 170 `MONZO` rows — leave them, and why
+
+The owner offered to migrate them to `CARD` ("there was no real difference, we just forgot to change
+the label"). Two findings:
+
+**They are already counted correctly. There is no defect to fix.**
+`legacyTender.normaliseMethod('MONZO')` returns **`OTHER`**, and
+`tenderSelection.selectTender` folds it straight into the card column —
+`serviceCard_p = service.card_p + service.other_p` (same for tips). That is why the Finance line is
+labelled *"Card / Monzo revenue"*: someone made the `other` bucket ride with card deliberately and
+named it honestly. All **170 checkouts, £5,150.00**, are inside `cardRevenue` and therefore inside
+Bank Balance today. Migrating changes exactly one thing: the Reports payment-method pie stops showing
+a separate `MONZO` slice.
+
+**And they are the only rows in the database that record which acquirer took the money.**
+That is the exact dimension §8 shows is missing everywhere else. Rewriting them to `CARD` would delete
+the salon's only historical sample of the Stripe/Monzo split — on the same day we discovered that split
+is the thing standing between the salon and its real fee figure. `legacyTender.ts` already states the
+principle in its own header: *"It does not migrate, rewrite or 'fix' any stored booking. The stored
+shape is left exactly as it is; only the READING of it is corrected."*
+
+**Recommendation: do not migrate.** If the `MONZO` slice in the Reports pie is untidy, that is a
+one-line display mapping, not a rewrite of 170 money records.
+
+---
+
+## 10. Proposed scheme going forward
+
+The whole mess comes from one conflation: **the till records a *tender* and the system needs an
+*acquirer*.** They are different facts. "Card" says how the customer paid; it cannot say who processed
+it, which is what determines whether a fee exists, where it lives and what it costs.
+
+**The design rule: record the acquirer at checkout time, by reference, never by inference.**
+
+**Step 1 — one setting, stamped per booking, zero extra taps.**
+Settings gets one value: *in-salon card payments are taken on → [Stripe Tap to Pay | Monzo | …]*,
+maintained beside the existing tender configuration in `checkoutSettingsWrite.ts`. Every card checkout
+stamps that value onto the booking as it is written. No operator has to think about it, and the day
+the machine changes the owner changes one setting — history stays right because each booking carries
+the stamp it was taken under, not whatever is configured today. This is the piece that makes every
+other option possible, and it needs no integration with anybody.
+
+**Step 2 — the fee reader learns a third answer.**
+`settlementFacts.ts` already has the right shape: a `rail` field and a `status` that distinguishes
+"not recorded" from "cannot be read". Today an in-salon card payment is simply untracked. With the
+stamp it becomes explicit: a Monzo payment is *"a rail this ledger does not see"* — the same honest
+answer the Connect branch already gives — instead of an absence that looks like an oversight. And a
+Stripe payment without a link becomes a **named gap** rather than a mystery, which is the difference
+between a backlog you can work and one you can only watch grow.
+
+**Step 3 — close the Stripe linkage (§6 option A), now well-defined.**
+Only payments stamped `stripe` need a reference, and only those are expected to resolve. The sweeper's
+`unmatched` list stops being a dumping ground and becomes what it was built to be: charges that should
+have bound and did not.
+
+**Step 4 — only then decide about Monzo fees.** A statement import is a separate piece of work with a
+different fee schedule and no per-booking granularity. It is worth doing only if Monzo stays in use —
+which is why the rail decision comes first.
+
+**The lever the owner already holds.** The owner has said Stripe Tap to Pay is available and equivalent
+for them. If the salon standardises on it, steps 2 and 4 largely disappear, every card fee becomes
+actual and readable, and the work collapses to steps 1 and 3. **That single operational choice is worth
+more than any code in this document.**
+
+**Not in this proposal, deliberately:** no fee is ever computed from a rate card; no acquirer is ever
+inferred from a tender label; no historical booking is rewritten; and nothing here touches
+`R-2026-09-22-A` or `R-2026-09-22-B`.
