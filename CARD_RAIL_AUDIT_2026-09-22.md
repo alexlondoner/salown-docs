@@ -610,3 +610,66 @@ cheaper way to close this gap.
 **Sources:** Stripe docs — Tap to Pay setup (`/terminal/payments/setup-reader/tap-to-pay`, iOS
 variant), Select a reader (`/terminal/payments/setup-reader`), Connect to a reader (JS/internet),
 Set up your integration, Collect card payments, Terminal with Connect.
+
+## 15. The reader is rejected on cost — and that makes the rail decision a PREREQUISITE, not a preference
+
+Owner, on §14: the hardware is too expensive. Verified: **Stripe Reader S700 ≈ £229, BBPOS WisePOS E
+≈ £249** in the UK (account-specific pricing shown in the Dashboard under Terminal → Shop).
+
+**The objection is correct and should not be argued with.** A reader saves nothing: Stripe's fee is
+identical whether the charge originates in the Stripe Dashboard app or on a reader. It buys visibility
+and per-booking attribution, not money. Any "it pays for itself" argument would be false. Route A is
+therefore **dropped** unless the owner later wants per-booking actual fees badly enough to pay for them.
+
+(The cheaper Bluetooth reader — Stripe Reader M2 — is not a way around this: it is driven by the mobile
+SDKs, so it needs the same native app Tap to Pay needs, and Tap to Pay then needs no hardware at all.
+It buys nothing over Route B.)
+
+### 15.1 The consequence that matters: §13's monthly check only works on ONE rail
+
+This is a dependency inside the plan the owner already approved, and it is easy to miss.
+
+§13's control is *"compare the estimated monthly total against Stripe's actual monthly figure."* But
+with two acquirers in use, the two sides count **different populations**:
+
+| | what it covers |
+|---|---|
+| Estimated total (from the till) | **every** `CARD` checkout — Stripe **and** Monzo |
+| Stripe's actual monthly figure | **only** the Stripe ones |
+
+The difference would then be dominated by the Monzo share, not by rate error. It would be large every
+month, it would never converge, and it could never tell the owner whether 1.5% + 40p is the right
+constant — which is the entire purpose of the check. **An estimate whose control cannot discriminate is
+back to being the unverified guess §5 warned about.**
+
+Two ways out, and both are free:
+
+1. **Standardise on Stripe Tap to Pay via the Stripe Dashboard app** — already in use, costs nothing,
+   needs no reader and no code. Both sides then measure the same population, the rate calibrates in the
+   first month, and the salon's true total card fee becomes a known number (without per-booking
+   breakdown).
+2. **Record the rail per payment** (§13.5's setting) and compare *only the Stripe-stamped payments*
+   against Stripe's figure. This works with both machines in use, and is the reason the rail setting is
+   not optional decoration — it is what makes the monthly check arithmetically valid.
+
+In practice both are wanted: 1 is the operational decision, 2 is what keeps the books honest if the
+salon ever picks up a second machine again.
+
+### 15.2 The free measurement, restated — it is now decision-relevant
+
+§8's zero-code measurement decides this without anyone committing to anything: **compare the daily
+count of `CARD` checkouts in the till against the daily count of `settlementScan/unmatched` documents.**
+Equal ⇒ everything is already going through Stripe and option 1 above is already true in practice;
+a surplus on the till side is exactly the Monzo volume. On 2026-09-22 it was 2 vs 2. **A week of this
+costs nothing and settles the rail question with evidence instead of recollection.**
+
+### 15.3 Standing plan after this
+
+1. **Cap the `unmatched` retry** — unchanged, independent, the only dated item.
+2. **A week of the free measurement** (15.2) — no code, no cost.
+3. **Rail setting + read-time estimate + monthly Stripe comparison** (§13), with the rail setting now
+   understood as load-bearing for the comparison rather than as future-proofing.
+4. Per-booking actual fees (reader, candidate reconciliation, or Tap to Pay in a native app) — **only
+   if the owner ever decides the breakdown is worth paying for.** Not proposed now.
+
+**Status: no hardware, no implementation, nothing approved.**
