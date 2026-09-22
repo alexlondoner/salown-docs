@@ -4,6 +4,19 @@
 > or the fee-day rules. **No deploy, flag, Stripe setting, production write or real refund has been approved.**
 > Automatic refunds (BL-4) are a separate lane and must not be bundled with this work.
 
+> **Update 2026-09-22 (late) — the coverage question is answered, and it is bigger than B2a.**
+> `CARD_RAIL_AUDIT_2026-09-22.md`: **in-salon Tap to Pay charges ARE on the salon's own Stripe account**
+> (two live charges today, £40.00 and £23.00, matched to the two till checkouts within 28 s and 112 s),
+> but the booking stores no `stripePaymentIntent` and the charge carries no `bookingDocId`, so
+> `resolveBookingForCharge` cannot bind them — they land in `settlementScan/unmatched` as
+> `BOOKING_NOT_FOUND` and **retry forever; there is no give-up path**. In an 800-booking window
+> **559 card payments (£16,767.95) carry no Stripe linkage at all** against 81 that do — so the fee is
+> currently visible on **13%** of card payments. **The gap is linkage, not integration.** The blocking
+> unknown is how the Tap to Pay app creates the charge (Stripe Terminal SDK vs a Monzo app settling
+> into Stripe); that single fact decides the fix. Scope proposal in §6 of the audit — nothing built.
+> ⚠️ `paymentMethod: 'CARD'` is a **tender label, not a rail** — the owner has said the card machine
+> may change. Any fix must bind by reference, never by the label.
+
 > **Update 2026-09-22 — B2a has a release package. Read this first.**
 > - **`FIN_B2A_RELEASE_PREFLIGHT.md`** is the B2a package: live baseline, the reader re-checked against the
 >   *deployed* writer `925debde`, rendered evidence for every fee state, a read-only pass over 300 real
