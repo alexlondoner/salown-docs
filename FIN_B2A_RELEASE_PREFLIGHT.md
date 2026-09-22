@@ -1,6 +1,21 @@
 # FIN_B2A_RELEASE_PREFLIGHT.md — the Finance fee **display** release
 
-> # ✅ CANDIDATE PINNED — `daf1244`. Owner decisions taken 2026-09-22. **Still not deployed.**
+> # ✅ RELEASED 2026-09-22 — `R-2026-09-22-B`, `hosting:salown` version `8ad0529e5e7be72e`
+>
+> **This package has been executed.** The authoritative record, with every identity and the post-release verification as
+> actually observed, is the **`RELEASE_LEDGER.md` row `R-2026-09-22-B`** — read that for what is running. §8 below is kept as
+> the plan that was followed, and §9–§12 as the evidence it was measured against.
+>
+> Live: booking `jgyXnVAcMkQxdiNfsctO` reads `+£40.00 / −£0.80 / £39.20`; the abandoned checkout `bjku8ZxN…` draws no block;
+> a real historical Website payment still reads `Not recorded`. Rollback: `be573ea0498fc71f`.
+>
+> **`main` was not merged and did not move (`55ec9df`)** — it still lacks B2a and the F2 fix, so an Admin deploy from `main`
+> would take the fee block back off the screen. Merging `daf1244` into `main` is the obvious next housekeeping step and has
+> **not** been approved here.
+>
+> ---
+>
+> ### The decisions this package was built on (2026-09-22)
 >
 > The owner chose, and the candidate was built and gated accordingly:
 >
