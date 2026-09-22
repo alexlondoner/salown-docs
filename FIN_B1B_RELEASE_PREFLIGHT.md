@@ -1,9 +1,36 @@
 # FIN_B1B_RELEASE_PREFLIGHT.md — refunds in the settlement ledger
 
-> **Status 2026-09-21: LOCALLY VERIFIED CANDIDATE, NOT RELEASED.** Nothing in this document has been
-> executed against Stripe, staging or production. Every numbered step in §4 is a **step to be taken**,
-> not a step taken. No real Stripe call, no webhook-subscription change, no flag flip, no deploy has
-> happened in the sessions that produced the candidate.
+> # ✅ RELEASED 2026-09-22 — `R-2026-09-22-A`
+>
+> **This package has been executed.** The combined B1+B1b candidate `925debde` is deployed and
+> `settlementLedgerEnabled` is armed. The authoritative record, with every identity, audit row id and
+> the rollback plan as actually confirmed, is the **`RELEASE_LEDGER.md` row `R-2026-09-22-A`** — read
+> that, not this document, for what is running. §4 below is kept as the plan that was followed.
+>
+> **Two operational corrections learned during the release, and they apply to every future Functions
+> release from whitecross-site:**
+>
+> 1. **`scripts/deploy-functions.sh` is mode `100644` in git** — the executable bit was never
+>    committed. `./scripts/deploy-functions.sh …` only works in a checkout where someone ran
+>    `chmod +x` locally; in a clean `git archive` workspace it fails with `permission denied`. Use
+>    **`bash scripts/deploy-functions.sh …`** — the same file, every guard still runs.
+> 2. **`npm ci` inside the archive workspace's `functions/` is mandatory before the deploy.** Without
+>    it the CLI aborts at `Couldn't find firebase-functions package in your source code` while
+>    analysing the source. It needs the dependency tree *locally* to decide what to deploy, even
+>    though `node_modules` is in `firebase.json`'s ignore list and is never uploaded. That failure is
+>    safe — it happens before any upload, and nothing was deployed by it — but it will stop a release
+>    that has already taken its `WC_SETTLEMENT_START_ISO`.
+>
+> Two things still deliberately not done: **no Stripe test-mode / staging rehearsal was ever run**
+> (owner decision — replaced by a flag-off inert deploy plus observation), and **`charge.updated` was
+> not added** to the endpoint.
+>
+> ---
+>
+> **Status before the release (2026-09-21): LOCALLY VERIFIED CANDIDATE, NOT RELEASED.** Nothing in
+> this document had been executed against Stripe, staging or production. Every numbered step in §4 was
+> a **step to be taken**, not a step taken. No real Stripe call, no webhook-subscription change, no
+> flag flip, no deploy had happened in the sessions that produced the candidate.
 >
 > **2026-09-21 preparation pass (`FIN-B1B-RELEASE-PREP`), no deploy:** §4 is now the combined
 > **B1 + B1b** sequence and carries the three decisions that used to live only in a handoff —
