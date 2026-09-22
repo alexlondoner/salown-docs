@@ -66,7 +66,9 @@
 | Unit | Source | Live identity | Rollback |
 |---|---|---|---|
 | `functions:salown` → `salownStaffLifecycle` | `a82b5bd` (`integ/staff-availability-until`) | `salownstafflifecycle-00004-saz`, 100% traffic, 19:40:55Z | `salownstafflifecycle-00003-bij` |
-| `hosting:salown` | `57aba20` (`release/admin-b2a-availability-until`, cut from live B2a `daf1244`) | version `b6a9c8f40bafe558`, release `1790106543165000`, 19:49:03Z | version `8ad0529e5e7be72e` |
+| `hosting:salown` | **`6c55dc2`** (`fix/availability-until-lift`, on `57aba20`, itself cut from live B2a `daf1244`) | version **`2cb2d07dd8a3b104`**, release `1790120765122000`, 2026-09-22T23:46:05Z | version `b6a9c8f40bafe558` (→ `R-2026-09-22-D`), or `8ad0529e5e7be72e` to drop the feature and keep B2a |
+
+**Superseded rows for this site:** `b6a9c8f40bafe558` (`R-2026-09-22-D`, source `57aba20`) → `2cb2d07dd8a3b104` (`R-2026-09-23-A`, source `6c55dc2`, UX repair). No Functions deploy accompanied the repair; `salownstafflifecycle-00004-saz` is unchanged.
 
 **`origin/main` is `a85bcf1` and carries NEITHER.** This work was deployed from branches on the owner's instruction: `main` does not contain the live Admin B2a/F2 source, so an Admin release built from it would have reverted that fix. The push-vs-live gap this file exists to track is therefore **deliberate and open** — closing it means merging `release/fin-b2a-only` and these two branches, which is a separate owner decision.
 
