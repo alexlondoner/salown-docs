@@ -263,3 +263,126 @@ more than any code in this document.**
 **Not in this proposal, deliberately:** no fee is ever computed from a rate card; no acquirer is ever
 inferred from a tender label; no historical booking is rewritten; and nothing here touches
 `R-2026-09-22-A` or `R-2026-09-22-B`.
+
+## 11. Writer-level audit — what the till can actually stamp (read-only, no code written)
+
+§6 and §10 proposed *"stamp the reference at checkout"* and left one blocking unknown: **how the Tap to
+Pay charge is created.** This section answers it from the code, and the answer changes the ordering.
+
+### 11.1 The blocking question, answered: there is no terminal integration to take a reference from
+
+Searched across both repos (`salown-app@origin/main`, `whitecross-site@main`):
+
+| looked for | result |
+|---|---|
+| `@stripe/terminal-js`, `stripe-terminal-react-native`, any Terminal SDK dependency | **absent** — `package.json` (app) has no Stripe dependency at all; `functions/package.json` has server `stripe@^22` only |
+| `stripe.terminal.*`, `connectionToken`, reader APIs | **no call sites** |
+| `tapToPay` / "tap to pay" in any form | **no hits** |
+| `stripe.paymentIntents.create` | **no call sites** — the only PaymentIntent salOWN ever causes is `stripe.checkout.sessions.create` (`functions/src/index.ts:4223`), i.e. the hosted web checkout |
+| anything Monzo | **no integration** — the only hits are the 170 historical rows and two Finance labels (`src/pages/Finance.tsx:1954, :2025, :2631`, `src/components/checkoutDeskPrePaid.ts:75`) |
+
+**Consequence.** Both in-salon rails are operated in a *separate app* on the operator's phone. salOWN
+never creates, reads or is told about that charge. At the instant the till writes the money, **no
+provider reference exists in the browser or on the server, for either rail.** §6 option A as written —
+"put the payment intent id from the terminal integration onto the booking" — is not a small linkage
+fix; it presupposes an integration that does not exist. Building it means salOWN taking the payment
+itself (Stripe Terminal / Tap to Pay on iPhone inside the Staff app), which is a change to how the
+operator charges a customer, not a field addition.
+
+### 11.2 The money writers, and what each one has in hand
+
+The three tills differ in UI and converge on **one** money writer — which is good news for a stamp.
+
+| till (UI) | file | money write |
+|---|---|---|
+| Admin checkout | `src/components/CheckoutPanel.tsx:1668` | `checkoutBooking` (browser) |
+| Admin checkout, TR tenants | `src/components/CheckoutPanel.tsx:1568` | `checkoutBookingViaExecutor` → `functions/src/checkout/executor.ts` (server) |
+| Staff appointment checkout | `src/staff/sheets/CheckoutSheet.tsx:95` | `checkoutBooking` (browser) |
+| Staff walk-in | `src/staff/sheets/WalkInFlow.tsx:588` | `createWalkIn` → then `checkoutBooking` (browser) |
+| Staff product sale | `src/staff/sheets/WalkInFlow.tsx:508` | `salownCreateStaffProductSale` → `functions/src/sales/productSaleCore.ts` (server) |
+| Admin product sale | `src/firestoreActions.ts:1151` | `createProductSale` (browser) |
+
+`checkoutBooking` (`src/firestoreActions.ts:385`) writes `paymentMethod`, the canonical receipt and
+`paymentAllocation` (`src/firestoreActions.ts:769-795`). **Four surfaces, one write for appointments:
+the stamp has one home, not three.** Product sales are a second, separate home with the same blindness.
+
+Fields available to a writer today: `paymentMethod` (tender label, operator-chosen), `paymentType`,
+`tipPaymentMethod`, `paymentAllocation.*`. **No acquirer field exists anywhere in the booking schema,
+and no writer has a provider reference to put in one.**
+
+`stripePaymentIntent` — the key the matcher needs — is written by exactly two lines, both in the hosted
+web checkout (`functions/src/index.ts:4369, :4763`). No till writer touches it, and no till writer can.
+
+### 11.3 `checkoutSettings.providers` is NOT the home for the acquirer
+
+`ResolvedCheckoutSettings.providers` already exists and looks tempting. It is the wrong shape:
+`CardProviderConfig` (`packages/shared/src/checkout.ts:225`) is a **TR bank-instalment** provider,
+carrying `supportedInstalmentCounts`, `commissionMode` and **commission basis points by instalment
+count**. It is consumed only through `BankInstalmentMeta.providerId` for `CARD_INSTALMENT`
+(`src/utils/checkoutTender.ts:458-460`).
+
+Two reasons to keep the acquirer out of it: it would overload one id with two unrelated meanings, and
+it is a structure whose purpose is **deriving a fee from a rate card** — the one thing §5 forbids. An
+acquirer stamp must carry no rate.
+
+Second trap: `checkoutSettings` defaults to `enabled: false` and the whole TR-D1 tender subsystem is
+dark for UK tenants. Hanging a UK acquirer setting inside it would either be read by nobody or force a
+TR subsystem on for whitecross. The stamp needs its own small field with its own read path.
+
+### 11.4 The matcher accepts exactly two keys, and neither is reachable from the till
+
+`resolveBookingRef` (`whitecross-site/functions/settlements.js:1186`):
+1. `charge.metadata.bookingDocId` (or the Checkout Session's metadata, `:1477-1486`)
+2. `bookings.where('stripePaymentIntent', '==', charge.payment_intent)` (`:1193`)
+
+There is **no amount/time fallback** anywhere in the matcher — correct, and it must stay that way.
+Both keys are produced only by salOWN-created payments. An in-salon charge carries neither.
+
+### 11.5 The unmatched leak, measured
+
+`retryUnmatched` (`settlements.js:1640`): due by `nextAttemptAt`, `orderBy nextAttemptAt` ascending,
+`limit` 10; `wcSettlementSweeper` runs **every 15 minutes** (`whitecross-site/functions/index.js:3810`)
+with `unmatchedLimit: 10`. Backoff `5 min → ×2 → capped 24 h` (`:259-260, :293`). A doc closes **only**
+via `resolvedAt`.
+
+- Capacity: 96 runs/day × 10 = **≈960 retries/day**. Each is one `stripe.charges.retrieve` (`:1658`).
+- Standing population today ≈559, growing ≈6.6/day → **≈559 Stripe reads/day spent re-asking a question
+  whose answer cannot change**, and capacity is reached at ≈960 standing docs, i.e. **around mid-February
+  2027** on today's rate.
+- Starvation order is the sting: a *genuine* new unmatched charge gets `nextAttemptAt = now + 5 min` and
+  therefore sorts **behind** every overdue backlog doc. Past the crossover, the list starves exactly the
+  cases it exists for.
+- **The terminal-state machinery already exists and is simply not wired here.** `MAX_ATTEMPTS = 8`
+  (`:261`) is applied only to the booking-side marker (`pendingMarker`, `:989`), and the booking side
+  also has a true terminal state (`SYNC.UNRESOLVABLE`, `nextAttemptAt: null`, `:1213-1215`). The
+  `unmatched` subcollection has neither.
+
+### 11.6 What this does to the ordering in §6/§10
+
+**Unchanged:** the acquirer stamp (§10 step 1) is still the cheapest and still correct. It needs no
+integration and no reference — it records *which machine took the money*, which is a fact the salon
+knows and the database currently does not. It is an operator/config assertion, not proof, and must be
+labelled as such: it tells a reader **where to look for a fee**, never what the fee was.
+
+**Unchanged:** the `settlementFacts` third answer (§10 step 2) fits the existing shape —
+`rail: 'external'` alongside today's `'none' | 'stripe' | 'stripe_connect'`, consumed at
+`src/components/OnlinePaymentFees.tsx` and `src/components/BookingDetailPanel.tsx:945`.
+
+**Changed, and this is the finding:** §6-A ("write the reference at the till") is **not available** and
+cannot be scheduled as a linkage fix. Reaching a per-booking Stripe reference requires salOWN to take
+the card payment itself. So the practical order becomes:
+
+1. **Stamp the acquirer** — one setting, one field on the booking, no integration. Makes every later
+   step possible and makes the current silence honest.
+2. **Cap the unmatched retry** — wire the existing `MAX_ATTEMPTS` / terminal state into the `unmatched`
+   subcollection. Independent of every rail decision, and the only item here with a deadline.
+3. **Then the rail decision** (§8): reconcile Stripe charges against candidate bookings with owner
+   confirmation in Finance (§6-B, ~6-7/day, provider-agnostic), **or** invest in a real Stripe Terminal
+   integration so that new payments bind by reference. Option B is reconciliation; the Terminal route is
+   a product change. Neither is a field addition, and choosing between them is the owner's call.
+
+**Still forbidden, unchanged:** no fee from a rate card · no acquirer inferred from `paymentMethod` · no
+amount/time matching · no rewrite of the 170 `MONZO` rows · no backfill of any kind.
+
+**Audit method:** read-only. Both repos read at `origin/main` / `main`; no working tree touched, no
+branch created, no Stripe or Monzo API called, no production read or write, no deploy.
