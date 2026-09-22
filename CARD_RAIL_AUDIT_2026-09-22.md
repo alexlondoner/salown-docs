@@ -386,3 +386,59 @@ amount/time matching · no rewrite of the 170 `MONZO` rows · no backfill of any
 
 **Audit method:** read-only. Both repos read at `origin/main` / `main`; no working tree touched, no
 branch created, no Stripe or Monzo API called, no production read or write, no deploy.
+
+## 12. Audit closed — what is settled, and what is still a decision
+
+### 12.1 The historical `MONZO` rows, verified from `origin/main`
+
+§9 asserted the 170 rows already count correctly. Verified independently in the writer audit:
+
+- `src/utils/legacyTender.ts:71-77` — `normaliseMethod` recognises `CASH`, `CARD`, `VOUCHER` and
+  returns `'OTHER'` for everything else. `MONZO` is **not special-cased**; it lands in `OTHER` through
+  the catch-all.
+- `src/utils/tenderSelection.ts:82, :85, :103` — `other_p` is folded straight into the card column:
+  `serviceCard_p = f.service.card_p + f.service.other_p`, and the same for the tip leg.
+
+**Therefore: the 170 checkouts (£5,150.00) are already inside `cardRevenue` and Bank Balance.** There is
+no defect to repair, and the Finance label *"Card / Monzo revenue"* is an accurate name for what that
+figure contains. Migrating them would change no total, would delete the only rows in the database that
+record an acquirer, and is **not proposed by this audit under any option.** The separate `MONZO` slice
+in the Reports pie is a display mapping and can be handled there if it bothers anyone — without
+rewriting a single money record.
+
+### 12.2 Settled by this audit, not open to re-litigation
+
+1. salOWN holds **no provider reference** for an in-salon card payment — Stripe or Monzo (§11.1).
+2. There is **no Stripe Terminal SDK and no Monzo integration** in either repo (§11.1).
+3. `paymentMethod: 'CARD'` is a **tender label, not evidence of a rail**, and must never be read as one.
+4. The 170 historical `MONZO` rows **stay as they are** (§12.1).
+5. An acquirer stamp, on its own, **does not create a fee linkage.** It records where to look for a
+   fee; it cannot produce one. It is worth having for honesty, and it is not a fix.
+
+### 12.3 The one item that is independent of every product decision
+
+**Cap the `unmatched` retry and give the collection an explicit terminal state.**
+
+It stops an unbounded queue (≈559 standing docs, +6.6/day, ≈559 pointless `stripe.charges.retrieve`
+calls a day, capacity exhausted ≈mid-Feb 2027 — §11.5). It matches nothing by guess. It does not depend
+on whether the salon standardises on Stripe or keeps Monzo. It does not touch the deployed ledger,
+`R-2026-09-22-A` or `R-2026-09-22-B`. The machinery already exists on the booking side
+(`MAX_ATTEMPTS = 8`, `SYNC.UNRESOLVABLE` with `nextAttemptAt: null`) and is simply not wired to the
+`unmatched` subcollection.
+
+**Status: recommended first, NOT approved, not started. No implementation without explicit approval.**
+
+### 12.4 The two remaining product decisions — the owner's, not this audit's
+
+1. **Manual reconciliation in Finance.** Show unmatched Stripe charges beside candidate bookings and
+   let the owner confirm each one. ~6-7/day. Provider-agnostic. Never matches on amount or time by
+   itself — a human confirms, and the confirmation is the reference.
+2. **A real Stripe Terminal / Tap to Pay integration**, i.e. salOWN takes the card payment itself. This
+   is the only route on which a new payment binds to its booking automatically and by reference. It
+   changes how the operator charges a customer.
+
+These are not alternatives to 12.3; 12.3 is due either way.
+
+**Audit status: CLOSED.** Read-only throughout. No code written, no branch, no worktree change, no
+settings file touched, no Stripe or Monzo API call, no production write, no migration, no backfill, no
+merge, no deploy.
