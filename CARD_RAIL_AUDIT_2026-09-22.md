@@ -673,3 +673,61 @@ costs nothing and settles the rail question with evidence instead of recollectio
    if the owner ever decides the breakdown is worth paying for.** Not proposed now.
 
 **Status: no hardware, no implementation, nothing approved.**
+
+## 16. Correction to §15 — the owner accepts the price, and the rate in §13 is probably wrong
+
+Two corrections, one of them material to the money.
+
+### 16.1 "S700" is a model name, not a price
+
+The owner read "S700" as a dollar figure. It is the name of the device — **Stripe Reader S700** — and
+its UK price is **£229**. No figure in this document is in dollars. With the price understood, the
+owner's verdict is *"£229/£249 is not bad"*, so **§15's rejection of Route A is withdrawn** and Route A
+(a smart reader driven server-side, §14.1) is live again as the leading option.
+
+§15's reasoning still stands on its own terms and is left in the record: a reader saves nothing, it
+buys correctness and per-booking attribution. That is now a price the owner is willing to pay, which is
+a different answer to the same question, not a contradiction of it.
+
+### 16.2 The rate the owner chose looks substantially too high — because the pasted card was the ONLINE one
+
+§13 fixed the estimate at **1.5% / 2.5% + 40p**, taken from Stripe's published pricing panel. That panel
+is the **online** rate. **In-person (card-present) pricing is different and lower:** published UK
+Terminal pricing is **1.4% + 10p for EEA cards** and **2.9% + 10p for non-EEA cards**.
+
+Every in-salon Tap to Pay payment is card-present, so the online rate never applied to them.
+
+| rate | 4-month estimate on £16,767.95 / 559 payments | effective |
+|---|---|---|
+| **1.4% + 10p (published in-person, EEA)** | **£290.65** | **1.73%** |
+| 1.5% + 20p (online — what was pasted) | £363.32 | 2.17% |
+| 1.5% + 40p (§13's chosen constant) | £475.12 | 2.83% |
+
+If the real rate is 1.4% + 10p, §13's constant **overstates fees by ≈£184 over this period — about 63%
+too high**, roughly £46 a month of profit that would look spent and was not. A conservative constant is
+sound in principle (§13.3), but this is no longer a small safety margin.
+
+**Do not simply substitute 1.4% + 10p either.** Published rates are third-party summaries and account
+pricing can be bespoke. The authoritative figure is one minute away and costs nothing: **open the Stripe
+Dashboard, find one of the in-salon Tap to Pay charges, and read its actual fee.** For reference, the
+B1 proof payment on 2026-09-22 (`CAPTURED 4000`, `FEE_ACTUAL 80` — 80p on £40.00) is exactly
+1.5% + 20p, i.e. the online rate, consistent with it being a hosted web checkout rather than an
+in-salon tap. So our own ledger does not yet contain a single confirmed in-person fee.
+
+### 16.3 What this does to the order of work
+
+If the reader is bought, **the estimate stops being needed for new payments entirely** — the fee binds
+by reference and is actual from day one. That leaves the estimate as a **history-only** device for the
+559 past payments, which argues for building the smallest possible version of it, or deferring it until
+the reader is live and the real backlog is known.
+
+Revised standing plan:
+
+1. **Cap the `unmatched` retry** — unchanged, independent, dated.
+2. **Read one real in-salon Stripe fee from the Dashboard** — one minute, zero cost, settles §13's rate
+   and tells us what the in-person rate actually is on this account.
+3. **Route A feasibility and cost** (reader + server-driven PaymentIntent with `metadata.bookingDocId`)
+   — now the leading option rather than a rejected one.
+4. **The estimate** — only for history, and only as large as history needs.
+
+**Status: nothing bought, nothing approved, nothing started.**
