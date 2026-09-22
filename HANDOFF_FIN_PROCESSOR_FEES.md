@@ -4,6 +4,19 @@
 > or the fee-day rules. **No deploy, flag, Stripe setting, production write or real refund has been approved.**
 > Automatic refunds (BL-4) are a separate lane and must not be bundled with this work.
 
+> **Update 2026-09-22 — B2a has a release package. Read this first.**
+> - **`FIN_B2A_RELEASE_PREFLIGHT.md`** is the B2a package: live baseline, the reader re-checked against the
+>   *deployed* writer `925debde`, rendered evidence for every fee state, a read-only pass over 300 real
+>   whitecross bookings, and A/B/C gates on three pinned trees. **Nothing was deployed, merged or written.**
+> - **Two owner decisions block the deploy** (preflight §7): which candidate — `origin/main` is *not*
+>   B2a-only, it also carries the Reports passive-barber change and the Staff override copy — and whether
+>   to fix the abandoned-checkout block (F2) first.
+> - **The B1 capture leg is no longer waiting.** A real website payment was captured and priced on
+>   2026-09-22T12:23:43Z (booking `jgyXnVAcMkQxdiNfsctO`, `CAPTURED 4000` + `FEE_ACTUAL 80`, gbp). §2's
+>   B1 rows and the `PARTIALLY LIVE_VERIFIED` status below are superseded — see the preflight's F6.
+> - §4a's browser check from 2026-09-15 still stands; the 2026-09-22 pass re-verified the same states by
+>   render and added the production sample.
+>
 > **Update 2026-09-15 evening — read this before §1:**
 > - **B1b:** whitecross-site `95a963fe`, SOURCE_READY_NOT_DEPLOYED. The claim was handed over with owner approval
 >   (`ef17f1f6`) and released (`3668c506`); no claim of this stream is open in either repo.
