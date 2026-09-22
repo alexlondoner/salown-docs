@@ -13,6 +13,10 @@ instinct was right: those charges are on the salon's own Stripe account, and Str
 The ledger already **sees** the money. What it cannot do is **attribute** it to a booking — so no fee
 is recorded, and B2a shows nothing on those bookings. **The gap is linkage, not integration.**
 
+**Read §8 before acting on §6:** the salon uses *two* card rails interchangeably — Stripe Tap to Pay
+**and** the Monzo app — and the till writes `CARD` for both, so the data cannot say which acquirer took
+any given payment. That changes which fix is even possible.
+
 ## 1. The evidence — two live charges, matched to two till checkouts
 
 `wcSettlementSweeper` scans charges on the configured account (`WC_STRIPE_ACCOUNT_ID`
@@ -134,3 +138,58 @@ and correctly shows nothing where it cannot. But the product's coverage should b
 later consume these figures (B2 P&L, Bank Balance) must not present a partial fee total as a complete
 one — `summariseSettlementFacts` already refuses to call coverage complete while any fee is unknown,
 and that refusal is now load-bearing.
+
+---
+
+## 8. Addendum — the owner uses TWO card rails, and the till records both as `CARD`
+
+Asked how Tap to Pay is set up, the owner answered: *"the Monzo app, but we can also do Tap to Pay
+straight from Stripe — same thing."*
+
+For the customer, and roughly for the rate, that is true. **For this system they are two different
+acquirers, and only one of them is reachable:**
+
+| What the operator taps | Where the charge lands | Is the fee reachable? |
+|---|---|---|
+| **Stripe** Tap to Pay | the salon's own Stripe account | **yes** — the actual fee is in `balance_transaction`; only the booking link is missing (§2) |
+| **Monzo** app | Monzo's acquiring | **no** — it never appears in the Stripe account, so no amount of Stripe work will ever surface that fee |
+
+**And nothing in the data says which one was used.** The current tender vocabulary
+(`src/utils/checkoutTender.ts`) is `CASH · CARD · BANK_TRANSFER · CARD_INSTALMENT · SALON_CREDIT ·
+VOUCHER · OTHER` — there is no acquirer field and no Monzo option. Both rails are written as `CARD`.
+
+**The distinction used to exist and was lost.** `MONZO` was a real tender value in production for
+**170 checkouts, 2026-02 → 2026-05**, carried on `paymentMethod` (167) and `paymentType` (170):
+
+| month | CARD | MONZO | CASH |
+|---|---|---|---|
+| 2026-02 | 100 | 19 | 30 |
+| 2026-03 | 6 | **148** | 51 |
+| 2026-04 | 161 | 0 | 45 |
+| 2026-05 → 2026-09 | 189–229/mo | **0** | 35–59/mo |
+
+In March the till was recording Monzo explicitly and barely using `CARD`; from April it is `CARD` for
+everything. That was a free-text label, not a rail record, and it is gone from today's vocabulary — but
+it shows the salon itself once thought the two were worth telling apart.
+
+**Consequence for §6.** Option **A** (write the reference at the till) only works for payments taken
+on **Stripe** Tap to Pay. For Monzo payments there is nothing to reference; they would need a Monzo
+statement import, which is a different piece of work with a different fee schedule and no per-booking
+granularity. So the ordering changes:
+
+1. **Decide the rail before building anything.** If the salon standardises on **Stripe** Tap to Pay —
+   which the owner says is already available and equivalent for them — the entire problem collapses to
+   option A: one acquirer, fee data already inside the ledger's reach, and only the booking link to
+   write. That is a business decision with a large technical payoff, and it is the cheapest path by a
+   wide margin.
+2. If both rails stay in use, then **the till must record which acquirer took the money** before any
+   fee work is meaningful — otherwise a fee lookup cannot even know which payments it is allowed to
+   fail to find. That is a new field, not a new integration, and it must be an **acquirer reference,
+   never a tender label** (the owner has also said the card machine may change again).
+
+**A free measurement that settles the mix, costing nothing and touching nothing.** From today the
+sweeper records every Stripe charge it cannot bind. So: count the till's `CARD` checkouts per day and
+count the `unmatched` documents per day. If they match, everything is going through Stripe. If the
+till count is higher, the difference is exactly the Monzo volume. **Today: 2 till card payments, 2
+unmatched Stripe charges — 2 of 2, so both of today's were Stripe.** A week of this gives the real
+split without a single line of code or one Stripe call.
