@@ -66,7 +66,7 @@
 | Unit | Source | Live identity | Rollback |
 |---|---|---|---|
 | `functions:salown` → `salownStaffLifecycle` | `a82b5bd` (`integ/staff-availability-until`) | `salownstafflifecycle-00004-saz`, 100% traffic, 19:40:55Z | `salownstafflifecycle-00003-bij` |
-| `hosting:salown` | **`6c55dc2`** (`fix/availability-until-lift`, on `57aba20`, itself cut from live B2a `daf1244`) | version **`2cb2d07dd8a3b104`**, release `1790120765122000`, 2026-09-22T23:46:05Z | version `b6a9c8f40bafe558` (→ `R-2026-09-22-D`), or `8ad0529e5e7be72e` to drop the feature and keep B2a |
+| `hosting:salown` | **`37506d6`** (`fix/after-last-day-lane`, on `6c55dc2` → `57aba20` → live B2a `daf1244`) | version **`102a5b6d0504adf5`**, release `1790122855154000`, 2026-09-23T00:20:55Z | version `2cb2d07dd8a3b104` (→ `R-2026-09-23-A`) |
 
 **Superseded rows for this site:** `b6a9c8f40bafe558` (`R-2026-09-22-D`, source `57aba20`) → `2cb2d07dd8a3b104` (`R-2026-09-23-A`, source `6c55dc2`, UX repair). No Functions deploy accompanied the repair; `salownstafflifecycle-00004-saz` is unchanged.
 
