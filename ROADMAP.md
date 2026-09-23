@@ -594,6 +594,24 @@ required. ⚠️ *Corrected the same day by `18405c6`: that flag was an analyser
 
 ---
 
+### 5.Z `TEST-HARNESS-READABILITY` — the frontend suite no longer answers "is this green?" · **CONFIRMED_OPEN** *(added 2026-09-23 by `ADMIN-PICKER-5MIN`)*
+
+Three separate defects in the harness, all **measured** during one release, not inferred. None is a product bug and none was fixed then — the release under way was scoped to the Admin picker, and changing a test suite mid-release is how a gate stops meaning anything.
+
+**(a) Topology tests are mixed into the code suite.** `ops/rules-authority.test.js`, `ops/functions-ownership.test.js` and `scripts/functionsArchiveManifest.test.js` assert facts about *where the checkout sits on disk* — whether sibling repos (`whitecross-site`, `salown-panel`) exist next to it, whether the tree is a git worktree, whether developer-machine artefacts (`.claude/`, `_preview/`, `functions/.secret.local`) are present. In one session the failure count moved **2 → 3 → 16 → 17 → 18** across five workspaces **with identical source**. `rules-authority`'s worktree guard is the sharpest case: running the suite from inside a temporary worktree makes the PRIMARY checkout the reported offender, so the test fails *because of how you ran it*.
+*Consequence:* "the frontend suite is green" is no longer a readable signal. Every session must run the base separately and diff two failure sets to learn anything — expensive, and it invites the mistake of comparing against the wrong base (which happened, and was caught only because the stale local `main` was noticed).
+*Shape of the fix (not started, not approved):* split the run — `npm test` for code, a separate `npm run test:topology` for environment assertions. No test deleted, no assertion weakened.
+
+**(b) `src/staff/lib/staffTimeContract.test.ts` is flaky.** `timeOptionsWithExtra — … every minute of the day, injected off-grid, lands at a valid sorted position` fails inside the full suite and passes **3/3 in isolation**, on the candidate *and* on its base. It contaminates exactly the A/B comparison that (a) forces on everyone: one release A/B read 18 fail on the base vs 17 on the candidate, and the difference was this flake, not the change.
+*Shape of the fix:* find the ordering/shared-state dependency, or `skip` it with the reason written in the file. **Do not** silence it to make a count match.
+
+**(c) The canonical emulator gate is single-instance on port 8080.** With several sessions on one machine the gate simply cannot run: on 2026-09-22 it was reported **NOT RUN** because another session's Firestore emulator held the port, and killing it was correctly refused. Secondary: the gate's test count varies with the base (**645** on `37506d6`, **725** on `a85bcf1`, **732** on the reconciled head), so a lower number reads as a regression to anyone who does not know the base. The figure is only meaningful next to the tree it ran on.
+*Shape of the fix:* let the gate claim a free port (`firebase.json` emulators block or `--port`), and print the base SHA next to the totals.
+
+**Related:** `salown-docs` `INCIDENTS.md` 2026-09-22 · `salown-app` `SYNC.md` `ADMIN-PICKER-5MIN` · measured across `f1e15f4`, `37506d6`, `82a0e20`, `68dfab0`.
+
+---
+
 ## 6. P1 — Product completion and TR readiness
 
 **Turkey is not "Future".** TR-A regional settings, TR-B packages + ledger, TR-B2 accounting +
