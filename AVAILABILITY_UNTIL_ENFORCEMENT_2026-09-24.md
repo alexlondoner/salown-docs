@@ -77,7 +77,7 @@ tree has the executor, **P3** (import flag). Carried so a later redeploy from an
 | `salownReassignBooking` | `assertAssignableStaff` real window | reschedule branch, P3 |
 | `salownEditBookingForm`, `salownPatchBookingDetails` | executor gates the landing day of a MOVE, incl. barber-only change; past landing day and non-moving edits allowed | reschedule branch, P3 |
 | `salownRescheduleByToken` | `AFTER_LAST_DAY` → same customer sentence as before | P2, P3 |
-| parsers ×3 | after-cutoff import kept + flagged `needsReassignment` / `STAFF_AFTER_LAST_DAY_AT_IMPORT` | P2 |
+| parsers ×3 | after-cutoff import kept + flagged `needsReassignment` / `STAFF_AFTER_LAST_DAY_AT_IMPORT` | `assertAssignableStaff`, reschedule branch (tree has no edit executor, so no P2) |
 
 **Harness/uniformity only, no runtime effect on any deployed function:** the frontend parity copy
 `src/utils/availabilityWindow.ts` in function trees (a functions deploy does not ship it), the
