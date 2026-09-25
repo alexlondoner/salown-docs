@@ -647,6 +647,10 @@ What genuinely remains, in order:
 
 ---
 
+### 6.Y `STAFF-CALENDAR-PRODUCT-SALE` — product-only sales still show on the Staff calendar and Admin Home's schedule · **CONFIRMED_OPEN** *(added 2026-09-25 by `GRID-PRODUCT-SALE`, `R-2026-09-25-E`)*
+
+The Admin calendar was fixed in `R-2026-09-25-E` (`isCalendarGridRecord` in `src/utils/calendarGridRecords.ts`). The same record still appears where no filter exists: Staff `TodayView` (list, `bookedCount`, checked-out count) and `WeekScheduleGrid` (cards) — both never filtered product sales, legacy or PSA2 — and Admin Home "Today's schedule" (13:22 walk-in row on 25 Sep). Fix = reuse `isCalendarGridRecord` for appointment rows/counts while keeping revenue tiles whole; Staff needs a separate owner-approved `hosting:salown-staff` release. Slot behaviour is not involved (CHECKED_OUT is never busy).
+
 ## 7. P2 — Scale and commercial maturity
 
 Monetisation `COM-M1`/`M2` · Stripe Go-LIVE `PAY-1` and the `A1` hard gate `PAY-2` · secret

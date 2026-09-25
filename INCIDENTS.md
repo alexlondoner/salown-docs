@@ -41,6 +41,27 @@ Every incident opens with `## YYYY-MM-DD — short title`, immediately followed 
 
 **Tag dictionary (CANONICAL — only these; sprawl forbidden):** `#security` `#stripe` `#secrets` `#config` `#deploy` `#normalization` `#permission` `#race` `#timezone` `#parser` `#email` `#data-loss` `#shared-infra`. A new tag is added only if a genuinely new class emerges (e.g. twins like `#payment`+`#payments`+`#stripe-payment` are FORBIDDEN → all `#stripe`). Every entry carries a `**Tags:**` line.
 
+## 2026-09-25 — A product-only sale drew a card on the Admin calendar: the grid recognised sales by a source name the new writer no longer writes
+
+**Severity:** 🟡 Medium (wrong display; no money, stock or slot effect) · **Owner:** Claude (alish/products) · **Status:** ✅ Resolved & DEPLOYED 2026-09-25 — `R-2026-09-25-E`, `hosting:salown` `c119f7a6d7780365` · **Affected area:** Admin calendar (day/week/month) + its appointment counters
+**Tags:** `#normalization`
+
+**Discovery:** owner report — a product-only sale made today appeared on the booking grid.
+**Impact:** since 2026-08-09 every Admin/Staff product sale drew a zero-length card on the Admin day grid (always on week/month) and inflated appointment counts; Sales/Finance/stock were correct and no slot was ever blocked.
+**Root Cause:** the grid classified a product sale by `source === 'Product Sale'`, the legacy browser writer's stamp. The PSA2 server writer (`d9e7684`) stamps the CHANNEL (`'Panel'`/`'Staff App'`). The readers had been moved to the structural `isProductSaleRecord` two days earlier (`f9b7301`), but the calendar was not on that list — the one surface that classified by name kept doing so.
+**Bug Class:** State normalization (SSOT violation) — a second, name-based classifier survived next to the canonical structural one.
+**Resolution:** `isCalendarGridRecord` (= not `isProductSaleRecord`) on the three calendar feeds and the appointment counters; money pills unchanged. Deployed `R-2026-09-25-E`; read-only production screen confirmed.
+**Prevention:** one classifier for "is this an appointment on the calendar" (`src/utils/calendarGridRecords.ts`); never test a record's KIND by its `source` — source is the channel.
+**Regression Tests:** `src/utils/calendarGridRecords.test.ts` (17: PSA2 Panel/Staff App hidden, legacy hidden, no slot held, service+product kept and busy for its span, £0/no-duration appointment kept, SALE- with a service kept, empty shell kept, counters/money wiring).
+**Related:** commits `a7a61c6` `d6312c6` (main `6762ebd` `aa483ca`) · roadmap `STAFF-CALENDAR-PRODUCT-SALE` · files `src/pages/Dashboard.tsx`, `src/utils/calendarGridRecords.ts`
+
+**What happened / Diagnosis / Fix:** A read-only query found the sale (`SALE-…`, `source:'Panel'`, `serviceId:''`, `startTime == endTime`, CHECKED_OUT) — the writer marked it correctly. The live Dashboard chunk carried the June filter unchanged; git history on every branch had no later grid fix, so this was not an undeployed or reverted fix but a filter never updated when the writer changed. Visibility and blocking were checked separately: every busy path (`hasTimeConflict`, `salownGetBusySlots`, `blocks.ts`, `staffPolicyGate`, public `BookingPage`) skips CHECKED_OUT, so the card never held a slot. Latent: `getExistingRangeMinutes` widens a zero-length record to 30 min — harmless only because of that status skip (now pinned by a test). The first candidate was cut on `45029ad`; live moved to `05083a7` during review, and the fix was re-cut there so the release would not undo R-2026-09-25-D.
+
+**Lessons Learned:**
+- When a writer changes what it stamps, grep every reader of the old stamp — not only the revenue readers.
+- `source` answers "which channel", never "what kind of record"; kind comes from structure.
+- Shown on the grid ≠ blocks a slot; prove the two separately.
+
 ## 2026-09-22 — A customer could not book the only gap that existed, and the front desk could not book it either
 
 **Severity:** 🟠 High · **Owner:** alish/admin-picker · **Status:** ✅ Resolved · **Affected area:** Admin booking pickers (New Booking + Walk-in sheet's Booking tab), start-time generation
