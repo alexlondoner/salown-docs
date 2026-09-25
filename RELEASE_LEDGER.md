@@ -1,5 +1,14 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
+## R-2026-09-25-D — Admin Home: the "recorded earlier name" note removed from Top clients and both points cards · 1 unit (`hosting:salown`) · **LIVE_VERIFIED (artefact + read-only screen)**
+
+- **Owner decision (2026-09-25):** a pooled row shows only visits and amount (the renamed regular reads "8 visits · £352"). Pooling rule (`R-2026-09-25-B`), amounts, visit counts and `nameLinkedVisits` in the data unchanged; no database write.
+- **Source:** salown-app **`05083a7`** (`release/home-drop-note-on-live-45029ad`) = live `45029ad` (`R-2026-09-25-C`; re-verified: isolated build 55/55 byte-identical to served) + `Home.tsx` (byte-identical to its `fe8e24a` shape), en/tr panel dictionaries (the two `recordedName_*` strings removed), `homeTopClientsIdentity.test.ts` (now asserts NO note, data kept). All four identical between `45029ad` and main before the change. Main carries it as `a39632d`.
+- **Before → after:** `5c56a953570b90e9` → **`e385dead99e13249`** (release `1790339404925000`, 2026-09-25T12:30:04Z). **Rollback: `5c56a953570b90e9`** (restores the note, keeps Clients C).
+- **Gates:** vitest failure set identical to live `45029ad` in the same workspace (29 env-only), 5869 passed on both; tsc identical; screen suites on the candidate's code **9/9** (Home recorded-name 2 — renamed client ranks once with 5 visits and no note; current-name walk-in stays apart · Ignore 4 · Clients 3). Chunk diff vs live: **`Home.js` + `index.js` only**.
+- **Artefact:** isolated build == tested; served **55/55**; loads `index-C1GWBlf-.js`; `recorded earlier name` / `recordedName` 0; `No checkout record`, `Checked-out net`, `dismissedReminders:v2:` present; emulator wiring 0; `salown-staff` `9e7fafd49f8db5e8`, `whitecrossbarbers-saas` `1c5b7df0694ee139` unchanged.
+- **Production screen (read-only, Whitecross owner):** Top clients #4 "Qash The Jeweller · 8 visits · £352"; no note on Top clients or either points card; ranks and amounts as in B/C.
+
 ## R-2026-09-25-C — Admin Clients: history by date, realized visits only, "Checked-out net", a missing checkout is "payment not verified" · 1 unit (`hosting:salown`) · **LIVE_VERIFIED (artefact + read-only screen)**
 
 - **Why:** a Whitecross regular's Clients drawer said 10 visits / £445 / Last visit = their FIRST visit, history in document order with a bare "0" under zero-discount rows: a no-show and an unpaid appointment were counted at list price, tips were inside the total, and the list was never sorted. Owner decisions (2026-09-25): count realized visits only; label the figure as checked-out net, not collection; a booking with no checkout is "payment not verified", never "not collected"; show product sales, tips and prepayments (verified vs recorded, refund once, never re-added on checkout) apart; keep points, service ids and Clients' own identity merge unchanged.
