@@ -647,7 +647,9 @@ What genuinely remains, in order:
 
 ---
 
-### 6.Y `STAFF-CALENDAR-PRODUCT-SALE` — product-only sales still show on the Staff calendar and Admin Home's schedule · **CONFIRMED_OPEN** *(added 2026-09-25 by `GRID-PRODUCT-SALE`, `R-2026-09-25-E`)*
+### 6.Y `STAFF-CALENDAR-PRODUCT-SALE` — product-only sales on the Staff calendar and Admin Home's schedule · **✅ LIVE_VERIFIED 2026-09-25** (`R-2026-09-25-F` Admin `92846a10f16bbec8`, `R-2026-09-25-G` Staff `4b34fd622c7abebe`; Staff screen verified for no-regression only — no Whitecross Staff session) *(added 2026-09-25 by `GRID-PRODUCT-SALE`, `R-2026-09-25-E`)*
+
+**Closed:** Home schedule + today counts, Staff TodayView, WeekScheduleGrid and the WeekView weekly summary now use `isCalendarGridRecord`; revenue figures keep the sale. The text below is the state as first recorded.
 
 The Admin calendar was fixed in `R-2026-09-25-E` (`isCalendarGridRecord` in `src/utils/calendarGridRecords.ts`). The same record still appears where no filter exists: Staff `TodayView` (list, `bookedCount`, checked-out count) and `WeekScheduleGrid` (cards) — both never filtered product sales, legacy or PSA2 — and Admin Home "Today's schedule" (13:22 walk-in row on 25 Sep). Fix = reuse `isCalendarGridRecord` for appointment rows/counts while keeping revenue tiles whole; Staff needs a separate owner-approved `hosting:salown-staff` release. Slot behaviour is not involved (CHECKED_OUT is never busy).
 
