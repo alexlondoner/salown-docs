@@ -43,7 +43,7 @@ Every incident opens with `## YYYY-MM-DD — short title`, immediately followed 
 
 ## 2026-09-25 — A Treatwell prepayment vanished at checkout: the till netted it off, the writer did not know it existed
 
-**Severity:** 🟠 High (money missing from records + £0 receipt to a customer; no customer charged wrongly via Admin) · **Owner:** alish/treatwell-prepaid · **Status:** 🟡 Open — fixed on a review branch (`b7285e5`), NOT deployed; historical rows NOT repaired · **Affected area:** checkout writer (`checkoutBooking` / `resolvePrePaidAmount`), loyalty receipt email, Finance/Reports/client spend, Staff checkout sheet
+**Severity:** 🟠 High (money missing from records + £0 receipt to a customer; Staff sheet re-billed prepaid bookings) · **Owner:** alish/treatwell-prepaid · **Status:** 🟡 Open — review candidates Admin `f54f9c4` / Staff `77e57dd` / main `7fa122d`, NOT deployed, NOT merged; historical rows NOT repaired · **Affected area:** checkout writer (`checkoutBooking` / `resolvePrePaidAmount`), loyalty receipt email, Finance/Reports/client spend, Staff checkout sheet
 
 **Discovery:** owner report — a Treatwell-prepaid visit checked out without the loyalty tick; the email sent later from the booking panel read "Total Paid £0.00 · Paid by card".
 **Impact:** every Treatwell-prepaid checkout since the receipt writer shipped (3 rows: `T2192482993` 4 Sep, `T2193785663` 19 Sep, `T2194298081` 25 Sep) stores £0 paid and a flagged receipt; 2 older rows (`T2185837725`, `T2188888050`) have `paidAmount` 0 too. Readers that sum `paidAmount + platformDepositAmount` (Finance, Reports, salesPeriod, clientSpend, client `totalSpent`) count £0 for them. The Staff sheet would bill the prepaid price a second time.
@@ -56,7 +56,11 @@ Every incident opens with `## YYYY-MM-DD — short title`, immediately followed 
 
 **What happened / Diagnosis / Fix:** The parser can fall back to the catalogue price when "Price paid:" is missing, and the booking does not record which one it used (here both are £28). So the stored `paidAmount` is the import's claim of payment, not independent proof; a parser provenance marker is a separate item. Separately, `T2191930047` (29 Aug, prepaid) shows £30 taken by card at the Admin till — whether the customer was charged twice is unknown and needs the owner to check the terminal.
 
+**Update 2026-09-26 (review round 2):** the writer refusal alone arrives after Pay, when a card may already have been taken — so both tills now say "do not take payment" and draw no payment control on an unresolvable booking. A read-only census found the rail would also have moved 3 cancelled HeroHairs rows (£155) onto the Clients page; cancelled/no-show are now excluded and the resolver's answer changes for 0 of 2,382 live bookings. **Separate open finding (not in this fix):** 59 of 63 checked-out HeroHairs Treatwell-"prepaid" bookings record full desk money (50 Admin-till Cash). Possible duplicate collection or a wrong "prepaid" label — not established; it is a release precondition for the Staff candidate. `T2191930047` (£30 card, whitecross) is likewise a *possible* duplicate, unproven.
+
 **Lessons Learned:**
+- A refusal at the writer is not enough when the money is taken on a separate card machine before the write: the screen has to refuse first.
+- Run the resolver over the real population before calling a rail "narrow": the census found a surface (cancelled rows on Clients) the tests did not.
 - BL-8 was released writer-first and presenter-second; this is the mirror image: the presenter knew a rail the writer did not. Any "already paid" rail must land in the ONE resolver both sides read.
 - An absent amount written as 0 becomes a £0 receipt, £0 revenue and £0 spend at once. Refuse it instead.
 

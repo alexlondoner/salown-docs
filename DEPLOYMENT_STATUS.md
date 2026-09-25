@@ -13,6 +13,9 @@
 > ---
 >
 > ### 📍 CURRENT — **2026-09-25 `R-2026-09-25-F` + `-G` — product-only sales are not appointments on Admin Home or Staff (Today, Week grid, weekly summary)**: `hosting:salown` `c119f7a6d7780365` → **`92846a10f16bbec8`** (`6091956`); `hosting:salown-staff` `9e7fafd49f8db5e8` → **`4b34fd622c7abebe`** (`601ff38`). Rollbacks `c119f7a6d7780365` / `9e7fafd49f8db5e8`. Main carries both (`d2eaee8`).
+> ### ⏳ PENDING — NOT LIVE — `TREATWELL-PREPAID-WRITER` (2026-09-26): review branches only, **no deploy, no main merge**
+> Admin candidate `review/treatwell-prepaid-writer-on-live-6091956` @ **`f54f9c4`** (target `hosting:salown`, base = live `92846a10f16bbec8` / `6091956`) · Staff candidate `review/treatwell-prepaid-writer-staff-on-live-601ff38` @ **`77e57dd`** (target `hosting:salown-staff`, base = live `4b34fd622c7abebe` / `601ff38`) · main integration `review/treatwell-prepaid-writer-on-main` @ **`7fa122d`** (not merged). No Functions change. Live identities re-read 2026-09-26 and unchanged: `hosting:salown` `92846a10f16bbec8`, `hosting:salown-staff` `4b34fd622c7abebe`, `salownsendloyaltyemail-00067-bem`. **Until released, the live tills still drop a Treatwell prepayment at checkout (Admin: £0 stored; Staff: bills the price again).** Release precondition: HeroHairs Treatwell "prepaid" label confirmed (see ROADMAP §6.Z).
+>
 >
 > *Previous CURRENT line, kept:* **2026-09-25 `R-2026-09-25-E` — GRID-PRODUCT-SALE: product-only sales off the Admin calendar and its appointment counts**: `hosting:salown` `e385dead99e13249` → **`c119f7a6d7780365`** (`d6312c6` = live `05083a7` + 3 files). Rollback `e385dead99e13249`. Main carries it (`6762ebd`, `aa483ca`, `3c47223`).
 >
