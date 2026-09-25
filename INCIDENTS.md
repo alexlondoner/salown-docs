@@ -41,6 +41,25 @@ Every incident opens with `## YYYY-MM-DD — short title`, immediately followed 
 
 **Tag dictionary (CANONICAL — only these; sprawl forbidden):** `#security` `#stripe` `#secrets` `#config` `#deploy` `#normalization` `#permission` `#race` `#timezone` `#parser` `#email` `#data-loss` `#shared-infra`. A new tag is added only if a genuinely new class emerges (e.g. twins like `#payment`+`#payments`+`#stripe-payment` are FORBIDDEN → all `#stripe`). Every entry carries a `**Tags:**` line.
 
+## 2026-09-25 — A Treatwell prepayment vanished at checkout: the till netted it off, the writer did not know it existed
+
+**Severity:** 🟠 High (money missing from records + £0 receipt to a customer; no customer charged wrongly via Admin) · **Owner:** alish/treatwell-prepaid · **Status:** 🟡 Open — fixed on a review branch (`b7285e5`), NOT deployed; historical rows NOT repaired · **Affected area:** checkout writer (`checkoutBooking` / `resolvePrePaidAmount`), loyalty receipt email, Finance/Reports/client spend, Staff checkout sheet
+
+**Discovery:** owner report — a Treatwell-prepaid visit checked out without the loyalty tick; the email sent later from the booking panel read "Total Paid £0.00 · Paid by card".
+**Impact:** every Treatwell-prepaid checkout since the receipt writer shipped (3 rows: `T2192482993` 4 Sep, `T2193785663` 19 Sep, `T2194298081` 25 Sep) stores £0 paid and a flagged receipt; 2 older rows (`T2185837725`, `T2188888050`) have `paidAmount` 0 too. Readers that sum `paidAmount + platformDepositAmount` (Finance, Reports, salesPeriod, clientSpend, client `totalSpent`) count £0 for them. The Staff sheet would bill the prepaid price a second time.
+**Root Cause:** presenter/writer split on one question. The Admin till (`checkoutDeskPrePaid.ts`, platform branch) reads the import's `paidAmount` as already paid; the writer's `resolvePrePaidAmount` only knew stored `platformDepositAmount`, webhook rails and DEPOSIT-typed rows, so a FULL-typed aggregator import resolved to 0 — and the writer then overwrote `paidAmount` with the desk's £0, erasing the only record of the £28. Log proof: `[whitecross] receipt: legacy view — writer-flagged: TREATWELL-T2194298081` (2026-09-25T19:33:33Z).
+**Bug Class:** SSOT violation (two resolvers for "already paid") + missing-as-zero.
+**Resolution:** `resolveImportedPlatformPrepaid` (RECORDED only from the import's own `paidAmount` on a FULL, not-yet-checked-out booking, `twGrossPrice` agreeing to the penny; settled `platformDepositAmount` wins), used as rail 1b of `resolvePrePaidAmount`; `checkoutBooking` refuses an UNRESOLVED import (`ImportedPrepaidUnresolvedError`) instead of writing £0. Email reader/template unchanged. Not deployed; needs `hosting:salown` + `hosting:salown-staff`.
+**Prevention:** the refusal makes a missing prepaid amount loud instead of £0; the tests pin writer = Admin till = Staff sheet for this rail.
+**Regression Tests:** `src/firestoreActions.treatwellPrepaid.test.ts` (33) · `functions/src/receipts/treatwellPrepaid.test.js` (3).
+**Related:** commits `b7285e5` · roadmap `TREATWELL-PREPAID-WRITER` · files `src/firestoreActions.ts`
+
+**What happened / Diagnosis / Fix:** The parser can fall back to the catalogue price when "Price paid:" is missing, and the booking does not record which one it used (here both are £28). So the stored `paidAmount` is the import's claim of payment, not independent proof; a parser provenance marker is a separate item. Separately, `T2191930047` (29 Aug, prepaid) shows £30 taken by card at the Admin till — whether the customer was charged twice is unknown and needs the owner to check the terminal.
+
+**Lessons Learned:**
+- BL-8 was released writer-first and presenter-second; this is the mirror image: the presenter knew a rail the writer did not. Any "already paid" rail must land in the ONE resolver both sides read.
+- An absent amount written as 0 becomes a £0 receipt, £0 revenue and £0 spend at once. Refuse it instead.
+
 ## 2026-09-25 — A product-only sale drew a card on the Admin calendar: the grid recognised sales by a source name the new writer no longer writes
 
 **Severity:** 🟡 Medium (wrong display; no money, stock or slot effect) · **Owner:** Claude (alish/products) · **Status:** ✅ Resolved & DEPLOYED 2026-09-25 — `R-2026-09-25-E`, `hosting:salown` `c119f7a6d7780365` · **Affected area:** Admin calendar (day/week/month) + its appointment counters
