@@ -654,11 +654,11 @@ What genuinely remains, in order:
 
 The Admin calendar was fixed in `R-2026-09-25-E` (`isCalendarGridRecord` in `src/utils/calendarGridRecords.ts`). The same record still appears where no filter exists: Staff `TodayView` (list, `bookedCount`, checked-out count) and `WeekScheduleGrid` (cards) — both never filtered product sales, legacy or PSA2 — and Admin Home "Today's schedule" (13:22 walk-in row on 25 Sep). Fix = reuse `isCalendarGridRecord` for appointment rows/counts while keeping revenue tiles whole; Staff needs a separate owner-approved `hosting:salown-staff` release. Slot behaviour is not involved (CHECKED_OUT is never busy).
 
-### 6.Z `TREATWELL-PREPAID-WRITER` — a Treatwell prepayment is lost at checkout · **🟡 PUSHED_NOT_LIVE — review candidates ready, NOT deployed, NOT merged** *(added 2026-09-25, updated 2026-09-26 by `alish/treatwell-prepaid`)*
+### 6.Z `TREATWELL-PREPAID-WRITER` — a Treatwell prepayment is lost at checkout · **✅ LIVE (ARTIFACT_VERIFIED) 2026-09-26 — `R-2026-09-26-A` Admin `2e322ecb469b09d3` (`f54f9c4`) + `R-2026-09-26-B` Staff `d29ade1f6679bc30` (`77e57dd`); main NOT merged (`7fa122d` pending); production screen not observed** *(added 2026-09-25, updated 2026-09-26 by `alish/treatwell-prepaid`)*
 
 **Cause (proven):** the Admin till nets a Treatwell-prepaid booking to £0 but `resolvePrePaidAmount` had no rail for an aggregator import (`paymentType FULL` + `twPaymentMode prepaid`), so `checkoutBooking` wrote no `platformDepositAmount` and overwrote the import's `paidAmount` with £0 → receipt fails I3 → loyalty email "Total Paid £0.00" (`TREATWELL-T2194298081`); Finance/Reports/sales period/client spend read £0; the Staff sheet (same resolver) billed the price again.
 
-**Candidates (each on its own live source):**
+**Released (each from its own live source; the text below is the pre-release record):**
 - Admin → `hosting:salown`: `review/treatwell-prepaid-writer-on-live-6091956` @ **`f54f9c4`** (live `6091956` + resolver rail 1b + writer refusal + Admin till notice/blocked payment panel).
 - Staff → `hosting:salown-staff`: `review/treatwell-prepaid-writer-staff-on-live-601ff38` @ **`77e57dd`** (live `601ff38` + the same resolver/writer commits + Staff sheet notice; Admin files untouched).
 - Main integration (not a release source): `review/treatwell-prepaid-writer-on-main` @ **`7fa122d`**.
