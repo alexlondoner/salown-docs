@@ -1,7 +1,9 @@
 # PROCESSOR_FEES_PLAN.md — payment-rail fees, provider-agnostic, in phases
 
-> **Status (2026-09-14, re-verified read-only — `evidence/fin-processor-fees/2026-09-14-status-audit.md`):** 🟡
-> **B0 design complete. B1 IMPLEMENTED IN SOURCE; only its rules arm is in production.**
+> **Status (2026-09-26 header refresh; the 2026-09-14 audit below is superseded by the ledger):** 🟢
+> **B1 + B1b LIVE since `R-2026-09-22-A`** (`stripewebhook-00107-yus`, `wcsettlementsweeper-00001-cat`, index `CICAgJjF9oIK`, `settlementLedgerEnabled: true`; capture leg proven with a real £40 payment, fee £0.80) · **B2a LIVE since `R-2026-09-22-B`** (`hosting:salown` — the Stripe fee is visible on a booking). Open: B3 backfill, the no-checkout fee date, the open-period refund day, the T18 write-once field — see ROADMAP `FIN-PROCESSOR-FEES`. Earlier header, kept for provenance:
+> *Status (2026-09-14, re-verified read-only — `evidence/fin-processor-fees/2026-09-14-status-audit.md`):* 🟡
+> *B0 design complete. B1 IMPLEMENTED IN SOURCE; only its rules arm is in production.*
 > Phase 0 (the online tender leg, **gross only**) is LIVE (`FIN-ONLINE-TENDER`, R-2026-09-05-B).
 > **B1 source:** `whitecross-site/functions/settlements.js` + the `stripeWebhook` branch, landed `8137711b`;
 > `salown-app` side (index + `settlementLedgerEnabled` rules arms) landed `9a9547a`. Functions suite **182/182 pass**
