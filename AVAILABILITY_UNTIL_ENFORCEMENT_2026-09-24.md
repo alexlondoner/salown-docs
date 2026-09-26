@@ -108,6 +108,11 @@ test file carries).
    import stays visible in the leaver's (dimmed) calendar lane and `OFFBOARD` refuses with
    `BOOKINGS_AFTER_LAST_WORKING_DAY` while such bookings exist — so it is not lost — but the flag
    itself is silent. A UI surface is a follow-up.
+   **Update 2026-09-26 — Admin half CLOSED (`R-2026-09-26-E`, `hosting:salown` `0388557370c99366`, source
+   `8a6f8db`, main `bb10b7c`):** the day-grid card badge, the detail-panel notice and the Home
+   `NEEDS REASSIGNMENT` group read the stored flag AND derive the passive / after-last-day case at
+   read time (`src/utils/reassignmentNeeded.ts`); no write, resolving stays `salownReassignBooking`.
+   **The Staff App still does not read `needsReassignment`** — Staff UI visibility remains open.
 3. **Pre-existing** `createStaffBooking.emulator.test.js` cross-flow failure on the live source.
 4. Product sales (`salownCreate(Staff)ProductSale`) also call `assertAssignableStaff`; not a
    booking path, not in these candidates.
