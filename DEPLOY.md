@@ -210,6 +210,12 @@ firebase deploy --only functions:FN_NAME --project havuz-44f70
 2. Dry-run → CSV → owner review
 3. Write only after approval
 
+**Recovery facts (verified read-only 2026-09-26, ledger `OPS-2026-09-26-A`):**
+- `(default)` has **delete protection ENABLED** since 2026-09-26 — `firebase firestore:databases:delete "(default)"` is refused until the flag is turned off (a deliberate two-step).
+- Three copies exist, in this order of use: **managed daily backups** (Firestore schedule since 2026-06-10, 14-week retention, `firebase firestore:backups:list`), **PITR** (7 days, `readTime` reads / in-place restore), and the `dailyFirestoreBackup` export to `gs://havuz-44f70.firebasestorage.app/firestore-backups/` (30-day lifecycle).
+- A restore goes to a **new database id**, never `(default)`: `firebase firestore:databases:restore -b projects/havuz-44f70/locations/europe-west2/backups/<backup-id> -d <new-database-id> --project havuz-44f70` (firebase-tools 15.15.0; there is no `firestore:backups:restore`). gcloud remains forbidden; the export line above is historical.
+- Drill procedure and RPO/RTO record format: [EV2_MONITORING_AND_RESTORE_DRILL_PLAN.md](EV2_MONITORING_AND_RESTORE_DRILL_PLAN.md).
+
 ## Build Check
 
 `npm run build` — must pass with zero errors. Mandatory before deploy.

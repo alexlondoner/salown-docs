@@ -1,5 +1,15 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
+## OPS-2026-09-26-A — `EV2` S1: delete protection ENABLED on the production Firestore database · 0 deployable units (project config only) · **LIVE_VERIFIED (read-only `databases:get` after the change)**
+- **Why:** [EV2_MONITORING_AND_RESTORE_DRILL_PLAN.md](EV2_MONITORING_AND_RESTORE_DRILL_PLAN.md) gap G4 — the production database could be deleted with one command; managed daily backups (14-week retention, live since 2026-06-10) and PITR (7 days) were found live but undocumented during the same audit.
+- **Owner approval (2026-09-26):** enable delete protection on `havuz-44f70` `(default)` only; nothing else — no PITR, backup schedule, rules, indexes, TTL, data, staging, deploy, commit or e-mail.
+- **Before (12:25:16Z):** `projects/havuz-44f70/databases/(default)` · `europe-west2` · `FIRESTORE_NATIVE` · `STANDARD` · `DELETE_PROTECTION_DISABLED` · PITR `ENABLED` `604800s`.
+- **Command (12:25:49Z):** `firebase firestore:databases:update "(default)" --delete-protection ENABLED --project havuz-44f70` → `Successfully updated`. Pre-checked in firebase-tools 15.15.0 source (`lib/firestore/api.js` `updateDatabase`): the PATCH body was `{"deleteProtectionState":"DELETE_PROTECTION_ENABLED"}` only; the PITR key is `undefined` and dropped.
+- **After (12:26:07Z):** `DELETE_PROTECTION_ENABLED` · `Last Update Time 2026-09-26T12:25:50.531964Z` · PITR `ENABLED` `604800s` unchanged · location/type/edition unchanged.
+- **Untouched, re-read:** `salown-staging` `(default)` `updateTime 2026-09-08T18:32:48Z`, protection/PITR `DISABLED` (unchanged); backup schedule `DAILY` `8467200s`, last update `2026-06-10` (unchanged). No functions, hosting, rules, indexes or data command was run.
+- **Rollback:** same command with `--delete-protection DISABLED`.
+- **Tooling note:** gcloud is forbidden (AGENTS.md); the Firebase CLI subcommand is the sanctioned path. `firestore:backups:restore` does not exist in 15.15.0 — restore is `firestore:databases:restore -b <backup-resource> -d <database-id>`.
+
 ## R-2026-09-26-D — `STAFF-RESCHED-SERVER` (Staff half): the Staff App Reschedule sheet moves a booking through `salownPatchBookingDetails`, never a direct Firestore write · 1 unit (`hosting:salown-staff`) · **LIVE_VERIFIED (artefact + served-bytes smoke) · screen: emulator/jsdom only, no real move observed in production**
 - **Why:** `R-2026-09-24-A` open item 1 — the sheet wrote `date/time/startTime/endTime` straight into Firestore, so its `availabilityUntil` cutoff, passive and conflict checks were screen gates only, and the live rules allow the direct move (this suite's RULES describe still records that). With `R-2026-09-26-C` live, the callable enforces cutoff + passive + closed-status in one transaction; this release makes the sheet use it.
 - **Owner approval (2026-09-26):** `test:staff-gate` first, green required; then re-read the live Staff version and deploy `19d5262` ONLY if the base was still `d29ade1f6679bc30` / `77e57dd`, otherwise stop; no functions, rules, main merge or data write.

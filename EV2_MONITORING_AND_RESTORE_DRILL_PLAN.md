@@ -12,7 +12,7 @@ approves the steps in §8; this file is the technical detail, ROADMAP keeps the 
 | **Point-in-time recovery (PITR)** | **ENABLED**, retention `604800s` (7 days), earliest version `2026-09-19T11:48Z` | same call |
 | **Managed daily backup schedule** | **EXISTS since 2026-06-10**, `DAILY`, retention `8467200s` (**14 weeks**, the maximum) | `firestore:backups:schedules:list` |
 | Managed backups | one `READY` backup per night, snapshot ≈ 01:10–02:25Z; the newest is `2026-09-26T02:24:08Z`; the first page lists 9 (18–26 Sep) | `firestore:backups:list` |
-| Delete protection on `(default)` | **DISABLED** | `firestore:databases:get` |
+| Delete protection on `(default)` | ~~DISABLED~~ → **`DELETE_PROTECTION_ENABLED` since 2026-09-26T12:25:50Z (S1, owner-approved; ledger `OPS-2026-09-26-A`)** | `firestore:databases:get` before 12:25:16Z and after 12:26:07Z |
 | `dailyFirestoreBackup` export function (v2, europe-west2, 03:00 London) | deployed; log shows `Export started` for 19, 20, 21, 22 Sep (`operationState: PROCESSING`) | `functions:log --only dailyFirestoreBackup` (pagination unreliable, see memory) |
 | Export **completion** (`overall_export_metadata` per day folder) | **NOT VERIFIED** — needs a Storage object listing (no Firebase CLI command; gcloud/gsutil forbidden by AGENTS.md; the REST/token path was blocked in this session) | — |
 | Bucket lifecycle (`firestore-backups/` age>30 → delete) | recorded in INCIDENTS 2026-07-13; **NOT re-verified** today | INCIDENTS.md |
@@ -93,8 +93,9 @@ is never the target. Staging is **not** used (cross-project restore not document
 staging would need a bucket IAM grant on production = a production change for no extra proof).
 
 **How it is proven without writing production:**
-1. `firebase firestore:backups:restore --backup <newest> --database drill-YYYYMMDD --project havuz-44f70`
-   (record `T0` = command time; the operation's `endTime` = `T1`).
+1. `firebase firestore:databases:restore -b projects/havuz-44f70/locations/europe-west2/backups/<backup-id> -d drill-YYYYMMDD --project havuz-44f70`
+   (record `T0` = command time; the operation's `endTime` = `T1`). *Corrected 2026-09-26: firebase-tools 15.15.0 has no
+   `firestore:backups:restore`; the restore command lives under `firestore:databases:restore` with `-b`/`-d` (verified from `--help`).*
 2. Read-only verification against **the drill database only** (`databases/drill-YYYYMMDD`):
    aggregation `count()` on `tenants`, `tenants/whitecross/bookings`, `tenants/herohairs/bookings`,
    `tenants/whitecross/clients`; compare with the same counts read from `(default)` **at the backup's
@@ -158,9 +159,10 @@ are `firebase firestore:*` subcommands.
 
 | Step | Change | Reversible? |
 |---|---|---|
-| S1 | Enable **delete protection** on `(default)` | yes (one flag) |
+| S1 | ✅ **DONE 2026-09-26T12:25:50Z** — delete protection on `(default)` `ENABLED` via `firebase firestore:databases:update "(default)" --delete-protection ENABLED --project havuz-44f70`; the CLI's PATCH body carried only `deleteProtectionState` (source-verified: the undefined PITR key is dropped by `JSON.stringify`); PITR `ENABLED/604800s`, backup schedule (`2026-06-10`) and `salown-staging` (`updateTime 2026-09-08T18:32:48Z`) re-read unchanged | yes (same flag, `DISABLED`) |
 | S2 | Create U1–U5 uptime checks + A1/A3/A4 alert policies + e-mail channel `info@salown.com` | yes (delete) |
-| S3 | Restore newest backup → `drill-YYYYMMDD`, verify read-only, delete the drill db, record RPO/RTO | the drill db is deleted; `(default)` untouched |
+| S3a | Restore newest backup → `drill-YYYYMMDD`, verify read-only, record RPO/RTO; drill db **kept** for owner review (≤48 h); drill db IAM access model recorded first — an unauthenticated 403 proves only that public access is closed | `(default)` untouched |
+| S3b | Delete the drill db — **separate approval, only after the S3a evidence is reviewed** (`firestore:databases:delete`, no `--force`) | irreversible for the copy only |
 | S4 | A2/A5/A6 policies (function errors, parser stall, scheduler) | yes |
 | S5 | `salownHealthProbe` function (code) — separate release via one-change flow | rollback = previous revision |
 
