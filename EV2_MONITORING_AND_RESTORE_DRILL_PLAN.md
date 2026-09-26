@@ -91,15 +91,24 @@ Volume: 5 checks × 3 regions × 8,640/month ≈ **130 k executions/month → in
 
 | Policy | Condition | Channel |
 |---|---|---|
-| A1 site down | any uptime check fails in ≥2 regions for 5 min | e-mail |
+| A1 site down | ✅ **LIVE 2026-09-26 ~14:00Z** as policy `prod-A1-site-down` (ledger `OPS-2026-09-26-C`). Exact condition, read from the Console "View Code" before Create: metric `monitoring.googleapis.com/uptime_check/check_passed` on `resource.type="uptime_url"`, filter `metric.label.check_id =~ ^(prod-salown-landing-…\|prod-salown-admin-shell-…\|prod-salown-booking-shell-…\|prod-salown-staff-shell-…\|prod-whitecross-site-…)$` (the five full check ids), aggregation `alignmentPeriod 300s` · `perSeriesAligner ALIGN_NEXT_OLDER` · `crossSeriesReducer REDUCE_COUNT_FALSE` · `groupByFields [metric.label.check_id]`, `comparison COMPARISON_GT` `thresholdValue 1`, `duration 600s`, `trigger.count 1`, `evaluationMissingData EVALUATION_MISSING_DATA_INACTIVE`. Meaning: for one check, the number of checker regions whose latest result is *false* stays ≥ 2 for 10 consecutive minutes (two 5-min cycles). One regional timeout (count = 1) or one failed cycle never opens an incident. Configured regions on every check: `EUROPE`, `ASIA_PACIFIC`, `USA_VIRGINIA`. | `salown-ops-email` → `info@salown.com`; `notificationPrompts [OPENED, CLOSED]` (at most two e-mails per incident, no re-notification), `autoClose 86400s` (only when data is absent; a cleared condition closes the incident by itself) |
 | A2 function errors | Cloud Run `request_count` `response_code_class=5xx` > 0 for 5 min on `salowncreatebooking`, `salownstripewebhook`, `provisiontenant` | e-mail |
 | A3 backup failed | log-based: `resource.labels.service_name="dailyfirestorebackup" AND severity>=ERROR` | e-mail (duplicate of the Brevo path — deliberately independent) |
 | A4 backup absent | log-based metric on `textPayload:"Export started"`; **metric absence** > 26 h | e-mail — closes G3 |
 | A5 parser stalled | metric absence on `salownparseemails` invocations > 30 min | e-mail |
 | A6 scheduler failed | Cloud Scheduler job `status` not OK (log-based on `cloudscheduler.googleapis.com` `jsonPayload.status`) | e-mail |
 
-Notification channel: **e-mail `info@salown.com`** only (the one human mailbox). Telegram can be added
-later through a Pub/Sub channel → small function; not in this package.
+Notification channel: **e-mail `info@salown.com`** only (the one human mailbox) — ✅ created 2026-09-26 as
+`salown-ops-email` (e-mail channels have no verification or test message; nothing was sent). Telegram can be
+added later through a Pub/Sub channel → small function; not in this package.
+
+**Console display limit, recorded so nobody "fixes" it:** the Uptime checks list shows `Policies = 0` for all
+five checks even though `prod-A1-site-down` covers them. That column only counts policies whose filter is an
+exact `check_id = "<id>"` equality; it does not recognise the regex filter. Coverage evidence is the policy's
+own preview table, which lists the five `check_id` series (`1–3 of 5`). Splitting the policy into five
+equality conditions would change nothing but that column.
+
+**A3/A4 are NOT live** — they need their own read-only design and a separate approval (delivered read-only to the owner on 2026-09-26; filed here as §3.2a only once approved).
 
 ### 3.3 EV2 daily availability doc (code, separate one-change release — NOT in the config package)
 
@@ -189,7 +198,8 @@ are `firebase firestore:*` subcommands.
 |---|---|---|
 | S1 | ✅ **DONE 2026-09-26T12:25:50Z** — delete protection on `(default)` `ENABLED` via `firebase firestore:databases:update "(default)" --delete-protection ENABLED --project havuz-44f70`; the CLI's PATCH body carried only `deleteProtectionState` (source-verified: the undefined PITR key is dropped by `JSON.stringify`); PITR `ENABLED/604800s`, backup schedule (`2026-06-10`) and `salown-staging` (`updateTime 2026-09-08T18:32:48Z`) re-read unchanged | yes (same flag, `DISABLED`) |
 | S2a | ✅ **DONE 2026-09-26 ~12:52–13:00Z** — U1–U5 uptime checks created (§3.1); no policy, metric or channel | yes (delete) |
-| S2b | A1/A3/A4 alert policies + e-mail channel `info@salown.com` — **not before 2026-09-27 14:05Z** and only after a read-only 24 h S2a report (per-region success rate, latency, timeout/error count, matcher failures). Condition under review: **two or more regions failing for two consecutive cycles** instead of "≥2 regions for 5 min", so a single regional connection timeout never e-mails | yes (delete) |
+| S2b-A1 | ✅ **DONE 2026-09-26 ~14:00Z** — the owner lifted the 24 h gate for A1 only: channel `salown-ops-email` + policy `prod-A1-site-down` (§3.2), condition ≥2 regions × 10 min; verified read-only on the policy page (condition, channel, 5-series preview); Alerting summary: 1 policy, 0 firing | yes (delete policy, then channel) |
+| S2b-A3/A4 | backup alerts — **not approved**; read-only design delivered 2026-09-26, not yet filed; managed Firestore backups are outside both | yes (delete) |
 | S3a | Restore newest backup → `drill-YYYYMMDD`, verify read-only, record RPO/RTO; drill db **kept** for owner review (≤48 h); drill db IAM access model recorded first — an unauthenticated 403 proves only that public access is closed | `(default)` untouched |
 | S3b | Delete the drill db — **separate approval, only after the S3a evidence is reviewed** (`firestore:databases:delete`, no `--force`) | irreversible for the copy only |
 | S4 | A2/A5/A6 policies (function errors, parser stall, scheduler) | yes |
