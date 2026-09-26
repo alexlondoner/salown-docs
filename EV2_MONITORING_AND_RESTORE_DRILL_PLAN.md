@@ -34,7 +34,7 @@ session's permission classifier, so those rows are `NOT VERIFIED` rather than "n
 
 | # | Gap | Why it matters |
 |---|---|---|
-| G1 | No external uptime check; availability is unprovable (GTM gate B5) | first "your site is down" ticket has no timeline |
+| G1 | ~~No external uptime check~~ **closed 2026-09-26 (S2a: five checks live, §3.1)**; availability now measurable, still not alerted (G1b → S2b) | first "your site is down" ticket has no timeline |
 | G2 | No alert on function failures (`dailyFirestoreBackup`, `salownParseEmails`, `salownCreateBooking`, `salownStripeWebhook`) except the backup's own e-mail | a silent nightly failure repeats INCIDENTS 07-13 |
 | G3 | No "absence" alert: if the backup job never *starts*, no error is logged and no e-mail goes out | the 07-13 class of failure, one level up |
 | G4 | Delete protection is off on the production database | one wrong `databases:delete` is irreversible beyond PITR/backup |
@@ -46,18 +46,46 @@ session's permission classifier, so those rows are `NOT VERIFIED` rather than "n
 
 ## 3. Proposed alert + uptime plan (Cloud Monitoring, production config change → needs approval)
 
-### 3.1 Uptime checks (HTTP GET, 3 regions, every 5 min, expect 200)
+### 3.1 Uptime checks — ✅ U1–U5 CREATED 2026-09-26 (S2a, ledger `OPS-2026-09-26-B`)
+
+Created in the Cloud Console (owner session; no gcloud, no REST, no CLI credential file), one at a time, each
+verified read-only on its details page before the next. **No alert policy, log-based metric or notification
+channel exists** — the form's "Create an alert" toggle defaults to ON and was switched off on every check.
+
+**Common settings (all five, read back from the details page):** HTTPS `GET` · port 443 · check every `300s`
+· timeout `10s` · regions `EUROPE, ASIA_PACIFIC, USA_VIRGINIA` (Global off) · SSL validation enabled ·
+acceptable response code **200 only** · content matcher `CONTAINS_STRING` · no auth, no custom headers · no
+policies. Redirect following is **not configurable** in the Console or the API; "200 only + matcher" covers it.
+
+| Display name | URL | Matcher (`CONTAINS_STRING`) | Source of the marker | Pre-create test |
+|---|---|---|---|---|
+| `prod-salown-landing` | `https://salown.com/` | `Salon Operating System for UK Barbers` | `salown-app/hosting/index.html:14` `<title>` | 200, 49 ms |
+| `prod-salown-admin-shell` | `https://salown.com/app` | `Own your salon.</title>` | `salown-app/index.html:18` `<title>` | 200, 61 ms |
+| `prod-salown-booking-shell` | `https://salown.com/book/whitecross` | `href="/public-bundle/site.webmanifest"` | `salown-app/index.html:25` + `vite.config.js:10` `base` | 200, 134 ms |
+| `prod-salown-staff-shell` | `https://staff.salown.com/` | `<div id="staff-root">` | `salown-app/staff.html:176` | 200, 142 ms |
+| `prod-whitecross-site` | `https://whitecrossbarbers.com/` | `Whitecross EC1</title>` | `whitecross-site/index.html:23` `<title>` | 200, 16 ms |
+
+**Scope limit — `prod-salown-booking-shell`:** `/app` and `/book/whitecross` serve byte-identical HTML (2,043 B);
+the tenant name is rendered by JavaScript, which uptime checks do not execute. This check proves the `/book/**`
+rewrite serves the salOWN booking shell and nothing else. It is **not** a tenant, Firestore or booking-API
+health signal; that belongs to `U6`/`S5`.
+
+**Matcher-change rule:** every matcher is pinned to a versioned source line above (no hashed chunk names). A PR
+that edits one of those lines must update the corresponding uptime check in the same change, and say so in
+its ledger row. A matcher that fails after a deploy with the page otherwise healthy is a doc/config drift, not
+an outage.
+
+**First measurements (13:0xZ):** every region that had probed was green. One event: the very first
+`usa-virginia` probe of `prod-salown-landing` at `12:56:19Z` logged `REQUEST_EXCEPTION` — *"libcurl request
+failed: Timeout was reached (Operation timed out after 10002 milliseconds with 0 bytes received)"*,
+`content_mismatch: false`. The next cycle from the same region was green. Classified as a **single regional
+connection timeout, not an outage** — and the reason S2b's condition must not fire on one region / one cycle.
 
 | Check | URL | Notes |
 |---|---|---|
-| U1 landing | `https://salown.com/` | |
-| U2 admin shell | `https://salown.com/app` | HTML 200 only; not an auth test |
-| U3 booking page | `https://salown.com/book/whitecross` | the money surface |
-| U4 staff app | `https://staff.salown.com/` | catch-all rewrite: check `content-type: text/html` **and** body contains `staff-` chunk name, not just 200 (memory: every path returns 200) |
-| U5 whitecross site | `https://whitecrossbarbers.com/` | premium tenant |
-| U6 (phase 2) booking API | POST `salownGetBusySlots` with a fixed body | proves the callable path, not just Hosting |
+| U6 (phase 2) booking API | POST `salownGetBusySlots` with a fixed body | proves the callable path, not just Hosting — **not created** |
 
-Volume: 6 checks × 3 regions × 8,640/month ≈ **156 k executions/month → inside the 1 M free allotment**.
+Volume: 5 checks × 3 regions × 8,640/month ≈ **130 k executions/month → inside the 1 M free allotment**.
 
 ### 3.2 Alert policies
 
@@ -160,7 +188,8 @@ are `firebase firestore:*` subcommands.
 | Step | Change | Reversible? |
 |---|---|---|
 | S1 | ✅ **DONE 2026-09-26T12:25:50Z** — delete protection on `(default)` `ENABLED` via `firebase firestore:databases:update "(default)" --delete-protection ENABLED --project havuz-44f70`; the CLI's PATCH body carried only `deleteProtectionState` (source-verified: the undefined PITR key is dropped by `JSON.stringify`); PITR `ENABLED/604800s`, backup schedule (`2026-06-10`) and `salown-staging` (`updateTime 2026-09-08T18:32:48Z`) re-read unchanged | yes (same flag, `DISABLED`) |
-| S2 | Create U1–U5 uptime checks + A1/A3/A4 alert policies + e-mail channel `info@salown.com` | yes (delete) |
+| S2a | ✅ **DONE 2026-09-26 ~12:52–13:00Z** — U1–U5 uptime checks created (§3.1); no policy, metric or channel | yes (delete) |
+| S2b | A1/A3/A4 alert policies + e-mail channel `info@salown.com` — **not before 2026-09-27 14:05Z** and only after a read-only 24 h S2a report (per-region success rate, latency, timeout/error count, matcher failures). Condition under review: **two or more regions failing for two consecutive cycles** instead of "≥2 regions for 5 min", so a single regional connection timeout never e-mails | yes (delete) |
 | S3a | Restore newest backup → `drill-YYYYMMDD`, verify read-only, record RPO/RTO; drill db **kept** for owner review (≤48 h); drill db IAM access model recorded first — an unauthenticated 403 proves only that public access is closed | `(default)` untouched |
 | S3b | Delete the drill db — **separate approval, only after the S3a evidence is reviewed** (`firestore:databases:delete`, no `--force`) | irreversible for the copy only |
 | S4 | A2/A5/A6 policies (function errors, parser stall, scheduler) | yes |
