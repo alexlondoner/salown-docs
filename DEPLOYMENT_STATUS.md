@@ -12,7 +12,6 @@
 >
 > ---
 >
-> ### 📍 CURRENT — **2026-09-25 `R-2026-09-25-F` + `-G` — product-only sales are not appointments on Admin Home or Staff (Today, Week grid, weekly summary)**: `hosting:salown` `c119f7a6d7780365` → **`92846a10f16bbec8`** (`6091956`); `hosting:salown-staff` `9e7fafd49f8db5e8` → **`4b34fd622c7abebe`** (`601ff38`). Rollbacks `c119f7a6d7780365` / `9e7fafd49f8db5e8`. Main carries both (`d2eaee8`).
 > ### 📍 CURRENT — **2026-09-26 `R-2026-09-26-A` + `-B` — `TREATWELL-PREPAID-WRITER`: a Treatwell prepayment survives checkout; an unestablished one is refused before payment**: `hosting:salown` `92846a10f16bbec8` → **`2e322ecb469b09d3`** (`f54f9c4`); `hosting:salown-staff` `4b34fd622c7abebe` → **`d29ade1f6679bc30`** (`77e57dd`). Rollbacks `92846a10f16bbec8` / `4b34fd622c7abebe`. ARTIFACT_VERIFIED (served 96/96 and 25/25 byte-identical); not screen-observed in production. ⚠️ **`main` does NOT carry it** — `review/treatwell-prepaid-writer-on-main` @ `7fa122d` unmerged; an Admin deploy from `main` would revert it. No Functions / rules / data change.
 >
 > *previous CURRENT:* **2026-09-25 `R-2026-09-25-F` + `-G` — product-only sales are not appointments on Admin Home or Staff (Today, Week grid, weekly summary)**: `hosting:salown` `c119f7a6d7780365` → **`92846a10f16bbec8`** (`6091956`); `hosting:salown-staff` `9e7fafd49f8db5e8` → **`4b34fd622c7abebe`** (`601ff38`). Rollbacks `c119f7a6d7780365` / `9e7fafd49f8db5e8`. Main carries both (`d2eaee8`).
