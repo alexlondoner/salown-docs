@@ -1,5 +1,54 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
+## R-2026-09-29-A — `ICAL-PII-HOTFIX` (legacy half): the whitecross `icalFeed` publishes busy blocks only and refuses a request without a barber · 1 unit (`functions:whitecross:icalFeed`, us-central1) · **LIVE_VERIFIED (counts + structure against a same-minute pre-deploy snapshot; poller HTTP 200 on the new revision)**
+- **Why:** INCIDENTS 2026-09-28. The legacy per-barber iCal feed is public and has no token. Without `?barber=` it returned every non-cancelled Whitecross booking (−14 d … +90 d). Every event carried the client name, service, source and booking note. The UID of Booksy/Fresha fallback-id bookings also carried the client name.
+- **Owner approval (2026-09-28/29, in steps):** read-only audit → hotfix candidate → three decisions:
+  - (1) name-bearing UIDs become a deterministic hash — temporary pseudonymization; phase 2 moves to server-secret HMAC;
+  - (2) the legacy feed excludes NO source by default, and `?exclude=Treatwell` is opt-in, because the personal Google Calendar shares the URL;
+  - (3) busy statuses = CONFIRMED, PENDING, BLOCKED, CHECKED_OUT, UNPAID.
+  - Then release approval for this unit only. `salownIcalFeed` needs its own approval.
+- **Source:** whitecross-site **`b12fa8a6`** (`origin/main`, fast-forward from the claim commit `1d5e4a34`, `[skip ci]`). Exactly three paths: `functions/index.js`, `functions/icalBusyFeed.js` (new, pure renderer), `functions/icalBusyFeed.test.js` (new, 12 tests). `scripts/deploy-functions.sh` untouched: mode stays `100644`, run with `bash`.
+- **Behaviour shipped:**
+  - No `?barber=` → HTTP 400, no calendar body.
+  - Each event is exactly UID, DTSTAMP, DTSTART, DTEND, `SUMMARY:Busy`, CREATED, STATUS.
+  - Opaque doc ids keep their UID (Firestore auto-id, `WCB-…`, `BOOKSY|FRESHA|TREATWELL-<ref>`). Any other id becomes `h` + 39 digits (sha256, digits only, deterministic).
+  - Explicit busy-status allowlist; `?exclude=<Source>` is opt-in.
+  - Unchanged: busy times, the name-based barber match (known debt), us-central1, the `allUsers` invoker.
+- **Gates:**
+  - Clean `git archive b12fa8a6` workspace + `functions/npm ci`: functions `npm test` 231/0, `icalBusyFeed.test.js` 12/0, all `scripts/*.test.mjs` green.
+  - Known and unrelated: `deploy-guard` fails 29 only because the script is not executable in git, and is 41/41 in a copy with `+x`. `wcp4` fails in the same way on a `.git`-less archive of the baseline.
+  - Dry run of the wrapper with a fake `firebase` (no network) produced exactly `--only functions:whitecross:icalFeed --project havuz-44f70`.
+  - Before this, an A/B pair of isolated workspaces (baseline `origin/main` vs candidate) showed identical failure sets apart from the +12 new tests.
+- **Pre-deploy gate (same minutes):** live revision `icalfeed-00048-ber`, region us-central1, codebase whitecross, 100 % traffic on it, a single function of that name.
+- **Release:** `bash scripts/deploy-functions.sh whitecross icalFeed` from the archive workspace. Completed **2026-09-28T23:33:36Z**. New revision **`icalfeed-00049-ruh`**, 100 % traffic. Only this function's `updateTime` moved; IAM unchanged.
+- **Live verification (counts only; no feed body, URL or name printed):**
+
+  | Check | Result |
+  |---|---|
+  | Request without `?barber=` | 400 |
+  | `barber=alex` | 102 → 102; (DTSTART, DTEND) multiset identical; (UID, times) identical after the UID rule |
+  | `barber=alex&exclude=Treatwell` | 101; the one dropped event is Treatwell-sourced |
+  | `barber=muhamed` | 59 → 59, identical |
+  | `barber=kadim` | 3 → 3, identical |
+  | `barber=arda` | 0 → 0 |
+  | Event keys | exactly the fixed set; every SUMMARY is `Busy`; no DESCRIPTION |
+  | Client name / phone / e-mail / service / note strings outside UID lines | 0 |
+  | Hashed (name-bearing) UIDs | 15 (Alex 12 + Muhamed 3); 0 carry a letter; 0 old name-bearing UIDs still served |
+
+  - The Treatwell-like Java poller got HTTP 200 on the new revision for both of its barbers.
+  - 0 warnings and 0 5xx on the new revision.
+  - The audit counted 100 events for Alex on 2026-09-28; the window has since moved by a day.
+- **UID-change side effect:** 1 of the 15 re-keyed events is in the future (Alex). A subscriber can show the old and the new copy together until its next refresh, and then it drops the old UID, which is no longer served. The poller refreshes about every 5 min; Google Calendar refreshes about every 7–8 h. No subscriber UI was touched.
+- **Observed right after deploy:** two browser requests without `?barber=` (400) and one favicon request (404). Such requests are now refused.
+- **Rollback (not run):** `gcloud run services update-traffic icalfeed --region us-central1 --project havuz-44f70 --to-revisions=icalfeed-00048-ber=100`. The durable rollback is a redeploy from `1d5e4a34`.
+- **Not included / open:**
+  - `salownIcalFeed` still publishes client names; it waits for a separate approval.
+  - Google Calendar had not yet polled the new revision at the time of writing.
+  - Phase 2 (tokenised per-consumer feed on `barberId`, HMAC UIDs, rotate/revoke/offboard).
+  - The name-match debt.
+  - `deploy-functions.sh` file-mode debt.
+  - Kadim is NOT connected to Treatwell and must not be until phase 2.
+
 ## R-2026-09-28-D — `FIN-RATE-LABEL`: an id-linked staff row's rate labels show its staffComp rate; fixed cost reads £/calendar day · 1 unit (`hosting:salown`) · **LIVE_VERIFIED (served 55/55; owner-session Finance checks)**
 - **Why:** after Kadim was linked by id, Settings read "£0/day" and STAFF WAGES "1 × £0" while he had earned £110 — the labels came from the legacy `partnerConfig.wage`, the figures from staffComp. The Settings label still said "£/day when shop is open" after the daily-accrual release.
 - **Source:** salown-app `19108f1` on `origin/main` (`[skip ci]`, 4 files: `src/pages/Finance.tsx`, `src/utils/financeStaffLink.ts`, new `src/utils/financeRateLabel.test.ts`, new `src/pages/Finance.rateLabel.render.test.tsx`).

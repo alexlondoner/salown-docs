@@ -41,6 +41,76 @@ Every incident opens with `## YYYY-MM-DD — short title`, immediately followed 
 
 **Tag dictionary (CANONICAL — only these; sprawl forbidden):** `#security` `#stripe` `#secrets` `#config` `#deploy` `#normalization` `#permission` `#race` `#timezone` `#parser` `#email` `#data-loss` `#shared-infra`. A new tag is added only if a genuinely new class emerges (e.g. twins like `#payment`+`#payments`+`#stripe-payment` are FORBIDDEN → all `#stripe`). Every entry carries a `**Tags:**` line.
 
+## 2026-09-28 — Public iCal feeds published client names without authentication, and one returned the whole salon without any parameter
+
+**Severity:** 🔴 Critical · **Owner:** alish · **Status:** 🟡 Open (legacy feed fixed `R-2026-09-29-A`; `salownIcalFeed` pending) · **Affected area:** calendar feeds (`icalFeed`, `salownIcalFeed`) · `#security`
+
+**Discovery:** read-only iCal architecture audit (2026-09-28), which asked why a new team member had no Treatwell calendar link. The audit measured the live feeds instead of reading the code alone.
+
+**Impact:**
+- Two public, unauthenticated HTTP functions returned booking detail as iCalendar.
+- `icalFeed` (whitecross codebase, us-central1, invoker `allUsers`, no token):
+  - Without `?barber=` it returned every non-cancelled Whitecross booking from 14 days back to 90 days ahead — 162 events when measured.
+  - Each event carried the client name, service, booking source and booking note.
+- `salownIcalFeed` (salown codebase, europe-west2, invoker `allUsers`) is reachable with a guessable tenant id. Every SUMMARY carried the client name and service (158 of 158 Whitecross events). The other tenant's feed held 9 events.
+- Booksy/Fresha parser fallback doc ids embed the client name, so those events' UIDs carried names too.
+
+**Access classes observed** (30-day log retention; no URLs recorded):
+- An automated Java HTTP poller, about every 5 min, probably Treatwell (unverified):
+  - on the legacy per-barber feed: one barber since before the retention limit, and a second barber from 2026-09-28 15:45Z;
+  - on the other tenant's salon feed, from the same /16 ranges.
+- `Google-Calendar-Importer` on the legacy per-barber feed for two barbers, one of whom has left.
+- No automated consumer called the legacy feed without `?barber=` inside the retention window. Earlier use cannot be shown.
+
+**Root Cause:**
+- The feeds were written for calendar sync and rendered calendar-app detail (client, service, note) to consumers that only need busy blocks.
+- They had to stay publicly invokable, because Treatwell and calendar apps cannot authenticate, but nothing replaced authentication: no token. The legacy feed's "optional secret key" existed only as a comment.
+- Parser fallback ids were built from client names, so identifiers were not opaque.
+
+**Bug Class:** Data exposure — public endpoint over-publishes (no minimisation, no bearer secret).
+
+**Resolution:**
+- **Legacy `icalFeed` — deployed and verified in `R-2026-09-29-A` (whitecross `b12fa8a6`, revision `icalfeed-00049-ruh`):**
+  - A request without `?barber=` gets 400.
+  - Events carry only UID, DTSTAMP, DTSTART, DTEND, `SUMMARY:Busy`, CREATED, STATUS.
+  - Busy statuses are an explicit list: CONFIRMED, PENDING, BLOCKED, CHECKED_OUT, UNPAID.
+  - No source is excluded by default; `?exclude=Treatwell` is opt-in, because the personal Google Calendar shares the URL.
+- **Name-bearing UIDs** are replaced by a deterministic digits-only hash. This is **temporary pseudonymization, not anonymization:** without a server secret, anyone who knows the source id can recompute it. It removes raw names and name fragments from the published feed, and it cost a one-time UID change for 15 events whose times did not change.
+- **`salownIcalFeed`:** candidate ready (same busy-only contract, default Treatwell exclusion kept, other tenant's parity 9/9 measured). NOT deployed; it waits for a separate approval.
+- **Permanent (phase 2):**
+  - a tokenised feed per consumer, keyed on the stable `barberId`;
+  - a random token stored server-side only as a hash;
+  - consumer-scoped exclude, busy-only;
+  - rotate/revoke, and revoke on offboard;
+  - separate Treatwell and personal Google/Apple consumer records;
+  - **server-secret HMAC UIDs**;
+  - then retire the legacy feed.
+
+**Prevention:**
+- Busy-only contract tests fail on any client, contact, service, note or source string, on a missing 400, on cross-barber leakage and on UID/time drift.
+- The UID rule is an allowlist, so an unknown id format fails closed.
+
+**Regression Tests:**
+- whitecross `functions/icalBusyFeed.test.js` (12, including the real handler under stubs);
+- salown `functions/src/utils/icalBusyFeed.test.js` (8, candidate).
+
+**Related:**
+- commits whitecross `b12fa8a6` (claim `1d5e4a34`); salown candidate uncommitted (claim `4c4b263`);
+- roadmap `ICAL-PII-HOTFIX`;
+- files `functions/index.js`, `functions/icalBusyFeed.js` (whitecross), `functions/src/index.ts`, `functions/src/utils/icalBusyFeed.ts` (salown).
+
+**What happened / Diagnosis / Fix:**
+- The audit separated three flows: Treatwell → salOWN (inbound, not configured for Whitecross), salOWN → Treatwell (busy feed), and the staff member's personal calendar.
+- It found that Treatwell had been subscribed per barber to the legacy May feed, not to the salon feed shown in Settings. The salon feed is polled only by the other tenant.
+- A same-minute snapshot of the old revision was compared with the new one. Every (DTSTART, DTEND) was identical per barber, the UID changed only for the 15 name-bearing ids, and the poller kept getting HTTP 200.
+- During diagnosis, a masked id-shape probe printed a few client first-name fragments to the operator's terminal only. Nothing was published. Later probes printed counts only.
+
+**Lessons Learned:**
+- A public endpoint's body is public: publish the minimum the consumer needs (a busy block), not what a calendar app could show.
+- An identifier derived from personal data is personal data; an id rule for anything published must be an allowlist.
+- One URL shared by two consumers (Treatwell and a personal calendar) cannot carry two policies; separate the consumers before changing behaviour.
+- When masking data for diagnosis, print shapes and counts, never substrings of the data itself.
+
 ## 2026-09-26 — Two dead whitecross scheduled jobs had been failing every run for at least six weeks, and nothing was listening
 
 **Severity:** 🟡 Medium (no evidence of current customer impact was found; continuous 5xx on a production project, a dead OAuth client, a malformed service-account secret, and error-signal noise) · **Owner:** owner + alish (EV2 session) · **Status:** 🟡 Open — both Cloud Scheduler jobs PAUSED 2026-09-26 (Console "last updated" 16:12:43Z and 18:12:22Z); services, source and secrets untouched pending a one-week quiet period and a separate cleanup decision before any whitecross Functions deploy · **Affected area:** whitecross-site legacy functions `parseBookingEmails` (Cloud Run `parsebookingemails`) and `syncClientsToSheet` (Cloud Run `syncclientstosheet`), both us-central1
