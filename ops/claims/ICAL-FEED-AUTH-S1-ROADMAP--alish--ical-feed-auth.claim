@@ -1,0 +1,6 @@
+task: ICAL-FEED-AUTH-S1-ROADMAP
+owner: alish/ical-feed-auth
+started_uk: 2026-09-29T16:28:10+01:00
+locked_paths:
+  - ROADMAP.md
+status: working
