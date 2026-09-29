@@ -1,5 +1,25 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
+## OPS-2026-09-29-B — `ICAL-FEED-AUTH` D2-3: UID HMAC key secret + accessor for the feed SA · 0 deployable units (Secret Manager + secret IAM) · **LIVE_VERIFIED (metadata only; secret IAM diff = one added pair; project IAM unchanged)**
+- **Why:** slice 2, step 3 of `ICAL_FEED_AUTH_DESIGN.md` §6.4 / §9.1 (owner decision D11: HMAC key only in Secret Manager, versioned, rotated only when needed).
+- **D2-3a (owner, 2026-09-29):**
+  - The owner generated 32 random bytes into the local Keychain.
+  - The owner set `CALENDAR_UID_HMAC_KEY_V1` through `firebase functions:secrets:set --data-file=-` from stdin, without `--force`.
+  - The value was never shown to, read by or handled by the assistant.
+- **D2-3b (assistant, owner-approved), metadata only — no `versions access`, the value was never read:**
+  - The secret exists: created 2026-09-29T19:37:17Z, automatic replication, label `firebase-managed: functions`.
+  - **Version 1 is `enabled`**; no other version.
+  - Secret IAM before: empty (etag `ACAB`).
+  - `gcloud secrets add-iam-policy-binding CALENDAR_UID_HMAC_KEY_V1 --member=serviceAccount:salown-calendar-feed@havuz-44f70.iam.gserviceaccount.com --role=roles/secretmanager.secretAccessor`, first attempt, no retry.
+- **Verification:**
+  - Secret IAM etag `ACAB` → `BwZcpFN_0xI=`. Removed: none. **Added: exactly `roles/secretmanager.secretAccessor` → the feed SA, unconditional.**
+  - Project IAM etag `BwZcouiW4fw=` unchanged; member-role pairs identical.
+  - The other 23 secrets were not touched.
+- **Unmoved:** project IAM, logging, functions, rules, indexes, hosting, data.
+- **Rollback (not run):** `gcloud secrets remove-iam-policy-binding CALENDAR_UID_HMAC_KEY_V1 --member=serviceAccount:salown-calendar-feed@havuz-44f70.iam.gserviceaccount.com --role=roles/secretmanager.secretAccessor`.
+  - Keep the secret. Re-creating it with a new value would change every subscriber's UIDs.
+- **Next:** D2-4 (the `_Default` sink request-log exclusion) needs its own approval.
+
 ## OPS-2026-09-29-A — `ICAL-FEED-AUTH` D2-2: dedicated runtime service account for the calendar feed · 0 deployable units (IAM only) · **LIVE_VERIFIED (project IAM diff = exactly one added member-role pair)**
 - **Why:** slice 2, step 2 of `ICAL_FEED_AUTH_DESIGN.md` §9.2 (owner decision D1). `salownCalendarFeed` runs as a read-only identity instead of the default compute SA.
 - **Owner approval (2026-09-29):** D2-2 only. Create the SA and grant **only** project-level `roles/datastore.viewer`. No other role, no change to existing members or default SAs. No secret, secret IAM, log exclusion, function, rules, index, hosting or data change. On error, stop without retry.
