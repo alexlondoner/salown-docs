@@ -1,5 +1,27 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
+## OPS-2026-09-29-A — `ICAL-FEED-AUTH` D2-2: dedicated runtime service account for the calendar feed · 0 deployable units (IAM only) · **LIVE_VERIFIED (project IAM diff = exactly one added member-role pair)**
+- **Why:** slice 2, step 2 of `ICAL_FEED_AUTH_DESIGN.md` §9.2 (owner decision D1). `salownCalendarFeed` runs as a read-only identity instead of the default compute SA.
+- **Owner approval (2026-09-29):** D2-2 only. Create the SA and grant **only** project-level `roles/datastore.viewer`. No other role, no change to existing members or default SAs. No secret, secret IAM, log exclusion, function, rules, index, hosting or data change. On error, stop without retry.
+- **Pre-check (17:56:27Z):**
+  - `gcloud iam service-accounts describe` → `NOT_FOUND`; the project had 5 SAs.
+  - Project policy: etag `BwZWgHKkvjo=`, version 3, 33 bindings / 39 member-role pairs (1 conditional binding).
+  - No `roles/datastore.viewer` binding existed.
+- **Change:**
+  - `gcloud iam service-accounts create salown-calendar-feed` → `salown-calendar-feed@havuz-44f70.iam.gserviceaccount.com`, uniqueId `101110607544087807836`, enabled.
+  - `gcloud projects add-iam-policy-binding … --role=roles/datastore.viewer --condition=None`.
+  - Both succeeded first time; no retry.
+- **Verification:**
+  - Policy etag `BwZWgHKkvjo=` → `BwZcouiW4fw=`, version 3 → 3, bindings 33 → 34, pairs 39 → 40.
+  - **Removed: none.** **Added: exactly `roles/datastore.viewer` → the new SA, unconditional.**
+  - The new SA holds no other project role.
+  - Its own resource policy is empty; it has 0 user-managed keys.
+  - `auditConfigs` unchanged; project SA count 5 → 6.
+- **Scope caveat (accepted in D1):** `datastore.viewer` is project-wide read of all Firestore documents. What it buys is no write permission and none of the default SA's other roles.
+- **Unmoved:** secrets and secret IAM, logging sinks and exclusions, functions, rules, indexes, hosting, data.
+- **Rollback (not run):** `gcloud projects remove-iam-policy-binding havuz-44f70 --member=serviceAccount:salown-calendar-feed@havuz-44f70.iam.gserviceaccount.com --role=roles/datastore.viewer --condition=None`, then `gcloud iam service-accounts delete salown-calendar-feed@havuz-44f70.iam.gserviceaccount.com`. Nothing runs as it yet.
+- **Next:** D2-3 (secret `CALENDAR_UID_HMAC_KEY_V1`, set by the owner, plus accessor for this SA on that secret only) needs its own approval.
+
 ## R-2026-09-29-C — `ICAL-FEED-AUTH` D2-1: Firestore indexes for the tokenised calendar feeds · 1 unit (`firestore:indexes`, `(default)`) · **LIVE_VERIFIED (both composite indexes READY, TTL ACTIVE, three operations SUCCESSFUL, before/after diff = additions only)**
 - **Why:** slice 2, step 1 of `ICAL_FEED_AUTH_DESIGN.md` §11. The indexes must be READY before any function queries `calendarFeeds`.
 - **Owner approval (2026-09-29):** D2-1 only. `firebase deploy --only firestore:indexes --project havuz-44f70` from a clean workspace. Stop if any existing index or field override would be deleted or changed. No rules, functions, hosting, IAM, secret or data changes.
