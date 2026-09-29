@@ -1,5 +1,35 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
+## R-2026-09-30-B — `ICAL-FEED-AUTH` D2-7: Firestore rules with the three server-only `calendarFeed*` blocks · 1 unit (`firestore:rules`, `cloud.firestore`) · **LIVE_VERIFIED (served ruleset byte-identical to `2c8285e`; rules gate PASS; release moved only to the new ruleset)**
+- **Why:** slice 2, step 7 (rules last) of `ICAL_FEED_AUTH_DESIGN.md` §8 / §11.
+- **Owner approval (2026-09-30):**
+  - D2-7 only; pre-check that the live release is `5e102dd4…` and the diff is exactly the expected 27 added lines;
+  - rules emulator gate with the effective permission matrix;
+  - then only `firebase deploy --only firestore:rules --project havuz-44f70`;
+  - no index / function / hosting / IAM / secret / data change.
+- **Pre-check (23:26:01Z):**
+  - Live release `cloud.firestore` → `5e102dd4-e7e7-4950-b12a-14a74daa82e8` (since 2026-09-10T13:39:16Z).
+  - Its content is byte-identical to `main` before slice 1 (80896 B).
+  - Diff to `2c8285e` `firestore.rules`: **one hunk, 27 added lines after line 1106, 0 removed, 0 unrelated.**
+- **Gates:** clean `git archive 2c8285e` deploy workspace, never modified.
+  - The first two gate runs hit "port taken": another Claude session's emulator held 8080/4400. That process was left alone.
+  - Final gate run: a **copy** of the workspace with only the `emulators` ports changed (firestore 8181, hub 4410, logging 4510, UI off). Identical `firestore.rules` and tests.
+  - `ops/test-rules-emulator.sh` → **RULES EMULATOR GATE: PASS**, 11/11 suites, 0 port conflicts.
+  - `calendarFeeds` §1–§5 pass:
+    - no browser principal (super-admin included) writes, updates or deletes;
+    - anonymous / owner / admin / staff / another tenant cannot read or list;
+    - super-admin reads only through the root OR grant (D3);
+    - two mutation controls bite.
+  - Admin SDK path: `calendarFeeds.emulator.test.js` E1–E6 6/0.
+- **Release:** 23:33:41Z → 23:33:49Z from the pristine workspace. Compiled, uploaded, "released rules firestore.rules to cloud.firestore". No index deploy (`--only firestore:rules`).
+- **Artefact:**
+  - Release `cloud.firestore` → **`16ac7f75-9584-4dbb-b8e0-e60e4e514ec4`** (created 23:33:48Z, updated 23:33:49Z), one file `firestore.rules`.
+  - **Content byte-identical to `2c8285e`** (82384 B, sha256 `a98fab8b53d8da41…`).
+  - The Storage release (`…firebasestorage.app` → `4c00eef7…`) is untouched.
+- **Unmoved:** 127 functions (updateTime/revision identical), composite indexes and field overrides identical, project IAM etag `BwZcouiW4fw=`, secrets, exclusion, hosting, data.
+- **Rollback (not run):** re-release the previous ruleset `5e102dd4-e7e7-4950-b12a-14a74daa82e8` (Console → Firestore → Rules → history), or deploy `firestore.rules` from `23afd7d`. The only effect of rolling back would be removing the three `if false` blocks, which changes no effective access (§8).
+- **Slice 2 of ICAL-FEED-AUTH is complete:** D2-1 indexes, D2-2 SA, D2-3 secret, D2-4 exclusion, D2-5 functions, D2-6 dummy proof, D2-7 rules. **No feed exists yet.** Slice 3 (offboard revocation release, Admin UI, Kadim canary) needs separate approval.
+
 ## OPS-2026-09-30-A — `ICAL-FEED-AUTH` D2-6: dummy-token proof of the request-log exclusion · 0 deployable units (verification only: 5 GET requests) · **LIVE_VERIFIED (0 request-log entries; 5 redacted structured lines; 0 leaks)**
 - **Why:** `ICAL_FEED_AUTH_DESIGN.md` §9.3. The exclusion (`OPS-2026-09-29-C`) has to be proven against real traffic before any real feed URL exists.
 - **Owner approval (2026-09-29/30):**

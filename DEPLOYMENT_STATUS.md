@@ -93,7 +93,7 @@
 | `functions:salown` → `salownCalendarFeed` (europe-west2) | salown-app **`2c8285e`** | `salowncalendarfeed-00001-wuz`, 100% traffic, 2026-09-29T22:49:11Z; SA `salown-calendar-feed@`; secret V1 | delete the function (new; nothing depends on it) |
 | `functions:salown` → `salownCalendarFeedAdmin` (europe-west2) | salown-app **`2c8285e`** | `salowncalendarfeedadmin-00001-mid`, 2026-09-29T22:49:15Z | delete the function |
 
-Main == live for these two (`2c8285e` is on `origin/main`). Infra from the same slice: indexes `R-2026-09-29-C`, SA `OPS-2026-09-29-A`, secret `OPS-2026-09-29-B`, exclusion `OPS-2026-09-29-C`. Rules are not yet deployed (D2-7).
+Main == live for these two (`2c8285e` is on `origin/main`). Infra from the same slice: indexes `R-2026-09-29-C`, SA `OPS-2026-09-29-A`, secret `OPS-2026-09-29-B`, exclusion `OPS-2026-09-29-C`. Rules: `cloud.firestore` → `16ac7f75-9584-4dbb-b8e0-e60e4e514ec4` from `2c8285e` (`R-2026-09-30-B`; rollback `5e102dd4-e7e7-4950-b12a-14a74daa82e8`). **Slice 2 complete; no feed exists.**
 
 ## 2026-09-29 — ICAL-PII-HOTFIX, both iCal feeds busy-only
 
