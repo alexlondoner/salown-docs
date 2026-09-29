@@ -86,6 +86,15 @@
 ---
 
 
+## 2026-09-29 — ICAL-PII-HOTFIX, both iCal feeds busy-only
+
+| Unit | Source | Live identity | Rollback |
+|---|---|---|---|
+| `functions:whitecross` → `icalFeed` (us-central1) | whitecross-site **`b12fa8a6`** | `icalfeed-00049-ruh`, 100% traffic, 2026-09-28T23:33:36Z | `icalfeed-00048-ber` |
+| `functions:salown` → `salownIcalFeed` (europe-west2) | salown-app **`11fa2a1`** | `salownicalfeed-00116-qiw`, 100% traffic, 2026-09-28T23:52:44Z | `salownicalfeed-00115-mur` |
+
+`R-2026-09-29-A` / `R-2026-09-29-B`. Both commits are on `origin/main` (fast-forward, `[skip ci]`), so main == live for these two functions. Verified from counts and structure only (see RELEASE_LEDGER).
+
 ## 2026-09-22 — STAFF-AVAILABILITY-UNTIL, both halves live
 
 | Unit | Source | Live identity | Rollback |

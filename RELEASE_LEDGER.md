@@ -1,5 +1,50 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
+## R-2026-09-29-B — `ICAL-PII-HOTFIX` (salon half): `salownIcalFeed` publishes busy blocks only · 1 unit (`functions:salown:salownIcalFeed`, europe-west2) · **LIVE_VERIFIED (counts + structure against a same-minute pre-deploy snapshot; the other tenant's active poller got HTTP 200 on the new revision)**
+- **Why:** INCIDENTS 2026-09-28. The salon-wide feed is public and reachable with a tenant id. Every event SUMMARY carried the client name and service, and DESCRIPTION carried the staff name. The UID of Booksy/Fresha fallback-id bookings carried the client name.
+- **Owner approval (2026-09-29):** release of this unit only, after `R-2026-09-29-A`. The same three decisions apply:
+  - pseudonymized UIDs (HMAC in phase 2);
+  - busy statuses CONFIRMED, PENDING, BLOCKED, CHECKED_OUT, UNPAID;
+  - the salon feed keeps its default Treatwell exclusion.
+- **Source:** salown-app **`11fa2a1`** (`origin/main`, fast-forward from `b91a239`, `[skip ci]`). Exactly three paths: `functions/src/index.ts`, `functions/src/utils/icalBusyFeed.ts` (new, pure renderer), `functions/src/utils/icalBusyFeed.test.js` (new, 8 tests).
+- **Behaviour shipped:**
+  - Each event is exactly UID, DTSTAMP, DTSTART, DTEND, `SUMMARY:Busy`, STATUS.
+  - Opaque doc ids keep their UID; any other id becomes `h` + 39 digits (deterministic).
+  - Explicit busy-status allowlist; UNPAID is new and is chair-occupying per `NON_BLOCKING_STATUS`.
+  - Unchanged: query window, `?exclude` with the default Treatwell exclusion, busy-slot v2 processing gaps, calendar envelope, europe-west2, the `allUsers` invoker.
+- **Gates:**
+  - Clean `git archive 11fa2a1` workspace + `functions/npm ci`, turned into a throwaway local git snapshot (no remote) so the git-based archive-manifest tests and the wrapper's dirty-tree check run for real. 1053 tracked files == the `11fa2a1` tree.
+  - functions `npm test` 3034 pass / 0 fail (50 skipped); `icalBusyFeed.test.js` 8/0; `tsc --noEmit` 0 errors.
+  - `./scripts/deploy-functions.sh --check-only salownIcalFeed` → namespace guard OK, `functions:salown:salownIcalFeed (europe-west2)`, nothing deployed.
+  - In the same archive without `.git`, tests 13i/13j fail on `git ls-files` only.
+- **Pre-deploy gate (same minutes):** live revision `salownicalfeed-00115-mur`, europe-west2, codebase salown, 100 % traffic on it, a single function of that name.
+- **Release:** `./scripts/deploy-functions.sh salownIcalFeed` from the snapshot workspace. Completed **2026-09-28T23:52:44Z**. New revision **`salownicalfeed-00116-qiw`**, 100 % traffic.
+- **Artefact:** the served source zip contains `lib/utils/icalBusyFeed.js`, and its `src/utils/icalBusyFeed.ts` is byte-identical to the release workspace.
+- **Scope:** only `salownIcalFeed` (plus `icalFeed` from `R-2026-09-29-A`) changed `updateTime` since 23:00Z. 31 us-central1 functions are still present. IAM unchanged.
+- **Live verification (counts only; no feed body, URL or name printed):**
+
+  | Check | Result |
+  |---|---|
+  | Other tenant, as polled (no `exclude`) | **9 → 9, same UID and same DTSTART/DTEND for every event**, 0 added, 0 missing |
+  | Whitecross `exclude=Treatwell` | 160 → 161: every previous block present with the same times (after the UID rule); the one added event is UNPAID and not Treatwell-sourced |
+  | Whitecross with no `exclude` | identical to `exclude=Treatwell` (161), 0 Treatwell events — the default exclusion is kept |
+  | Whitecross `exclude=__none__` | 164, including 3 Treatwell events |
+  | Event keys and values | exactly the fixed keys; every SUMMARY is `Busy`, every STATUS `CONFIRMED`; no DESCRIPTION |
+  | Hashed UIDs | 15, 0 carry a letter |
+  | Served vs renderer | served set == the release renderer run on the same Firestore data, for all four variants; covers the processing-gap path with `processingTime` on for the other tenant |
+  | Poller | the other tenant's Java poller got HTTP 200 twice on the new revision |
+  | Warnings / 5xx | 0 / 0 |
+
+  - The audit counted 158 Whitecross events on 2026-09-28; the window has since moved by a day. 160 is the same-minute pre-deploy figure.
+  - There were 0 processing-segment bookings in either window, so no split event exists live today. The split logic is pinned by unit tests.
+  - Client strings outside UID lines: 0 for Whitecross. For the other tenant there was 1 match, classified without printing it: a 4-letter staff name that is a substring of the salon's own public name in the unchanged `X-WR-CALNAME` header. It is not event data and not client data.
+- **Rollback (not run):** `gcloud run services update-traffic salownicalfeed --region europe-west2 --project havuz-44f70 --to-revisions=salownicalfeed-00115-mur=100`. The durable rollback is a redeploy from `b91a239`.
+- **Not included / open:**
+  - Phase 2: a tokenised per-consumer feed keyed on `barberId`, a server-side token hash, rotate/revoke/offboard, HMAC UIDs, separate Treatwell and personal consumers, then retire the legacy feed.
+  - The tenant id is still the only access key for the salon feed.
+  - A non-existent tenant still returns 500 rather than 404 (pre-existing).
+  - Kadim is NOT connected to Treatwell.
+
 ## R-2026-09-29-A — `ICAL-PII-HOTFIX` (legacy half): the whitecross `icalFeed` publishes busy blocks only and refuses a request without a barber · 1 unit (`functions:whitecross:icalFeed`, us-central1) · **LIVE_VERIFIED (counts + structure against a same-minute pre-deploy snapshot; poller HTTP 200 on the new revision)**
 - **Why:** INCIDENTS 2026-09-28. The legacy per-barber iCal feed is public and has no token. Without `?barber=` it returned every non-cancelled Whitecross booking (−14 d … +90 d). Every event carried the client name, service, source and booking note. The UID of Booksy/Fresha fallback-id bookings also carried the client name.
 - **Owner approval (2026-09-28/29, in steps):** read-only audit → hotfix candidate → three decisions:

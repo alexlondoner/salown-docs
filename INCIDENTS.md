@@ -43,7 +43,7 @@ Every incident opens with `## YYYY-MM-DD — short title`, immediately followed 
 
 ## 2026-09-28 — Public iCal feeds published client names without authentication, and one returned the whole salon without any parameter
 
-**Severity:** 🔴 Critical · **Owner:** alish · **Status:** 🟡 Open (legacy feed fixed `R-2026-09-29-A`; `salownIcalFeed` pending) · **Affected area:** calendar feeds (`icalFeed`, `salownIcalFeed`) · `#security`
+**Severity:** 🔴 Critical · **Owner:** alish · **Status:** 🟡 Open — both exposure paths **mitigated** (`R-2026-09-29-A` legacy, `R-2026-09-29-B` salon); stays open until the token/HMAC phase 2 lands · **Affected area:** calendar feeds (`icalFeed`, `salownIcalFeed`) · `#security`
 
 **Discovery:** read-only iCal architecture audit (2026-09-28), which asked why a new team member had no Treatwell calendar link. The audit measured the live feeds instead of reading the code alone.
 
@@ -76,7 +76,14 @@ Every incident opens with `## YYYY-MM-DD — short title`, immediately followed 
   - Busy statuses are an explicit list: CONFIRMED, PENDING, BLOCKED, CHECKED_OUT, UNPAID.
   - No source is excluded by default; `?exclude=Treatwell` is opt-in, because the personal Google Calendar shares the URL.
 - **Name-bearing UIDs** are replaced by a deterministic digits-only hash. This is **temporary pseudonymization, not anonymization:** without a server secret, anyone who knows the source id can recompute it. It removes raw names and name fragments from the published feed, and it cost a one-time UID change for 15 events whose times did not change.
-- **`salownIcalFeed`:** candidate ready (same busy-only contract, default Treatwell exclusion kept, other tenant's parity 9/9 measured). NOT deployed; it waits for a separate approval.
+- **`salownIcalFeed` — MITIGATED, deployed and verified in `R-2026-09-29-B` (salown `11fa2a1`, revision `salownicalfeed-00116-qiw`):**
+  - The busy-only contract applies: UID, DTSTAMP, DTSTART, DTEND, `SUMMARY:Busy`, STATUS.
+  - It keeps its default Treatwell exclusion and uses the same explicit status allowlist.
+  - The other tenant's live feed kept every UID and time (9 of 9). Whitecross kept every block and gained one UNPAID block.
+- **Mitigation status:**
+  - Both published paths no longer carry client, service, note, source or staff detail.
+  - The whole-salon legacy response without `?barber=` is withdrawn.
+  - **Still open:** both feeds remain unauthenticated. The legacy one is keyed by a barber name and the salon one by a tenant id. UIDs are pseudonymized without a server secret. The incident stays open until phase 2.
 - **Permanent (phase 2):**
   - a tokenised feed per consumer, keyed on the stable `barberId`;
   - a random token stored server-side only as a hash;
@@ -92,10 +99,10 @@ Every incident opens with `## YYYY-MM-DD — short title`, immediately followed 
 
 **Regression Tests:**
 - whitecross `functions/icalBusyFeed.test.js` (12, including the real handler under stubs);
-- salown `functions/src/utils/icalBusyFeed.test.js` (8, candidate).
+- salown `functions/src/utils/icalBusyFeed.test.js` (8).
 
 **Related:**
-- commits whitecross `b12fa8a6` (claim `1d5e4a34`); salown candidate uncommitted (claim `4c4b263`);
+- commits whitecross `b12fa8a6` (claim `1d5e4a34`, released `0e176cce`); salown `11fa2a1` (claim `4c4b263`);
 - roadmap `ICAL-PII-HOTFIX`;
 - files `functions/index.js`, `functions/icalBusyFeed.js` (whitecross), `functions/src/index.ts`, `functions/src/utils/icalBusyFeed.ts` (salown).
 
