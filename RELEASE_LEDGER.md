@@ -1,5 +1,35 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
+## R-2026-09-29-D — `ICAL-FEED-AUTH` D2-5: `salownCalendarFeed` + `salownCalendarFeedAdmin` created · 2 units (`functions:salown`, europe-west2) · **LIVE_VERIFIED (metadata + served source; no request sent to either endpoint; no feed exists)**
+- **Why:** slice 2, step 5 of `ICAL_FEED_AUTH_DESIGN.md` §11. The public busy-feed endpoint and the owner's admin callable.
+- **Owner approval (2026-09-29):**
+  - D2-5, then D2-5-FIX (`2c8285e`), then a single retry.
+  - Only `./scripts/deploy-functions.sh salownCalendarFeed salownCalendarFeedAdmin`.
+  - No `salownStaffLifecycle`, rules, indexes, hosting, feeds or endpoint requests.
+  - Stop on error.
+- **Attempt 1 (21:09 UK, source `6f10441`) — failed before any change:** `HTTP 400 Invalid service account (salown-calendar-feed@)`. firebase-tools 15.26.0 does not expand the `name@` shorthand in its secret-IAM step. Fixed in `2c8285e` (full e-mail + the `serviceAccountLiterals.test.js` guard); SYNC `1affd08`, `423ad47`.
+- **Attempt 2 (22:39:20Z, source `2c8285e`) — failed before upload:** `Failed to list functions for havuz-44f70`; no debug log. A read-only probe minutes later found both list APIs healthy (v2 → 125 functions, HTTP 200). Production was unchanged (125 → 125, no service, no upload, IAM etags unchanged).
+- **Attempt 3 (22:47:47Z → 22:49:18Z), the approved single retry — SUCCESS.**
+  - Same clean `git archive 2c8285e` workspace: 1063 tracked files blob-identical to the commit, tree clean.
+  - Gates: functions 3086/0, tsc 0, build OK, `--check-only` both europe-west2.
+- **Live identity:**
+
+  | Function | Revision | Runtime SA | Secret | Limits |
+  |---|---|---|---|---|
+  | `salownCalendarFeed` | `salowncalendarfeed-00001-wuz` | **`salown-calendar-feed@havuz-44f70.iam.gserviceaccount.com`** | `CALENDAR_UID_HMAC_KEY_V1` pinned to version **1** | maxInstances 10, concurrency 80, 256Mi, 30 s |
+  | `salownCalendarFeedAdmin` | `salowncalendarfeedadmin-00001-mid` | default compute SA (by design: it must write) | none | 60 s |
+
+  - Both are GEN_2 / nodejs22, codebase `salown`, ingress `ALLOW_ALL`.
+  - Cloud Run invoker on both is `allUsers`: the feed by design (D1), the callable as every callable. Its owner/tenant authorisation is in-app and asserted by tests.
+- **Artefact:** each function's served source zip is byte-identical to the `2c8285e` build for the 4 `calendarFeeds` sources, `index.ts` and 3 compiled `lib` files. The callable's `authorizeTx` / `ADMIN_ROLES = ['owner']` / token-derived identity are present.
+- **Unmoved:**
+  - the previous 125 functions: 0 `updateTime`/revision changes;
+  - project IAM etag `BwZcouiW4fw=` and secret IAM etag `BwZcpFN_0xI=`, both identical. The CLI's "Granted secretAccessor" line was a no-op;
+  - `_Default` sink and exclusion identical; secret v1 enabled;
+  - rules, indexes, hosting, data.
+- **Not done:** no request to either endpoint, no feed created. The dummy-token log proof is D2-6 and needs its own approval.
+- **Rollback (not run):** delete the two functions by name (`firebase functions:delete salownCalendarFeed salownCalendarFeedAdmin --region europe-west2`). Nothing depends on them yet.
+
 ## OPS-2026-09-29-C — `ICAL-FEED-AUTH` D2-4: `_Default` sink exclusion for the feed's Cloud Run request log · 0 deployable units (logging config) · **LIVE_VERIFIED (exclusion re-read from the API, filter byte-identical; sink otherwise unchanged)**
 - **Why:** `ICAL_FEED_AUTH_DESIGN.md` §9.3 (owner decision D2). Cloud Run's request log records the full request URL, and the feed URL carries the bearer secret. The exclusion must exist before the function receives any traffic. The function is not deployed yet, so the service has had zero traffic.
 - **Owner approval (2026-09-29):** D2-4 only. Exactly one new, enabled exclusion `exclude-salowncalendarfeed-requests` on `_Default`, with the stated filter. Do not change existing exclusions, the sink filter, destination, writer identity or `_Required`. On error, stop without retry.

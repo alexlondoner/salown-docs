@@ -86,6 +86,15 @@
 ---
 
 
+## 2026-09-29 — ICAL-FEED-AUTH slice 2: two new functions (no feeds yet)
+
+| Unit | Source | Live identity | Rollback |
+|---|---|---|---|
+| `functions:salown` → `salownCalendarFeed` (europe-west2) | salown-app **`2c8285e`** | `salowncalendarfeed-00001-wuz`, 100% traffic, 2026-09-29T22:49:11Z; SA `salown-calendar-feed@`; secret V1 | delete the function (new; nothing depends on it) |
+| `functions:salown` → `salownCalendarFeedAdmin` (europe-west2) | salown-app **`2c8285e`** | `salowncalendarfeedadmin-00001-mid`, 2026-09-29T22:49:15Z | delete the function |
+
+Main == live for these two (`2c8285e` is on `origin/main`). Infra from the same slice: indexes `R-2026-09-29-C`, SA `OPS-2026-09-29-A`, secret `OPS-2026-09-29-B`, exclusion `OPS-2026-09-29-C`. Rules are not yet deployed (D2-7).
+
 ## 2026-09-29 — ICAL-PII-HOTFIX, both iCal feeds busy-only
 
 | Unit | Source | Live identity | Rollback |
