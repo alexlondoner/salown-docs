@@ -1,5 +1,32 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
+## R-2026-09-29-C — `ICAL-FEED-AUTH` D2-1: Firestore indexes for the tokenised calendar feeds · 1 unit (`firestore:indexes`, `(default)`) · **LIVE_VERIFIED (both composite indexes READY, TTL ACTIVE, three operations SUCCESSFUL, before/after diff = additions only)**
+- **Why:** slice 2, step 1 of `ICAL_FEED_AUTH_DESIGN.md` §11. The indexes must be READY before any function queries `calendarFeeds`.
+- **Owner approval (2026-09-29):** D2-1 only. `firebase deploy --only firestore:indexes --project havuz-44f70` from a clean workspace. Stop if any existing index or field override would be deleted or changed. No rules, functions, hosting, IAM, secret or data changes.
+- **Source:** salown-app **`6f10441`** `firestore.indexes.json`, from a clean `git archive`. firebase-tools 15.26.0, pinned in `functions/node_modules`.
+- **Pre-deploy read (17:15:41Z):**
+  - 3 composite indexes, all READY: `bookings(barberId,startTime)`, `bookings(settlementSync.state,…nextAttemptAt)`, `bookings`-group `(source,status,expiresAt)`.
+  - Field overrides: `__default__` and `bookings.stripePaymentIntent`. The latter matches the file byte for byte (ASC collection + ASC collection-group).
+  - 0 TTL policies.
+  - Computed plan: +2 composite, +1 field override (TTL), 0 deletion candidates.
+- **Release:** started 17:16:25Z, "Deploy complete". The CLI compiled `firestore.rules` as a check only. The rules release stayed `5e102dd4-e7e7-4950-b12a-14a74daa82e8` (2026-09-10T13:39:16Z).
+- **Operations, all SUCCESSFUL:**
+
+  | Operation | Target | Started | Ended |
+  |---|---|---|---|
+  | `S0VKaW1qSmdBQ0lD…` | index `CICAgJjmiJEK` = `calendarFeeds(tenantId ASC, createdAt DESC)` | 17:16:29Z | 17:23:19Z |
+  | `S0U0ejdqSmdBQ0lD…` | index `CICAgJj7z4EK` = `calendarFeeds(tenantId ASC, barberId ASC, createdAt DESC)` | 17:16:29Z | 17:23:19Z |
+  | `AyBhYmE5ZjJmNzhm…` | field `calendarFeedOps.expireAt`: TTL ADD, plus 3 single-field `REMOVE` deltas | 17:16:29Z | 17:22:20Z |
+
+  - The 3 single-field `REMOVE` deltas (ASC, DESC, CONTAINS) on the new, empty collection are the expected effect of `"indexes": []`. No existing index was involved.
+- **Post-deploy state:**
+  - Composite: 3 → 5 (removed 0, changed 0, added the two READY `calendarFeeds` indexes).
+  - Field overrides: 2 → 3 (removed 0, changed 0, added `calendarFeedOps/expireAt`).
+  - TTL: `calendarFeedOps/expireAt` ACTIVE.
+- **Unmoved:** rules release, every function (0 updates since 17:00Z), hosting, IAM, secrets, data.
+- **Rollback (not run):** remove the two `calendarFeeds` entries and the TTL override from `firestore.indexes.json`, then redeploy indexes. The CLI then offers the deletions. Or delete the indexes and TTL in the Console. Nothing reads them yet.
+- **Next:** D2-2 (dedicated service account) needs its own approval.
+
 ## R-2026-09-29-B — `ICAL-PII-HOTFIX` (salon half): `salownIcalFeed` publishes busy blocks only · 1 unit (`functions:salown:salownIcalFeed`, europe-west2) · **LIVE_VERIFIED (counts + structure against a same-minute pre-deploy snapshot; the other tenant's active poller got HTTP 200 on the new revision)**
 - **Why:** INCIDENTS 2026-09-28. The salon-wide feed is public and reachable with a tenant id. Every event SUMMARY carried the client name and service, and DESCRIPTION carried the staff name. The UID of Booksy/Fresha fallback-id bookings carried the client name.
 - **Owner approval (2026-09-29):** release of this unit only, after `R-2026-09-29-A`. The same three decisions apply:
