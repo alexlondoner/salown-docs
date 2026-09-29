@@ -1,5 +1,26 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
+## OPS-2026-09-29-C — `ICAL-FEED-AUTH` D2-4: `_Default` sink exclusion for the feed's Cloud Run request log · 0 deployable units (logging config) · **LIVE_VERIFIED (exclusion re-read from the API, filter byte-identical; sink otherwise unchanged)**
+- **Why:** `ICAL_FEED_AUTH_DESIGN.md` §9.3 (owner decision D2). Cloud Run's request log records the full request URL, and the feed URL carries the bearer secret. The exclusion must exist before the function receives any traffic. The function is not deployed yet, so the service has had zero traffic.
+- **Owner approval (2026-09-29):** D2-4 only. Exactly one new, enabled exclusion `exclude-salowncalendarfeed-requests` on `_Default`, with the stated filter. Do not change existing exclusions, the sink filter, destination, writer identity or `_Required`. On error, stop without retry.
+- **Pre-read (19:58:33Z):**
+  - Sinks: `_Default` and `_Required`, both with 0 exclusions.
+  - The `_Default` filter (352 chars; excludes only audit/access-transparency log ids) and its destination were recorded.
+  - Project-level exclusions: none.
+- **Change:** one Logging API `PATCH projects/havuz-44f70/sinks/_Default?updateMask=exclusions` with a single exclusion, HTTP 200.
+  - The API was used instead of `gcloud … --add-exclusion` because the filter contains `=`, which the gcloud dict parser would split.
+  - The existing exclusion list was empty, so nothing had to be carried.
+- **Filter:** `resource.type="cloud_run_revision" AND resource.labels.service_name="salowncalendarfeed" AND log_id("run.googleapis.com/requests")`
+- **Verification (re-read from the API):**
+  - `_Default` exclusions 0 → 1: `exclude-salowncalendarfeed-requests`, `disabled: false`.
+  - **Filter byte-identical** to the approved text (130 bytes, sha256 `7cc508052c81cee9…`).
+  - `_Default` filter, destination, writer identity, disabled, bucket options, includeChildren and output format are all unchanged.
+  - `_Required` is unchanged, with 0 exclusions. The project-level exclusions view lists the same single exclusion.
+- **Unmoved:** secrets, IAM, functions, rules, indexes, hosting, data.
+- **Proof still owed:** the dummy-token test (D2-6), after the function exists.
+- **Rollback (not run):** remove the exclusion from `_Default`. Its absence would let feed URLs into the request log once traffic flows.
+- **Next:** D2-5 (named deploy of `salownCalendarFeed` + `salownCalendarFeedAdmin`) needs its own approval.
+
 ## OPS-2026-09-29-B — `ICAL-FEED-AUTH` D2-3: UID HMAC key secret + accessor for the feed SA · 0 deployable units (Secret Manager + secret IAM) · **LIVE_VERIFIED (metadata only; secret IAM diff = one added pair; project IAM unchanged)**
 - **Why:** slice 2, step 3 of `ICAL_FEED_AUTH_DESIGN.md` §6.4 / §9.1 (owner decision D11: HMAC key only in Secret Manager, versioned, rotated only when needed).
 - **D2-3a (owner, 2026-09-29):**
