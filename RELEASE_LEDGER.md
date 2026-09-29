@@ -1,5 +1,29 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
+## OPS-2026-09-30-A — `ICAL-FEED-AUTH` D2-6: dummy-token proof of the request-log exclusion · 0 deployable units (verification only: 5 GET requests) · **LIVE_VERIFIED (0 request-log entries; 5 redacted structured lines; 0 leaks)**
+- **Why:** `ICAL_FEED_AUTH_DESIGN.md` §9.3. The exclusion (`OPS-2026-09-29-C`) has to be proven against real traffic before any real feed URL exists.
+- **Owner approval (2026-09-29/30):**
+  - One dummy feedId + secret, generated in memory and never printed, written or put into a Logging filter.
+  - Exactly 5 GET requests; logs downloaded by time window, service and log type only, and compared locally.
+  - No new requests while waiting; no other change.
+- **Requests (23:19:46Z–23:19:59Z window):**
+  - 5 × `404`, byte-identical: body `Not found`, `Content-Type: text/plain; charset=utf-8`, `Cache-Control: private, no-store`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer`, `Content-Length: 9`.
+  - Well-formed random 128-bit feedId and 256-bit secret; no feed exists.
+- **Log verification:**
+
+  | Check | Result |
+  |---|---|
+  | `run.googleapis.com/requests` for `salowncalendarfeed` in the window | **0** (the exclusion holds) |
+  | Structured `calendarFeed` lines | **exactly 5**, all `outcome: not_found`, `httpStatus: 404` |
+  | Structured line keys | `component, feedIdPrefix, httpStatus, ipHash, ms, outcome, uaClass` |
+  | `feedIdPrefix` | exactly the 6-char prefix on every line |
+  | Full feedId / secret / URL path / token hash | **0** entries, in the service logs and across all 7 project log entries in the window |
+  | Other service entries | 2 `varlog/system` startup lines |
+
+- **Error Reporting:** the Error Reporting API is **not enabled** in `havuz-44f70` (the API answered 403 "has not been used … or it is disabled"), so no Error Reporting data can exist. It was not enabled, because that would be an unapproved change. Equivalent evidence: **0** `severity>=WARNING` entries for `salowncalendarfeed` since the deploy (22:49Z).
+- The dummy values were discarded in-process. No feed, token, rules, IAM, secret, exclusion, function, hosting or data change.
+- **Next:** D2-7 (`firestore.rules` deploy, last) needs its own approval.
+
 ## R-2026-09-29-D — `ICAL-FEED-AUTH` D2-5: `salownCalendarFeed` + `salownCalendarFeedAdmin` created · 2 units (`functions:salown`, europe-west2) · **LIVE_VERIFIED (metadata + served source; no request sent to either endpoint; no feed exists)**
 - **Why:** slice 2, step 5 of `ICAL_FEED_AUTH_DESIGN.md` §11. The public busy-feed endpoint and the owner's admin callable.
 - **Owner approval (2026-09-29):**
