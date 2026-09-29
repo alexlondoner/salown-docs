@@ -1,0 +1,8 @@
+task: ICAL-FEED-AUTH-DESIGN
+owner: alish/ical-feed-auth
+started_uk: 2026-09-29T13:27:34+01:00
+locked_paths:
+  - ICAL_FEED_AUTH_DESIGN.md
+  - ROADMAP.md
+status: working
+notes: DRAFT design document only. No product code, rules, index, IAM, secret, log exclusion, production data or deploy.
