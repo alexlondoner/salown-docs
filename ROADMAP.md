@@ -1086,7 +1086,7 @@ both Whitecross targets), which means **period close may not be called platform-
 while it stands · `ROTA-SSOT-2` · `FIN-PERIOD-CLOSE-C` (the ADR-024-pinned P&L waterfall and the
 read-only closed-period badge) · `toDateKey`'s browser-timezone day bucketing.
 
-### 9.8 `OPS-CB-WORKER-RELEASE` — Cloud Build's default worker changes on **2027-03-28** · **PLANNED** (re-test open) *(added 2026-09-29)*
+### 9.8 `OPS-CB-WORKER-RELEASE` — Cloud Build's default worker changes on **2027-03-28** · **PLANNED** (`BUILD_COMPATIBILITY_PASS`; `FULL_TEST_VALIDATION_INCOMPLETE`; re-test open) *(added 2026-09-29)*
 
 **What changes, per the official doc** ([release channels](https://docs.cloud.google.com/build/docs/release-channels)):
 until 2027-03-28 every build without a setting runs on `legacy` (Docker Engine 20.10, Debian 11,
@@ -1103,23 +1103,33 @@ volumes), no node-gyp dependency. The Cloud Functions v2 `BuildConfig` has **no*
 field, so function builds **cannot be pinned**: they move to `regular` on 2027-03-28 on their own.
 Firebase Hosting does not use Cloud Build (GitHub Actions `ubuntu-latest` / local → Hosting API).
 
-**Canary run 2026-09-29 — build `ae354893-0cae-4a95-a5de-9851f45d5bb5` (europe-west2), SUCCESS:**
-- Source: `git archive 9f8c346 functions` of salown-app (functions/ only); config has no images,
+**Canary run 2026-09-29 — build `ae354893-0cae-4a95-a5de-9851f45d5bb5` (europe-west2):**
+
+| Result | Meaning |
+|---|---|
+| **`BUILD_COMPATIBILITY_PASS`** | On `regular` → `2026.09`, `npm ci` and the production `npm run build` both succeeded. |
+| **`FULL_TEST_VALIDATION_INCOMPLETE`** | `npm test` was **red** (exit 1): 2572 tests / 2447 pass / **77 fail** / 48 skipped. The 77 are red because the functions-only archive lacks the repo-root files they read (repo-root `src/`, `firestore.rules`, `scripts/`, `test/fixtures`, `packages/shared`). Cloud and a local Node 22.23.3 run of the same archive are identical (counts and all 77 names), so there is **no evidence of a channel regression — but the suite is not green**, and this run does not validate it. |
+
+**The Cloud Build status `SUCCESS` does NOT mean the test suite was green.** The canary's test
+step ran `npm test`, recorded exit 1, and then exited 0 because the counts matched the
+pre-measured baseline (a baseline-match gate). That masks a red suite behind a green build and is
+not acceptable for the re-test (see below).
+
+- Source: `git archive 9f8c346 functions` of salown-app (functions/ only); config had no images,
   artifacts, registry push, deploy, Firebase or gcloud step.
 - `workerRelease: regular` → `resolvedWorkerRelease: 2026.09`.
 - Host: Docker 29.8.1 (API 1.56), Debian GNU/Linux 13 (trixie), kernel 6.12.107+deb13-cloud-amd64,
   cgroup v2, overlayfs. Step container `node:22`: Debian 12, Node v22.23.3, npm 10.9.9.
-- `npm ci` ✅, `npm run build` ✅, `npm test`: 2572 tests / 2447 pass / 77 fail / 48 skipped —
-  **identical** (counts and the 77 failing names) to a local Node 22.23.3 baseline of the same
-  archive. The 77 are structural tests that read files outside `functions/` (repo-root `src/`,
-  `firestore.rules`, `scripts/`, `test/fixtures`, `packages/shared`) and fail in any
-  functions-only archive; they are not a channel signal. `npm run typecheck` was not run for the
-  same reason (`tsconfig.json` pulls `../packages/shared`).
+- `npm run typecheck` was not run (`tsconfig.json` pulls `../packages/shared`, absent from the
+  archive).
 - Post-run control-plane diff: functions, Cloud Run revisions, Hosting live releases, rules
   releases, project IAM (etag `BwZWgHKkvjo=`), triggers and pools **unchanged**.
-- Side effects kept by design: the build record, and the new bucket `gs://havuz-44f70_cloudbuild`
-  (europe-west2, uniform access, public access prevention) holding the source object
-  `source/channel-test-9f8c346-20260929T115829Z.tgz`.
+- **Out-of-approval resource:** bucket `gs://havuz-44f70_cloudbuild` did not exist and was
+  **created manually, outside the approval** (the approval covered the build record and a source
+  object, not a bucket). Location `europe-west2`, uniform bucket-level access, public access
+  prevention enforced; no IAM or lifecycle change. It holds the source object
+  `source/channel-test-9f8c346-20260929T115829Z.tgz`. Kept as-is: no deletion, no lifecycle, no
+  IAM change without a separate decision.
 - Tooling note: gcloud 579.0.0 rejects `options.workerRelease` client-side ("unused"); the build
   was created through the REST `builds.create` API with the unchanged config.
 
@@ -1128,8 +1138,15 @@ cannot reach our function builds without a private pool, and it lags security up
 year. No private pool, no `stable` channel.
 
 **Open — do not close before these are done:**
-1. **March 2027 re-test** (before 2027-03-28): re-run the same no-publish canary on `regular`
-   against the then-current `main`, and record the resolved release.
+1. **March 2027 re-test** (before 2027-03-28), no-publish, on `regular`, recording the resolved
+   release. Rules for that run:
+   - Source is a **full `git archive <pinned-sha>`** of salown-app (repo-root files included), so
+     the 77 out-of-tree tests can run. `git archive` carries only tracked files: no gitignored
+     files, no `.env*`, no secrets, no service-account keys, no worktree leftovers (`_wt/`,
+     scratch copies). Verify the tarball listing for those before upload.
+   - The test step's exit code **is** the build's exit code: a red `npm test` makes the build
+     red. No `|| true`, no exit-code suppression, no baseline-match gate, no report-only step.
+   - `FULL_TEST_VALIDATION_INCOMPLETE` closes only when that run is green.
 2. **First functions deploy after 2027-03-28:** one low-risk function first
    (e.g. `health`), watch its GCF build, then the rest.
 
