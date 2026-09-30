@@ -41,6 +41,22 @@ Every incident opens with `## YYYY-MM-DD — short title`, immediately followed 
 
 **Tag dictionary (CANONICAL — only these; sprawl forbidden):** `#security` `#stripe` `#secrets` `#config` `#deploy` `#normalization` `#permission` `#race` `#timezone` `#parser` `#email` `#data-loss` `#shared-infra`. A new tag is added only if a genuinely new class emerges (e.g. twins like `#payment`+`#payments`+`#stripe-payment` are FORBIDDEN → all `#stripe`). Every entry carries a `**Tags:**` line.
 
+## 2026-10-01 — REHIRE never cleared the departure's `availabilityUntil`, so a returning member stayed closed on every booking surface
+
+**Severity:** 🟠 High · **Owner:** alish/sched-rehire · **Status:** ✅ Resolved · **Affected area:** staff lifecycle (REHIRE), availability window
+
+**Discovery:** read-only preparation for Muhamed's return (2026-09-30): his barber doc still held `availabilityUntil=2026-09-27`; reading `lifecycleRehire.ts` showed REHIRE writes only `status`/`active` and never touches either availability bound. Never hit in production (no REHIRE of a member with a stored cutoff had run).
+**Impact:** a member offboarded after a dated cutoff would have been "rehired" yet refused by every availability surface from the day after the old cutoff — active on paper, unbookable in fact.
+**Root Cause:** two lifecycle ops own one window but only one side was modelled: `SET_AVAILABILITY_UNTIL` writes the upper bound and refuses passive members, OFFBOARD leaves it in place, and REHIRE (built before STAFF-AVAILABILITY-UNTIL) had no notion of it — nothing ever removed a bound that belonged to the previous employment period.
+**Bug Class:** State normalization (stale field across lifecycle transitions)
+**Resolution:** STAFF-SCHEDULED-REHIRE S1 — REHIRE writes `availabilityFrom = returnOn` and DELETES `availabilityUntil` (`FieldValue.delete`, never null/'') in its one transaction; refuses `FIELD_DELETE_UNAVAILABLE` without the primitive. LIVE `R-2026-10-01-A` (`salownstafflifecycle-00006-hem`).
+**Prevention:** a lifecycle op that opens an employment period must restate BOTH window bounds; the rehire audit records the replaced bounds so a cancel can restore them.
+**Regression Tests:** `functions/src/staff/lifecycleRehire.test.js` (7), (25) + Muhamed-shape S1/S3 in `lifecycleRehireCancel.test.js`; mutation "drop the availabilityUntil delete" fails 7 tests.
+**Related:** salown-app `46c6d908`, release `e02a2226` · roadmap `STAFF-SCHEDULED-REHIRE` · #normalization
+
+**Lessons Learned:**
+- When a new field joins a window another op already owns, audit every op that crosses that window's lifecycle, not only the one that writes it.
+
 ## 2026-09-29 — Merging two client records made the survivor vanish from Clients, and the booking pickers offered a second copy of the same person
 
 **Severity:** 🟠 High (a real customer disappeared from the Clients list; merged-away records could still receive new links; money counters stranded on the absorbed record) · **Owner:** alish (client-merge-identity) · **Status:** 🟡 Open — core fix LIVE (`R-2026-09-30-G`); checkout parity deferred by claim; consent parity deferred to the K3 release; data repair proven but not approved · **Affected area:** client identity: Clients list, BookingForm/WalkInForm pickers, Admin/walk-in create, server resolver, merge

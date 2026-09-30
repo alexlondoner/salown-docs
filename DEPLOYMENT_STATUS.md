@@ -86,6 +86,17 @@
 ---
 
 
+## 2026-10-01 — STAFF-SCHEDULED-REHIRE S1 (`R-2026-10-01-A/B/C`)
+
+| Unit | Source | Live identity | Rollback |
+|---|---|---|---|
+| `functions:salown` → `salownStaffLifecycle` (europe-west2) | salown-app **`e02a2226`** (live `2c8285e` + patch; main `46c6d908`) | `salownstafflifecycle-00006-hem`, 100% | `salownstafflifecycle-00005-fiv` |
+| `functions:salown` → `salownCalendarFeedAdmin` (europe-west2) | same | `salowncalendarfeedadmin-00002-fon`, 100% | `salowncalendarfeedadmin-00001-mid` |
+| `hosting:salown` | **`789aa9ce`** (live `21d0f8c9` + UI patch) | `1a760e32940a57e5` | `7fd1749a162f09d4` |
+| `hosting:salown-staff` | **`12a2cd8e`** (live `08db336` + picker filter) | `8e881da1e4c743d6` | `e2e82316f019037f` |
+
+Main ≠ live: each unit is its live lineage + this patch only. REHIRE accepts a future return date; no data written by this release.
+
 ## 2026-09-29 — ICAL-FEED-AUTH slice 2: two new functions (no feeds yet)
 
 | Unit | Source | Live identity | Rollback |

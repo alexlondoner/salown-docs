@@ -1,5 +1,21 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
+## R-2026-10-01-A/B/C — `STAFF-SCHEDULED-REHIRE` S1: future-dated REHIRE + CANCEL_SCHEDULED_REHIRE + pre-start guards · 4 units (2 functions, `hosting:salown`, `hosting:salown-staff`) · **LIVE_VERIFIED (no production data written)**
+- **Approval:** owner, 2026-10-01, order fn → salown → salown-staff with a drift check before each step. Every unit was built from its OWN live lineage + only this patch; `main` was not deployed.
+
+| Id | Unit | Release branch @ SHA (live base) | Previous → new (previous = rollback) | Served == candidate |
+|---|---|---|---|---|
+| `R-2026-10-01-A` | `salownStaffLifecycle` | `release/sched-rehire-fn-on-live-2c8285e` @ `e02a2226` | `salownstafflifecycle-00005-fiv` → **`-00006-hem`** | 252/252 src+lib |
+| `R-2026-10-01-A` | `salownCalendarFeedAdmin` | same | `salowncalendarfeedadmin-00001-mid` → **`-00002-fon`** | 252/252 src+lib |
+| `R-2026-10-01-B` | `hosting:salown` | `release/sched-rehire-ui-on-live-21d0f8c9` @ `789aa9ce` | `7fd1749a162f09d4` → **`1a760e32940a57e5`** (release `1790810399882000`) | 95/95 (+2 reserved `/__/`) |
+| `R-2026-10-01-C` | `hosting:salown-staff` | `release/sched-rehire-staff-on-live-08db336` @ `12a2cd8e` | `e2e82316f019037f` → **`8e881da1e4c743d6`** (release `1790810587002000`) | 25/25 (+2 reserved) |
+
+- **Pre-deploy:** live bases re-proved: both function zips == `2c8285e` (125/125 src); `7fd1749a` rebuilt from `21d0f8c9` byte-identical (entry + Barbers); `e2e82316` rebuilt from `08db336` → same entry hash. Isolated `git archive` workspace + whitecross sibling: `--check-only` guard passed, archive manifest ok, `rulesAuthority`/`functionsOwnership` exit 0; layout suites 9 red identically on live base and candidate (missing sibling repos, not the change).
+- **Functions verified:** only the two names moved (125 → 125); IAM unchanged; SA/memory/timeout/ingress unchanged. Two platform-side config deltas, not from source: `FUNCTION_SIGNATURE_TYPE=http` env injected on `salownStaffLifecycle`; `salownCalendarFeedAdmin` now carries max instances 20 (the same default `salownStaffLifecycle` already had; `-00001-mid` was created without a cap). Markers present (`CANCEL_SCHEDULED_REHIRE`, `STAFF_NOT_STARTED`, `deleteField: FieldValue.delete`), 0 secret-like files. Unauthenticated probes → 401 `UNAUTHENTICATED` on both (identity refusal before any read). Logs since deploy: no 5xx; only the deploy-time GET 400/404 probe pattern.
+- **Hosting verified:** `staff-bundle/**` absent from `salown` (302 to staff.salown.com); Barbers chunk served `text/javascript` with the new rehire copy; public booking page `/book/whitecross` walked read-only to the time step (multi-staff flow, slots render, 0 console errors), nothing submitted. Staff entry `staff-Ch3buP5Q.js` served `text/javascript` 1.16 MB (not the 10678 B fallback). Staff-app behaviour not exercised live (needs a staff login) — covered by tests.
+- **Rollback (not run):** `gcloud run services update-traffic salownstafflifecycle --region europe-west2 --to-revisions=salownstafflifecycle-00005-fiv=100` · same for `salowncalendarfeedadmin-00001-mid` · hosting clone/rollback to `7fd1749a162f09d4` / `e2e82316f019037f`. New-op data stays safe under old code (A1 closes pre-start); only the cancel op disappears.
+- **Not done:** no production data write, **Muhamed not scheduled** (separate approval), no Auth/claim change, no cron.
+
 ## R-2026-09-30-G — `CLIENT-MERGE-IDENTITY-FIX`: canonical client resolver on the booking writers + Clients / pickers UI + server-authoritative merge · 7 units (6 functions + `hosting:salown`) · **LIVE_VERIFIED (served sources byte-identical to candidates; read-only smoke) — core only, not fully closed**
 - **Why:** a merged-away client record (`hidden` + `mergedInto`) was honoured by one reader only. On whitecross the Clients list lost the survivor of a same-name merge, the Admin/Walk-in pickers offered a second id-less copy, and the server writers could still link a tombstone (INCIDENTS 2026-09-29).
 - **Owner approval (2026-09-30):** exactly these 7 targets. Excluded: `salownSetEmailConsent`, a redeploy of `sendMarketingEmail`, checkout files and functions, `hosting:salown-staff`, rules and indexes, and any production data write (D4/D4b) or real booking/merge/consent operation.
