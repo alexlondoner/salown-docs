@@ -1,5 +1,42 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
+## R-2026-09-30-E — `ICAL-FEED-AUTH` D3-2: Team Members → Calendar feeds tab (Admin) · 1 unit (`hosting:salown`) · **LIVE_VERIFIED (95/95 served files byte-identical to the isolated candidate; content change confined to `Barbers` + `index` chunks; write-free owner smoke)**
+- **Why:** slice 3 of ICAL_FEED_AUTH_DESIGN — owner UI for per-member Treatwell / personal feed links (LIST / CREATE / ROTATE / REVOKE) over the live `salownCalendarFeedAdmin`.
+- **Owner approval (2026-09-30):** deploy `hosting:salown` only, from the verified isolated candidate; the approval explicitly excludes creating any feed or running any feed operation.
+- **Source:** salown-app `384f0dac` (7 paths, SYNC `65d82f13`), applied onto the live hosting lineage — **not** `main`:
+  - `8a6f8db` + `4622dac` + `115c393` (src/scripts only) + `c9a1d09` + `19108f1` (excluding functions/ and ops/claims);
+  - then `git diff 384f0dac^ 384f0dac` (sha256 `cf5f09e6…`, byte-identical to the pre-rebase `66690273..dd2dcb59`).
+  - Candidate tree `8940056b01b2443a772ee199770e77afb37965bb`; upload manifest sha256 `1efbfbe28ff0cb6a8f68ae2d353b4e4d7a11e4de07d1b89b170cd703995b1b2c` (95 files), re-verified after the predeploy build.
+- **Pre-check:**
+  - live was `66dab33dca574d2e`;
+  - the live-lineage rebuild matched live 95/95 (32/32 assets);
+  - shadow-bundle guard 12/12;
+  - `firebase.json` + guard byte-identical to `main`;
+  - `/staff-bundle`, `/staff-bundle/**` → 302 staff.salown.com.
+- **Gates** (isolated workspaces, own `npm ci`):
+  - unit 21/21; screen 32/32 (the lineage has no jsdom, so it ran on the candidate source with main's test tooling);
+  - tsc 18 = base; build OK;
+  - vitest: no new failures (only the screen file, which the lineage's root config cannot run);
+  - eslint (source) 838 = base, 0 new;
+  - 9 mutations, all caught;
+  - static bundle leak scan clean.
+- **Release:** 2026-09-30T10:17:10Z, `firebase deploy --only hosting:salown --project havuz-44f70` from the candidate workspace (firebase-tools 15.15.0), single attempt. 95 files, 28 uploaded.
+- **Artefact:** release `1790763430251000`, version **`b7ca73ddc52e297e`**.
+  - Entry `index-CbuqT4nS.js`; changed chunk `Barbers-DMqhqrf0.js`.
+  - The other 30 chunks and `index.html` are hash-cascade only; the 40 non-bundle files are unchanged.
+  - 0 staff-bundle files; the redirects are served.
+- **Not in the release:** the 14 unreleased Admin files on `main` (CLIENT-MERGE-IDENTITY-FIX, TREATWELL-PREPAID lanes, staffApp dictionaries, package*/vite.config). 10 are byte-equal to the previous live and 4 are absent. No functions, rules, indexes or other hosting target moved.
+- **Callable compatibility:** live `salowncalendarfeedadmin-00001-mid` (100 %); its served `feedAdminCallable/feedStore/feedCore` are byte-identical to `2c8285e` and to main.
+- **Smoke (owner session, write-free):**
+  - Home, Calendar, Clients, Finance, Settings and Team Members load.
+  - The Alex and Kadim drawers show the "Calendar feeds" tab; LIST renders both rows NOT SET UP.
+  - Server: 2 × LIST POST 200, 0 warnings.
+  - `calendarFeeds` / `calendarFeedOps` / `calendarFeedSlots` = 0 / 0 / 0.
+  - No console errors; CREATE / ROTATE / REVOKE were not called.
+  - Admin/staff invisibility is covered by unit + static tests only; it was not exercised live (no such session).
+- **Rollback (not run):** Hosting → site `salown` → roll back to version `66dab33dca574d2e`.
+- **Open:** no feed exists yet; Kadim canary / Treatwell compatibility gate is a separate approval; the `docs/CLAUDE.md` ruleset wording fix is still separate.
+
 ## R-2026-09-30-D — `SEC-CALLABLE-TENANT-BOUNDARY-HOTFIX` (K1/K2): `deleteStaffUser` + `sendMarketingEmail` tenant boundary · 2 units (`functions:salown:deleteStaffUser`, `functions:salown:sendMarketingEmail`, europe-west2) · **LIVE_VERIFIED (served source byte-identical to `8c2e9319`; only the two named functions moved; unauthenticated probe refused)**
 - **Why:** INCIDENTS 2026-09-30, "Two Admin callables did not bind the caller to their own salon". Security, critical.
 - **Owner approval (2026-09-30):** deploy both now. Keeping K2 open was judged more dangerous than the best-effort `resolveClientDocId` dependency (the re-engagement stamp path runs inside try/catch). The work is explicitly **not fully closed**: the legacy whitecross-site `deleteStaffUser` copy (us-central1) remains a separate urgent item.
