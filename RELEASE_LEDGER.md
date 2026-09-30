@@ -1,5 +1,34 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
+## R-2026-09-30-D — `SEC-CALLABLE-TENANT-BOUNDARY-HOTFIX` (K1/K2): `deleteStaffUser` + `sendMarketingEmail` tenant boundary · 2 units (`functions:salown:deleteStaffUser`, `functions:salown:sendMarketingEmail`, europe-west2) · **LIVE_VERIFIED (served source byte-identical to `8c2e9319`; only the two named functions moved; unauthenticated probe refused)**
+- **Why:** INCIDENTS 2026-09-30, "Two Admin callables did not bind the caller to their own salon". Security, critical.
+- **Owner approval (2026-09-30):** deploy both now. Keeping K2 open was judged more dangerous than the best-effort `resolveClientDocId` dependency (the re-engagement stamp path runs inside try/catch). The work is explicitly **not fully closed**: the legacy whitecross-site `deleteStaffUser` copy (us-central1) remains a separate urgent item.
+- **Pre-check:**
+  - Live: `deletestaffuser-00057-viw` and `sendmarketingemail-00070-vap` (both 2026-07-13).
+  - Their bodies are behaviour-identical to pre-hotfix `main` (type annotations only).
+  - `8c2e9319` is in `origin/main`, and nothing changed under `functions/` after it.
+- **Lineage note:** the deployed bundle carries `main`'s `emails/index.ts` and `clients/identity.ts`. The latter includes the not-yet-released CLIENT-MERGE-IDENTITY-FIX `resolveClientDocId`. It is reached only by `sendMarketingEmail`'s best-effort re-engagement stamp.
+- **Gates** (clean `git archive 8c2e9319`, fresh `npm ci`, pinned files byte-checked):
+  - functions `npm test`: 3224 tests, 3172 pass, 0 fail, 52 skipped;
+  - `tsc` 0; build OK;
+  - functions emulator gate PASS 793/793;
+  - 20 new tests;
+  - 13 mutations, all caught;
+  - `--check-only` OK.
+- **Release:** 09:56:06Z → 09:58:08Z via `bash scripts/deploy-functions.sh deleteStaffUser sendMarketingEmail` (namespace guard passed). Both: "Successful update operation".
+- **Artefact:**
+  - `deleteStaffUser` → **`deletestaffuser-00058-duj`** (09:57:58Z); `sendMarketingEmail` → **`sendmarketingemail-00071-hac`** (09:57:59Z).
+  - Served source zips: `src/index.ts`, `src/staff/deleteStaffUserCore.ts` and `src/marketing/sendMarketingEmailCore.ts` are byte-identical to `8c2e9319`.
+  - The hotfix marker is present in the compiled `lib/index.js`.
+- **Unmoved:** 127 functions in total (96 europe-west2, 31 us-central1). Only these two `updateTime`s changed. The whitecross us-central1 `deleteStaffUser` is still at 2026-07-21.
+- **Smoke (no side effect):**
+  - An unauthenticated POST without `clientEmail`: `sendMarketingEmail` → **401 UNAUTHENTICATED**. The old code would have answered 200 `missing_fields`, so this proves the new code is live. `deleteStaffUser` → 401.
+  - No email was sent, and nothing was written or deleted.
+- **Monitoring (first minutes):** 0 × 5xx. The warnings are only GET/CORS probes ("Request has invalid method. GET"), which are expected for POST-only callables.
+- **Rollback (not run):** route Cloud Run traffic back to `deletestaffuser-00057-viw` / `sendmarketingemail-00070-vap`, or redeploy from the pre-hotfix commit. **Rolling back reopens K1/K2.**
+- **Open:** whitecross us-central1 `deleteStaffUser` (same flaw, separate codebase); K3; K4.
+- **Ledger id note:** `R-2026-09-30-C` was used twice today. SAAS-INVITE-S2 rules were written first (01:40), and ICAL-FEED-AUTH D3-1 reused the id at 01:55. Neither row was changed here; the owners should pick a disambiguation.
+
 ## R-2026-09-30-C — `SAAS-ONBOARDING-INVITE-TRIAL` S2: Firestore rules — tenant lifecycle gate + server-only owner-invite collections · 1 unit (`firestore:rules`, `cloud.firestore`) · **LIVE_VERIFIED (served ruleset byte-identical to `65b6efd`; rules gate PASS 12/253/0; release moved only to the new ruleset)**
 - **Why:** `SAAS-INVITE-S2`. Pending-lifecycle owners must reach no tenant data before S3 can issue a single invite. Owner/admin must not be able to write lifecycle/activation/invite-control fields, and the invite records are server-only.
 - **Owner approval (2026-09-30):**
