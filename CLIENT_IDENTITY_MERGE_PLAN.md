@@ -655,3 +655,145 @@ The remaining difference is entirely the two **approved** merges plus explicit
 `clientManualId` links; no unmerged pair fuses. Adopting the second argument in
 those four call sites is a separate, owner-approved step — it moves numbers on
 three live screens.
+
+---
+
+## 18. `CLIENT-MERGE-IDENTITY-FIX` (2026-09-29/30) — LIVE_CORE_FIX · CHECKOUT_PARITY_DEFERRED · CONSENT_PARITY_DEFERRED · DATA_REPAIR_DEFERRED
+
+**Status:** source + tests on `main` (`0b3ed8e`, `5092797`, `96b6639`, `0e83236`, `9f8ff1e`, all `[skip ci]`). **Core LIVE since `R-2026-09-30-G` (2026-09-30)** — see §18.7. No production data written. Checkout and consent are not fixed, so the work is **not fully closed**. This is a *narrow* slice on
+`origin/main`. It does **not** revive the reverted P1 candidate (`5a32334` / `wip/client-identity-adopt`):
+it adds no `clientIdentities` index, no `ensureClient` and no review queue. It does apply P1's measured
+rules: tombstone following, count-by-person, and refuse-rather-than-guess (§17).
+
+### 18.1 Specimens (read-only, whitecross, 2026-09-29; the only two `hidden` + `mergedInto` docs)
+
+| | Conrad shape | Hudson shape |
+|---|---|---|
+| names | same | different (full vs short first name) |
+| source contact | phone malformed-short, e-mail a typo variant | phone present, e-mail different; survivor has **no** phone |
+| survivor `_aliases` | carries the source's phone + e-mail | not verified to carry the source's contact |
+| bookings | 5; one carries the source's contact, none linked to the source | 4; one Website visit carries the source's contact |
+| symptom | survivor **vanished** from Clients (name in `hiddenKeys`); the pickers offered a second, id-less "Pat"-row | survivor visible, but the source-contact visit dropped out of its history |
+| merge audit | `bookingsRelinked: 0` | `bookingsRelinked: 0` |
+
+### 18.2 Root cause → fix
+
+| Root cause | Fix |
+|---|---|
+| Clients list: `hiddenKeys` held the hidden doc's name, phone and e-mail, and suppressed every booking group carrying any of them | `src/pages/clientRows.ts` `assembleClientRows`: no suppression; each group resolves through the contract; groups that resolve to the same survivor fold into one row; every visible doc appears exactly once |
+| Clients list glued a group to a same-NAME doc even when the phones differed | name is evidence only for a contact-less booking, and only when the answer is unique |
+| BookingForm/WalkInForm: hidden docs were dropped, bookings keyed by raw `phone‖email‖name`, so an old booking with the source's contact minted a second, id-less result | `src/lib/clientSuggestions.ts` `buildClientSuggestions`: ONE builder for both forms. A tombstone's contact counts on its survivor. An ambiguous booking folds onto nobody and adds no row |
+| Admin BookingForm held the picked `clientDocId` and never sent it | `clientLinkFor` sends a picked doc id only, never for free text or a fallback row. WalkInForm now sends it on both creates too |
+| `createWalkIn` stamped the caller's `clientManualId` without reading it; Admin create accepted a hidden doc | both follow the chain **inside the transaction** (`followMergeChainInTx`) and link the survivor. An unfollowable chain returns `CLIENT_NOT_FOUND` |
+| `resolveClientIdentity` treated a hidden doc as a live match and picked the first doc per identifier | hits are followed to survivors, `_aliases` are read in the legacy scan, identifiers intersect, and more than one living person returns `ambiguous` with no link. `resolveClientDocId` (marketing and consent stamps) never returns a hidden doc |
+| Merge was four independent browser writes (booking batch, aliases, hide, audit) | `salownMergeClients`: ONE transaction (§18.4) |
+
+**The contract** is `src/lib/canonicalClient.ts` ⇄ `functions/src/clients/canonicalClient.ts`. Both
+suites execute one golden table (`test/fixtures/clientCanonicalGolden.json`, PII-free), and the functions
+suite also runs the panel module against the server module (parity):
+visible → itself · hidden → `mergedInto` → … → survivor · refused: missing target, cycle,
+`> MAX_MERGE_HOPS (8)`, a path instead of an id, a foreign `tenantId` stamp · tokens (canonical phone,
+canonical e-mail shaped like an address, every `_aliases` entry classified by shape) attributed to the
+survivor · phone ∩ e-mail · >1 living person = ambiguous · name only for a contact-less probe with a
+unique answer.
+
+### 18.3 Checkout — `CHECKOUT_PARITY_DEFERRED_BY_CLAIM`
+
+`src/firestoreActions.ts`, `src/components/CheckoutPanel.tsx` and `src/staff/sheets/CheckoutSheet.tsx`
+are claimed by `TREATWELL-PREPAID-WRITER` (`alish/main-integration`). They were **not modified**, and no
+parallel or duplicate checkout path was created. **Until the steps below land, a checkout can still
+resolve or create a client without following a merge, and the work is not "fully closed".**
+Integration steps, once that claim is released and its changes are on `main`:
+
+1. Claim the three files (+ `src/utils/clientIdentityQueries.ts`, `functions/src/checkout/executor.ts`).
+2. `checkoutBooking`: replace the inline ladder with the contract. `loyaltyClientId` / `clientManualId`
+   → `followMergeChain` over tenant-scoped `getDoc`. Contact → candidate docs *including hidden*
+   → `buildClientIdentityIndex` + `resolveClientContact`. `ambiguous` → no stats write, no create,
+   operator told. Never `update`/`increment` a hidden doc. Never create a client when the contact
+   resolves to a tombstone.
+3. `getClientLoyaltyPoints`: follow `mergedInto` instead of skipping hidden docs, so an absorbed
+   identity shows the survivor's balance.
+4. `clientBelongsToBooking`: a booking linked to a tombstone belongs to its survivor.
+5. `CheckoutPanel` assign-client picker: `visibleClients` + `clientLinkFor`.
+   `CheckoutSheet`: `loyaltyClientId` = the resolved survivor.
+6. `executor.ts` (server till): follow the chain in-transaction for `req.clientId` /
+   `booking.clientManualId` before any stats update.
+7. Writer-parity test: the checkout resolver over `clientCanonicalGolden.json`. Emulator test:
+   "a hidden source never receives a visit, spend or point". Add mutation checks.
+8. Release: `hosting:salown` + `hosting:salown-staff` (CheckoutSheet) + any changed functions.
+
+### 18.4 Merge contract (`functions/src/clients/mergeClients.ts`, callable `salownMergeClients`)
+
+- One transaction. Every read comes first: the actor's `staff/{uid}` (owner/admin + S4A gate), both
+  clients, the journal row, and the source's linked bookings. Every write commits together.
+- Tenant comes from the verified token. Ids are plain doc ids. `source ≠ target`, both must exist and
+  both must be visible.
+- Idempotent: the journal/audit id is derived from `(tenant, source, target)`. A replay returns the
+  same result with zero writes. An opposite or concurrent merge re-runs, sees the source hidden, and is
+  refused. Emulator-proven: opposite race ×6, duplicate submit, one source into two targets.
+- Result: source gets `hidden: true`, `mergedInto`, `mergedAt/By/Id`. The source's name, former name,
+  aliases, phone and e-mail go into the survivor's `_aliases`. `clientManualId == source` bookings are
+  relinked. More than 400 linked bookings → the merge is refused whole.
+- `sourceIdentity` mode folds a booking-only person into a client as aliases only.
+- **Counters are not moved** (`statsTransferred: false`; `sourceHasStats` is reported to the operator).
+- The panel (`Clients.tsx handleMerge`) only calls the callable. `firestore.rules` still lets any
+  tenant member write `hidden`/`mergedInto` directly. Closing that is a separate rules slice, released
+  last.
+
+### 18.5 `CLIENT-MERGE-DATA-REPAIR` — proven, deferred (Conrad shape)
+
+The fix makes the list and pickers correct **without any data change**, because readers resolve the tombstone. What stays open is money-adjacent.
+
+**D0–D2 ran read-only on 2026-09-30.** The raw snapshot stays local at 0600 and never goes into git or docs; only aggregates are shown here.
+
+| Record | Stored (visits / spend / points) | Recomputed from bookings | Checkouts attributed |
+|---|---|---|---|
+| survivor | 3 / £104.20 / 28 | 3 / £104.20 / 28 | 29 Aug, 22 Sep, 29 Sep |
+| tombstone | 1 / £32 / 32 | 1 / £32 / 32 | 5 Sep (the checkout that created it) |
+
+- **Method:** the writer's own fold (`paidAmount + platformDepositAmount`, +1 visit, earned − redeemed). Each checkout is attributed by its `loyaltyPointsTotal` stamp and the record's creation time.
+- **Result:** the two sets are disjoint and their union is every checkout of the person. There are no manual adjustments and no membership change. The single redemption (76 points on 29 Sep) drew on the survivor's own balance only.
+- **Conclusion:** the tombstone's 32 points / 1 visit / £32 are a real balance that is not double-counted.
+- **Dry-run diff (D2, NOT applied):** survivor 28 → 60 points, 3 → 4 visits, £104.20 → £136.20; tombstone → 0.
+- **Owner decision 2026-09-30:** D4 (counter write) and D4b (booking relink) are **not approved**. They wait until every writer is proven live not to reach a hidden source (checkout + consent parity). Then D0–D2 are re-run on current production.
+- **D4 design change:** the precondition becomes a snapshot cut-off / document `updateTime` optimistic check instead of a fixed date. If the 3 Oct booking is checked out first, the dry run is void. D4b stays a separate decision.
+
+### 18.6 Other consumers that still copy identity logic (not changed here)
+
+`sendCampaignBulk` and `salownSendLoyaltyEmail` (inline `matchesClient`) · `salownEmailOptOut` and
+`salownBrevoWebhook` (raw `email ==`; an opt-out can land on a tombstone and never reach the
+survivor, a GDPR follow-up) · `ensurePromotionSnapshot.resolveClientRef` · `productSaleCore`,
+`packages/executor`, `treatmentSessions/*` (a caller-given client id taken as-is) · `Clients.tsx
+resolveMemberDocId` and the edit-save path (a name-match create, no hidden filter) ·
+`audienceUtils.buildAudience` / `canonicalBookingKeys` (no alias or tombstone edges) · `homeMetrics`
+· `BookingDetailPanel` visit badge · Staff App `walkinClient` / `ClientDetailSheet` / `NewBookingSheet`.
+
+### 18.7 Release `R-2026-09-30-G` (2026-09-30)
+
+Built from **live lineage, not `main`**: each function's served source commit + only the client-merge server patch; hosting = live tree `8940056b` + the 12 UI paths. Full evidence is in RELEASE_LEDGER `R-2026-09-30-G`.
+
+| Unit | Revision (rollback → live) |
+|---|---|
+| `salownCreateBooking` | `-00007-hap` → `-00008-mib` |
+| `salownCreateAdminBooking` | `-00003-her` → `-00004-yif` |
+| `salownCreateWalkIn` | `-00003-jus` → `-00004-xir` |
+| `salownMergeClients` (new) | — → `-00001-cis` (rollback = hosting rollback first, then a controlled delete) |
+| `salownCreateStaffBooking` | `-00002-xad` → `-00003-cuz` |
+| `salownCreateStaffWalkIn` | `-00002-jom` → `-00003-koz` |
+| `hosting:salown` | `b7ca73ddc52e297e` → `7fd1749a162f09d4` |
+
+**Not in this release:**
+- `sendMarketingEmail` — already carries the closure via K2 `8c2e9319`;
+- `salownSetEmailConsent` — `CONSENT_PARITY_DEFERRED_TO_K3_RELEASE`. It ships as ONE revision with the K3 tenant gate plus this identity patch; until then its consent stamping may keep the old hidden/tombstone behaviour.
+
+**Live smoke (read-only):** the Conrad-shape survivor is one row (4 visits, £136.20, 5 bookings in History, **28 points** — the proven 32 are still on the tombstone). The Walk-in picker returns one result.
+
+**Next, in order:**
+1. `maxInstances: 20` on `salownMergeClients`;
+2. checkout parity (§18.3) once the TREATWELL claim is released;
+3. consent parity with K3;
+4. live proof that no writer reaches a hidden source;
+5. Conrad D0–D2 re-run;
+6. a new D4 approval, with D4b as a separate decision.
+
+No merge, point transfer or booking relink may be done on the Conrad records until then.

@@ -1,5 +1,49 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
+## R-2026-09-30-G — `CLIENT-MERGE-IDENTITY-FIX`: canonical client resolver on the booking writers + Clients / pickers UI + server-authoritative merge · 7 units (6 functions + `hosting:salown`) · **LIVE_VERIFIED (served sources byte-identical to candidates; read-only smoke) — core only, not fully closed**
+- **Why:** a merged-away client record (`hidden` + `mergedInto`) was honoured by one reader only. On whitecross the Clients list lost the survivor of a same-name merge, the Admin/Walk-in pickers offered a second id-less copy, and the server writers could still link a tombstone (INCIDENTS 2026-09-29).
+- **Owner approval (2026-09-30):** exactly these 7 targets. Excluded: `salownSetEmailConsent`, a redeploy of `sendMarketingEmail`, checkout files and functions, `hosting:salown-staff`, rules and indexes, and any production data write (D4/D4b) or real booking/merge/consent operation.
+- **Source (live lineage, never `main`):** every function was matched to the commit of its served `function-source.zip`, then that commit + ONLY the client-merge server patch from `main` (`0b3ed8e..9f8ff1e`) was applied. The `createWalkIn.ts` require hunk was resolved onto the live requires, so no `staffPolicyGate`, gap-starts or K3 code rides along. Hosting = the live tree `8940056b` (D3-2 lineage) + the 12 client-merge UI paths. Upload sets differ from the served archives only in the client-merge files; manifests are `ok` with 0 forbidden and 0 untracked; `--check-only` passes in isolated workspaces with main's guard at the root.
+
+| Unit | Release branch @ SHA (live base) | Previous → new (previous = rollback) | Served == candidate |
+|---|---|---|---|
+| `salownCreateBooking` | `release/cm-public-on-live-a88f4006` @ `84cf3783` | `salowncreatebooking-00007-hap` → **`-00008-mib`** | 180/180 |
+| `salownCreateAdminBooking` | `release/cm-admin-on-live-b033167a` @ `65b5e3f6` | `salowncreateadminbooking-00003-her` → **`-00004-yif`** | 154/154 |
+| `salownCreateWalkIn` | same | `salowncreatewalkin-00003-jus` → **`-00004-xir`** | 154/154 |
+| `salownMergeClients` (NEW) | same | — → **`salownmergeclients-00001-cis`** | 154/154 |
+| `salownCreateStaffBooking` | `release/cm-staffbook-on-live-dd133815` @ `2c1d89a2` | `salowncreatestaffbooking-00002-xad` → **`-00003-cuz`** | 228/228 |
+| `salownCreateStaffWalkIn` | `release/cm-staffwalk-on-live-630e811b` @ `3a480306` | `salowncreatestaffwalkin-00002-jom` → **`-00003-koz`** | 230/230 |
+| `hosting:salown` | `release/cm-ui-on-live-b7ca73d` @ `21d0f8c9` | `b7ca73ddc52e297e` → **`7fd1749a162f09d4`** (release `1790801391742000`) | 95/95 |
+
+- **Not targets:** `sendMarketingEmail` already carries the client-merge closure (live `-00071-hac` from K2 `8c2e9319`, closure diff 0). `salownSetEmailConsent` is deferred to the K3 release (live base `7ca7c4d2` predates `ukPhone`/BSP-I2; `main` carries the unreleased K3 gate).
+- **Gates (clean archives, own `npm ci`, each candidate against its own live base):**
+  - functions unit: same failing sets as base (public 1=1, admin 2=2, staffbook 0, staffwalk 0);
+  - canonical emulator: public 586/586, admin 475/475 (merge race suite 24/24 by name), staffwalk 721/721, staffbook 695/696. The one red is the pre-existing O1S cross-flow test (`PERMISSION_DENIED` ≠ `SLOT_CONFLICT`); it fails identically on live `dd133815` (694/695, and 5/5 reruns), so it was accepted as base parity;
+  - hosting: tsc 18=18, vitest 13=13 failures (none new), client-merge tests 32/32, eslint delta 0, shadow-bundle guard 12/12. Source changed in the 7 client-merge modules only; 27 chunks moved only by import aliases;
+  - PII scan of every branch, commit and workspace: 0.
+- **Release (2026-09-30, one attempt each, no retry):**
+  - functions 18:33Z, 19:30Z, 20:34Z, 20:46Z;
+  - hosting 20:49:41Z, `firebase deploy --only hosting:salown` (firebase-tools 15.15.0) from `~/release-work/cm-rel-hosting`.
+- **Verified:**
+  - after each function stage, only the named functions moved (124 → 125). SA, env, secrets, limits, ingress and invoker (`allUsers`) are unchanged, and traffic is 100 % on the latest revision;
+  - no 5xx. The only errors were GET 400/404 probes at deploy time, the same pattern as at K2;
+  - after the hosting release no function changed. Served files are 95/95 byte-identical, the version holds 0 staff-bundle files, `/staff-bundle/**` returns 302 to staff.salown.com, and the Calendar feeds `Barbers` chunk is source-identical to D3-2.
+- **Smoke (owner session, read-only):**
+  - Clients: the Conrad-shape survivor is ONE row with 4 checked-out visits, £136.20 net, 5 bookings in History and 28 points;
+  - the Walk-in picker returns ONE result (the form was closed unsaved);
+  - Home, Calendar, Clients, Finance, Settings, Sales and Team Members load; no console errors;
+  - not exercised: the Calendar feeds tab (the drawer did not open under automation; covered by the static proof above) and the Admin BookingForm picker (same shared builder, pinned by a wiring test).
+- **Rollback — frontend BEFORE backend:**
+  1. `hosting:salown` → `b7ca73ddc52e297e` (Console → Release history);
+  2. per function: `gcloud run services update-traffic <svc> --to-revisions=<previous rev above>=100 --region europe-west2 --project havuz-44f70`;
+  3. `salownMergeClients`: only after the hosting rollback is verified, a controlled `firebase functions:delete salownMergeClients --region europe-west2 --project havuz-44f70`. A merge that already ran cannot be rolled back; the smoke performed no merge.
+- **Still open (this is NOT fully closed):**
+  - `CHECKOUT_PARITY_DEFERRED_BY_CLAIM` — `src/firestoreActions.ts`, `src/components/CheckoutPanel.tsx` and `src/staff/sheets/CheckoutSheet.tsx` were not touched, because they are claimed by TREATWELL-PREPAID-WRITER;
+  - `CONSENT_PARITY_DEFERRED_TO_K3_RELEASE` — `salownSetEmailConsent` ships as ONE revision with the K3 tenant gate plus the identity patch. Until then its consent stamping may keep the old hidden/tombstone behaviour;
+  - D4/D4b are not approved (`DATA_REPAIR_PROVEN_BUT_DEFERRED`). The proven 32 points / 1 visit / £32 stay on the tombstone; the survivor shows 28 points.
+- **Follow-up:** `salownMergeClients` has no `maxInstances` (the other callables use 20) — a small next revision.
+- **Records:** salown-app SYNC `40b46eb1`; docs INCIDENTS 2026-09-29; CLIENT_IDENTITY_MERGE_PLAN §18.
+
 ## OPS-2026-09-30-B — `ICAL-FEED-AUTH` D3-3: Kadim / Treatwell canary — first real calendar feed · data op (no deploy) · **CANARY ACTIVE — server-side criteria PASS; visual Treatwell busy check pending the first future Kadim booking**
 - **Owner approval (2026-09-30):**
   - Kadim only, consumer `treatwell` only;
