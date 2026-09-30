@@ -44,6 +44,33 @@
 - **Rollback (not run):** re-release `16ac7f75-9584-4dbb-b8e0-e60e4e514ec4` (Console → Firestore → Rules → history), or deploy `firestore.rules` from `8d297ac`.
 - **Next:** S3 (callables) needs separate approval. Open gates: the router/UI side of lifecycle enforcement, deterministic slot storage, the Auth/Firestore/Brevo saga and recovery, and the Brevo tracking decision.
 
+## R-2026-09-30-C — `ICAL-FEED-AUTH` D3-1: `salownStaffLifecycle` with the calendar-feed OFFBOARD revocation · 1 unit (`functions:salown:salownStaffLifecycle`, europe-west2) · **LIVE_VERIFIED (served closure byte-identical to `2c8285e`; only this function moved; no invocation yet)**
+- **Why:** slice 3, step 1 of `ICAL_FEED_AUTH_DESIGN.md` §11. A departure must revoke the member's feeds **before the first feed can exist**.
+- **Owner approval (2026-09-30):**
+  - D3-1 prep (read-only lineage + closure analysis);
+  - D3-1a (REHIRE regression test `170fe23`, test-only, canonical emulator 788/788);
+  - then D3-1: source **`2c8285e` only** (not `170fe23` / current main); only `./scripts/deploy-functions.sh salownStaffLifecycle`;
+  - no real OFFBOARD/REHIRE, no endpoint call, no feed.
+- **Lineage:** live `salownstafflifecycle-00004-saz` was built from **`a82b5bd`** (121 source files blob-identical). The `lifecycleCallable` require closure goes 15 → 19 files.
+  - +4 files, all feed helpers: `calendarFeeds/feedStore`, `feedCore`, `utils/icalBusyFeed`, `utils/ical`.
+  - `lifecycleOffboard`: only the revoke integration — slot reads before any write, `revokeSlotsTx`, `calendarFeedsRevoked`.
+  - `rotaActivation`: `115c393` slice B adds 5 exports; the 4 pre-existing exports are byte-identical and none of the new ones is used in the closure.
+  - The wrapper block is identical. `package.json` changes only test globs; dependencies and lock are identical.
+- **Pre-checks (00:47:01Z):**
+  - `-00004-saz` at 100 %; 127 functions; feeds / slots / ops = 0 / 0 / 0.
+  - Metadata recorded: default compute SA, standard env, no secrets, 256Mi / 1 CPU, 60 s, concurrency 80, maxInstances 20, ingress ALLOW_ALL, invoker `allUsers`, project IAM `BwZcouiW4fw=`.
+- **Gates (fresh `git archive 2c8285e`):** tree == commit; functions 3086/0; tsc 0; build OK; lifecycle/feed subset 115/0; `--check-only salownStaffLifecycle` OK.
+- **Release:** 00:52:11Z → 00:53:54Z → **`salownstafflifecycle-00005-fiv`**, Ready, 100 % traffic.
+- **Verification:**
+  - Only `salownStaffLifecycle` changed among 127 functions. The other 126 have identical `updateTime`/revision.
+  - Runtime metadata, invoker IAM and project IAM are identical.
+  - The **served `lifecycleCallable` closure (19 files) is byte-identical to the `2c8285e` build**, as are `lib/index.js`, `src/index.ts`, `package.json` and `package-lock.json`.
+  - The served package does **not** contain later-main `onboarding/inviteCore` (proof the source was `2c8285e`).
+  - Feeds / slots / ops still 0 / 0 / 0.
+  - 0 WARNING / ERROR / 5xx entries on the new revision. It has not been invoked yet.
+- **Rollback (pre-approved, not run):** `gcloud run services update-traffic salownstafflifecycle --region europe-west2 --project havuz-44f70 --to-revisions=salownstafflifecycle-00004-saz=100`. Durable rollback: redeploy from `a82b5bd`.
+- **Next:** D3-2 (Admin UI) needs separate approval.
+
 ## R-2026-09-30-B — `ICAL-FEED-AUTH` D2-7: Firestore rules with the three server-only `calendarFeed*` blocks · 1 unit (`firestore:rules`, `cloud.firestore`) · **LIVE_VERIFIED (served ruleset byte-identical to `2c8285e`; rules gate PASS; release moved only to the new ruleset)**
 - **Why:** slice 2, step 7 (rules last) of `ICAL_FEED_AUTH_DESIGN.md` §8 / §11.
 - **Owner approval (2026-09-30):**
