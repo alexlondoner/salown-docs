@@ -1,5 +1,49 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
+## R-2026-09-30-C — `SAAS-ONBOARDING-INVITE-TRIAL` S2: Firestore rules — tenant lifecycle gate + server-only owner-invite collections · 1 unit (`firestore:rules`, `cloud.firestore`) · **LIVE_VERIFIED (served ruleset byte-identical to `65b6efd`; rules gate PASS 12/253/0; release moved only to the new ruleset)**
+- **Why:** `SAAS-INVITE-S2`. Pending-lifecycle owners must reach no tenant data before S3 can issue a single invite. Owner/admin must not be able to write lifecycle/activation/invite-control fields, and the invite records are server-only.
+- **Owner approval (2026-09-30):**
+  - source `65b6efd` only;
+  - pre-checks: live release, byte identity with pre-S2 main, a diff limited to S2, and the 9 roots without a lifecycle;
+  - clean-archive rules gate on alternate ports;
+  - then only `firebase deploy --only firestore:rules --project havuz-44f70`;
+  - no index / function / hosting / Auth / claim / data change;
+  - pre-approved rollback to `16ac7f75…` only on a real legacy regression.
+- **Pre-check (00:2xZ):**
+  - Live release `cloud.firestore` → `16ac7f75-9584-4dbb-b8e0-e60e4e514ec4` (since 2026-09-29T23:33:49Z).
+  - Its content is byte-identical to `8d297ac` (the parent of `65b6efd`), 82384 B.
+  - The non-comment diff is exactly the S2 change:
+    - `tenantLifecycleActive()` added to `isTenant()`;
+    - `lifecycleControlKeys()` on root create and update;
+    - the gated `staff/{uid}` self-read;
+    - three `if false` blocks: `ownerInvites`, `ownerInviteSlots`, `ownerInviteOps`.
+  - Tenants: 9 roots, 0 with a `lifecycle` field.
+- **Gates:** clean `git archive 65b6efd`, fresh `npm ci`. Deployed from a separate, untouched archive of the same commit. The gate ran on a copy with only the emulator ports changed (8292 / 4432 / 4532 / ws 9162), because other sessions held 8080 and 4411; those processes were left alone.
+  - `ops/test-rules-emulator.sh` → **PASS**, 12 suites, 253 tests, 0 fail.
+- **Release:** 00:33:23Z → 00:33:31Z. Pinned CLI 15.26.0. "released rules firestore.rules to cloud.firestore". The two compile warnings (`isStaff` unused, `request` variable name) predate S2.
+- **Artefact:**
+  - Release `cloud.firestore` → **`b8248c6f-7760-4250-b7c9-7abeed9f32fe`** (created 00:33:30Z, updated 00:33:31Z).
+  - **Content byte-identical to `65b6efd:firestore.rules`** (86049 B, sha256 `f7503d7530ce9034…`).
+- **Unmoved:** 127 functions (name, updateTime, state identical), 5 composite indexes and 3 field overrides identical, project IAM bindings identical (etag `BwZcouiW4fw=`), database config (PITR on, delete protection on), hosting, Auth, claims, data.
+- **Smoke (read-only):**
+  - Anonymous REST (unchanged):
+    - 200: `tenants/whitecross`, `tenants/herohairs`, `services`, `barbers`, `public/bookingFlags`;
+    - 403: `bookings` / `clients` lists;
+    - 200: `salown.com/book/whitecross`, `/s/whitecross`, `staff.salown.com`.
+  - Admin, the owner's existing browser session, new tab, **no clicks and no writes**:
+    - `/app/home` loaded fully: bookings, 512 clients, revenue, barbers, loyalty.
+    - `/app/finance` loaded fully: `finance_config`, `staffComp`, bookings, expenses; gross revenue £9006.90 for September. It is slow (about 30 s, one `getDocs` of the whole bookings collection), and that predates S2.
+    - No console errors.
+  - **Staff app not opened.** It writes its FCM token on load (`src/staff/StaffApp.tsx:253`), which the no-write condition excludes. Its reads go through the same `isStaff` / `isTenantAny` → `isTenant()` path the emulator matrix covers per role.
+- **Monitoring** (`firestore.googleapis.com/rules/evaluation_count`):
+  - The hour after the release: 1061 ALLOW, 3 DENY, 0 ERROR (2.8 DENY per 1k).
+  - Previous 24 h: 0–7 DENY per hour (0–41 per 1k), 0 ERROR.
+  - No increase attributable to S2.
+- **Measured cost:** one tenant-root `get()` per request, counted once. A client batch naming barbers in booking writes fits 9 distinct barbers (was 10); nothing in `src/` comes near it.
+- **Behaviour change beyond legacy:** the three claim holders whose tenant root is absent (`ee-kurt-barbers`, `kwolf-barbers`, `the-test-lab`, all dead) lost subcollection access, as intended (fail-closed). Their Auth claims are untouched; that cleanup is a separate owner-approved task.
+- **Rollback (not run):** re-release `16ac7f75-9584-4dbb-b8e0-e60e4e514ec4` (Console → Firestore → Rules → history), or deploy `firestore.rules` from `8d297ac`.
+- **Next:** S3 (callables) needs separate approval. Open gates: the router/UI side of lifecycle enforcement, deterministic slot storage, the Auth/Firestore/Brevo saga and recovery, and the Brevo tracking decision.
+
 ## R-2026-09-30-B — `ICAL-FEED-AUTH` D2-7: Firestore rules with the three server-only `calendarFeed*` blocks · 1 unit (`firestore:rules`, `cloud.firestore`) · **LIVE_VERIFIED (served ruleset byte-identical to `2c8285e`; rules gate PASS; release moved only to the new ruleset)**
 - **Why:** slice 2, step 7 (rules last) of `ICAL_FEED_AUTH_DESIGN.md` §8 / §11.
 - **Owner approval (2026-09-30):**
