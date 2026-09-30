@@ -1,9 +1,0 @@
-task: ICAL-FEED-AUTH-D3-1
-owner: alish/ical-feed-auth
-started_uk: 2026-09-30T01:55:36+01:00
-locked_paths:
-  - RELEASE_LEDGER.md
-  - ROADMAP.md
-  - DEPLOYMENT_STATUS.md
-  - CLAUDE.md
-status: working

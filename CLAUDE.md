@@ -225,13 +225,17 @@ it is not a data migration, and nothing about TR-C's lifecycle or continuity eng
 > a salon can now configure this checkout, but the Admin and Staff checkout screens are unchanged.
 >
 > **`checkoutSettings` is owner-only in `firestore.rules` as of Phase 3** (released then as ruleset `b30abf64…`;
-> still true in the ruleset live today, **`5e102dd4-e7e7-4950-b12a-14a74daa82e8`**, re-verified read-only 2026-09-19 —
-> `checkoutSettings` on all four owner-gated arms) — the gap Phase 1 recorded is closed.
+> still true in the ruleset live today, **`16ac7f75-9584-4dbb-b8e0-e60e4e514ec4`** (released 2026-09-29T23:33:49Z,
+> `R-2026-09-30-B`) — `checkoutSettings` on all four owner-gated arms, unchanged by that release, which only added the
+> three server-only `calendarFeed*` blocks) — the gap Phase 1 recorded is closed.
 > ⚠️ **Ruleset id correction (2026-09-19):** this note used to name `a0a10819-3b62-46d5-9f95-9ea048701c59`
 > as the ruleset "live today". That was already stale — it was superseded on 2026-09-10 by
-> `R-2026-09-10-C` and is now only the rollback identity. The live ruleset is
-> `5e102dd4-e7e7-4950-b12a-14a74daa82e8` (released 2026-09-10T13:39:16Z), and its 79,060 bytes are
-> **byte-identical to this repo's `firestore.rules`**. Fetch it with the Firebase Rules REST API and
+> `R-2026-09-10-C` and is now only the rollback identity.
+> ⚠️ **Ruleset id update (2026-09-30):** `5e102dd4-e7e7-4950-b12a-14a74daa82e8` (released 2026-09-10T13:39:16Z)
+> was live until 2026-09-29T23:33:49Z and is now the rollback identity for `R-2026-09-30-B`. The live ruleset is
+> **`16ac7f75-9584-4dbb-b8e0-e60e4e514ec4`**: its content is byte-identical to salown-app **`2c8285e`**
+> `firestore.rules` (82,384 bytes). `main` may already be ahead of it (e.g. unreleased rules changes from other
+> packages), so compare against the released SHA, not against whatever `main` holds. Fetch it with the Firebase Rules REST API and
 > an `x-goog-user-project: havuz-44f70` header — without that header the call fails 403 on quota
 > project, which reads like "no access" and is what made an earlier session record this as unverified. **The stored `schemaVersion` is now the monotonic settings version**
 > (contract version moved to `contractVersion`), because the deployed executor compares exactly that
