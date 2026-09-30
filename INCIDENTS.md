@@ -204,6 +204,25 @@ Every incident opens with `## YYYY-MM-DD — short title`, immediately followed 
 - "Nothing is marked busy" is not evidence the conflict check is broken. Check the statuses first: a fully checked-out day holds no slots by design, and testing conflict logic against a closed day proves nothing.
 - Verify against a day with live `CONFIRMED` data, and do the BST/UTC conversion before drawing any conclusion about overlap — the whole incident is five minutes wide.
 
+
+## 2026-09-30 — Two Admin callables did not bind the caller to their own salon
+
+**Severity:** 🔴 Critical (security) · **Owner:** alish · **Status:** 🟡 Open — fix pushed, **not deployed** · **Affected area:** Cloud Functions `deleteStaffUser`, `sendMarketingEmail` (codebase `salown`, europe-west2)
+
+**Discovery:** a read-only authorisation inventory of every exported callable, run while planning the owner-invite work (SAAS-INVITE-S3-PLAN). The finding came from reading the code; nothing was exercised against production.
+**Impact:** latent. One callable could act on accounts outside the caller's own salon. The other could send email on a salon's behalf without the caller proving they belong to that salon. No misuse has been observed or investigated in production logs yet; that review is a follow-up.
+**Root Cause:** both functions decided the salon and the target from the request instead of from the caller's verified identity. They never checked that the target belonged to the same salon, and one required no sign-in at all. Firestore rules protect only direct database access; a callable running with Admin SDK privileges must enforce the tenant boundary itself.
+**Bug Class:** Permission mismatch / trust boundary (request-supplied tenant and target).
+**Resolution:** `8c2e9319` (pushed, not deployed). Each callable is now a thin wrapper over a core that derives the salon from the verified claim, requires an active member with the right role, binds the target (staff member or recipient) to the same salon, and runs every check before any side effect. Refusals are generic. The mail path also takes the sender and the link from server-side configuration, bounds and escapes its content, rate-limits, and audits without content. Deploy needs separate owner approval.
+**Prevention:** every callable that takes a tenant or a target from the request must derive the tenant from the claim and bind the target to it. An inventory guard test across all callables is planned in SAAS-INVITE S3c (`requireActivatedTenantActor`).
+**Regression Tests:** `functions/src/staff/deleteStaffUserCore.test.js` (9), `functions/src/marketing/sendMarketingEmailCore.test.js` (11). Every refused path asserts zero deletions, zero sends and zero writes. 13 mutations are all caught.
+**Related:** commits `8c2e9319` · roadmap `SEC-CALLABLE-TENANT-BOUNDARY-HOTFIX` · follow-ups: K3/K4 (other callables and endpoints with request-derived tenants, tracked separately) and a legacy copy of one of these callables in another codebase (separate item).
+
+**Lessons Learned:**
+- A callable that runs with Admin SDK privileges is its own security boundary; rules do not protect it.
+- "The caller has some role somewhere" is not authorisation. The role must be in the caller's own tenant, and the target must be in that same tenant.
+
+---
 ---
 
 ## 2026-09-21 — The Staff loyalty release shipped to a screen the salon does not use to take money
