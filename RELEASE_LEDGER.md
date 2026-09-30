@@ -1,5 +1,31 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
+## OPS-2026-09-30-B — `ICAL-FEED-AUTH` D3-3: Kadim / Treatwell canary — first real calendar feed · data op (no deploy) · **CANARY ACTIVE — server-side criteria PASS; visual Treatwell busy check pending the first future Kadim booking**
+- **Owner approval (2026-09-30):**
+  - Kadim only, consumer `treatwell` only;
+  - one CREATE by the owner from the Admin tab;
+  - in Treatwell → Team → Kadim → External Calendar, the old Arda legacy link is replaced by the new URL;
+  - no retry, ROTATE or second CREATE;
+  - revoke on any stop criterion.
+- **Context:** the Treatwell "Kadim" profile is Arda's old profile renamed (owner confirmed). Its External Calendar held Arda's legacy `icalFeed` link, polled by the Java client since 2026-09-28 15:45Z.
+- **Pre-check (10:47Z):** revisions `salowncalendarfeed-00001-wuz` / `salowncalendarfeedadmin-00001-mid` / `salownstafflifecycle-00005-fiv`; counts 0/0/0; Arda and Alex legacy links polled every ~5 min.
+- **Action (owner, ~12:03Z):**
+  - CREATE via the Admin tab, and the URL pasted only into Treatwell.
+  - The URL never passed through the assistant's tools; the monitor printed counts, booleans and status codes only.
+- **Result:**
+  - `calendarFeeds` / `calendarFeedSlots` / `calendarFeedOps` = **1 / 1 / 1**; the feed is whitecross + Kadim + treatwell + active.
+  - Admin callable: 3 × POST 200 (LIST, CREATE, LIST).
+  - First feed poll **12:04:21Z**, `ok` 200, uaClass `java-poller`, consumer `treatwell`; then every ~5 min (Treatwell refresh measured at ≈5 min).
+  - Arda legacy link: last poll 12:00:40Z, none since (3+ missed cycles). Alex legacy polling unchanged.
+  - 0 errors / 5xx on both feed functions.
+  - Log leak scan: the structured lines carry only outcome/httpStatus/uaClass/ipHash/feedIdPrefix/events/ms/consumer. The only pattern hits are Cloud Run `labels.instanceId`. No path, token or URL.
+- **Still open:**
+  - visual confirmation in Treatwell that a future salOWN busy range for Kadim shows as Busy, and that a Treatwell booking is not echoed back (Kadim has 0 future bookings; none were created for the test);
+  - the Tuesday hours mismatch (salOWN 10:00–20:00 vs Treatwell 10:00–19:00);
+  - product-sale rows render as 30-min Busy (known).
+- **Revoke procedure:** Admin → Team Members → Kadim → Calendar feeds → Treatwell → Revoke → confirm. No automatic ROTATE or CREATE; a retry needs new approval.
+- **Next:** retire Arda's legacy `icalFeed` usage and the legacy-feed retirement plan (separate approval).
+
 ## R-2026-09-30-F — `LEGACY-US-CENTRAL1-RETIRE`: three legacy whitecross us-central1 callables deleted · 3 units deleted (`us-central1` `createStaffUser`, `deleteStaffUser`, `askAI`, codebase `whitecross`) · **LEGACY_FUNCTIONS_RETIRED (source guard pushed; three deletions verified; europe-west2 untouched)**
 - **Why:**
   - These were legacy duplicates of salOWN's europe-west2 functions of the same names.
