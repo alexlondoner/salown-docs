@@ -1225,6 +1225,7 @@ scope wording; not duplicated here.
 
 | Work ID | Commit | Why not live |
 |---|---|---|
+| `PROFILE-REVIEW-PREVIEW` *(added 2026-10-01)* | salown-app `b272deab` · super-admin `1f874df` · claim release `890f82e0` | Read-only Super Admin public-profile preview (new callable `salownPreviewProfile` + drawer modal). No deploy: needs `./scripts/deploy-functions.sh salownPreviewProfile` AND a live-lineage `salown-admin` candidate (live = `810dc3e`; main carries unreleased `e3d98dd`/`2061bdc`). Post-approval gap (gallery/announcements unreviewed) not addressed. |
 | `FIN-COMP-S3A` | `f1239ba` | no deploy; `FINANCE_COMP_PERIOD_MODE='legacy'`; no consumer wired; no tenant enabled |
 | `FIN-S2` | `10e754a` | pushed, no deployment at completion; production unchanged |
 | `W1` / `C1` / `BSP-W1` / `PAY-CHANNELS-A` / `O1W-HARDENING` | in `whitecross-site` `main` | **HELD.** The website booking cutover to `salownCreateBooking` + external checkout/recovery. **Not feature-flagged** — `buildC1BookingInput` is called unconditionally on the plain booking submit path, so a repo-root deploy activates it instantly. Measured on the served artefact after `REL-6`: all markers **0**. This is why `main` still requires a `REL-*` anchor |
