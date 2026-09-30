@@ -1,5 +1,43 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
+## R-2026-09-30-F — `LEGACY-US-CENTRAL1-RETIRE`: three legacy whitecross us-central1 callables deleted · 3 units deleted (`us-central1` `createStaffUser`, `deleteStaffUser`, `askAI`, codebase `whitecross`) · **LEGACY_FUNCTIONS_RETIRED (source guard pushed; three deletions verified; europe-west2 untouched)**
+- **Why:**
+  - These were legacy duplicates of salOWN's europe-west2 functions of the same names.
+  - Two lacked a tenant boundary (staff create/delete). One had no authentication and could incur public API cost (askAI).
+  - Follows the K1/K2 hotfix (`R-2026-09-30-D`), which closed the salown copies only.
+- **Owner approval (2026-09-30):** retire exactly these three in `us-central1`, source protection first, then one-by-one deletion. No other destructive action.
+- **Consumers and traffic:**
+  - 0 requests in the last 30 days for all three (log retention window).
+  - No caller in whitecross-site source for `deleteStaffUser`.
+  - The live legacy barber-panel sites (`whitecrossbarbers-admin`, `whitecrossbarbers-owner`) still reference `createStaffUser` (Settings) and `askAI` (Marketing) in their JS chunks. **Those two legacy surfaces no longer work.** Shutting the panels down is a separate task.
+- **Pre-deletion record:**
+  - gen2, nodejs22, default compute service account, ingress ALLOW_ALL, invoker `allUsers`;
+  - codebase label `whitecross`;
+  - revisions `createstaffuser-00010-dad`, `deletestaffuser-00010-toy`, `askai-00040-wiq`, all updated 2026-07-21;
+  - `askAI` bound the `ANTHROPIC_API_KEY` secret;
+  - one shared source zip (sha256 `d2a500dfc353e6f0…`, 134087 B), saved locally. Its three export bodies are byte-identical to whitecross-site `0e176cce`.
+- **Source protection (pushed before deletion):**
+  - whitecross-site `865cfcc4`: the three exports removed, plus the Anthropic require only askAI used; new `functions/legacyRetired.test.js` guard.
+  - salown-app `1bab0f3b`: `ACCEPTED_DUPLICATE_NAMES` emptied, so a re-export is an UNRECORDED DUPLICATE; tests updated.
+- **Gates** (side-by-side clean archives of both repos):
+  - whitecross functions `npm test` 235 tests, 0 fail;
+  - salown ownership/deploy-policy/rules-authority: identical failure set to a baseline built from `origin/main` (pre-existing: `salownHealthProbe` parsed as us-central1; two sibling-repo checks), +1 new passing test;
+  - two mutations caught (a re-export fails both repos' guards; restoring the accepted record fails salown's);
+  - salown `--check-only createStaffUser deleteStaffUser askAI` OK (europe-west2).
+- **Deletion** (`gcloud functions delete <name> --region=us-central1 --project=havuz-44f70 --quiet`, metadata re-verified before each):
+  - `createStaffUser` 10:27:22Z;
+  - `deleteStaffUser` 10:27:45Z;
+  - `askAI` 10:28:56Z.
+  - All exit 0, followed by a describe 404.
+- **Verified:**
+  - total 127 → 124, and the difference is exactly the three deletions;
+  - europe-west2 `createStaffUser` / `deleteStaffUser` / `askAI` have unchanged updateTime/state and unchanged invoker IAM;
+  - the three Cloud Run services are gone;
+  - the us-central1 URLs return 404;
+  - 28 us-central1 functions remain.
+- **Rollback (not run):** from a clean archive of whitecross-site `0e176cce` (the parent of `865cfcc4`), run `bash scripts/deploy-functions.sh whitecross createStaffUser deleteStaffUser askAI`. The saved source zip is a second reference. **Rolling back re-opens the gaps.**
+- **Not changed:** hosting, Firestore, Auth, claims, rules, indexes, data, any other function.
+
 ## R-2026-09-30-E — `ICAL-FEED-AUTH` D3-2: Team Members → Calendar feeds tab (Admin) · 1 unit (`hosting:salown`) · **LIVE_VERIFIED (95/95 served files byte-identical to the isolated candidate; content change confined to `Barbers` + `index` chunks; write-free owner smoke)**
 - **Why:** slice 3 of ICAL_FEED_AUTH_DESIGN — owner UI for per-member Treatwell / personal feed links (LIST / CREATE / ROTATE / REVOKE) over the live `salownCalendarFeedAdmin`.
 - **Owner approval (2026-09-30):** deploy `hosting:salown` only, from the verified isolated candidate; the approval explicitly excludes creating any feed or running any feed operation.
