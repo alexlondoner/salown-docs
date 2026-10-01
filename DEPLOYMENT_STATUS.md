@@ -86,6 +86,15 @@
 ---
 
 
+## 2026-10-01 — SAAS-INVITE-S3C2-B2 narrow release (`R-2026-10-01-E/F`)
+
+| Unit | Source | Live identity | Rollback |
+|---|---|---|---|
+| `hosting:salown-admin` | super-admin **`21f5e69`** (live `810dc3e` + OnboardImport `saOperation.requestId`) | `0252b1bb2347e864` | `6376b019192dd6c6` |
+| `functions:salown` → `salownManualImport` (europe-west2) | salown-app **`cc654dbc`** (live `a1206b3` + CAP/SAOP gates; main `cb95ec91`) | `salownmanualimport-00121-wam`, 100% | `salownmanualimport-00120-piv` |
+
+Deploy order was hosting → function; **rollback order is function → hosting** (old Super Admin + new function = Onboard Import `permission-denied`). Super Admin `main` still carries unreleased `e3d98dd`, `2061bdc`, `1f874df` — do not deploy main. `release/profile-preview-sa-on-live-810dc3e` @ `790f715` is stale (no requestId): rebuild on `21f5e69` first. `settenantclaim-00026-ceh` still live.
+
 ## 2026-10-01 — ROTA-OFFBOARD-COMPAT (`R-2026-10-01-D`)
 
 | Unit | Source | Live identity | Rollback |
