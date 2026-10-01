@@ -86,6 +86,14 @@
 ---
 
 
+## 2026-10-01 — ROTA-OFFBOARD-COMPAT (`R-2026-10-01-D`)
+
+| Unit | Source | Live identity | Rollback |
+|---|---|---|---|
+| `functions:salown` → `salownRotaTransaction` (europe-west2) | salown-app **`3b706dd5`** (live `a6a1b04` + 2 `rotaFold` hunks of `ce6329ff`) | `salownrotatransaction-00005-tuv`, 100% | `salownrotatransaction-00004-wex` |
+
+Still on the old fold (not deployed): `salownRotaSeedTenantHistory` `-00002-dun`, `salownRotaBootstrapTenant` `-00002-nuy`.
+
 ## 2026-10-01 — STAFF-SCHEDULED-REHIRE S1 (`R-2026-10-01-A/B/C`)
 
 | Unit | Source | Live identity | Rollback |

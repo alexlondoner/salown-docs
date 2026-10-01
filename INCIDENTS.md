@@ -41,6 +41,22 @@ Every incident opens with `## YYYY-MM-DD — short title`, immediately followed 
 
 **Tag dictionary (CANONICAL — only these; sprawl forbidden):** `#security` `#stripe` `#secrets` `#config` `#deploy` `#normalization` `#permission` `#race` `#timezone` `#parser` `#email` `#data-loss` `#shared-infra`. A new tag is added only if a genuinely new class emerges (e.g. twins like `#payment`+`#payments`+`#stripe-payment` are FORBIDDEN → all `#stripe`). Every entry carries a `**Tags:**` line.
 
+## 2026-10-01 — Schedule edits refused for every member with a recorded departure (`salownRotaTransaction` could not read `ROTA_OFFBOARD`)
+
+**Severity:** 🟠 High · **Owner:** alish/sched-rehire · **Status:** ✅ Resolved · **Affected area:** Team Members → Schedule (one-day changes, weekly changes) for departed/rehired members
+
+**Discovery:** owner test 2026-10-01 — the one-day change "2026-10-05 working 09:00–19:00" for a rehired member was refused twice ("rota history could not be read"); logs showed HTTP 400 from `salownRotaTransaction`.
+**Impact:** since the first canonical departure (2026-09-27), any Schedule edit on a member whose rota holds a departure failed; 2 of 4 canonical subjects in production (whitecross). Nothing was written wrongly.
+**Root Cause:** STAFF-OFFBOARD-TERMINAL added the `ROTA_OFFBOARD` origin and shipped it in `salownStaffLifecycle`, but the rota boundary `salownRotaTransaction` was never redeployed (live since 2026-08-23 from `a6a1b04`); its fold rejected the unknown origin (`BAD_ORIGIN` → `HISTORY_MALFORMED`). Two functions shared one log contract and only the writer moved.
+**Bug Class:** Legacy compatibility (reader/writer version skew across functions)
+**Resolution:** `R-2026-10-01-D` — `salownRotaTransaction` `-00005-tuv` from `a6a1b04` + exactly the two `rotaFold` hunks of `ce6329ff`. `salownRotaSeedTenantHistory` / `salownRotaBootstrapTenant` still carry the old fold (super-admin tools; separate decision).
+**Prevention:** when a shared log gains a new entry/origin, every deployed READER of that log must be released before (or with) the first WRITER — inventory the deployed folds, not only the source tree.
+**Regression Tests:** `functions/src/staff/rotaOffboardCompat.test.js` C1–C9 (anonymised real log); mutations: patch reverted / origin removed / shape rule removed → 8 fail each.
+**Related:** release `3b706dd5` · roadmap `ROTA-OFFBOARD-COMPAT` · #deploy
+
+**Lessons Learned:**
+- "Main folds it" is not "production folds it": measure the fold inside each deployed artifact.
+
 ## 2026-10-01 — REHIRE never cleared the departure's `availabilityUntil`, so a returning member stayed closed on every booking surface
 
 **Severity:** 🟠 High · **Owner:** alish/sched-rehire · **Status:** ✅ Resolved · **Affected area:** staff lifecycle (REHIRE), availability window

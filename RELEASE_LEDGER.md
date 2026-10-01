@@ -1,5 +1,13 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
+## R-2026-10-01-D — `ROTA-OFFBOARD-COMPAT`: `salownRotaTransaction` reads departures · 1 unit (`functions:salown:salownRotaTransaction`, europe-west2) · **LIVE_VERIFIED (no production data written)**
+- **Approval:** owner, 2026-10-01, only this function from `release/rota-offboard-compat-on-live-a6a1b04` @ `3b706dd5`. `salownRotaSeedTenantHistory` / `salownRotaBootstrapTenant` NOT deployed (still the old fold).
+- **Move:** `salownrotatransaction-00004-wex` → **`-00005-tuv`** (100%, 11:03Z), srcGen `1790852537780448`.
+- **Pre-deploy:** live `-00004-wex` 100%; live zip src == `a6a1b04` (86/86); isolated `git archive` + whitecross sibling: build OK, compat/fold/callable tests 169/169, manifest ok (176), ownership 0, `--check-only` passed.
+- **Verified:** only this name moved (125 → 125); config incl. env (nodejs22, 256Mi/1 CPU, 60 s, max 20, concurrency 80, ingress ALL, default SA, no secrets) and IAM (invoker allUsers) byte-unchanged; deployed zip == workspace 172/172, `ROTA_OFFBOARD` in fold, fixture/test not shipped, 0 secret-like; unauth probe 401 `UNAUTHENTICATED`; logs: no 5xx — only the deploy-time GET 400/404 probe pattern (`Request has invalid method. GET`).
+- **Live-data dry-run (read-only, in-memory fake, deployed code):** Muhamed's log folds — revision 10, 18 entries, header hash agrees, one open period from 2026-10-05; one-day `working` 2026-10-05 09:00–19:00 → `applied`, revision 11, writes = 1 rota entry + header + audit + `shiftChanges.2026-10-05`. Production unchanged (rota still rev 10 / 18, no 2026-10-05 change).
+- **Rollback (not run):** `gcloud run services update-traffic salownrotatransaction --region europe-west2 --to-revisions=salownrotatransaction-00004-wex=100` (READY).
+
 ## R-2026-10-01-A/B/C — `STAFF-SCHEDULED-REHIRE` S1: future-dated REHIRE + CANCEL_SCHEDULED_REHIRE + pre-start guards · 4 units (2 functions, `hosting:salown`, `hosting:salown-staff`) · **LIVE_VERIFIED (no production data written)**
 - **Approval:** owner, 2026-10-01, order fn → salown → salown-staff with a drift check before each step. Every unit was built from its OWN live lineage + only this patch; `main` was not deployed.
 
