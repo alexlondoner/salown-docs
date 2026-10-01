@@ -427,3 +427,84 @@ No billing, export or support surface exists, so a suspended tenant is **fully l
 4. Later, a separate step: narrow the super-admin rules arm so `status` / lifecycle / billing keys are written only by the server operation (after step 2 is live).
 
 Then the owner's order: activation → 30-day trial wiring (S3d + ONB-P1-WIRE with D-1 projection inside the billing transition, only after step 3), reminder/scheduler export, rules → functions → UI release, Stripe subscription + automatic resume last.
+
+---
+
+## 13. Phase D2: complete enforcement coverage + customer cancellation policy (`ONB-PD2-COVERAGE`, PUSHED_NOT_DEPLOYED, 2026-10-02 — salown `7211f514` + `efdd44fd` + `522f08d0`, SYNC `4305b156`)
+
+Owner decisions (2026-10-01): new public booking closed in grace and suspended; a customer may cancel an existing booking by email token/link; a customer may NOT reschedule in grace or suspended — refusal text exactly *"Online rescheduling is temporarily unavailable. You can cancel this appointment or contact the salon."*; cancellation does not change the cancellation/refund/deposit policy; suspended owners get only billing/export/support, so **automatic suspension is not deployed before those surfaces exist**; unknown/pending lifecycle fails closed; no existing tenant or production data is migrated.
+
+### 13.1 Mechanism (one policy, one matrix, one wrapper)
+
+- `tenantAccessPolicy.ts` gains `customer-cancel` (open: legacy/active/trial/**grace/suspended**) and `customer-reschedule` (open: legacy/active/trial only), the shared `tenantGateDenyReason(rootSnap, capability)`, and the `features` key-ownership lists.
+- `onboarding/tenantCallableGate.ts` `CALLABLE_MATRIX` declares every inventory callable's class and capability **once**; `onboarding/gatedCallable.ts` `gated(name, handler)` is the single wrapper (35 callables, at their `onCall`). No core compares `status`/`lifecycle` itself. A super-admin token passes (support access, same as the rules). Unauthenticated / claim-less calls reach the core unchanged. An unknown callable name fails closed.
+- Customer token callables are gated **after** `findBookingByToken` verified (bookingId, email). A pending/unknown/rootless tenant answers exactly like a missing booking (`not-found "Booking not found"`), so the gate never confirms a booking or names a tenant state. Reschedule is pre-checked and then **re-checked inside a new write transaction** (`commitCustomerReschedule`, root + booking re-read): a tenant that enters grace/suspended in between refuses with no write.
+
+### 13.2 Capability matrix (the §12.4 inventory, all classified)
+
+| Callable | Actor · tenant source | Effect | Class / capability | Grace | Suspended |
+|---|---|---|---|---|---|
+| salownCreateBlock, salownDeleteBlock | staff/admin/owner · token | diary block write | tenant · existing-booking-management | ✓ | ✗ |
+| salownCreateWalkIn, salownCreateStaffWalkIn | staff/admin/owner · token | in-salon booking + money | tenant · existing-booking-management | ✓ | ✗ |
+| salownReassignBooking, salownPatchBookingDetails, salownEditBookingForm | staff/admin/owner · token | booking edit (price) | tenant · existing-booking-management | ✓ | ✗ |
+| salownCheckoutBooking | staff/admin/owner · token | checkout, money | tenant · existing-booking-management | ✓ | ✗ |
+| salownSaveCheckoutSettings | owner · token | settings | tenant · normal-settings | ✓ | ✗ |
+| salownCreateProductSale, salownCreateStaffProductSale | staff/admin/owner · token | sale, money | tenant · tenant-access | ✓ | ✗ |
+| salownSavePackageDefinition, salownSavePackageSettings | owner/admin · token | catalogue/settings | tenant · normal-settings | ✓ | ✗ |
+| salownSellPackage, salownRecordPackagePayment, salownCancelClientPackage | role per op · token | money | tenant · tenant-access | ✓ | ✗ |
+| salownPackageSession | role per op · token | entitlement | tenant · existing-booking-management | ✓ | ✗ |
+| salownCloseFinancePeriod | owner preview / SA write · token or SA body | finance snapshot | tenant · tenant-access (SA passes) | ✓ | ✗ |
+| salownCreateTreatmentSession, salownTransitionTreatmentSession | staff+ · token | session (+package) | tenant · existing-booking-management | ✓ | ✗ |
+| salownRecordFollowUp | staff+ · token | follow-up | tenant · tenant-access | ✓ | ✗ |
+| salownRotaTransaction, salownStaffLifecycle, salownProvisionTeamMember, salownSetStaffRole | owner/admin · token | rota / staff / claims | tenant · staff-access | ✓ | ✗ |
+| salownMergeClients | owner/admin · token | client merge | tenant · tenant-access | ✓ | ✗ |
+| salownCalendarFeedAdmin | owner · token | feed tokens | tenant · normal-settings | ✓ | ✗ |
+| askAI | signed-in · token tenant | AI cost | tenant · tenant-access (no tenant claim → unchanged) | ✓ | ✗ |
+| salownEmailExitAgreement, salownSendExitSignLink | whitecross owner / SA · fixed tenant | email + doc | tenant · tenant-access | ✓ | ✗ |
+| salownSendBookingConfirmation, salownSendReminder, sendAbandonedCart, salownSendManualLoyaltyAdjustmentEmail | **public**, body tenantId | sends from the salon | public-tenant · tenant-access | ✓ | ✗ |
+| salownSendCancellationEmail | public, body tenantId | cancel email | public-tenant · customer-cancel | ✓ | ✓ |
+| salownGetBookingByToken, salownCancelByToken | customer token | view / cancel (+refund unchanged) | customer-cancel, after token check | ✓ | ✓ |
+| salownRescheduleByToken | customer token | move booking | customer-reschedule, after token check + in-tx | ✗ (owner text) | ✗ (owner text) |
+| salownRotaBootstrapTenant, salownRotaSeedTenantHistory, salownSuperAdminTenantStatus | super-admin · body | platform | platform (not gated) | n/a | n/a |
+| provisionTenant | signed-in, no tenant | creates a tenant | unaffected | n/a | n/a |
+| salownGetBusySlots | public · body | read-only availability | unaffected (create is refused) | n/a | n/a |
+| salownPublishProfile (SA path), K1 deleteStaffUser, K2 sendMarketingEmail, K3 (sendCampaignBulk, salownSetEmailConsent, sendStaffPasswordReset), C-group (createStaffUser, Connect ×3, salownManualImport), salownCreateBooking/Admin/Staff, salownCreateCheckoutSession | — | — | phase-d (gated in §12) | per §12 | ✗ |
+
+Pending / unknown lifecycle and a missing root refuse every gated class. Billing/export/support allowlist: **no callable exists yet** (Phase E).
+
+**Deliberately open (recorded):** `salownGetBusySlots` (read-only); the four platform callables; the super-admin path of `salownPublishProfile`; scheduled/trigger functions (`salownParseEmails` keeps importing aggregator bookings for a suspended tenant; notification/email triggers fire on booking writes). **Separate findings, not fixed here:** the five public email senders accept any `clientEmail` and caller-chosen content for any tenantId (abuse vector, PUBLIC_K4); checkout, package and treatment cores do not run the S4A staff `actorAccessDenyReason` check; `salownHealthProbe` is detected as us-central1 by the ownership scan on main (pre-existing).
+
+### 13.3 `features.*` key ownership
+
+| Key | Class | Tenant may write | Writers today |
+|---|---|---|---|
+| booksyParser, freshaParser, treatwellParser | tenant-editable preference | ✓ | Settings, onboarding wizard, SA, server defaults |
+| stripe | tenant-editable, conditioned | `false` always; `true` only with `settings/integrations.stripeAccountId` + charges enabled | Settings payment save/disconnect, SA. **Gap:** integrations is tenant-writable → move behind a callable |
+| whatsapp | server-authoritative (paid entitlement) | ✗ | none (was tenant-self-grantable — now closed) |
+| telegram | server/SA (kill-switch) | ✗ | SA, server defaults |
+| salownLoyaltyEmail | server/SA (ops) | ✗ | SA |
+| treatwellIcalSync | server/SA | ✗ | SA, server defaults |
+| processingTime, cancelReschedule, emailConfirmation, loyaltySystem, personalizedAI, loyalty, ai, booksy, fresha, treatwell | legacy (no gating reader) | ✗ | SA / provisioning only |
+| any other key | unknown | ✗ (fails closed) | — |
+
+Rules: `tenantEditableFeatureKeys()` + `tenantFeaturesWriteOk()` on the tenant-root update arm (key-level diff, covers dotted and whole-map writes, add/change/remove); tenant create may not carry `features`. Super-admin arm and Admin SDK unchanged. No tenant browser writer regresses (Settings and the wizard write only parser keys and `stripe`, dotted). No migration: existing values stay as they are.
+
+### 13.4 Accidental deploy guard (`ops/gatedReleaseGuard.mjs`)
+
+Content-based (works in a plain `git archive`): a tree carrying a gated PUSHED_NOT_DEPLOYED hunk (`ONB-PD`: markers in `firestore.rules` and `functions/src`) is refused for `rules` / `functions` unless `SALOWN_RELEASE_MANIFEST` names an owner-approved manifest **outside** the tree (`releaseId R-…`, `approvedBy`, `units`, `approvedGatedHunks: ["ONB-PD"]`). A live-lineage tree without the markers passes with no manifest, so other releases are not blocked. Wired on the real paths: `scripts/deploy-functions.sh` step 3b (also under `--check-only`), `firebase.json` functions predeploy (before the build) and **firestore predeploy** (so a hand-typed `firebase deploy --only firestore:rules` from main is refused). Offline, node builtins only. Note: it also gates `firestore:indexes` deploys from a tree with the markers.
+
+### 13.5 Evidence
+
+| Gate | Result |
+|---|---|
+| functions `tsc --noEmit` | clean |
+| functions `npm test` (isolated git-snapshot archive, whitecross sibling) | 3483 tests · 3425 pass · 0 fail · 58 skipped |
+| rules gate (14 suites) | 277/277 PASS (269 + new `tenantFeatures` 8) |
+| root vitest ops suites | gated-release 20/20; functions-ownership / rules-authority / deploy-policy: 3 failures, all environmental or pre-existing (no `salown-panel` sibling ×2; `salownHealthProbe` us-central1, also red on origin/main) |
+| canonical `npm run test:emulator` (isolated, alternate ports) | 870/870 PASS (general 843 · packages 27) |
+| `tenantAccessPolicy.mutation.sh --with-emulator` | 37 · 37 killed · 0 survived · 0 stale (D2 adds C01–C12, C09b, E05–E06) |
+| guard mutations (inside gated-release.test.js) | G1–G4 caught; rules mutations §5a–c (features) caught |
+
+### 13.6 Why nothing here may deploy before Phase E
+
+Deploying D/D2 makes `status: 'suspended'` (Super Admin button, or the future scheduler) a **full lockout**: no `/app/billing`, `/app/export` or `/app/support`, no export callable, no Admin/Staff paused screen. That contradicts owner decision 6 (suspended owners use billing/export/support). The guard above enforces this mechanically for main. Order stays: Phase E surfaces → live-lineage function candidates → Super Admin UI on the audited op → rules last → only then ONB-P1-WIRE with the D-1 projection.
