@@ -355,9 +355,75 @@ The rules emulator matrix must assert each cell.
 
 ## 11. Open items (owner)
 
-1. **Email classification:** confirm reminders as service messages with no unsubscribe (§4).
+1. **Email classification:** ~~confirm reminders as service messages with no unsubscribe (§4).~~ **DECIDED 2026-10-01:** transactional/service mail, no marketing unsubscribe, no campaign content.
 2. **Plan catalog (F-0 blocker):** prices, currency, VAT and Stripe price ids.
 3. **`/app/billing` route:** the CTA destination is declared, not built (E-1).
-4. **Who may still write `status`/`plan`/`trialEndsAt` after D-2:** super-admin only, or callable only?
+4. **Who may still write `status`/`plan`/`trialEndsAt` after D-2:** **DECIDED 2026-10-01:** only the activation transaction, billing webhook, lifecycle scheduler or an allowlisted + audited super-admin operation. Tenant lock implemented in Phase D (§12); the super-admin browser arm is narrowed after its UI moves to the server operation (§12.6 step 4).
 5. **Legacy tenants:** they stay outside the lifecycle (decision 5). The one legacy `status:'trial'` tenant with a past `trialEndsAt` is not touched. If the owner wants legacy tenants moved, that needs its own approved migration.
 6. **Wiring order:** `ONB-P1-WIRE` (job with `transport:null`) can go live before D. Real email waits for the Brevo adapter, E-1 and item 1.
+
+---
+
+## 12. Phase D: implemented (`ONB-PD-ENFORCEMENT`, PUSHED_NOT_DEPLOYED, 2026-10-01 — salown `de65d3cf` + `b990b6d9`, SYNC `074cc83b`)
+
+Owner decisions applied (2026-10-01): trial reminders are transactional service mail (no marketing unsubscribe, no campaign content); a tenant may not write `status`, `lifecycle`, `plan`, `trialStartedAt`, `trialEndsAt`, `graceStartedAt`, `graceEndsAt`, `suspendedAt`, `subscriptionStatus`, `stripeCustomerId`, `stripeSubscriptionId`; `status === 'suspended'` is an explicit deny; other existing values (`trial`, `free`, `active`, …) stay open; data is never deleted and existing Auth users are never disabled or re-passworded; super-admin resume is an audited, allowlisted server operation; plans Pro £29/month and Pro+ £69/month GBP (not encoded anywhere in this phase — Phase F catalog).
+
+### 12.1 One policy, two halves
+
+`functions/src/onboarding/tenantAccessPolicy.ts` is THE status/lifecycle access policy; `firestore.rules` `tenantLifecycleActive` / `tenantAcceptsPublicBookings` / `billingControlKeys` are its rules half. A parity test reads the rules text.
+
+| State (from the root) | How it is reached | tenant-access · existing bookings · settings · staff | new public booking | billing · export · support |
+|---|---|---|---|---|
+| legacy | no `lifecycle` (all 9 production tenants) | ✓ | ✓ | ✓ |
+| open | `ACCOUNT_ACTIVATED` / `TRIAL_ACTIVE` / `SUBSCRIBED` | ✓ | ✓ | ✓ |
+| grace | `TRIAL_GRACE` | ✓ | ✗ | ✓ |
+| suspended | `status: 'suspended'` (on legacy/open/grace) or `SUSPENDED` | ✗ | ✗ | ✓ (declared; no surface exists — see 12.5) |
+| pending | `APPLICATION_PENDING` / `INVITE_PENDING` | ✗ | ✗ | ✗ |
+| unknown / not found | any other value, a non-string, a missing root | ✗ | ✗ | ✗ |
+
+`status: 'suspended'` never widens a pending or unknown tenant. Any other `status` value is ignored, so no tenant closes because of this change. The pure D-1 projection (`rootProjectionForBillingState`) is written and tested but **not wired**: projecting `TRIAL_GRACE` onto a root before the new rules are live would lock that owner out under live ruleset `b8248c6f`.
+
+### 12.2 What enforces it
+
+- **Rules** (not deployed): tenant access denies `status == 'suspended'` and admits `TRIAL_GRACE`; `billingControlKeys()` (owner list + `billingState`, `subscription`, `limitsOverride`) is locked on the tenant-root create and update arms for owner/admin; the anonymous booking **create** branch requires `tenantAcceptsPublicBookings()` (grace/suspended/pending/unknown/rootless closed); the anonymous cancel/reschedule **update** branch is unchanged. `features` is deliberately NOT locked (tenant Settings and the onboarding wizard write `features.*Parser` / `features.stripe`). The **super-admin rules arm is unchanged** in this phase so the browser Suspend/Resume keeps working until the UI moves to the server operation.
+- **Shared server predicate**: `inviteCore.lifecycleGrantsTenantAccess` delegates to the policy, so K3 `requireTenantActor`, CAP `requireCallableActor` (C-group), SAOP, K1 `deleteStaffUser`, K2 `sendMarketingEmail` and invite claim projection all refuse a suspended tenant. `identity.tenantClaimGate` (the only tenant-claim writer, `applyTenantClaims`, plus `setStaffRoleCore` in-transaction) passes the root `status`: a suspended tenant gains no claim.
+- **Bookings**: `createBookingCore` refuses in the transaction, before any write — public `TENANT_NOT_ACCEPTING_BOOKINGS` (neutral), privileged Admin/Staff-App `TENANT_ACCESS_DENIED` (grace still allowed). An idempotent replay of a booking created before the state change returns without writing. `salownCreateCheckoutSession` reads the root and refuses before Stripe or any write.
+- **Super-admin operation**: `salownSuperAdminTenantStatus` (new callable, `onboarding/tenantStatusOperation.ts`): super-admin claim; actions `suspend` / `resume` only; `resumeStatus` ∈ `active` (default) | `trial`; `saOperation.requestId` required; audit record (same path scheme as SAOP, `superAdmin/auditLog/entries/saop_<hash>`) created in the SAME transaction as the root write, so a repeat is a `REPLAY` and concurrent duplicates apply once; lifecycle-managed tenants refused (`failed-precondition`: billing owns their status); no Auth call of any kind.
+
+### 12.3 Evidence
+
+| Gate | Result |
+|---|---|
+| functions `tsc --noEmit` | clean |
+| functions `npm test` (isolated git-initialised archive, whitecross-site sibling, sibling-free parent) | 3471 tests · 3413 pass · 0 fail · 58 skipped |
+| rules emulator gate `ops/test-rules-emulator.sh` (13 suites) | 269/269 PASS (new `tenantAccessPolicy` 16/16; `ownerInviteLifecycle` 18/18) |
+| canonical `npm run test:emulator` (isolated, alternate ports) | 865/865 PASS (general 838 · packages 27) |
+| `ops/mutation/tenantAccessPolicy.mutation.sh --with-emulator` | 22 mutations · 22 killed · 0 survived · 0 stale |
+| rules mutations (inside the rules suites) | §5a–§5f + §8–§8e all observable |
+| Phase 1 gate `trialLifecycle.mutation.sh --with-emulator` | 17/17 killed (unchanged) |
+
+### 12.4 Callables NOT migrated in this phase (explicit list)
+
+These read `request.auth.token.tenantId` ad hoc (or are public) and do **not** consult the tenant policy. Under the Phase D rules a suspended tenant's browser cannot read or write tenant data, but a still-valid ID token can call them:
+
+- Bookings / blocks / walk-ins: `salownCreateBlock`, `salownDeleteBlock`, `salownCreateWalkIn`, `salownCreateStaffWalkIn`, `salownReassignBooking`, `salownPatchBookingDetails`, `salownEditBookingForm`.
+- Money: `salownCheckoutBooking`, `salownSaveCheckoutSettings`, `salownCreateProductSale`, `salownCreateStaffProductSale`, `salownSavePackageDefinition`, `salownSellPackage`, `salownRecordPackagePayment`, `salownPackageSession`, `salownSavePackageSettings`, `salownCancelClientPackage`, `salownCloseFinancePeriod`.
+- Treatment: `salownCreateTreatmentSession`, `salownTransitionTreatmentSession`, `salownRecordFollowUp`.
+- Staff / rota: `salownRotaTransaction`, `salownRotaBootstrapTenant`, `salownRotaSeedTenantHistory`, `salownStaffLifecycle`, `salownProvisionTeamMember` (its claim write IS gated via `applyTenantClaims`), `salownSetStaffRole` (claim write gated in-transaction; the role doc path is not).
+- Clients / data: `salownMergeClients`, `salownCalendarFeedAdmin`.
+- Other authenticated: `askAI` (auth only), `provisionTenant`, `salownEmailExitAgreement`, `salownSendExitSignLink`; the K3 **super-admin** path of `salownPublishProfile` (`allowSuperAdmin`) skips the tenant policy by design.
+- Public: `salownCancelByToken`, `salownRescheduleByToken`, `salownGetBookingByToken` (existing-booking self-service deliberately unchanged — a suspended salon's customers can still cancel/reschedule; owner decision needed for suspended reschedule), `salownGetBusySlots` (read-only; still shows slots for a closed tenant — the create is refused), the public email senders (`salownSendBookingConfirmation`, `salownSendCancellationEmail`, `salownSendReminder`, `sendAbandonedCart`, `salownSendManualLoyaltyAdjustmentEmail`), webhooks for pre-existing payments.
+- Recommended next consumer: a shared in-transaction tenant check next to `actorAccessDenyReason` (S4A) so every ad-hoc core refuses on the same root read.
+
+### 12.5 Restricted shell: BLOCKERS (Phase E)
+
+No billing, export or support surface exists, so a suspended tenant is **fully locked** (rules deny everything private; the policy declares billing/export/support but nothing consumes them). Missing: `/app/billing`, `/app/export`, `/app/support` routes; an owner-only export callable; an Admin router gate and grace banner; a Staff-app "account paused" screen (today a suspended staff member sees permission errors, not a designed screen); owner-only in-app notice targeting. The Super Admin Suspend button becomes **real** the moment these rules deploy (today it is enforced by nothing).
+
+### 12.6 Release order (when approved; nothing deployed here)
+
+1. Functions, each from its **live lineage** (main ≠ live): `salownCreateBooking`, `salownCreateAdminBooking`, `salownCreateStaffBooking` (createBookingCore); `salownCreateCheckoutSession`; K3/CAP/SAOP/K1/K2 consumers (`salownPublishProfile`, `sendCampaignBulk`, `salownSetEmailConsent`, `sendStaffPasswordReset`, `sendMarketingEmail`, `deleteStaffUser`, `createStaffUser`, the Connect trio, `salownManualImport`); identity callables carrying `applyTenantClaims` / `setStaffRoleCore`; the new `salownSuperAdminTenantStatus`.
+2. Super Admin hosting: Suspend/Resume calls `salownSuperAdminTenantStatus` (no UI redesign), not `updateDoc`.
+3. Rules (`firestore.rules` from main, diffed against live `b8248c6f`). **Note:** main's rules now differ from live; any rules release from main carries Phase D. It is standalone-safe (no tenant browser writer of a locked field; legacy/active/trial matrices unchanged; super-admin arm unchanged) but adds one tenant-root `get()` to anonymous booking creates.
+4. Later, a separate step: narrow the super-admin rules arm so `status` / lifecycle / billing keys are written only by the server operation (after step 2 is live).
+
+Then the owner's order: activation → 30-day trial wiring (S3d + ONB-P1-WIRE with D-1 projection inside the billing transition, only after step 3), reminder/scheduler export, rules → functions → UI release, Stripe subscription + automatic resume last.
