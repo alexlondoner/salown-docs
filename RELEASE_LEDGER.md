@@ -1,5 +1,26 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
+## R-2026-10-01-G — `LEGACY-ICAL-ARDA-RETIRE`: whitecross `icalFeed` returns 404 for Arda's retired legacy feed · 1 unit (`functions:whitecross:icalFeed`, us-central1) · **DEPLOYED_VERIFIED (served source byte-identical to `cd20324d`; Arda 404, Alex/HeroHairs 2xx, Kadim feed 200 through a 1-hour watch)**
+- **Why:** Arda has left the team. The Treatwell profile that polled his legacy name-keyed URL was renamed to Kadim and moved to Kadim's tokenised feed (`OPS-2026-09-30-B`). The owner removed the "Whitecross – Arda" Google Calendar subscription.
+- **Gate (met):**
+  - Arda legacy path fully silent for 24.8 h — last request 2026-09-30T12:00:40Z (Treatwell); Google's last fetch was 09:11Z;
+  - Kadim feed: 299 × `ok` 200 from Treatwell's client since 12:04Z (largest gap 5.3 min);
+  - Alex and HeroHairs 2xx throughout; 0 errors.
+- **Source:** whitecross-site **`cd20324d`** (claim `e7d11e63`, release `db40b7c7`).
+  - `functions/icalBusyFeed.js`: `RETIRED_LEGACY_FEED_BARBERS = {'arda'}` + gate helper.
+  - `functions/index.js`: 404 `text/plain` "Not found" before any read.
+  - +4 tests.
+  - Deliberately **excludes** later `main` commit `59245345` (setTenantClaim removal).
+- **Pre-check:** live `icalfeed-00049-ruh` 100 %, served source byte-identical to `b12fa8a6`; candidate files byte-identical to `cd20324d`; `icalBusyFeed` tests 16/16; clean-archive gates earlier (functions `npm test` 239/0, 5 mutations caught).
+- **Release:** 2026-10-01 13:23:05Z → 13:25:00Z, `bash scripts/deploy-functions.sh whitecross icalFeed` from an isolated `git archive cd20324d` workspace (+ untracked `.firebaserc`). The codebase `whitecross` was prepared alone; one update operation.
+- **Artefact:** **`icalfeed-00050-cax`**, 100 % traffic, `updateTime` 13:24:50Z. The served `index.js`, `icalBusyFeed.js`, test and package files are byte-identical to `cd20324d`.
+- **Unmoved:** of 125 functions, only `icalFeed` and `salownManualImport` changed in the window. `salownManualImport` (13:24:36Z, europe-west2) was a **concurrent, separate release by another session** — `R-2026-10-01-E/F` — not part of this one.
+- **Verification:**
+  - `?barber=Arda|arda| ARDA ` → 404 `text/plain` "Not found"; no `barber` → 400.
+  - 1-hour watch (13:26–14:36Z): Alex 15 × 200 (Treatwell); HeroHairs `salownIcalFeed` 15 × 200; Kadim tokenised feed 15 × `ok` 200; 0 external Arda requests; 0 errors on icalfeed / salownicalfeed / salowncalendarfeed.
+- **Rollback (not run):** traffic → `icalfeed-00049-ruh`, or redeploy `b12fa8a6`, or remove `'arda'` from the set.
+- **Open:** Alex and HeroHairs still use legacy feeds (later slices); legacy request logs record query strings (separate item).
+
 ## R-2026-10-01-E/F — `SAAS-INVITE-S3C2-B2` narrow release: Super Admin Onboard Import sends `saOperation.requestId` → `salownManualImport` on the CAP/SAOP gates · 2 units (`hosting:salown-admin`, `functions:salown:salownManualImport` europe-west2) · **LIVE_VERIFIED (no production import, callable call or data/Auth/claim write)**
 - **Approval:** owner, 2026-10-01, exactly these two units in this order: `hosting:salown-admin` from `release/sa-onboard-requestid-on-live-810dc3e` @ `21f5e69`, then `salownManualImport` from `release/mi-b2-on-live-a1206b3` @ `cc654dbc`. Not included: BUSINESS-TYPE `e3d98dd`, Set Tenant Claim removal `2061bdc`, PROFILE-REVIEW-PREVIEW, createStaffUser, Connect, `hosting:salown`, Batch 3, K3. `settenantclaim-00026-ceh` untouched (still listed).
 - **Why this order:** the old Super Admin (`810dc3e`) sends no `saOperation`, so the new handler routes it to CAP, which gives a super-admin no body-tenant exemption → `permission-denied` (test `callableActorPolicy.test.js:84-90`). New Super Admin + old function is safe (the old handler ignores `saOperation`).

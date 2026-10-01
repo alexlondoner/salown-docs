@@ -86,6 +86,11 @@
 ---
 
 
+## 2026-10-01 — LEGACY-ICAL-ARDA-RETIRE (`R-2026-10-01-G`)
+- `functions:whitecross:icalFeed` → **`icalfeed-00050-cax`** (whitecross-site `cd20324d`). Rollback: `icalfeed-00049-ruh`.
+- Arda's legacy name-keyed feed now returns 404 "Not found" before any read. Alex, a missing barber (400), an unknown barber (empty 200) and HeroHairs' `salownIcalFeed` are unchanged.
+- DEPLOYED_VERIFIED after a 1-hour watch.
+
 ## 2026-10-01 — SAAS-INVITE-S3C2-B2 narrow release (`R-2026-10-01-E/F`)
 
 | Unit | Source | Live identity | Rollback |
@@ -128,7 +133,7 @@ Main == live for these two (`2c8285e` is on `origin/main`). Infra from the same 
 
 | Unit | Source | Live identity | Rollback |
 |---|---|---|---|
-| `functions:whitecross` → `icalFeed` (us-central1) | whitecross-site **`b12fa8a6`** | `icalfeed-00049-ruh`, 100% traffic, 2026-09-28T23:33:36Z | `icalfeed-00048-ber` |
+| `functions:whitecross` → `icalFeed` (us-central1) | whitecross-site **`cd20324d`** (Arda legacy feed retired, `R-2026-10-01-G`) | `icalfeed-00050-cax`, 100% traffic, 2026-10-01T13:24:50Z | `icalfeed-00049-ruh` |
 | `functions:salown` → `salownIcalFeed` (europe-west2) | salown-app **`11fa2a1`** | `salownicalfeed-00116-qiw`, 100% traffic, 2026-09-28T23:52:44Z | `salownicalfeed-00115-mur` |
 
 `R-2026-09-29-A` / `R-2026-09-29-B`. Both commits are on `origin/main` (fast-forward, `[skip ci]`), so main == live for these two functions. Verified from counts and structure only (see RELEASE_LEDGER).
