@@ -1,6 +1,23 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
-## R-2026-10-02-A — `SEC-PUBLIC-EMAIL-SENDER-K4` step 1/4: `salownSendBookingConfirmation` retired (fails closed) · 1 unit (`functions:salown:salownSendBookingConfirmation`, europe-west2) · **DEPLOYED_VERIFIED for this unit · release PAUSED before step 2 (config diff `FUNCTION_REGION`, see below)**
+## R-2026-10-02-B/C/D — `SEC-PUBLIC-EMAIL-SENDER-K4` steps 2–4: cancellation, reminder + abandoned cart, loyalty adjustment behind the server authority · 4 functions (`functions:salown`, europe-west2) · **DEPLOYED_VERIFIED (negative auth probes; no real email, no data write)**
+- **Owner authorisation:** explicit, 2026-10-02, after step 1: `FUNCTION_REGION=europe-west2` accepted on all four new revisions; `BREVO_API_KEY` binding allowed on `salownSendCancellationEmail` only; nothing else.
+- **Release path:** `~/release-work/k4-ws/deploy-k4.sh 2`, `3`, `4` — each preceded by a fresh 125-service snapshot, a config re-read equal to the audit snapshot, and the launcher's tree / tooling-sha256 / CLI 15.26.0 / live-revision checks. One step at a time, verified before the next.
+
+| Step | Function | Source | Before → after (100 %) | Deployed zip | Config diff | Rollback |
+|---|---|---|---|---|---|---|
+| B | `salownSendCancellationEmail` | `b69d60c0` on live `79e232f6` | `-00105-hiz` → **`-00106-gik`** (22:18:02Z) | `#1790979430106743`, 230 files == workspace, `lib/index.js` `8e9b84e0…` | `FUNCTION_REGION` + `BREVO_API_KEY` v1 | `-00105-hiz` ⚠️ |
+| C | `salownSendReminder` | `bd259e0a` on live `5ba5b8ab` | `-00013-lep` → **`-00014-vuf`** (22:20:38Z) | `#1790979579270094`, 78 files == workspace, `ff3815d3…` | `FUNCTION_REGION` | `-00013-lep` |
+| C | `sendAbandonedCart` | `bd259e0a` | `-00013-pax` → **`-00014-xab`** (22:20:46Z) | `#1790979637276159`, 78 files == workspace, `ff3815d3…` | `FUNCTION_REGION` | `-00013-pax` |
+| D | `salownSendManualLoyaltyAdjustmentEmail` | `2887a579` on live `424747d0` | `-00050-buj` → **`-00051-fum`** (22:23:29Z) | `#1790979750932664`, 142 files == workspace, `313e5198…` | `FUNCTION_REGION` | `-00050-buj` |
+
+- **Every revision:** `emailSenderAuthority` in `src/` and `lib/`, `lib/index.js` requires it; IAM unchanged (`run.invoker=allUsers`); memory/timeout/max/SA/ingress/secrets otherwise unchanged; Phase D markers 0.
+- **Unmoved:** 125 services; against the pre-release baseline exactly the five K4 services changed (incl. `R-2026-10-02-A`).
+- **Verification:** anonymous probe (no clientEmail, non-existent tenant): confirmation `400 FAILED_PRECONDITION`, the four others `401 UNAUTHENTICATED "Must be signed in."`; logs `auth=MISSING` only; 0 × 5xx on the five since 18:15Z; no secret error; `emailSendLedger` collection group = 0 docs (no reservation, so no read path reached the ledger). Deploy-time `GET 400/404` + "Invalid request" log lines on cancellation are the platform's post-deploy GETs (same pattern at the 2026-09-19 deploy).
+- **⚠️ Rollback of B** (`-00105-hiz`) restores the unauthenticated sender AND the broken whitecross cancellation email (no Brevo secret).
+- **Not done:** real Brevo/Gmail smoke emails (separate owner approval); the panel's legitimate send paths are proven by tests, not yet by a production email.
+
+## R-2026-10-02-A — `SEC-PUBLIC-EMAIL-SENDER-K4` step 1/4: `salownSendBookingConfirmation` retired (fails closed) · 1 unit (`functions:salown:salownSendBookingConfirmation`, europe-west2) · **DEPLOYED_VERIFIED** (step 2–4 continued after the owner accepted `FUNCTION_REGION`; see `R-2026-10-02-B/C/D`)
 - **Owner authorisation:** explicit, 2026-10-02, for exactly the four `deploy-k4.sh` steps in order; no hosting/rules/indexes; no real email; negative auth probes only.
 - **Source:** candidate `release/k4-confirmation-on-live-c8a64d6` **`3013e010`** = live source `c8a64d68` + the K4 patch (functions tree `65817f41…`). Workspace `~/release-work/k4-ws/1-confirmation/salown-app` (git archive + release tooling from main `05459878`, outside `functions/`).
 - **Release:** `~/release-work/k4-ws/deploy-k4.sh 1` (pins target, tree, tooling sha256, firebase-tools 15.26.0, live-revision precheck) → `deploy-functions.sh salownSendBookingConfirmation`. Precheck passed (tree, tooling, live `-00109-luq`). updateTime 2026-10-02T18:20:40Z.
