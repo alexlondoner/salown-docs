@@ -412,7 +412,7 @@ These read `request.auth.token.tenantId` ad hoc (or are public) and do **not** c
 - Staff / rota: `salownRotaTransaction`, `salownRotaBootstrapTenant`, `salownRotaSeedTenantHistory`, `salownStaffLifecycle`, `salownProvisionTeamMember` (its claim write IS gated via `applyTenantClaims`), `salownSetStaffRole` (claim write gated in-transaction; the role doc path is not).
 - Clients / data: `salownMergeClients`, `salownCalendarFeedAdmin`.
 - Other authenticated: `askAI` (auth only), `provisionTenant`, `salownEmailExitAgreement`, `salownSendExitSignLink`; the K3 **super-admin** path of `salownPublishProfile` (`allowSuperAdmin`) skips the tenant policy by design.
-- Public: `salownCancelByToken`, `salownRescheduleByToken`, `salownGetBookingByToken` (existing-booking self-service deliberately unchanged — a suspended salon's customers can still cancel/reschedule; owner decision needed for suspended reschedule), `salownGetBusySlots` (read-only; still shows slots for a closed tenant — the create is refused), the public email senders (`salownSendBookingConfirmation`, `salownSendCancellationEmail`, `salownSendReminder`, `sendAbandonedCart`, `salownSendManualLoyaltyAdjustmentEmail`), webhooks for pre-existing payments.
+- Public: `salownCancelByToken`, `salownRescheduleByToken`, `salownGetBookingByToken` (existing-booking self-service deliberately unchanged — a suspended salon's customers can still cancel/reschedule; owner decision needed for suspended reschedule), `salownGetBusySlots` (read-only; still shows slots for a closed tenant — the create is refused), the public email senders (`salownSendBookingConfirmation`, `salownSendCancellationEmail`, `salownSendReminder`, `sendAbandonedCart`, `salownSendManualLoyaltyAdjustmentEmail` — since K4 `2c9a6b54`: staff-only, confirmation retired), webhooks for pre-existing payments.
 - Recommended next consumer: a shared in-transaction tenant check next to `actorAccessDenyReason` (S4A) so every ad-hoc core refuses on the same root read.
 
 ### 12.5 Restricted shell: BLOCKERS (Phase E)
@@ -461,8 +461,8 @@ Owner decisions (2026-10-01): new public booking closed in grace and suspended; 
 | salownCalendarFeedAdmin | owner · token | feed tokens | tenant · normal-settings | ✓ | ✗ |
 | askAI | signed-in · token tenant | AI cost | tenant · tenant-access (no tenant claim → unchanged) | ✓ | ✗ |
 | salownEmailExitAgreement, salownSendExitSignLink | whitecross owner / SA · fixed tenant | email + doc | tenant · tenant-access | ✓ | ✗ |
-| salownSendBookingConfirmation, salownSendReminder, sendAbandonedCart, salownSendManualLoyaltyAdjustmentEmail | **public**, body tenantId | sends from the salon | public-tenant · tenant-access | ✓ | ✗ |
-| salownSendCancellationEmail | public, body tenantId | cancel email | public-tenant · customer-cancel | ✓ | ✓ |
+| salownSendReminder, sendAbandonedCart, salownSendManualLoyaltyAdjustmentEmail, salownSendCancellationEmail | staff+ · token (K4, `2c9a6b54`) | sends from the salon to a record's address | tenant · tenant-access | ✓ | ✗ |
+| salownSendBookingConfirmation | retired (K4) — refuses every call | none | unaffected | n/a | n/a |
 | salownGetBookingByToken, salownCancelByToken | customer token | view / cancel (+refund unchanged) | customer-cancel, after token check | ✓ | ✓ |
 | salownRescheduleByToken | customer token | move booking | customer-reschedule, after token check + in-tx | ✗ (owner text) | ✗ (owner text) |
 | salownRotaBootstrapTenant, salownRotaSeedTenantHistory, salownSuperAdminTenantStatus | super-admin · body | platform | platform (not gated) | n/a | n/a |
@@ -472,7 +472,7 @@ Owner decisions (2026-10-01): new public booking closed in grace and suspended; 
 
 Pending / unknown lifecycle and a missing root refuse every gated class. Billing/export/support allowlist: **no callable exists yet** (Phase E).
 
-**Deliberately open (recorded):** `salownGetBusySlots` (read-only); the four platform callables; the super-admin path of `salownPublishProfile`; scheduled/trigger functions (`salownParseEmails` keeps importing aggregator bookings for a suspended tenant; notification/email triggers fire on booking writes). **Separate findings, not fixed here:** the five public email senders accept any `clientEmail` and caller-chosen content for any tenantId (abuse vector, PUBLIC_K4); checkout, package and treatment cores do not run the S4A staff `actorAccessDenyReason` check; `salownHealthProbe` is detected as us-central1 by the ownership scan on main (pre-existing).
+**Deliberately open (recorded):** `salownGetBusySlots` (read-only); the four platform callables; the super-admin path of `salownPublishProfile`; scheduled/trigger functions (`salownParseEmails` keeps importing aggregator bookings for a suspended tenant; notification/email triggers fire on booking writes). **Separate findings, not fixed here:** the five public email senders accept any `clientEmail` and caller-chosen content for any tenantId (abuse vector, PUBLIC_K4 — fixed on main by `SEC-PUBLIC-EMAIL-SENDER-K4` `2c9a6b54`, not deployed); checkout, package and treatment cores do not run the S4A staff `actorAccessDenyReason` check; `salownHealthProbe` is detected as us-central1 by the ownership scan on main (pre-existing).
 
 ### 13.3 `features.*` key ownership
 

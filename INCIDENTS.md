@@ -41,6 +41,26 @@ Every incident opens with `## YYYY-MM-DD — short title`, immediately followed 
 
 **Tag dictionary (CANONICAL — only these; sprawl forbidden):** `#security` `#stripe` `#secrets` `#config` `#deploy` `#normalization` `#permission` `#race` `#timezone` `#parser` `#email` `#data-loss` `#shared-infra`. A new tag is added only if a genuinely new class emerges (e.g. twins like `#payment`+`#payments`+`#stripe-payment` are FORBIDDEN → all `#stripe`). Every entry carries a `**Tags:**` line.
 
+## 2026-10-02 — Five public callables could send email from any salon's mail rail to any address, with caller-chosen content (P0, PUBLIC_K4)
+
+**Severity:** 🔴 Critical · **Owner:** alish/email-auth · **Status:** 🟡 Open — fix + live-lineage candidates PUSHED, NOT DEPLOYED (containment awaits explicit deploy approval) · **Affected area:** customer email senders (`salownSendBookingConfirmation`, `salownSendCancellationEmail`, `salownSendReminder`, `sendAbandonedCart`, `salownSendManualLoyaltyAdjustmentEmail`)
+
+**Discovery:** ONB-PD2-COVERAGE callable inventory (2026-10-02) flagged the five as "public, body tenantId"; this audit confirmed it on the live revisions.
+**Impact:** anyone on the internet could make salOWN send a salon-branded email (tenant Gmail rail or `noreply@salown.com`) to an address of their choice, for any tenant id, with the name/service/salon text — and on the confirmation sender raw HTML — chosen by the caller. A phishing relay carrying real salon identities. **No abuse found:** 30 days of logs show 18 POST calls; every legitimate call was a signed-in Admin panel user; the single anonymous call is the documented owner test send of 2026-09-12.
+**Root Cause:** the senders were written as "the panel passes the booking details" helpers. Being `onCall` let the panel call them, but nothing checked who was calling: the tenant came from the request body, the recipient and content came from the request body, and authentication was never required. Callable ≠ authenticated.
+**Bug Class:** Permission mismatch (missing actor gate + client-authoritative recipient/content).
+**Resolution:** `functions/src/emails/emailSenderAuthority.ts` — actor = active staff of the claim tenant (K3 semantics), record = a booking or exactly one client, recipient and content from that record, fixed transactional/marketing class (opt-out on marketing only), replay ledger + hourly cap in one transaction, PII-free audit row. Confirmation sender retired (refuses everything; no caller anywhere). salown-app main `2c9a6b54`; one candidate per live lineage (`release/k4-*-on-live-*`). **Not deployed.**
+**Prevention:** `staff/callableTenantBoundary.test.js` K4 class (authorizeSend first, no request tenant or body read, every send inside `SA.deliver`); the Phase D matrix no longer has a `public-tenant` class member; 32-mutation kill gate.
+**Regression Tests:** `functions/src/emails/emailSenderAuthority.test.js` (28), `functions/src/staff/emailSenderAuthority.emulator.test.js` (8), `callableTenantBoundary.test.js` K4 tests.
+**Related:** salown-app `2c9a6b54` · candidates `3013e010` `b69d60c0` `bd259e0a` `2887a579` · ROADMAP `SEC-PUBLIC-EMAIL-SENDER-K4`
+
+**Side finding (live, same audit):** `salownSendCancellationEmail` (`-00105-hiz`) has no `BREVO_API_KEY` binding, so every panel cancellation email for a Brevo-rail tenant (whitecross) has failed on every call since that revision went live on 2026-09-19 (5 of 5 calls, first on 2026-09-24) with "BREVO_API_KEY secret not set". Same class as the 2026-06-26 lesson below ("grep the `secrets` of every function on the path"). The candidate binds the secret.
+
+**Lessons Learned:**
+- `onCall` gives a caller identity; it does not require one. A callable that sends anything must start from `request.auth` and a claim-derived tenant.
+- A sender must never take the recipient from the request. Name the record; read the address from it.
+- "The panel is the only caller" is a statement about the UI, not about the endpoint.
+
 ## 2026-10-01 — Schedule edits refused for every member with a recorded departure (`salownRotaTransaction` could not read `ROTA_OFFBOARD`)
 
 **Severity:** 🟠 High · **Owner:** alish/sched-rehire · **Status:** ✅ Resolved · **Affected area:** Team Members → Schedule (one-day changes, weekly changes) for departed/rehired members
