@@ -1,5 +1,16 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
+## R-2026-10-02-A — `SEC-PUBLIC-EMAIL-SENDER-K4` step 1/4: `salownSendBookingConfirmation` retired (fails closed) · 1 unit (`functions:salown:salownSendBookingConfirmation`, europe-west2) · **DEPLOYED_VERIFIED for this unit · release PAUSED before step 2 (config diff `FUNCTION_REGION`, see below)**
+- **Owner authorisation:** explicit, 2026-10-02, for exactly the four `deploy-k4.sh` steps in order; no hosting/rules/indexes; no real email; negative auth probes only.
+- **Source:** candidate `release/k4-confirmation-on-live-c8a64d6` **`3013e010`** = live source `c8a64d68` + the K4 patch (functions tree `65817f41…`). Workspace `~/release-work/k4-ws/1-confirmation/salown-app` (git archive + release tooling from main `05459878`, outside `functions/`).
+- **Release:** `~/release-work/k4-ws/deploy-k4.sh 1` (pins target, tree, tooling sha256, firebase-tools 15.26.0, live-revision precheck) → `deploy-functions.sh salownSendBookingConfirmation`. Precheck passed (tree, tooling, live `-00109-luq`). updateTime 2026-10-02T18:20:40Z.
+- **Artefact:** **`salownsendbookingconfirmation-00110-jiy`**, 100 % traffic, latestReady. Deployed `function-source.zip#1790965175283862`: 228 files, **0 mismatches** against the workspace `functions/`; `src/emails/emailSenderAuthority.ts` + `lib/emails/emailSenderAuthority.js` present; `lib/index.js` sha256 `011bb5bf…`.
+- **Config/IAM:** IAM unchanged (`run.invoker=allUsers`). Runtime unchanged (nodejs22, 256Mi, 60 s, max 20, SA, ingress, no secrets) **except one new env var `FUNCTION_REGION=europe-west2`**, injected unconditionally by firebase-tools 15.26.0 (`lib/gcp/cloudfunctionsv2.js:197`); 16 functions deployed with that CLI since 2026-09-18 already carry it; nothing in the source reads it. Not in the pre-approved diff → release paused for an owner decision.
+- **Unmoved:** 125 Cloud Run services before and after; only this one changed.
+- **Verification:** anonymous negative probe (no clientEmail, non-existent tenant) → `400 FAILED_PRECONDITION "This endpoint is retired."`; logs: `auth=MISSING` verification only, no read, no transport.
+- **Rollback (not run):** traffic → `salownsendbookingconfirmation-00109-luq` (Ready) — reopens the unauthenticated sender.
+- **Not done:** steps 2–4 (`salownSendCancellationEmail`, `salownSendReminder`+`sendAbandonedCart`, `salownSendManualLoyaltyAdjustmentEmail`) still on the vulnerable revisions.
+
 ## R-2026-10-01-G — `LEGACY-ICAL-ARDA-RETIRE`: whitecross `icalFeed` returns 404 for Arda's retired legacy feed · 1 unit (`functions:whitecross:icalFeed`, us-central1) · **DEPLOYED_VERIFIED (served source byte-identical to `cd20324d`; Arda 404, Alex/HeroHairs 2xx, Kadim feed 200 through a 1-hour watch)**
 - **Why:** Arda has left the team. The Treatwell profile that polled his legacy name-keyed URL was renamed to Kadim and moved to Kadim's tokenised feed (`OPS-2026-09-30-B`). The owner removed the "Whitecross – Arda" Google Calendar subscription.
 - **Gate (met):**
