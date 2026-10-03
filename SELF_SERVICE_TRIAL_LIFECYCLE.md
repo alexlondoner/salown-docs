@@ -759,7 +759,7 @@ and brand ids (Brevo, Sendinblue, SendGrid, Mailgun, Mailchimp, Mailjet, Postmar
 template / list ids, delivery, tracking, pixel, webhook, `utm*`, config / smtp / transport / credentials.
 Strings: a whole-value address or `mailto:` → null; embedded addresses → `[email removed]`; every link
 loses query + fragment; a link with a merge tag, an opaque ≥ 24-char token segment, credentials or that
-cannot be parsed → `[link removed]`. Free-text phone numbers in salon copy are kept (documented
+cannot be parsed → `[link removed]`. Free-text phone numbers in salon copy are kept (**owner confirmed 2026-10-03: keep; low risk, usually the salon's own number**) (documented
 boundary). `marketing-stats.json` grouping labels must be opaque ids / type words (else `(other)`);
 template names are sanitised. Tests with sentinels + mutations M01–M26.
 
