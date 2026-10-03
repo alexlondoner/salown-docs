@@ -11,6 +11,24 @@
 
 ---
 
+## ⚠️ Superseding owner decision — self-service pricing (2026-10-03)
+
+For **new self-service tenants** (activation → 30-day trial → grace → suspended,
+[SELF_SERVICE_TRIAL_LIFECYCLE.md](SELF_SERVICE_TRIAL_LIFECYCLE.md) §14):
+
+- **Starter £29/month** and **Pro £69/month** (GBP, monthly only) are the standard, market-referenced prices.
+- **Pro+** is sales-assisted; "From £149/month" may be shown **only after owner approval**.
+- **Free is not offered** to new self-service customers. `free` stays as a legacy/internal plan key; existing
+  Free tenants are **not** migrated.
+- The trial runs on the **Pro** feature set. An unpaid trial goes grace → suspended; it is **never** downgraded to Free.
+- Pro founding offer: **£49/month for 12 months** (Stripe coupon, Phase F); the catalog price stays £69.
+- VAT treatment is unconfirmed: the only tax copy is **"Taxes may apply"**.
+- Canonical catalog: `salown-app/test/fixtures/planCatalog.json` (+ `functions/src/onboarding/planCatalog.ts`);
+  the UI renders prices from the server billing snapshot, never from a literal. No Stripe Product/Price/Coupon yet.
+
+Where the older sections below say "Free tier for new tenants" or "request → approve", this decision wins for
+the self-service path.
+
 ## Locked decisions (2026-07-18)
 
 1. **Backend = "request → approve" (now), Stripe Billing = vision (later).** salOWN **can't** charge

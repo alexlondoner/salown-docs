@@ -1,6 +1,6 @@
 # Self-service trial lifecycle (ONB-P1 and the plan for D, E and F)
 
-**Work ID:** `ONB-P1-TRIAL-LIFECYCLE` · **Status:** Phase 1 (A + B + C) `PUSHED_NOT_LIVE`. D, E and F are specified here and have not been started.
+**Work ID:** `ONB-P1-TRIAL-LIFECYCLE` · **Status:** Phase 1 (A + B + C), D (§12), D2 (§13) and E (§14) `PUSHED_NOT_DEPLOYED`. F is specified (§10, exact contracts §14.6) and not started.
 **Owner decisions:** 2026-10-01. They are binding, and §1 restates them.
 **Code:** `salown-app/functions/src/onboarding/trialLifecycle.ts` (pure core), `trialMessages.ts` (copy), `trialStore.ts` (Firestore store and sweep), and `inviteStore.ts` (the activation transaction, which writes the SSOT). The mutation gate is `salown-app/ops/mutation/trialLifecycle.mutation.sh`.
 
@@ -357,7 +357,7 @@ The rules emulator matrix must assert each cell.
 
 1. **Email classification:** ~~confirm reminders as service messages with no unsubscribe (§4).~~ **DECIDED 2026-10-01:** transactional/service mail, no marketing unsubscribe, no campaign content.
 2. **Plan catalog (F-0 blocker):** prices, currency, VAT and Stripe price ids.
-3. **`/app/billing` route:** the CTA destination is declared, not built (E-1).
+3. **`/app/billing` route:** ~~declared, not built (E-1).~~ **BUILT 2026-10-03 (Phase E, §14), not deployed.**
 4. **Who may still write `status`/`plan`/`trialEndsAt` after D-2:** **DECIDED 2026-10-01:** only the activation transaction, billing webhook, lifecycle scheduler or an allowlisted + audited super-admin operation. Tenant lock implemented in Phase D (§12); the super-admin browser arm is narrowed after its UI moves to the server operation (§12.6 step 4).
 5. **Legacy tenants:** they stay outside the lifecycle (decision 5). The one legacy `status:'trial'` tenant with a past `trialEndsAt` is not touched. If the owner wants legacy tenants moved, that needs its own approved migration.
 6. **Wiring order:** `ONB-P1-WIRE` (job with `transport:null`) can go live before D. Real email waits for the Brevo adapter, E-1 and item 1.
@@ -508,3 +508,75 @@ Content-based (works in a plain `git archive`): a tree carrying a gated PUSHED_N
 ### 13.6 Why nothing here may deploy before Phase E
 
 Deploying D/D2 makes `status: 'suspended'` (Super Admin button, or the future scheduler) a **full lockout**: no `/app/billing`, `/app/export` or `/app/support`, no export callable, no Admin/Staff paused screen. That contradicts owner decision 6 (suspended owners use billing/export/support). The guard above enforces this mechanically for main. Order stays: Phase E surfaces → live-lineage function candidates → Super Admin UI on the audited op → rules last → only then ONB-P1-WIRE with the D-1 projection.
+
+---
+
+## 14. Phase E: product surfaces (`ONB-PE-SURFACES`, PUSHED_NOT_DEPLOYED, 2026-10-03 — salown `0297180c` + `f9e5afec` + `62891cb1`, super-admin `b32c626`)
+
+Owner decisions applied (2026-10-01 + pricing 2026-10-03): grace = full panel + persistent banner + new public booking paused; suspended = owner sees only billing / data export / support, staff see a paused screen, no data deleted, no Auth change; Super Admin resume only through the audited server operation. **Pricing (locked 2026-10-03):** Starter £29/month and Pro £69/month self-service (GBP, monthly); Pro+ sales-assisted "from £149/month", shown only after owner approval; `free` stays a legacy/internal key and is never offered to a new self-service tenant; the 30-day trial runs on Pro features; a trial that ends unpaid goes grace → suspended (never downgraded to Free); Pro founding offer £49/month × 12 months is a Phase F Stripe coupon (standard catalog price stays £69); VAT status unconfirmed → the only tax copy is "Taxes may apply"; no Stripe Product/Price/Coupon exists. No existing Free tenant is migrated.
+
+### 14.1 One server answer: `salownGetBillingSnapshot`
+
+`functions/src/onboarding/billingSnapshot.ts` (callable in `index.ts`, europe-west2, classified `unaffected` in `CALLABLE_MATRIX` because it must answer in every state). Signed-in user, tenant **from the token only**, body must be empty, read-only (two document reads; `tenantBilling` parsed by the Phase 1 store's `billingFromDoc`; `index.ts` still references no Phase 1 module). Owner/admin receive the full snapshot; any other role only `{displayState, capabilities}`.
+
+```
+{ schemaVersion:1, scope:'full'|'limited', displayState, capabilities{10 policy capabilities},
+  billingConsistent, serverNow, timeZone, trial{endsAt,endLocalDate,daysLeft,stage}|null,
+  grace{endsAt,endLocalDate,daysLeft,hoursLeft}|null, publicBookingPaused,
+  currentPlan{id,label,source:'trial'|'subscription'|'legacy'}|null, availablePlans[],
+  pricingNote:'taxes_may_apply', checkout:{available:false, reason:'phase_f_not_configured'} }
+```
+
+| Root (enforced) | Billing doc | displayState |
+|---|---|---|
+| no lifecycle, status ≠ suspended | — | `legacy` (all production tenants today) |
+| `status:'suspended'` or `SUSPENDED` | any valid | `suspended` |
+| `TRIAL_GRACE` | valid | `grace` |
+| open (`TRIAL_ACTIVE`/`SUBSCRIBED`/`ACCOUNT_ACTIVATED`) | trialing | `trialing` |
+| open | none / active_paid | `active` |
+| open | grace/suspended/pending (projection lag) | `active`, `billingConsistent:false` |
+| pending / unknown / missing root, or malformed billing doc on a non-legacy root | — | `unavailable`, every capability false |
+
+Trial stage (tenant-local calendar days to `endLocalDate`, server clock): `calm` > 7 · `D-7` 4–7 · `D-3` 2–3 · `D-1` 1 · `D0` 0 · `ended` at/after `endsAt` (inclusive, like the job).
+
+Plan catalog: `functions/src/onboarding/planCatalog.ts` pinned field-for-field to `test/fixtures/planCatalog.json`. The frontend carries **no price literal** (static scan); it renders `availablePlans`.
+
+### 14.2 Admin gate (`src/billing/`, `AppRouter.tsx`)
+
+- Runs before onboarding and before `PanelLayout`. A **legacy root** (parity-tested against `resolveTenantAccessState`) opens the panel immediately without calling the snapshot — a missing/slow callable can never lock a current salon out. Every other root waits: loading → loading screen (no panel flash); error / malformed / `unavailable` → "We couldn't load your account status" (retry, support, sign out).
+- **trialing**: banner at the top of `<main>` (owner copy, end date, days left, "Choose a plan" → `/app/billing`). Calm stage dismissal persists (localStorage); D-7/D-3/D-1/D0/ended dismissal is per-session (sessionStorage) and returns next session.
+- **grace**: non-dismissable banner with the owner copy, grace end date, days/hours left, and "New online bookings are paused." (shown from the server capability, so it is never claimed while public booking is in fact still open).
+- **suspended**: owner → `RestrictedShell` (no `PanelLayout`, no tenant data reads) with only `/app/billing`, `/app/data-export`, `/app/support`; every other `/app` path → `/app/billing`; no Resume control. Admin/staff role → paused screen.
+- `/app/billing` and `/app/data-export` are owner-only in every state (absolute redirect for other roles); `/app/support` is open to every signed-in role.
+
+### 14.3 Billing, export, support
+
+- **Billing**: state, current plan, Starter/Pro cards from the snapshot, "Taxes may apply". "Choose plan" → *"Secure subscription checkout is not available yet. Contact support."* — no call, no write, no success state. The Phase F request contract is declared (`BILLING_CHECKOUT_CALLABLE = 'salownCreateBillingCheckout'`, `{planId, requestId}` → `{url}`) and never sent.
+- **Data export — BLOCKER for full Phase E acceptance:** inventory found only client-side page exports (Bookings CSV, Reports finance CSV, package finance CSV) and **no server export callable**. Nothing new was invented: the page states that self-service export is not available yet and offers "Request an export by email" (owner only). Spec for the callable: §14.6.
+- **Support**: no support callable exists and none was created. `mailto:info@salown.com` (the verified human inbox) with subject `<topic> (<tenantId from the session claim>)`; no sender, no client-chosen recipient.
+
+### 14.4 Staff app
+
+`StaffApp.tsx` gate on `staff-access`: legacy/trialing/grace unchanged; suspended → "This salon's salOWN account is paused. Contact the salon owner for help." with Contact support + Sign out; `StaffRouter` never mounts. No Auth disable, no claim rewrite.
+
+### 14.5 Super Admin
+
+`Tenants.jsx` `toggleStatus` (browser `updateDoc({status})` + client-written `status_change` audit row) **removed**. Suspend/Resume → explicit per-row confirmation → `salownSuperAdminTenantStatus {tenantId, action, saOperation:{requestId}}` with a fresh 32-character CSPRNG requestId per Confirm click → pending / success (server `kind` + `status` only) / error (code-mapped text). Lifecycle-managed tenants show "Billing-managed" instead of a button. Profile Preview hunks untouched.
+
+### 14.6 Phase F (and remaining Phase E server work) — exact contracts
+
+1. `salownCreateBillingCheckout` — owner only (token `tenantRole:'owner'`), allowed in `trialing | grace | suspended | active(legacy)`; request `{planId: 'starter'|'pro', requestId: /^[A-Za-z0-9_-]{16,64}$/}`; reads the Stripe Price id from `planCatalog` (`stripePriceId` per environment — today null); Stripe Checkout `mode:'subscription'` on the platform account; idempotency `checkout:{tenantId}:{planId}:{stateVersion}`; response `{url}`. Snapshot then flips `availablePlans[].checkoutAvailable` / `checkout.available` (the UI parser currently forces both false and must be relaxed in the same release).
+2. `salownBillingWebhook` — as §10 F-2; the transition writes the D-1 root projection so the snapshot's `displayState` follows.
+3. Founding offer — Stripe coupon for `pro-founding` (£49 × 12 months); catalog `plannedPromotions[0]`.
+4. `salownRequestDataExport` (E-3, owner only, allowed in suspended): `{requestId}` → server-side CSV/JSON of clients, bookings and services for the **token tenant only**, rate-limited (one per 24 h), delivered as a signed short-lived download link or to the owner's verified Auth email; audit row without PII. Until it exists, the email-request path stays.
+5. Bell: `trial_reminder` notifications carry `ctaPath:'/app/billing'`, but `NotificationBell` ignores `ctaPath` (E-6 not done).
+6. Pro+ display: flip `displayApproved` in the fixture **and** the mirror after owner approval.
+
+### 14.7 Release order (unchanged in principle; nothing deployed)
+
+`salownGetBillingSnapshot` must be live **before** any Admin or Staff build that carries the gate (otherwise every non-legacy tenant sees "couldn't load"; legacy tenants are unaffected). Then: Super Admin build (only after `salownSuperAdminTenantStatus` is live — otherwise Suspend/Resume shows "not available"), Phase D/D2 functions from live lineage, rules last, then ONB-P1-WIRE with the D-1 projection.
+
+### 14.8 Known findings (not fixed here)
+
+- Pre-existing: the Admin catch-all `<Route path="*" element={<Navigate to="dashboard" />}>` is splat-relative under react-router 7, so an unknown `/app/x` path re-appends `/dashboard` repeatedly. Phase E routes use absolute redirects; the catch-all itself is out of scope.
+- `NotificationBell` does not render `trial_reminder` CTAs (14.6 item 5).
