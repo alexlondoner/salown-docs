@@ -687,3 +687,99 @@ Candidate manifest draft (NOT an approval; to live outside the tree if option (b
   "infraPrerequisite": "ops/runbooks/exportInfra verify.sh OK"
 }
 ```
+
+## 17. Dedicated export runtime identity + exact release exception + campaign sanitizer (`ONB-PE3B`, PUSHED_NOT_DEPLOYED, 2026-10-03 — salown `b26ec114` + `878c33e3`)
+
+Owner decisions 2026-10-03 (binding): (1) the §16.2 runbook is **not** applied against the Editor
+default compute SA; (2) a **dedicated export runtime SA**; (3) guard option (a) **only** as an exact
+target / hash / dependency-closure exception for the four functions — never a general Phase D-file
+allowance; (4) campaign templates leave only after recursive sanitization. Supersedes §16.2's grants
+and §16.3's manifest draft. Nothing created, deployed, called or written in production.
+
+### 17.1 Runtime identity and IAM matrix
+
+`salown-tenant-export@havuz-44f70.iam.gserviceaccount.com` (absent today; naming follows
+`salown-calendar-feed@`). `serviceAccount` is set on `salownRequestDataExport`,
+`salownGetDataExportStatus`, `salownProcessDataExport` only; `salownGetBillingSnapshot` keeps the
+default identity, gets no env, no storage, no signing. Static proof
+`functions/src/onboarding/exportRuntimeIdentity.test.js`; options diff origin/main → `b26ec114` = exactly
+those three changed (93 functions, 0 added/removed); anchor → candidate = 4 added, 0 changed.
+
+| Principal | Role | Scope | Why |
+|---|---|---|---|
+| export SA | `roles/datastore.user` | project, condition `resource.name == "projects/havuz-44f70/databases/(default)"` | reads allowlisted `tenants/{t}/…`, staff doc, `tenantBilling/{t}`; **writes** `tenantDataExports/{t}` lock/jobs/audit (create, update, set-merge; never delete). Firestore has no per-collection IAM; the database is the narrowest scope. Exact minimum = custom role `datastore.entities.{get,list,create,update}` (later hardening). |
+| export SA | `roles/eventarc.eventReceiver` | project (only grantable there) | firebase-tools makes the trigger identity = runtime SA |
+| export SA | `roles/storage.objectUser` | bucket only | save / sign (get) / delete |
+| export SA | `roles/iam.serviceAccountTokenCreator` | the export SA itself | keyless V4 signBlob |
+| export SA | `roles/run.invoker` | Cloud Run service `salownprocessdataexport` only, after it exists | firebase-tools grants no invoker for event triggers |
+| deployer (2 owner users) | none new | — | `roles/owner` includes `actAs`; never grant `serviceAccountUser` to the CI SA |
+| compute SA | **none** | — | baseline pinned by verify.sh |
+
+Unavoidable project-level: `datastore.user` (read + create/update of every document of `(default)`;
+tenant confinement is code-only, as for every function today, but without the rest of Editor) and
+`eventarc.eventReceiver` (benign). Not isolation from the compute SA: project `editor` still reaches the
+bucket — a separate hardening item. Forbidden and runtime-refused: Editor, Owner, storage.admin,
+serviceAccountUser/Admin, projectIamAdmin, project-wide Token Creator, any non-export-SA member.
+
+### 17.2 Env scope (firebase-tools 15.26.0)
+
+dotenv **and** params are applied to every endpoint deployed from a workspace; a `defineString` would
+be resolved on every deploy of any function — rejected. `process.env.DATA_EXPORT_BUCKET` is read once,
+in `dataExportStorage()`, which only the three export functions call (test-pinned). The env file exists
+only in the export release workspace; the guard exception refuses any non-export target while a
+`functions/.env*` file exists and refuses the export three without exactly
+`DATA_EXPORT_BUCKET=havuz-44f70-salown-tenant-exports` (or empty, rollback).
+
+### 17.3 Exact release exception (`ops/releases/onb-pe-export.exception.json`)
+
+Activated only by `SALOWN_RELEASE_EXCEPTION=onb-pe-export`; read from the guard's own `ops/releases/`.
+Pins: anchor `e02a2226` · source `b26ec114` · candidate `functions/src` git tree
+**`e056a00520512517a11631a4c7d0296b3bba92fd`** (computed offline, equals `git rev-parse`) · package.json,
+lock, tsconfigs, rules, indexes = anchor bytes · `tenantAccessPolicy.ts` sha256
+**`0c1577c9…6d3a0f44`** · closure (11): `billingRecordReader, billingSnapshot, dataExportContent,
+dataExportPolicy, dataExportStore, planCatalog, tenantAccessPolicy, trialLifecycle, zipWriter`,
+`staff/accessStatus`, `utils/presentation` (each sha256) · allowed marked modules: the policy (ONB-PD) and
+`trialLifecycle` (ONB-P1 pure clock core) · forbidden: `gatedCallable, tenantCallableGate,
+tenantStatusOperation, inviteCore, inviteStore, passwordPolicy, trialStore, trialMessages` · index.ts =
+anchor exports (incl. `export { … } from` re-exports) + the four, `onSchedule` count 4 over the whole index closure, no `gated(`, no direct policy require · env scope.
+Fails on: any other target, blanket/foreign selector, missing target list, rules unit, any src/config
+byte change, policy hash, closure change, forbidden or marked module (even with a re-pinned manifest),
+Phase D rules marker, added export or scheduler, gate wiring, env scope. Normal main deploys are refused
+exactly as before (main is also refused under the exception). `trialStore` (Phase 1 writer + sweep
+runner) left the closure: the read-only parser moved to `billingRecordReader.ts` (re-exported unchanged).
+Reproduce: `node ops/releases/buildOnbPeExportCandidate.mjs --out <dir>` → `CANDIDATE OK`.
+Found while testing: the guard's `isMain` compared unresolved paths, so on macOS every copied-guard
+mutation test (G1–G4) exited 0 without running — fixed (realpath) and a non-vacuity control added.
+
+### 17.4 Campaign templates (owner decision 4)
+
+After the top-level allowlist, a recursive scrub drops at any depth: audience / segment / recipient /
+to-cc-bcc / contact / client id-list keys, uid, email, phone, mobile, sender / from / reply-to, provider
+and brand ids (Brevo, Sendinblue, SendGrid, Mailgun, Mailchimp, Mailjet, Postmark, Twilio), message /
+template / list ids, delivery, tracking, pixel, webhook, `utm*`, config / smtp / transport / credentials.
+Strings: a whole-value address or `mailto:` → null; embedded addresses → `[email removed]`; every link
+loses query + fragment; a link with a merge tag, an opaque ≥ 24-char token segment, credentials or that
+cannot be parsed → `[link removed]`. Free-text phone numbers in salon copy are kept (documented
+boundary). `marketing-stats.json` grouping labels must be opaque ids / type words (else `(other)`);
+template names are sanitised. Tests with sentinels + mutations M01–M26.
+
+### 17.5 Gates
+
+functions `npm test` 3560/3496/1 (pre-existing OWNERSHIP)/63 (baseline 3549/3485/1/63); dataExport mutation gate `--with-emulator` 63/63 killed (37 → 63); canonical emulator gate (isolated archive, ports 18080/19099) 890/890; guard suite 50/51 (+1 environmental) incl. 12 exception mutations; runbook lint 23/23. SYNC `98f2d3bd`. (Gates: guard
+suite incl. 12 exception mutations, runbook lint, canonical emulator gate on an isolated archive).
+
+### 17.6 Plan for a later approval (NOT approved; in order)
+
+Before: `preflight.sh` OK (run 2026-10-03: project IAM etag `BwZcouiW4fw=`, 34 bindings / 40 pairs;
+export SA, bucket, 4 functions, trigger service absent). **B1** `apply.sh` → `apply.sh --apply` →
+`verify.sh`. **B2** two workspaces via `buildOnbPeExportCandidate.mjs --out …` + `npm ci`. **B3**
+snapshot from the env-less workspace: `SALOWN_RELEASE_EXCEPTION=onb-pe-export ./scripts/deploy-functions.sh
+salownGetBillingSnapshot`. **B4** `apply.sh env-file <export-ws> --apply`. **B5** trigger first:
+`… deploy-functions.sh salownProcessDataExport`. **B6** `apply.sh invoker --apply`. **B7** `…
+deploy-functions.sh salownRequestDataExport salownGetDataExportStatus`. **B8** `verify.sh --expect-env`,
+deployed source zips == workspace, no other revision moved, project IAM unchanged after deploys, rules and
+hosting unchanged, anonymous probes `UNAUTHENTICATED`. Owner smoke = separate approval.
+Rollback: **R1** delete the (new) functions or redeploy with an empty `DATA_EXPORT_BUCKET=` · **R2**
+`rollback.sh --apply` (invoker → signer → bucket binding → empty bucket → eventReceiver → datastore.user →
+disable SA; refuses while a function still runs as the SA) · **R3** `preflight.sh` back to baseline.
+Full detail: `salown-app/ops/runbooks/exportInfra/README.md`.
