@@ -17,7 +17,9 @@ For **new self-service tenants** (activation → 30-day trial → grace → susp
 [SELF_SERVICE_TRIAL_LIFECYCLE.md](SELF_SERVICE_TRIAL_LIFECYCLE.md) §14):
 
 - **Starter £29/month** and **Pro £69/month** (GBP, monthly only) are the standard, market-referenced prices.
-- **Pro+** is sales-assisted; "From £149/month" may be shown **only after owner approval**.
+- **Pro+** is sales-assisted and shows **no price** anywhere (public or in-account): "Talk to us / Contact us".
+  Internal pricing hypothesis only (never shown, not in code): a floor around £149/month, to be validated on real
+  customers' premium website / domain / SEO / support cost (owner 2026-10-03).
 - **Free is not offered** to new self-service customers. `free` stays as a legacy/internal plan key; existing
   Free tenants are **not** migrated.
 - The trial runs on the **Pro** feature set. An unpaid trial goes grace → suspended; it is **never** downgraded to Free.

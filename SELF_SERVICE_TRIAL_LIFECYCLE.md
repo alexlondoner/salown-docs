@@ -1,6 +1,6 @@
 # Self-service trial lifecycle (ONB-P1 and the plan for D, E and F)
 
-**Work ID:** `ONB-P1-TRIAL-LIFECYCLE` · **Status:** Phase 1 (A + B + C), D (§12), D2 (§13) and E (§14) `PUSHED_NOT_DEPLOYED`. F is specified (§10, exact contracts §14.6) and not started.
+**Work ID:** `ONB-P1-TRIAL-LIFECYCLE` · **Status:** Phase 1 (A + B + C), D (§12), D2 (§13), E (§14) and E2 (§15) `PUSHED_NOT_DEPLOYED`. F is specified (§10, exact contracts §14.6) and not started.
 **Owner decisions:** 2026-10-01. They are binding, and §1 restates them.
 **Code:** `salown-app/functions/src/onboarding/trialLifecycle.ts` (pure core), `trialMessages.ts` (copy), `trialStore.ts` (Firestore store and sweep), and `inviteStore.ts` (the activation transaction, which writes the SSOT). The mutation gate is `salown-app/ops/mutation/trialLifecycle.mutation.sh`.
 
@@ -513,7 +513,7 @@ Deploying D/D2 makes `status: 'suspended'` (Super Admin button, or the future sc
 
 ## 14. Phase E: product surfaces (`ONB-PE-SURFACES`, PUSHED_NOT_DEPLOYED, 2026-10-03 — salown `0297180c` + `f9e5afec` + `62891cb1`, super-admin `b32c626`)
 
-Owner decisions applied (2026-10-01 + pricing 2026-10-03): grace = full panel + persistent banner + new public booking paused; suspended = owner sees only billing / data export / support, staff see a paused screen, no data deleted, no Auth change; Super Admin resume only through the audited server operation. **Pricing (locked 2026-10-03):** Starter £29/month and Pro £69/month self-service (GBP, monthly); Pro+ sales-assisted "from £149/month", shown only after owner approval; `free` stays a legacy/internal key and is never offered to a new self-service tenant; the 30-day trial runs on Pro features; a trial that ends unpaid goes grace → suspended (never downgraded to Free); Pro founding offer £49/month × 12 months is a Phase F Stripe coupon (standard catalog price stays £69); VAT status unconfirmed → the only tax copy is "Taxes may apply"; no Stripe Product/Price/Coupon exists. No existing Free tenant is migrated.
+Owner decisions applied (2026-10-01 + pricing 2026-10-03): grace = full panel + persistent banner + new public booking paused; suspended = owner sees only billing / data export / support, staff see a paused screen, no data deleted, no Auth change; Super Admin resume only through the audited server operation. **Pricing (locked 2026-10-03):** Starter £29/month and Pro £69/month self-service (GBP, monthly); Pro+ sales-assisted with **no displayed price** (superseded 2026-10-03, §15); `free` stays a legacy/internal key and is never offered to a new self-service tenant; the 30-day trial runs on Pro features; a trial that ends unpaid goes grace → suspended (never downgraded to Free); Pro founding offer £49/month × 12 months is a Phase F Stripe coupon (standard catalog price stays £69); VAT status unconfirmed → the only tax copy is "Taxes may apply"; no Stripe Product/Price/Coupon exists. No existing Free tenant is migrated.
 
 ### 14.1 One server answer: `salownGetBillingSnapshot`
 
@@ -552,7 +552,7 @@ Plan catalog: `functions/src/onboarding/planCatalog.ts` pinned field-for-field t
 ### 14.3 Billing, export, support
 
 - **Billing**: state, current plan, Starter/Pro cards from the snapshot, "Taxes may apply". "Choose plan" → *"Secure subscription checkout is not available yet. Contact support."* — no call, no write, no success state. The Phase F request contract is declared (`BILLING_CHECKOUT_CALLABLE = 'salownCreateBillingCheckout'`, `{planId, requestId}` → `{url}`) and never sent.
-- **Data export — BLOCKER for full Phase E acceptance:** inventory found only client-side page exports (Bookings CSV, Reports finance CSV, package finance CSV) and **no server export callable**. Nothing new was invented: the page states that self-service export is not available yet and offers "Request an export by email" (owner only). Spec for the callable: §14.6.
+- **Data export — superseded by §15 (server export implemented in E2).** Original E note: inventory found only client-side page exports (Bookings CSV, Reports finance CSV, package finance CSV) and **no server export callable**. Nothing new was invented: the page states that self-service export is not available yet and offers "Request an export by email" (owner only). Spec for the callable: §14.6.
 - **Support**: no support callable exists and none was created. `mailto:info@salown.com` (the verified human inbox) with subject `<topic> (<tenantId from the session claim>)`; no sender, no client-chosen recipient.
 
 ### 14.4 Staff app
@@ -580,3 +580,53 @@ Plan catalog: `functions/src/onboarding/planCatalog.ts` pinned field-for-field t
 
 - Pre-existing: the Admin catch-all `<Route path="*" element={<Navigate to="dashboard" />}>` is splat-relative under react-router 7, so an unknown `/app/x` path re-appends `/dashboard` repeatedly. Phase E routes use absolute redirects; the catch-all itself is out of scope.
 - `NotificationBell` does not render `trial_reminder` CTAs (14.6 item 5).
+
+---
+
+## 15. Phase E2: owner data export + Pro+ "Let's talk" (`ONB-PE2-EXPORT`, PUSHED_NOT_DEPLOYED, 2026-10-03)
+
+Owner decisions (2026-10-03): Pro+ shows **no price** anywhere (public or in-account) — it stays "Talk to us / Contact us"; the internal pricing hypothesis (**£149/month floor, unvalidated** until premium website/domain/SEO/support cost is measured on real customers) lives in this document only, never in code, fixture or UI. A suspended owner must be able to start a **real self-service export**; export is owner-only; it is **not** run in production in this session.
+
+### 15.1 Inclusion / exclusion matrix (schema evidence, no PII)
+
+| Class | Paths |
+|---|---|
+| **Exported** | root (allowlisted profile fields only: name, ownerName, ownerEmail, businessType, city, address, phone, website, bookingPageUrl, brandColor, googleReviewsUrl, presentation, paymentSettings, notificationSettings, onboardingComplete, createdAt, plan) · `settings/settings` (minus `bookingFlags`) · `settings/hours` · `settings/finance_config` · `bookings` (+`advances`) · `clients` · `services`, `serviceCategories` · `barbers` (profile → staff.json, schedule fields → schedules.json) · `staffRota` (+`rotaEntries`) · `products` · `packageDefinitions`, `clientPackages` (+`sessions`), `packageLedger`, `packageSessions` · `financePeriods`, `finance`, `finance_expenses`, `finance_payments`, `expenses`, `advances`, `investment_transactions`, `staffComp`, `receivables` · `treatmentSessions`, `treatmentFollowUps` · `discountCodes` (+`redemptions`), `campaigns`, `emailOptOuts` · `gallery`, `announcements`, `team` · billing: displayState, current plan, trial/grace end (same fields the billing snapshot shows; `invoices: []` until Phase F) |
+| **Excluded — secret** | `settings/integrations`, `settings/emailConfig`, `fcmTokens`, `parseInbox`, top-level `calendarFeeds*`, `ownerInvites*`, `superAdmin/parseAddresses`; root `telegramToken`/`telegramChatIds`/`stripe*`; any field at any depth matching the recursive filter (password, secret, token, api key, private key, *hash, fingerprint, credential, oauth, fcm*, cookie, *claims, stripe*, telegram*, parseInbox*, emailConfig, raw email, *uid, signature, payment-method id/details, card number/last4/brand/exp/holder) — e.g. booking `stripeSessionId`, client `loyaltyToken`, booking cancel tokens |
+| **Excluded — internal** | `bookingRequests`, `checkoutIntents`, `treatmentRequests`, `staffAccessOps`, `emailSendLedger`, `emailSendRate`, `rotaPolicy`, `notifications`, `parserTombstones`, `parserReview`, `parserStats`, `public/*`, `settings/dashboardPrefs`, `tenantBilling` internals (reminders, audit, stateVersion, ownerUid), `tenantDataExports`, `superAdmin/*` (platform audit, backups); root lifecycle/billing/feature/limits/profile-publication keys |
+| **Owner decision (excluded until decided)** | `staff/{uid}` sign-in accounts (barbers already carry the business roster) · `clients/*/campaignsSent` · `campaignRuns` · `emailEvents` · `auditLogs` · `settings/exit_agreement` · `inventoryLedger` · Storage images (logo, cover, gallery, staff photos) |
+
+A collection not in the matrix is **never** read (allowlist). The manifest lists the excluded categories by name so the owner knows what is missing.
+
+### 15.2 Contract and security model
+
+- `salownRequestDataExport {requestId}` → `{exportId, status, …}`; `salownGetDataExportStatus {}` → status (+ URL); `salownProcessDataExport` = Firestore trigger on `tenantDataExports/{t}/jobs/{exportId}` (europe-west2, 1 GiB, 540 s).
+- **Actor:** claim `tenantRole:'owner'` + claim tenant **and** a same-tenant `staff/{uid}` with `role:'owner'` and allowed access **and** root capability `data-export` (legacy / open / grace / **suspended** allowed; pending / unknown / missing refused). No body tenant, no super-admin exemption, admin/staff refused. Classified `account` in `CALLABLE_MATRIX` (not wrapped by `gated()` — a suspended owner must reach it).
+- **Idempotency:** `exportId = exp_ + sha256(tenant, uid, requestId)[0:32]`; a replay returns the same job. **One active export per tenant** (a concurrent request gets the active job). **One successful export per 7 days** (a failed export does not use the allowance). Stuck generation fails after 9 minutes.
+- **State:** server-only `tenantDataExports/{t}` (lock), `/jobs/{id}`, `/audit/{auto}` — no rules match (browser denied). Audit rows: `{type, exportId, actor:'owner'|'system', at, counts}` — no uid, email, name or URL (tested).
+- **Delivery:** dedicated private bucket (`DATA_EXPORT_BUCKET`), object `tenant-exports/{t}/{exportId}.zip`, `cache-control: private, no-store`, custom metadata `{tenantId, requestedBy, exportId}` (never public). V4 signed URL minted only by the status callable, for the owner, valid **1 h** (never beyond the archive's expiry, ceiling 24 h); each issuance audited. Archive expires **7 days** after generation: the status call marks it expired and deletes the object; the bucket lifecycle rule deletes it independently.
+- **Not configured** (no bucket env): both callables answer `{status:'unavailable', reason:'infrastructure_not_ready'}` and write nothing.
+
+### 15.3 Archive format (schema 1)
+
+Deterministic ZIP (fixed 1980-01-01 timestamps, no extra fields, sorted entries, DEFLATE): `manifest.json` first, then `bookings.csv`, `bookings.json`, `clients.csv`, `clients.json`, `finance.json`, `marketing.json`, `packages.json`, `products.json`, `schedules.json`, `services.json`, `staff.json`, `tenant.json`, `treatments.json`. Manifest: `schemaVersion`, `kind`, `tenantId`, `exportId`, `generatedAt` (UTC), salon `currency`, conventions (timestamps → ISO-8601 UTC; `*_m` integer minor units with their own `currency`; legacy major-unit money copied as stored in the salon currency; records sorted by id, keys sorted; unused collection = empty array), per-file `{records, bytes, sha256}`, `excluded`. CSV is RFC 4180 with a formula-injection guard. Same data + same `generatedAt` → byte-identical archive (tested).
+
+### 15.4 Infrastructure readiness — **BLOCKER (read-only check 2026-10-03, nothing created)**
+
+| Need | Today |
+|---|---|
+| Dedicated private bucket (europe-west2, uniform bucket-level access ON, public access prevention ENFORCED) | **missing**. `havuz-44f70.firebasestorage.app` is not suitable (UBLA off; reachable by Firebase Storage rules). |
+| Lifecycle `Delete` at age ≤ 6 days on that bucket (so deletion lands within 7 days) | missing (bucket missing) |
+| Runtime SA `1050766582653-compute@` may sign URLs: `roles/iam.serviceAccountTokenCreator` on itself (signBlob) | **missing** (SA policy has no bindings) |
+| Runtime SA object access, least privilege: `roles/storage.objectAdmin` on the export bucket only | project `roles/editor` covers it today; bucket-scoped binding recommended |
+| `DATA_EXPORT_BUCKET=<bucket>` in the functions deploy env | missing |
+
+Until all five exist the UI shows the honest "not available yet — contact support" state.
+
+### 15.5 UI (`/app/data-export`, owner only)
+
+States, all from server answers: checking · **unavailable** (infrastructure) · **ready** (Request export) · **generating** (polls status every 5 s, bounded) · **available** (download link from the status answer only, link expiry, archive deletion date, next allowed date) · **expired** · **failed** (try again) · **rate-limited** (next allowed date) · load error (retry). Fresh CSPRNG `requestId` per click; no Firestore read or write from the browser; a non-https URL or malformed answer is never rendered.
+
+### 15.6 Remaining Phase F contracts (unchanged from §14.6 except items 4 and 6)
+
+Item 4 (export) is **implemented** (this section). Item 6 is **withdrawn**: Pro+ never gets a displayed price; it stays sales-assisted.
