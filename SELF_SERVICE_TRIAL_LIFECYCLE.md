@@ -630,3 +630,60 @@ States, all from server answers: checking · **unavailable** (infrastructure) ·
 ### 15.6 Remaining Phase F contracts (unchanged from §14.6 except items 4 and 6)
 
 Item 4 (export) is **implemented** (this section). Item 6 is **withdrawn**: Pro+ never gets a displayed price; it stays sales-assisted.
+
+## 16. Export v1 content + export infrastructure runbook + release readiness (`ONB-PE3-EXPORT-V1`, PUSHED_NOT_DEPLOYED, 2026-10-03 — salown `297ffeed`)
+
+Owner decisions 2026-10-03 (binding) implemented; infrastructure approved **in principle only**. Nothing created, deployed, called or written in production.
+
+### 16.1 Export v1 inclusion / exclusion (supersedes the "owner decision" row of §15.1)
+
+| Source | v1 | Output | Kept | Removed |
+|---|---|---|---|---|
+| `inventoryLedger` | **included** | `inventory.json` | `sourceType, sourceId, operation, sign, status, appliedAt`, deltas `productId, qty, tracked, before, after, prevQty, nextQty, net`; ordered by `appliedAt`, then id | mutation id (doc id), `fingerprint`, `expected/newRevision`, `schemaVersion`, `tenantId`, `writtenProductIds`, any other key |
+| `auditLogs` | **included, sanitized** | `activity.json` | ALLOWLIST of business actions (bookings/sales, clients/loyalty, finance incl. exit-agreement events, packages, checkout settings, team roster, rota, staff leave/offboard/rehire); field allowlist (amounts, dates, booking/client/staff refs and names, `changes`, `target`); `at` ISO UTC | every other action (sign-up, application/profile review, Stripe connect, purge, super-admin operations, identity conflicts, team-member sign-in provisioning, rota bootstrap/import, calendar-feed + access/offboarding security events, per-recipient marketing sends, unknown); actor uid/email/name/role, IP, user agent, session/device, hashes/digests, approvals, recipients, free-text notes, any key matching email/phone, any email-shaped value — at any depth |
+| `settings/exit_agreement` | **included, subset** | `agreements.json` | `status, terms (minus internal/platform/admin/notes/token/email/ip keys), signedAt, createdAt, updatedAt, emailedCopyAt`, ledger `date, type, amount, ym, note`, signers `name, signedAt (+via)` + `signatureImageIncluded:false` | `signToken*`, `signTokenSentTo`, `emailedCopyTo`, signature `dataUrl` images, signer `ip`, internal/platform notes, any other key |
+| `campaigns` | templates kept | `marketing.json` `campaigns` | `name, subject, message, category, type, createdAt, updatedAt, discount, promoCode, expiry, ctaText, ctaLink, active` | any audience/recipient field |
+| `campaignRuns`, `clients/*/campaignsSent`, `emailEvents` | **aggregates only** | `marketing-stats.json` | counts per campaign template id (+ template name/category), per campaign type, per UTC month; email engagement totals (contacts, opens, clicks, opened/clicked contacts, unsubscribed/spam/blocked/suppressed) and contacts per last-event type / month | recipient names and lists, client ids, addresses, subjects, sender uids, per-client send rows, provider event rows |
+| Images / documents | **references only** | `media.json` | verified objects in `havuz-44f70.firebasestorage.app` / `havuz-44f70.appspot.com` under `tenants/{t}/` (logo, cover, gallery, staff/team photos, finance ledger file) + Firestore-stored size/content type; `refused` counts by reason | binaries (v2), any URL, download tokens, foreign-tenant / foreign-bucket / external / traversal references (never echoed) |
+| URL values anywhere | rewritten | all files | media fields → verified path or `null`; Firebase download `token` and `X-Goog-*`/signature params stripped from storage URLs | bearer credentials |
+| `staff/{uid}`, `emailSendLedger`, `emailSendRate`, rate limits, platform security logs | **excluded** | — | — | everything |
+
+Archive: `manifest.json` + 18 files (adds `activity.json`, `agreements.json`, `inventory.json`, `marketing-stats.json`, `media.json`; ZIP names are lowercase by the writer's contract). Schema stays `1` (never shipped). Interpretation to confirm: campaign **templates** (salon-authored, no PII) stay in `marketing.json` under a field allowlist; only engagement is aggregated.
+
+Gates (`297ffeed`): functions tsc 0; functions `npm test` 3549 / 3485 pass / 1 fail (pre-existing environmental `OWNERSHIP`, red on baseline) / 63 skip; dataExport unit 17/17; emulator dataExport 11/11; mutation `ops/mutation/dataExport.mutation.sh --with-emulator` **37/37 killed** (15 → 37); vitest `src/billing` + runbook 81/81; eslint changed files 0; `git diff --check` clean; canonical `npm run test:emulator` on an isolated archive (ports 18080/19099) — see SYNC.
+
+### 16.2 Infrastructure preflight (read-only, 2026-10-03)
+
+- Bucket name `havuz-44f70-salown-tenant-exports`: describe → **404 (free)**. Project has **no organization/folder parent** and **no project org policy**; europe-west2 supports Standard + UBLA + PAP + lifecycle. 0 export buckets exist; no public principal at project level.
+- APIs enabled: `storage`, `iamcredentials`, `cloudfunctions`, `run`, `eventarc` (+ storage-api/component, iam, artifactregistry, cloudbuild, firestore, pubsub, secretmanager).
+- Runtime SA `1050766582653-compute@developer.gserviceaccount.com` (96 of 97 europe-west2 gen-2 functions; the export functions set no `serviceAccount`): project roles `datastore.importExportAdmin`, `editor`, `eventarc.eventReceiver`, `run.invoker`; **no SA-level bindings** (cannot signBlob itself).
+- Proposed least-privilege grants: (1) `roles/storage.objectUser` → runtime SA, **bucket scope only** (create/get/delete needed by save/sign/delete; `objectCreator+objectViewer` lack delete; `objectAdmin` adds object IAM; exact minimum = custom role `storage.objects.{create,get,delete}`); (2) `roles/iam.serviceAccountTokenCreator` → runtime SA **on itself** (SA resource scope) for keyless V4 signing via IAM Credentials `signBlob` (exact minimum = custom role with only `iam.serviceAccounts.signBlob`). No project-level grant. ⚠️ `roles/editor` already gives the runtime SA object access to every bucket: the bucket binding is explicit, not isolation. Alternatives (dedicated export SA, streaming through an authenticated HTTP function) evaluated in the runbook README.
+- **Env binding (firebase-tools 15.26.0):** dotenv and params are applied to every endpoint of the codebase (`prepare.js`); firebase-functions 7.2.5 has no per-function env option; without a dotenv the deployed env is kept. Mechanism = deployment scope: the env file exists only in the isolated export release workspace, which deploys only the three export functions; `verify.sh --expect-env` proves the scope.
+- Cost (Cloud Billing Catalog API list prices): Standard London $0.023/GiB-month, Class A $0.005/1k, Class B $0.0004/1k, egress first 100 GiB free then $0.12/GiB → **< $0.01/month** at low usage.
+
+Runbook: `salown-app/ops/runbooks/exportInfra/` (README, `preflight.sh` read-only — run, OK; `apply.sh` / `rollback.sh` dry-run by default + typed confirmation — **not run**; `verify.sh` read-only; `check_bucket.py`; `exportInfra.test.js` static lint 19/19).
+
+### 16.3 Release readiness — live-lineage candidate plan (NOT an approval; no release branch created)
+
+- **Anchor:** `e02a2226` (`release/sched-rehire-fn-on-live-2c8285e`), the newest full-tree functions lineage. Live proof (read-only): `salownStaffLifecycle` `-00006-hem` deployed `function-source.zip` (generation `1790810198249909`) == `e02a2226:functions` — 130 src/config files, **0 mismatches**. K4 lineages (`3013e010`, `b69d60c0`, `bd259e0a`, `2887a579`) are older bases (2026-07-15 … 09-18).
+- **Candidate = anchor + exactly:** `A functions/src/onboarding/{billingSnapshot, dataExportContent, dataExportPolicy, dataExportStore, planCatalog, tenantAccessPolicy, trialLifecycle, trialMessages, trialStore, zipWriter}.ts` (byte-identical to main `297ffeed`) · `M functions/src/index.ts` (+2 requires `BSN`, `DXS`; +4 exports `salownGetBillingSnapshot`, `salownRequestDataExport`, `salownGetDataExportStatus`, `salownProcessDataExport`; 0 removed lines). `staff/accessStatus.ts`, `utils/presentation.ts` already byte-identical in the anchor. No rules / indexes / `firebase.json` change. No `gated()` wrapper, no `tenantCallableGate`, no `inviteCore`, no Phase 1 scheduler, no `salownSuperAdminTenantStatus`.
+- **Proof (scratch tree, not pushed):** `npm ci` + tsc 0 + build 0; the four exports resolve; dataExport unit suite 15/15 (wiring/rules tests excluded — they read main-only files). `tenantAccessPolicy` is imported only by `billingSnapshot` and `dataExportPolicy`; no other module calls `tenantHasCapability`/`resolveTenantAccessState`.
+- **BLOCKER for the release (not for infra):** `ops/gatedReleaseGuard.mjs functions` **refuses** the candidate: the export closure needs `onboarding/tenantAccessPolicy.ts`, whose `export const CAPABILITY_TABLE` is an `ONB-PD` marker. The candidate carries the Phase D **policy module** (pure, read-only use) but **no Phase D enforcement hunk**. Options (owner decision): (a) refine the guard to split `ONB-PD-POLICY` (module) from enforcement markers — a separate claimed change with its own tests; or (b) an owner manifest outside the tree that explicitly approves `ONB-PD` for this unit with the note "policy module only, no enforcement wiring". (a) is recommended: (b) uses a blanket hunk approval.
+- **Deploy shape (when approved):** isolated workspace (`git archive` of the candidate + release tooling from main outside `functions/`), firebase-tools 15.26.0; (1) `./scripts/deploy-functions.sh salownGetBillingSnapshot` from a workspace **without** a dotenv; (2) `apply.sh env-file <export-ws> --apply`, then `./scripts/deploy-functions.sh salownRequestDataExport salownGetDataExportStatus salownProcessDataExport` from that workspace (bare names → `functions:salown:<fn>`); (3) `verify.sh --expect-env`. Infra (bucket, bindings) must be applied and verified BEFORE step 2, else the callables answer `unavailable` (safe). Order with Phase E UI: §14.7.
+
+Candidate manifest draft (NOT an approval; to live outside the tree if option (b) is chosen):
+
+```json
+{
+  "releaseId": "R-YYYY-MM-DD-X",
+  "approvedBy": "<owner, explicit>",
+  "units": ["functions"],
+  "approvedGatedHunks": ["ONB-PD"],
+  "scopeNote": "Policy module onboarding/tenantAccessPolicy.ts only, as a pure dependency of salownGetBillingSnapshot / salownRequestDataExport / salownGetDataExportStatus / salownProcessDataExport. No enforcement wiring, no rules, no scheduler.",
+  "anchor": "e02a2226 (live salownStaffLifecycle -00006-hem, 0/130 mismatches)",
+  "candidatePatch": { "added": 10, "modified": ["functions/src/index.ts (+2 requires, +4 exports)"] },
+  "functions": ["salownGetBillingSnapshot", "salownRequestDataExport", "salownGetDataExportStatus", "salownProcessDataExport"],
+  "env": { "DATA_EXPORT_BUCKET": "havuz-44f70-salown-tenant-exports — export functions only" },
+  "infraPrerequisite": "ops/runbooks/exportInfra verify.sh OK"
+}
+```
