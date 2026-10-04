@@ -86,6 +86,14 @@
 ---
 
 
+## 2026-10-04 — ONB-PE Gate 2 `salownGetBillingSnapshot` (`R-2026-10-04-B`)
+
+| Unit | Source | Live identity | Rollback |
+|---|---|---|---|
+| `functions:salown` → `salownGetBillingSnapshot` (europe-west2, NEW) | salown-app candidate **`49f2d30b`** (live lineage `e02a2226` + 5 onboarding modules + 1 export; main `60535d24`) | `salowngetbillingsnapshot-00001-cit`, 100 %, default runtime SA, no custom env | delete the function (new) |
+
+- DEPLOYED_VERIFIED: zip == workspace, other 92 salown functions unchanged, rules/hosting/IAM/bucket unchanged, anonymous probe 401 UNAUTHENTICATED with no side effect. Export functions, Phase 1/D/D2, rules: still NOT deployed. The Admin/Staff UI that calls it is not released.
+
 ## 2026-10-01 — LEGACY-ICAL-ARDA-RETIRE (`R-2026-10-01-G`)
 - `functions:whitecross:icalFeed` → **`icalfeed-00050-cax`** (whitecross-site `cd20324d`). Rollback: `icalfeed-00049-ruh`.
 - Arda's legacy name-keyed feed now returns 404 "Not found" before any read. Alex, a missing barber (400), an unknown barber (empty 200) and HeroHairs' `salownIcalFeed` are unchanged.
