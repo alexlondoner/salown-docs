@@ -783,3 +783,92 @@ Rollback: **R1** delete the (new) functions or redeploy with an empty `DATA_EXPO
 `rollback.sh --apply` (invoker → signer → bucket binding → empty bucket → eventReceiver → datastore.user →
 disable SA; refuses while a function still runs as the SA) · **R3** `preflight.sh` back to baseline.
 Full detail: `salown-app/ops/runbooks/exportInfra/README.md`.
+
+## 18. Gate 2: `salownGetBillingSnapshot` release kit (`ONB-PE-GATE2-SNAPSHOT`, READY_FOR_EXPLICIT_GATE2_APPROVAL, 2026-10-04 — salown `60535d24`, candidate `49f2d30b`)
+
+Owner instruction 2026-10-04: **prepare only** Gate 2 = the single new function `salownGetBillingSnapshot`;
+no deploy. Supersedes §17.6 step B3 (the snapshot no longer rides the four-function export candidate).
+Nothing was deployed, invoked or written in production.
+
+### 18.1 Anchor (re-measured, read-only)
+
+Deployed source zips of the 14 newest salown functions (`gcloud functions list` → `buildConfig.source`,
+`gcloud storage cp` from `gcf-v2-sources-1050766582653-europe-west2`) compared with candidate lineages
+(non-test `src/**` + `package*.json` + `tsconfig*.json`; firebase.json ignores `*.test.*`): each zip
+matches exactly one lineage with **0 mismatches** — `e02a2226` = `salownStaffLifecycle -00006-hem` and
+`salownCalendarFeedAdmin -00002-fon` (130 files); `cc654dbc` = `salownManualImport -00121-wam` (100);
+`3b706dd5` = `salownRotaTransaction -00005-tuv` (90); K4 `3013e010` / `b69d60c0` / `bd259e0a` /
+`2887a579` = confirmation / cancellation / reminder+cart / loyalty (116 / 117 / 30 / 47). The newer
+`manualImport` / `rota` / K4 deploys are older, smaller bases (92–148 file mismatches vs main);
+`e02a2226` is the newest full tree (40 vs main). **Anchor = `e02a2226`.** The snapshot closure needs
+`utils/presentation.ts`, already byte-identical anchor == main; the five onboarding modules are absent
+from the anchor (added). Gen-2 deploys upload the whole `functions/` dir and replace only the target,
+but every module `lib/index.js` requires runs at the new function's cold start, so the anchor is the
+codebase already running in production.
+
+### 18.2 Candidate
+
+`release/onb-pe-snapshot-on-live-e02a2226` @ **`49f2d30b`** (pushed `[skip ci]`, never merged):
+`functions/` tree `f6529609…`, `functions/src` tree **`c9f9d805…`**, `tenantAccessPolicy.ts` sha256
+`0c1577c9…6d3a0f44`. Diff vs anchor: `A onboarding/{billingRecordReader, billingSnapshot, planCatalog,
+tenantAccessPolicy, trialLifecycle}.ts` (bytes of main `9028605f` = the onb-pe-export pins) · `M index.ts`
++16/−0 (`const BSN = require('./onboarding/billingSnapshot');` + the export block verbatim from main:
+`onCall({ region: 'europe-west2' }, …)`). No export module, `DATA_EXPORT_BUCKET`, `serviceAccount`,
+`trialStore`, scheduler, Phase D/D2 change, rules/indexes/`firebase.json`/hosting change. Exports 95 → 96.
+Compiled `lib/` of the six closure modules is byte-identical to main's build.
+
+### 18.3 Closure proof (built lib) + guard exception
+
+`ops/releases/gate2-snapshot/closureCheck.mjs`: export graph = `lib/onboarding/{billingRecordReader,
+billingSnapshot, planCatalog, tenantAccessPolicy, trialLifecycle}.js` + `lib/utils/presentation.js`,
+package `firebase-admin/firestore` only, no `onSchedule(` / `process.env` / `DATA_EXPORT_BUCKET` /
+`getStorage(` / signing; whole `lib/index.js` graph 127 modules with no trialStore / trialMessages /
+dataExport* / zipWriter / gatedCallable / tenantCallableGate / tenantStatusOperation / inviteCore /
+inviteStore / passwordPolicy and no `gated()`; vs anchor +5 modules, +1 export, onSchedule 3 = 3.
+Main's build fails the same check (non-vacuity).
+Exception `SALOWN_RELEASE_EXCEPTION=onb-pe-snapshot` (`ops/releases/onb-pe-snapshot.exception.json`):
+targets `[salownGetBillingSnapshot]`, tree/config (incl. `firebase.json`, `.firebaserc`)/policy/6-module
+closure/exports/onSchedule pins, forbidden = Phase 1 + export + Phase D modules, no env-scoped target
+(any `functions/.env*` refuses). Guard code unchanged; main refused as before; `onb-pe-export` unchanged
+and does not accept this candidate.
+
+### 18.4 Wrapper and baseline
+
+`ops/releases/gate2-snapshot/deploy.sh --check-only|--deploy` (sha256 `4f7c6a6b…a311`; no function
+name accepted) over `~/release-work/gate2-snapshot/ws/salown-app` (`prepare-workspace.sh 60535d24`;
+git archive of `49f2d30b` + tooling outside `functions/`; firebase-tools 15.26.0 in `_cli`). Pins:
+candidate/tree/src tree/policy, nine tooling sha256s, CLI version. Stops on: tree/tooling/CLI drift,
+dirty `functions/`, any dotenv, build/closure/guard failure, or live inventory ≠
+`baseline-inventory.json` (92 salown functions: revision, updateTime, runtime SA, ingress, sha256 of
+env NAME set; values never read into output) or the target already existing.
+
+### 18.5 Gates (2026-10-04)
+
+wrapper `--check-only` exit 0 (closure OK, exception OK, inventory OK 92 == baseline, namespace +
+gated guards OK, nothing deployed); negatives: dotenv → BLOCKED, function name / no args → exit 2.
+Candidate tsc 0, build 0; candidate `npm test` in the isolated workspace 3186 / 3134 pass / **0 fail** /
+52 skip. Snapshot suites on the candidate lib (main's test files, harness): billingSnapshot 12/12,
+planCatalog 4/4, tenantAccessPolicy 12/20 + trialLifecycle 20/22 — the 10 others are static asserts of
+MAIN-only artefacts (Phase D rules, `trialStore.ts`, D2 wiring), i.e. they confirm absence; all 58 green
+on main. Emulator (`billingSnapshot.emulator.test.js`, ports 18080/19099/14400/14500, 8080 untouched)
+1/1. Mutations S01–S12 on the candidate lib 12/12 killed. Vitest `ops/releases/gate2-snapshot/` 66/66
+(manifest mutations E01–E16 caught; exception negatives: extra target, other target, blanket, foreign
+codebase, different tree, extra gated import, export module present/wired, scheduler, serviceAccount,
+dotenv, rules unit/diff/marker, firebase.json; closure checker incl. 3 checker mutations; inventory
+drift; wrapper pins); `ops/gated-release.test.js` 50/51 (1 = pre-existing environmental namespace test,
+red from sibling `_wt` repos).
+
+### 18.6 Approved-deploy command, verification, rollback (NOT approved)
+
+Deploy (only after explicit Gate 2 approval + ledger row): `~/release-work/gate2-snapshot/ws/salown-app/ops/releases/gate2-snapshot/deploy.sh --check-only`
+then `… deploy.sh --deploy` (→ `SALOWN_RELEASE_EXCEPTION=onb-pe-snapshot bash scripts/deploy-functions.sh salownGetBillingSnapshot`).
+Verify (read-only): `inventory.mjs verify-after --baseline …` (ACTIVE, 100 % latest revision, SA =
+`1050766582653-compute@`, ingress ALLOW_ALL, env names = the firebase-tools default set incl.
+`FUNCTION_REGION`, no `DATA_EXPORT_BUCKET`, no secret, 92 others unchanged); run.invoker same as
+another callable (`allUsers`); deployed `function-source.zip` == workspace; rules, hosting, IAM etag
+unchanged. Optional anonymous probe → `UNAUTHENTICATED` only with a separate approval. Admin UI: legacy
+tenants (all production tenants) never call it.
+**Rollback = delete** (new function, no previous revision):
+`firebase functions:delete salownGetBillingSnapshot --region europe-west2 --project havuz-44f70`
+(or `gcloud functions delete salownGetBillingSnapshot --region europe-west2 --project havuz-44f70 --gen2`) —
+no tenant impact. Full kit: `salown-app/ops/releases/gate2-snapshot/README.md`.
