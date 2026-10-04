@@ -41,6 +41,23 @@ Every incident opens with `## YYYY-MM-DD — short title`, immediately followed 
 
 **Tag dictionary (CANONICAL — only these; sprawl forbidden):** `#security` `#stripe` `#secrets` `#config` `#deploy` `#normalization` `#permission` `#race` `#timezone` `#parser` `#email` `#data-loss` `#shared-infra`. A new tag is added only if a genuinely new class emerges (e.g. twins like `#payment`+`#payments`+`#stripe-payment` are FORBIDDEN → all `#stripe`). Every entry carries a `**Tags:**` line.
 
+## 2026-10-04 — Staff Today cards hid the price and status when the service name was long
+
+**Severity:** 🟡 Medium · **Owner:** alish/staff-revenue · **Status:** ✅ Resolved (`R-2026-10-04-A`, `hosting:salown-staff` `6c2c6d4d8c49b10c`) · **Affected area:** Staff app — Today schedule appointment cards
+
+**Discovery:** owner phone screenshots — some cards showed `£2…`/`Checked ou…` or nothing on the right, others were fine.
+**Impact:** on a phone, any card whose service name did not fit (e.g. "Senior Citizen Full Experience (65+)", "Traditional Hot Towel Shave") lost its price and status pill; short names were unaffected. Display only.
+**Root Cause:** the card and its content box were `flex: 1` items without `minWidth: 0`. A flex item's default minimum width is its content's min-content width, and the service line is `white-space: nowrap`, so a long name made the card wider than its row; the card's `overflow: hidden` then clipped the non-shrinking price/status column. The text column already had `minWidth: 0`, but because its parents did not, the ellipsis never engaged.
+**Bug Class:** Layout (flex min-content overflow).
+**Resolution:** `minWidth: 0` on both boxes (main `5590a84a`; released from `7fee8311` = live `51f077c3` + that change). Chrome at 390 px with the real component: 6/7 prices clipped before, 7/7 visible after (also 7/7 at 360 px).
+**Prevention:** a nested `flex: 1` chain needs `minWidth: 0` at EVERY level down to the ellipsized text, not only at the last one.
+**Regression Tests:** `src/staff/views/todayCardLayout.test.tsx` (structure: each growing box has minWidth 0, price column rigid; either fix line removed alone fails it).
+**Related:** commits `5590a84a` · `7fee8311` · roadmap `STAFF-TODAY-CARD-OVERFLOW` · files `src/staff/views/TodayView.tsx`
+**Tags:** `#normalization`
+
+**Lessons Learned:**
+- `minWidth: 0` on the innermost text column is not enough; the overflow is decided by the outermost flex item that refuses to shrink.
+
 ## 2026-10-03 — Staff app showed revenue to a staff member whose "See revenue figures" was OFF (fail-open permission state)
 
 **Severity:** 🟠 High · **Owner:** alish/staff-revenue · **Status:** ✅ Fix live 2026-10-03 (`R-2026-10-03-A`, `hosting:salown-staff` `6617f7ecd5769b48`; owner device check pending) · **Affected area:** Staff app (staff.salown.com) — Today est.-revenue tile, Stats (WeekView), Sales, client card spend
