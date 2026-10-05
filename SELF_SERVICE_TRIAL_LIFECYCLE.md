@@ -873,7 +873,7 @@ tenants (all production tenants) never call it.
 (or `gcloud functions delete salownGetBillingSnapshot --region europe-west2 --project havuz-44f70 --gen2`) —
 no tenant impact. Full kit: `salown-app/ops/releases/gate2-snapshot/README.md`.
 
-## 19. Gate 3: owner data-export functions — three separate release kits (`ONB-PE-GATE3`, READY_FOR_EXPLICIT_GATE3A_APPROVAL, 2026-10-05 — salown `cbd0dbc3` + `00f71753`)
+## 19. Gate 3: owner data-export functions — three separate release kits (`ONB-PE-GATE3`, 3A LIVE `R-2026-10-05-A` · 3B ready · 3C blocked, 2026-10-05 — salown `cbd0dbc3` + `00f71753`)
 
 **Nothing deployed, no production write.** Gate 3 is split into three single-function releases, each with
 its own approval; no command can deploy two of them:
@@ -893,3 +893,7 @@ Rollback = delete one function, reverse order; deleting 3B is refused unless zer
 unit 21/21, emulator 11/11, mutation 63/63, kit vitest 26/26, `deploy-3a.sh --check-only` OK; infra
 `VERIFY OK`, export state empty, 93 live functions == baseline. Full kit + matrices:
 `salown-app/ops/releases/gate3-export/README.md`.
+
+**3A live (`R-2026-10-05-A`, 2026-10-05):** `salownGetDataExportStatus` `-00001-haq`, export SA, approved bucket env only,
+anonymous probe `UNAUTHENTICATED`, no export state, nothing else changed. 3B is pinned on the live 3A and awaits its own
+approval; 3C (activation boundary) stays blocked until 3B is live.
