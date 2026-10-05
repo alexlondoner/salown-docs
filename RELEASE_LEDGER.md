@@ -1,5 +1,16 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
+## R-2026-10-06-A — `ONB-PE-GATE3C`: `salownRequestDataExport` (new callable) — **EXPORT ACTIVATION** · 1 unit (`functions:salown`, europe-west2) · **DEPLOYED_VERIFIED**
+- **Approval:** owner, 2026-10-06: "Gate 3C aktivasyonunu onaylıyorum. Güncel drift kontrolü geçerse yalnız pinlenmiş 3C wrapper'ıyla salownRequestDataExport fonksiyonunu deploy et. Gerçek export testi yapma."
+- **Source:** candidate **`badae4b910caf794cef54eb0eed50483529784af`** (parent = 3B candidate `9a438a74`; src tree `e056a005` = PE3B-reviewed tree), fn tree `35c4c4d8…`; exception `onb-pe-export-3c`; tooling `f7e22664` (wrapper pinned on `live-after-3b.json`).
+- **Pre-flight:** pre-deploy snapshot showed `hosting:salown-staff` `6c2c6d4d` → `16dccd90` — explained before deploying (STAFF-NOTIF-CLICK-FIX-P2, another session, SYNC `3205587d`), unrelated. Wrapper (same run): pins, 3C closure, exact exception + env scope, infra `--expect-invoker` VERIFY OK, export state 0/0, inventory = 93 baseline + 3A/3B as pinned, target absent.
+- **Deploy:** 2026-10-05 ~23:12Z via the wrapper → "Successful create operation", rc 0.
+- **Live identity:** `salownrequestdataexport-00001-xac`, one Ready revision, 100 %; runtime SA export SA; env = defaults + `DATA_EXPORT_BUCKET` (approved); no secret; invoker `allUsers` (owner claim + owner staff doc + `data-export` capability enforced in code before any write).
+- **Verified:** zip (gen `1791241892827028`) 274 files byte-identical; deployed closure = 3C closure; `verify-after --stage 3c` + `verify.sh --expect-env` VERIFY OK (bucket env on exactly the 3 export functions, all on the export SA); anonymous `{"data":{}}` → `UNAUTHENTICATED` (only POST); 3A/3B describe + IAM unchanged (3B differs only in API ordering of `eventFilters`); rules, project IAM etag `BwZc9ohe6Hg=`, hosting, bucket config + IAM, export-SA policy unchanged; export state 0/0. **No real export run.**
+- **Effect:** the owner data-export backend is ACTIVE — an authenticated owner who knows the endpoint can create a real export (job + lock/rate + audit + bucket object + ≤ 1 h signed URL). No UI calls it yet.
+- **Rollback (not run):** `ops/releases/gate3-export/rollback.sh 3c --delete` (stops new requests; in-flight jobs still finish and stay downloadable).
+- **Next (separate approvals):** Phase E Admin/Staff UI release; owner smoke export on a test tenant.
+
 ## R-2026-10-05-B — `ONB-PE-GATE3B`: `salownProcessDataExport` (new Firestore trigger) + its export-SA invoker binding · 1 function unit (`functions:salown`, europe-west2) + 1 service-scoped IAM binding · **DEPLOYED_VERIFIED**
 - **Approval:** owner, 2026-10-05, Gate 3B only: the pinned `deploy-3b.sh --deploy`; the one Eventarc trigger + Google-managed transport it creates; `roles/run.invoker` on the processor service for the export SA only; never `allUsers`. 3C excluded.
 - **Source:** candidate **`9a438a748fcb63f5ba5edf24be99729db749c128`** (parent = 3A candidate `a7a64f70`), functions tree `40f1801b…`, src tree `ca691bbd…`; exception `onb-pe-export-3b`; tooling `b2178644` (3B wrapper pinned on `live-after-3a.json`).
