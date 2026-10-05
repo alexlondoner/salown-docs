@@ -872,3 +872,24 @@ tenants (all production tenants) never call it.
 `firebase functions:delete salownGetBillingSnapshot --region europe-west2 --project havuz-44f70`
 (or `gcloud functions delete salownGetBillingSnapshot --region europe-west2 --project havuz-44f70 --gen2`) —
 no tenant impact. Full kit: `salown-app/ops/releases/gate2-snapshot/README.md`.
+
+## 19. Gate 3: owner data-export functions — three separate release kits (`ONB-PE-GATE3`, READY_FOR_EXPLICIT_GATE3A_APPROVAL, 2026-10-05 — salown `cbd0dbc3` + `00f71753`)
+
+**Nothing deployed, no production write.** Gate 3 is split into three single-function releases, each with
+its own approval; no command can deploy two of them:
+
+| Stage | Function | Candidate (cumulative on live `49f2d30b`) | What it makes possible |
+|---|---|---|---|
+| 3A | `salownGetDataExportStatus` (callable) | `a7a64f70` | status only — cannot create a job, lock/rate doc, audit row or object |
+| 3B | `salownProcessDataExport` (Firestore `onDocumentCreated`) | `9a438a74` | nothing new — no job can exist; no backfill; Cloud Run invoker = export SA only, never public |
+| **3C** | `salownRequestDataExport` (callable) | `badae4b9` (src = PE3B tree `e056a005`) | **ACTIVATION BOUNDARY**: first point an authenticated owner who knows the endpoint can create a real export (job + lock/rate + audit + bucket object) |
+
+All three run as `salown-tenant-export@`; `DATA_EXPORT_BUCKET` reaches only the deployed export function
+(one-line env file in that stage's workspace only; closure + inventory prove no other function reads or
+carries it). Order: 3A → verify + pin → approval → 3B → verify → `apply.sh invoker` → verify → activation
+approval → 3C. 3B/3C wrappers are BLOCKED until the previous stage's `live-after-*.json` pin exists.
+Rollback = delete one function, reverse order; deleting 3B is refused unless zero jobs/objects exist
+(a queued job would be stranded and its lock would block the tenant). Gates (2026-10-05): closure ×3,
+unit 21/21, emulator 11/11, mutation 63/63, kit vitest 26/26, `deploy-3a.sh --check-only` OK; infra
+`VERIFY OK`, export state empty, 93 live functions == baseline. Full kit + matrices:
+`salown-app/ops/releases/gate3-export/README.md`.
