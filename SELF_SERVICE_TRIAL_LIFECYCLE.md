@@ -873,7 +873,7 @@ tenants (all production tenants) never call it.
 (or `gcloud functions delete salownGetBillingSnapshot --region europe-west2 --project havuz-44f70 --gen2`) —
 no tenant impact. Full kit: `salown-app/ops/releases/gate2-snapshot/README.md`.
 
-## 19. Gate 3: owner data-export functions — three separate release kits (`ONB-PE-GATE3`, 3A LIVE `R-2026-10-05-A` · 3B ready · 3C blocked, 2026-10-05 — salown `cbd0dbc3` + `00f71753`)
+## 19. Gate 3: owner data-export functions — three separate release kits (`ONB-PE-GATE3`, 3A LIVE `R-2026-10-05-A` · 3B LIVE `R-2026-10-05-B` · 3C awaiting activation approval, 2026-10-05 — salown `cbd0dbc3` + `00f71753`)
 
 **Nothing deployed, no production write.** Gate 3 is split into three single-function releases, each with
 its own approval; no command can deploy two of them:
@@ -897,3 +897,7 @@ unit 21/21, emulator 11/11, mutation 63/63, kit vitest 26/26, `deploy-3a.sh --ch
 **3A live (`R-2026-10-05-A`, 2026-10-05):** `salownGetDataExportStatus` `-00001-haq`, export SA, approved bucket env only,
 anonymous probe `UNAUTHENTICATED`, no export state, nothing else changed. 3B is pinned on the live 3A and awaits its own
 approval; 3C (activation boundary) stays blocked until 3B is live.
+
+**3B live (`R-2026-10-05-B`, 2026-10-05):** `salownProcessDataExport` `-00001-qes` (Firestore onCreate on
+`tenantDataExports/{tenantId}/jobs/{exportId}`, export SA as runtime + trigger identity, invoker = export SA only).
+No job exists or can be created until 3C; 0 invocations. 3C is the activation boundary and needs its own approval.
