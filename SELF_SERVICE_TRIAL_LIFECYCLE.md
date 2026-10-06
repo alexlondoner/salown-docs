@@ -908,7 +908,7 @@ Admin/Staff UI release and an owner smoke export, each with its own approval.
 
 ---
 
-## 20. Phase E Admin release candidate (`ONB-PE-ADMIN`, READY_FOR_EXPLICIT_PHASE_E_ADMIN_APPROVAL, 2026-10-06 — nothing deployed)
+## 20. Phase E Admin release (`ONB-PE-ADMIN`, **DEPLOYED_VERIFIED `R-2026-10-06-B`** — `hosting:salown` `47e1e4d2ecbca249`, 2026-10-06)
 
 **Owner direction (2026-10-06):** demo tenants get no smoke ceremony; whitecross and herohairs are the tenants that matter. Option 2: release the Admin surfaces first, then one real export smoke on whitecross **through the panel**, with its own approval. Staff paused UI and Super Admin lifecycle UI are separate candidates with separate approvals; Super Admin is not planned while `salownSuperAdminTenantStatus` is not live.
 

@@ -1,5 +1,18 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
+## R-2026-10-06-B — `ONB-PE-ADMIN`: Admin Billing / Data export / Support surfaces + trial/grace/suspended gate · 1 unit (`hosting:salown`) · **DEPLOYED_VERIFIED (served 95/95 == candidate build; no real export, no authenticated call)**
+- **Approval:** owner, 2026-10-06: deploy candidate `05c61c5c` only if live is still `1a760e32940a57e5`; served-byte verification; no export smoke, no HeroHairs `trialEndsAt` cleanup, no Staff / Super Admin / functions / rules / Stripe change.
+
+| Unit | Release branch @ SHA (live base) | Previous → new (previous = rollback) | Served == candidate |
+|---|---|---|---|
+| `hosting:salown` | `release/onb-pe-admin-on-live-789aa9ce` @ `05c61c5c` | `1a760e32940a57e5` → **`47e1e4d2ecbca249`** (release `1791303562925000`, 2026-10-06T16:19:22Z) | 95/95 |
+
+- **Pre-deploy:** live re-read = `1a760e32940a57e5`; `git archive` workspace `~/release-work/onb-pe-admin/cand/salown-app` == `05c61c5c` (outside build output); base `789aa9ce` build == served 95/95 before deploy; candidate differs from base only in the entry chunk (hash-normalised). Tests: Phase E 58/58 + priority-tenant (whitecross/herohairs root shapes) 10/10; full suite identical failure set on base and candidate (59, location-dependent). Details: SELF_SERVICE_TRIAL_LIFECYCLE.md §20.
+- **Verified:** served entry `index-C_udhIPJ.js` (`text/javascript`, same name as the reviewed candidate build) carries `salownGetBillingSnapshot` / `salownRequestDataExport` / `salownGetDataExportStatus` (all live) and no `salownCreateBillingCheckout` / `salownSuperAdminTenantStatus`; `/app/dashboard`, `/app/data-export`, `/book/whitecross` 200 html; `staff-bundle/**` 302 (not on salown). `salown-staff` (`16dccd90dbc1de49`) and `salown-admin` (`0252b1bb2347e864`) unchanged. `tenantDataExports` 0 docs, export bucket 0 objects.
+- **Not observed live:** an authenticated owner screen (no login was used). Legacy behaviour (whitecross, herohairs) is covered by the render tests; owner should open the panel once.
+- **Rollback (not run):** Console → Hosting → `salown` → Release history → `1a760e32940a57e5` → ⋮ → Roll back.
+- **Next (separate approval):** whitecross real export smoke via `salown.com/app/data-export`. Open: no sidebar link to the new pages; port `priorityTenants.render.test.tsx` to main; HeroHairs `trialEndsAt` cleanup via Super Admin plan editor.
+
 ## R-2026-10-06-A — `ONB-PE-GATE3C`: `salownRequestDataExport` (new callable) — **EXPORT ACTIVATION** · 1 unit (`functions:salown`, europe-west2) · **DEPLOYED_VERIFIED**
 - **Approval:** owner, 2026-10-06: "Gate 3C aktivasyonunu onaylıyorum. Güncel drift kontrolü geçerse yalnız pinlenmiş 3C wrapper'ıyla salownRequestDataExport fonksiyonunu deploy et. Gerçek export testi yapma."
 - **Source:** candidate **`badae4b910caf794cef54eb0eed50483529784af`** (parent = 3B candidate `9a438a74`; src tree `e056a005` = PE3B-reviewed tree), fn tree `35c4c4d8…`; exception `onb-pe-export-3c`; tooling `f7e22664` (wrapper pinned on `live-after-3b.json`).
