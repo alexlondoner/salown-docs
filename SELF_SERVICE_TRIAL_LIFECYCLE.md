@@ -905,3 +905,36 @@ No job exists or can be created until 3C; 0 invocations. 3C is the activation bo
 **3C live (`R-2026-10-06-A`, 2026-10-06) — export backend ACTIVE:** `salownRequestDataExport` `-00001-xac`. An
 authenticated owner can now create a real export. No real export has been run; no UI calls it yet. Next: Phase E
 Admin/Staff UI release and an owner smoke export, each with its own approval.
+
+---
+
+## 20. Phase E Admin release candidate (`ONB-PE-ADMIN`, READY_FOR_EXPLICIT_PHASE_E_ADMIN_APPROVAL, 2026-10-06 — nothing deployed)
+
+**Owner direction (2026-10-06):** demo tenants get no smoke ceremony; whitecross and herohairs are the tenants that matter. Option 2: release the Admin surfaces first, then one real export smoke on whitecross **through the panel**, with its own approval. Staff paused UI and Super Admin lifecycle UI are separate candidates with separate approvals; Super Admin is not planned while `salownSuperAdminTenantStatus` is not live.
+
+### 20.1 Candidate
+
+- Live `hosting:salown` = `1a760e32940a57e5` (released 2026-09-30T23:19:59Z, `R-2026-10-01-B`, base `789aa9ce`). No drift: the `git archive` build of `789aa9ce` matches salown.com **95/95** deployed files (`schema.html` is in `ignore`, not served from the build).
+- Branch `release/onb-pe-admin-on-live-789aa9ce` @ **`05c61c5c`** (pushed; not on main) = `789aa9ce` + the `src/` hunks of `f9e5afec`, `2362a261`, `483a5586` + one new test. All `src/billing/*`, `AppRouter.tsx` and the i18n files are byte-identical to `origin/main`; `PanelLayout.tsx` differs from main only by main's unrelated BUSINESS-TYPE line (kept out).
+- **Not carried:** Staff paused screen (`62891cb1`), Staff revenue fix (`a33a8d8c`), Super Admin, Phase D/D2, scheduler/ONB-P1-WIRE, rules, Stripe/Phase F, any `functions/` source.
+- Build diff (hashes normalised): 96 vs 96 files, **95 identical**, only `public-bundle/assets/index-*.js` changes (1,321,023 → 1,353,263 B).
+- Entry-chunk scan: `salownGetBillingSnapshot` / `salownRequestDataExport` / `salownGetDataExportStatus` present (all three live: Gate 2, 3C, 3A); `salownCreateBillingCheckout`, `salownSuperAdminTenantStatus`, `tenantBilling`, `trialReminders`, `stripePriceId`, price literals (£29/£69/£149) absent.
+- Navigation: the normal panel has **no sidebar entry**; an owner reaches the pages at `/app/billing`, `/app/data-export`, `/app/support` (the RestrictedShell has its own nav). A sidebar link would be a separate change.
+
+### 20.2 Tests (workspace with a test-only overlay of the live functions modules from `badae4b9`, not committed)
+
+- Phase E Admin suites 58/58 + new `src/billing/priorityTenants.render.test.tsx` 10/10: the real AppRouter with the **whitecross and herohairs production root shapes** (all top-level key names; gate values as stored: `status:'active'`, no `lifecycle`, plan `Pro+`; herohairs with its past legacy `trialEndsAt`) → panel opens, snapshot never called, no banner, deep links not redirected, no write; `/app/data-export` reachable by owner and only talks to the two live export callables; admin and staff redirected with no export call.
+- Full suite: base `789aa9ce` 59 failed / 6223 passed; candidate 59 failed / 6291 passed — **identical failure set** (9 location/sibling-dependent files: ops ownership/rules-authority, scripts screen tests, Kadim/rota/staffLifecycle utils).
+- Follow-up: port `priorityTenants.render.test.tsx` to main.
+
+### 20.3 Whitecross export estimate (read-only, aggregation counts only; no second production ZIP)
+
+~7,400 top-level docs (bookings 2,044 · clients 517 · auditLogs 4,450 upper bound for activity · finance ~300 · services 27 · rest small) + ≤ ~740 nested (campaignsSent ≤ 645, rotaEntries ≤ 78, redemptions ≤ 17) + ~2,570 per-parent subcollection queries (bookings→advances, clients→campaignsSent, run sequentially by the builder). Estimate: ~10–11k document reads (negligible cost); raw JSON/CSV ~4–6 MB → ZIP ~1–1.5 MB (tr-demo compressed to 25 %); wall time ~1–3 min, inside the 540 s timeout and 9-min lease; memory far below 1 GiB. Uses whitecross's 7-day export allowance. Owner auth: claim `tenantRole:'owner'` (+ `superAdmin`, irrelevant to export), staff doc role owner, access allowed, root capability `data-export` true.
+
+### 20.4 Approved-deploy plan (NOT approved)
+
+1. Re-read live `hosting:salown`; abort if ≠ `1a760e32940a57e5`.
+2. From the `git archive` workspace `~/release-work/onb-pe-admin/cand/salown-app` (built, isolated node_modules): `firebase deploy --only hosting:salown --project havuz-44f70`.
+3. Verify: served entry chunk == candidate build; other 95 files unchanged; `/app/dashboard` loads for the owner session without a banner; no authenticated export call.
+4. Rollback: `firebase hosting:clone salown:@1a760e32940a57e5 salown:live`.
+5. Then, with its own approval: owner opens `salown.com/app/data-export` on whitecross and requests one export.
