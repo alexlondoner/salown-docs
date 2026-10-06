@@ -936,5 +936,5 @@ Admin/Staff UI release and an owner smoke export, each with its own approval.
 1. Re-read live `hosting:salown`; abort if ≠ `1a760e32940a57e5`.
 2. From the `git archive` workspace `~/release-work/onb-pe-admin/cand/salown-app` (built, isolated node_modules): `firebase deploy --only hosting:salown --project havuz-44f70`.
 3. Verify: served entry chunk == candidate build; other 95 files unchanged; `/app/dashboard` loads for the owner session without a banner; no authenticated export call.
-4. Rollback: `firebase hosting:clone salown:@1a760e32940a57e5 salown:live`.
+4. Rollback: Console → Hosting → site `salown` → Release history → version `1a760e32940a57e5` → ⋮ → Roll back (by version id; `hosting:clone` takes `siteId:channelId` and is not a rollback tool).
 5. Then, with its own approval: owner opens `salown.com/app/data-export` on whitecross and requests one export.
