@@ -41,6 +41,24 @@ Every incident opens with `## YYYY-MM-DD — short title`, immediately followed 
 
 **Tag dictionary (CANONICAL — only these; sprawl forbidden):** `#security` `#stripe` `#secrets` `#config` `#deploy` `#normalization` `#permission` `#race` `#timezone` `#parser` `#email` `#data-loss` `#shared-infra`. A new tag is added only if a genuinely new class emerges (e.g. twins like `#payment`+`#payments`+`#stripe-payment` are FORBIDDEN → all `#stripe`). Every entry carries a `**Tags:**` line.
 
+## 2026-10-07 — Phase E Staff paused gate released without approval inside the notification-click fix
+
+**Severity:** 🟡 Medium · **Owner:** alish/onb-pe-staff · **Status:** ✅ Resolved (ratified by the owner 2026-10-07, `R-2026-10-07-A`; no rollback, no deploy) · **Affected area:** release process — `hosting:salown-staff`
+
+**Discovery:** Phase E Staff release preflight (2026-10-07) — the live bundle already contained the gate the preflight was meant to add.
+**Impact:** an unreviewed product change (the ONB-PE Staff "account paused" gate) was live on staff.salown.com from 2026-10-05 20:59 UK without its own approval. No user impact observed: 0 of 9 tenants have `lifecycle` or `status: "suspended"`, so every tenant takes the legacy path (no snapshot call, no gate screen); whitecross and herohairs unchanged.
+**Root Cause:** `STAFF-NOTIF-CLICK-FIX-P2` (`hosting:salown-staff` `16dccd90dbc1de49`) was built from main `a6900114` + one `sw.js` change (`3205587d`) instead of from the live Staff lineage `7fee8311`. Main carried `62891cb1` (Phase E Staff gate, PUSHED_NOT_DEPLOYED). A "one-file" release built from main ships everything main has for that target.
+**Bug Class:** Release lineage (deploy from main ≠ deploy from live).
+**Resolution:** read-only proof (rebuild of `3205587d` == served 25/25; `useBillingGate` in StaffApp 0 at `7fee8311`, 2 at `3205587d`); all Phase E / revenue / Today card / notification-click / Staff release gates re-run on the live source and green; owner ratified the live state 2026-10-07. Live stays `16dccd90dbc1de49`. Rollback `6c2c6d4d8c49b10c` would also remove the tap fix.
+**Prevention:** every Staff release names its live source (`hosting:salown-staff` version → source SHA) and builds from it, with only the approved change applied; the release record must state the live-vs-candidate source diff for `src/staff/**` and anything it imports — a release that is "one file" in git but is built from main is not one file. Next Staff release builds on `3205587d`.
+**Regression Tests:** `src/billing/staffPhaseE.preflight.render.test.tsx` (legacy priority tenants, fail-closed states, no cross-sign-in state) · `src/staff/swNotificationClick.test.ts` (tap routing, both data shapes) — salown `a346f99c`.
+**Related:** commits `62891cb1` · `a6900114` · `3205587d` · `a346f99c` · ledger `R-2026-10-07-A` · roadmap `ONB-PE-SURFACES` · files `src/staff/StaffApp.tsx`, `src/billing/useBillingGate.ts`, `public-staff/sw.js`
+**Tags:** `#deploy`
+
+**Lessons Learned:**
+- A Staff release's scope is the diff between the live source and the build source, not the commit that triggered it. Measure it before the deploy, against the hosting version's source.
+- "No user impact observed" here is a measurement (0/9 managed tenants), not an absence of looking — and it holds only while no tenant has a lifecycle.
+
 ## 2026-10-04 — Staff Today cards hid the price and status when the service name was long
 
 **Severity:** 🟡 Medium · **Owner:** alish/staff-revenue · **Status:** ✅ Resolved (`R-2026-10-04-A`, `hosting:salown-staff` `6c2c6d4d8c49b10c`) · **Affected area:** Staff app — Today schedule appointment cards
