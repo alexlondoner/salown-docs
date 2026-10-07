@@ -41,6 +41,24 @@ Every incident opens with `## YYYY-MM-DD — short title`, immediately followed 
 
 **Tag dictionary (CANONICAL — only these; sprawl forbidden):** `#security` `#stripe` `#secrets` `#config` `#deploy` `#normalization` `#permission` `#race` `#timezone` `#parser` `#email` `#data-loss` `#shared-infra`. A new tag is added only if a genuinely new class emerges (e.g. twins like `#payment`+`#payments`+`#stripe-payment` are FORBIDDEN → all `#stripe`). Every entry carries a `**Tags:**` line.
 
+## 2026-10-07 — Accidental Public Profile "Approve" during the HeroHairs trial cleanup
+
+**Severity:** 🟢 Low · **Owner:** alish/herohairs-trial-cleanup · **Status:** ✅ Resolved (accepted by the owner 2026-10-07; no rollback — not needed) · **Affected area:** operations — Super Admin tenant drawer (`salown-admin`)
+
+**Discovery:** post-execution read-only verifier of `R-2026-10-07-C` — two baseline checks failed (`profilePublishedAt`, `public/profile` updateTime); Cloud Logging showed a `salownReviewProfile` call 7 s after the planned save; owner confirmed it was a mis-click.
+**Impact:** none for customers or the salon. HeroHairs' public profile was re-published from the same data: content unchanged, still `published`; only the publish timestamps moved to 2026-10-07 13:29:30Z. No notification or email; `public/booking` unchanged. Not a security event.
+**Root Cause:** the Super Admin tenant drawer puts the one-click, unconfirmed Public Profile "Approve" button in the same panel as "Save plan"; a planned single-field operation was done in that drawer.
+**Bug Class:** Operator UX (unconfirmed action next to the planned control).
+**Resolution:** detected by the baseline diff + logs; owner accepted; recorded in ledger `R-2026-10-07-C`. Audit trail complete (`superAdmin/auditLog` `oZM4JNhSnOsnnSAsATGD`, `tenants/herohairs/auditLogs` `RqnafXJhF47Db6yEK0Zu`).
+**Prevention:** production data operations through the Super Admin console keep a frozen baseline + a read-only post-verifier that diffs every touched document (this caught it). Candidate UX fix (not scheduled): confirm step on "Approve" when the profile is already `published`.
+**Regression Tests:** yok (operator action; no code defect).
+**Related:** ledger `R-2026-10-07-C` · roadmap `ONB-PE-SURFACES` · files super-admin `src/pages/Tenants.jsx` (`reviewProfile`, `savePlan`)
+**Tags:** `#config`
+
+**Lessons Learned:**
+- A frozen baseline that covers neighbouring documents (not only the target field) is what turns "something else happened" into a measured, attributable diff.
+- In a console where every button writes production, the planned click is not the only click — verify the whole drawer's blast radius, not just the intended write.
+
 ## 2026-10-07 — Phase E Staff paused gate released without approval inside the notification-click fix
 
 **Severity:** 🟡 Medium · **Owner:** alish/onb-pe-staff · **Status:** ✅ Resolved (ratified by the owner 2026-10-07, `R-2026-10-07-A`; no rollback, no deploy) · **Affected area:** release process — `hosting:salown-staff`
