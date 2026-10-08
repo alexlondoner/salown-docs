@@ -41,6 +41,26 @@ Every incident opens with `## YYYY-MM-DD — short title`, immediately followed 
 
 **Tag dictionary (CANONICAL — only these; sprawl forbidden):** `#security` `#stripe` `#secrets` `#config` `#deploy` `#normalization` `#permission` `#race` `#timezone` `#parser` `#email` `#data-loss` `#shared-infra`. A new tag is added only if a genuinely new class emerges (e.g. twins like `#payment`+`#payments`+`#stripe-payment` are FORBIDDEN → all `#stripe`). Every entry carries a `**Tags:**` line.
 
+## 2026-10-08 — Appointment reminder showed a raw service id (REMINDER-SERVICE-LABEL-P0)
+
+**Severity:** 🟠 High · **Owner:** alish/campaign-loyalty · **Status:** ✅ Resolved 2026-10-08 (`R-2026-10-08-B`, `salownsendreminder-00015-lef`) · **Affected area:** customer email — `salownSendReminder` (appointment reminder)
+
+**Discovery:** call-site scan written for the abandoned-cart hotfix (`abandonedCartEmail.test.js` › scan, `todo`), then confirmed against the LIVE revision `-00014-vuf` — not a customer report.
+**Impact:** a reminder for a booking whose service id missed the catalogue showed the Firestore document id as the service in the subject ("Reminder — LGV4DKn15ZQAkPKiEQzW | …") and the body. Same leak as the 2026-10-08 abandoned-cart incident; no data changed.
+**Root Cause:** identical to the abandoned-cart entry below: live source `bd259e0a` passed `b.serviceId || b.service` to the legacy `resolveServiceName` as the `service` field, whose last rung (`prettifyServiceId`) returns any value without `-`/`_` verbatim. Both callables were moved behind K4 in the same release (`R-2026-10-02-C`) and share the source — so they shared the bug.
+**Bug Class:** Identity leak to display — machine identifier used as display text (same class, second caller).
+**Resolution:** `R-2026-10-08-B` — candidate `da46a086` on `bd259e0a` deployed as `salownsendreminder-00015-lef`: reminder built by `emails/reminderEmail.ts` from the server-read record with `resolveServiceLabel`; everything else moved verbatim and proven byte-identical to the old code. DEPLOYED_VERIFIED (zip == workspace 85/85, deployed-lib fixtures, anon 401, only this function changed). Main `05951a75`.
+**Prevention:** the call-site scan now lists only the remaining legacy caller class (`salownSendCancellationEmail` + the two token flows); a caller cannot leave that list unnoticed and cannot join it without failing the test. Move-verbatim + byte-equality against the old code is the pattern for a label-only hotfix on a live lineage.
+**Regression Tests:** `functions/src/emails/reminderEmail.test.js` (8 — auto-id + catalogue hit, miss, snapshot vs rename, forged request, byte-equality ×8 fixtures, K4 wiring, authority sha pin); mutation gate `ops/mutation/reminderLabel.mutation.sh` 16/16.
+**Related:** `R-2026-10-08-B` · candidate `da46a086` · main `05951a75` · INCIDENTS 2026-10-08 (abandoned cart) · ROADMAP `REMINDER-SERVICE-LABEL` / `CANCELLATION-SERVICE-LABEL`
+
+**What happened / Diagnosis / Fix:** The abandoned-cart scan named the reminder; reading the live revision confirmed `-00014-vuf` runs `bd259e0a` (src 37/37 byte-identical incl. tests, package + lock equal). Because the reminder carries more content than the abandoned-cart mail (Europe/London date/time, hours-until, location, manage link), the fix moved the inline code verbatim into a builder with one seam (`nowMs`) and pinned it with a test that runs a VERBATIM copy of the old inline code beside it: wherever the old label was already right, subject and html are byte-identical. A first mutation run left one survivor — dropping `timeZone: 'Europe/London'` from the date — because no fixture had a London date different from its UTC date; a 23:30Z fixture closed it. The suite runs under `TZ=UTC`, the Cloud Functions zone. Cancellation (`-00106-gik`, `b69d60c0`) is id-safe but loses the catalogue name — separate P1, not in this release.
+
+**Lessons Learned:**
+- When two callables share a source and a release, a bug in one is a bug in the other until proven otherwise — scan every caller of the shared helper in the same session.
+- For a hotfix that must change one field of a rich email, move the old code verbatim and test byte-equality against an untouched copy of it; "looks the same" is not evidence.
+- A timezone assertion only means something when the process zone differs from the target zone and a fixture straddles midnight.
+
 ## 2026-10-08 — "Your spot is still warm" email showed a raw service id (ABANDONED-CART-SERVICE-LABEL-P0)
 
 **Severity:** 🟠 High · **Owner:** alish/campaign-loyalty · **Status:** ✅ Resolved 2026-10-08 (`R-2026-10-08-A`, `sendabandonedcart-00015-tex`) · **Affected area:** customer email — `sendAbandonedCart` ("Send 'Finish your booking'" in the booking detail panel)
