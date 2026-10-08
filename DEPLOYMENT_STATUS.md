@@ -94,6 +94,15 @@
 ---
 
 
+## 2026-10-08 — S8-TENANT-PROTECTED-FIELDS Firestore rules (`R-2026-10-08-C`)
+
+| Unit | Source | Live identity | Rollback |
+|---|---|---|---|
+| `firestore:rules` (`cloud.firestore`) | salown-app candidate **`2e3d1b11`** (live lineage `65b6efdb` + S8 hunk only; main `b06c8b77`) | ruleset `197cadb7-faee-44f0-b2d8-ec4bcd113990`, sha256 `e6af654b…` (== candidate) | re-release `b8248c6f-7760-4250-b7c9-7abeed9f32fe` |
+
+- DEPLOYED_VERIFIED: served bytes == candidate; rules gate on served bytes 14 suites 285/285; Storage rules, hosting (10 sites), 129 functions, IAM, tenant-root data unchanged. **Main ≠ live for rules:** main additionally carries ONB-PD (suspended deny, TRIAL_GRACE, `tenantAcceptsPublicBookings`) — gated, NOT deployed. Next rules release builds on `2e3d1b11`.
+- `treatwellIcal` stays tenant-writable on the public root only for current UI compatibility → `TREATWELL-ICAL-URL-EXPOSURE-P0`.
+
 ## 2026-10-04 — ONB-PE Gate 2 `salownGetBillingSnapshot` (`R-2026-10-04-B`)
 
 | Unit | Source | Live identity | Rollback |
