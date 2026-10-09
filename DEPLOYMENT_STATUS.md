@@ -12,7 +12,9 @@
 >
 > ---
 >
-> ### 📍 CURRENT — **2026-10-09 `R-2026-10-09-C` — `TREATWELL-ICAL-URL-EXPOSURE-P0` rules half DEPLOYED_VERIFIED; P0 CLOSED**: `cloud.firestore` is **`5cd05ad1-8269-4323-a23c-af588db90a65`** (source `b356957d`, on live `2e3d1b11`; rollback `197cadb7`). With `R-2026-10-09-A` (hosting:salown `1efe68e0df5fcf11`). Staff hosting is `3f93007c9682cbb8` (Membership, owner-approved). The next rules release builds on `b356957d`.
+> ### 📍 CURRENT — **2026-10-09 `R-2026-10-09-D` — `MEMBERSHIP-CONSISTENCY-P0` Admin half DEPLOYED_VERIFIED**: `hosting:salown` is **`0faeec280c7e74a5`** (source **`f71ba3d2`** = Treatwell `4e5e4fcf` + membership B/C; rollback `1efe68e0df5fcf11`). Staff `3f93007c9682cbb8` (`R-2026-10-09-B`), `cloud.firestore` `5cd05ad1` (`R-2026-10-09-C`). The next Admin release builds on `f71ba3d2`.
+>
+> ### PREVIOUS — **2026-10-09 `R-2026-10-09-C` — `TREATWELL-ICAL-URL-EXPOSURE-P0` rules half DEPLOYED_VERIFIED; P0 CLOSED**: `cloud.firestore` is **`5cd05ad1-8269-4323-a23c-af588db90a65`** (source `b356957d`, on live `2e3d1b11`; rollback `197cadb7`). With `R-2026-10-09-A` (hosting:salown `1efe68e0df5fcf11`). Staff hosting is `3f93007c9682cbb8` (Membership, owner-approved). The next rules release builds on `b356957d`.
 >
 > ### PREVIOUS — **2026-10-09 `R-2026-10-09-B` — `MEMBERSHIP-CONSISTENCY-P0` Staff half DEPLOYED_VERIFIED**: `hosting:salown-staff` is **`3f93007c9682cbb8`** (source **`76a69ea9`** on live `0d266506`; rollback `8829f15d9c5b6aa4`). The Membership Admin half (`f71ba3d2` on `4e5e4fcf`) awaits separate approval. The next Staff release builds on `76a69ea9`.
 >
