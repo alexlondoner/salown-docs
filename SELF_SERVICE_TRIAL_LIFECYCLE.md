@@ -3,7 +3,7 @@
 **Work ID:** `ONB-P1-TRIAL-LIFECYCLE` · **Status:** Phase 1 (A + B + C), D (§12), D2 (§13), E (§14) and E2 (§15) `PUSHED_NOT_DEPLOYED`. F is specified (§10, exact contracts §14.6) and not started.
 **Owner decisions:** 2026-10-01. They are binding, and §1 restates them.
 
-> **SUPERSEDED IN PART — owner decision 2026-10-10 (trial length).** The trial is **90 tenant-local calendar days**, not 30: the product keeps the length it has always given. It still starts once, only in the successful activation transaction, from one server-owned constant (`inviteCore.TRIAL_POLICY`, `{ trialDays: 90 }` on `work/owner-invite-r1` `b22d6815`; main still carries 30 until that branch is integrated). A value from the UI or a request is never read. Every "30 days" below describes the superseded length; grace (3 days), the reminder milestones (D-7 / D-3 / D-1 / D0) and everything else in this document are unchanged. Tests: `inviteCore.test.js`, `inviteCallables.test.js` (DST: autumn +1 h, spring −1 h, ambiguous and missing wall-clock hours), mutations `trialLifecycle` M14/M15 and `ownerInvite` U01/U02.
+> **SUPERSEDED IN PART — owner decision 2026-10-11 (trial length).** The trial is **14 tenant-local calendar days** (this supersedes both the 30 this document was written with and the 90 decided on 2026-10-10). It still starts once, only in the successful activation transaction, from one server-owned constant (`inviteCore.TRIAL_POLICY`, `{ trialDays: 14 }`, live since `R-2026-10-11-D` and on main since `86b37588`). The two legacy creators that have no activation step (`provisionTenant`, legacy `approveApplication`) start the same 14 local days at tenant creation from `utils/legacyTrialStart.ts` (`SAAS-TRIAL-14D-COMPAT`, candidates prepared 2026-10-12, not deployed — until each is released they still grant 90 machine days). A value from the UI or a request is never read. Every "30 days" / "30-day" below describes the superseded length and reads as 14; grace (3 days), the reminder milestones (D-7 / D-3 / D-1 / D0) and everything else in this document are unchanged. Tests: `inviteCore.test.js`, `inviteCallables.test.js` (DST: autumn +1 h, spring −1 h, ambiguous and missing wall-clock hours), mutations `trialLifecycle` M14/M15 and `ownerInvite` U01/U02.
 **Code:** `salown-app/functions/src/onboarding/trialLifecycle.ts` (pure core), `trialMessages.ts` (copy), `trialStore.ts` (Firestore store and sweep), and `inviteStore.ts` (the activation transaction, which writes the SSOT). The mutation gate is `salown-app/ops/mutation/trialLifecycle.mutation.sh`.
 
 Nothing in Phase 1 is exported from `functions/src/index.ts`, nothing changes `firestore.rules`, and nothing writes to production. The job and the email transport are wired in a separate step that the owner must approve (§7).
@@ -12,7 +12,7 @@ Nothing in Phase 1 is exported from `functions/src/index.ts`, nothing changes `f
 
 ## 1. Owner decisions (2026-10-01)
 
-1. A new activation gets a **30-day** trial. The value comes from `TRIAL_POLICY.trialDays` and is defined in one place only.
+1. A new activation gets a **14-day** trial (owner 2026-10-11; originally written as 30). The value comes from `TRIAL_POLICY.trialDays` and is defined in one place only.
 2. The trial starts **only** in the successful activation transaction. It never starts at approval, at provisioning or on a resend.
 3. `trialStartedAt` is immutable. A retry never restarts the trial.
 4. `trialEndsAt` is computed on the server.

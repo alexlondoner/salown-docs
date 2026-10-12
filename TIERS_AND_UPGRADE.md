@@ -13,7 +13,7 @@
 
 ## ⚠️ Superseding owner decision — self-service pricing (2026-10-03)
 
-For **new self-service tenants** (activation → 30-day trial → grace → suspended,
+For **new self-service tenants** (activation → 14-day trial (owner 2026-10-11; was 30) → grace → suspended,
 [SELF_SERVICE_TRIAL_LIFECYCLE.md](SELF_SERVICE_TRIAL_LIFECYCLE.md) §14):
 
 - **Starter £29/month** and **Pro £69/month** (GBP, monthly only) are the standard, market-referenced prices.
@@ -57,7 +57,7 @@ the self-service path.
 | Enforcement | SOFT — cap overage lets the operation through, just a nudge | `planLimits.ts:6-9`, `Settings.tsx:210-224` |
 | Plan assignment | **Only super-admin** — Tenants.jsx "Save plan" (writes `plan` + `trialEndsAt`, audit log) | `super-admin/src/pages/Tenants.jsx:576-600` |
 | Tenant self-serve | **NONE** — Settings only shows a FeatureLock nudge + booking-usage bar | `Settings.tsx:214`, `Settings.tsx:954-988` |
-| Tenant plan fields | `plan` (casing inconsistent → `normalizePlan`), `status` ('trial'\|'active'), `trialEndsAt` (+90 days at provision) | `tenant.ts:79-83`, `functions/src/index.ts:172` (provisionTenant) |
+| Tenant plan fields | `plan` (casing inconsistent → `normalizePlan`), `status` ('trial'\|'active'), `trialEndsAt` (live: +90 machine days at provision; owner decision 2026-10-11 = 14 tenant-local calendar days, `SAAS-TRIAL-14D-COMPAT` candidates prepared, not deployed) | `tenant.ts:79-83`, `functions/src/index.ts:172` (provisionTenant) |
 | Per-tenant override | `limitsOverride` (super-admin can give a tenant an off-plan cap/feature; additive) | `planLimits.ts:92-105`, `tenant.ts:61-66` |
 | Billing pipe | **NONE.** Stripe Connect exists but is for the tenant→**customer** deposit (`salownConnect*` / `salownCreateCheckoutSession`, `index.ts:3028-3443`). For salOWN to charge the tenant **as a subscriber**, a separate merchant pipe is needed. | `index.ts:3028-3443` |
 | Public pricing | Landing doesn't show prices; CTA is "Request a demo"→`#waitlist`. The `.pricing-grid` CSS is now dead. Tiers only as a soft tag in `features.html` ("Free forever" / "Included in Pro"). | `hosting/index.html:373`, `hosting/features.html:148-154` |
@@ -236,7 +236,7 @@ independently of Connect go-live but should be clarified under the same Stripe o
 
 ## Trial
 
-`provisionTenant` today gives a +90 day trial (`trialEndsAt`) but **trial end does nothing**
+`provisionTenant` today gives a +90 day trial (`trialEndsAt`; becomes 14 local days with `SAAS-TRIAL-14D-COMPAT`) but **trial end does nothing**
 (decorative). In Phase 1: Settings "Plan" shows the trial days-left badge + an upgrade nudge as the trial ends.
 In Phase 2: trial end → if no payment, drop to Free (or Stripe trial→subscription). Trial policy
 (duration, what happens at end) is a Phase 2 decision.
@@ -268,7 +268,7 @@ page is added; the matrix is derived from §3. Self-signup is preserved (memory 
 
 1. **Are prices final?** Starter £29 / Pro £69 in planLimits; will there be a yearly discount? Pro+ base price range?
 2. **Phase 1 approve → email template:** onboarding-like, or plain?
-3. **Trial policy:** is 90 days right; at end does it drop to Free, or is payment mandatory?
+3. **Trial policy:** ~~is 90 days right~~ **DECIDED 2026-10-11: 14 tenant-local calendar days**; still open: at end does it drop to Free, or is payment mandatory?
 4. **Fix the Pro+ premium site scope:** which SEO work is "included", which is extra?
 5. **Phase 2 timing:** before or after Connect go-live; same Stripe account?
 
