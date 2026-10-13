@@ -1,5 +1,14 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
+## R-2026-10-13-C — `SAAS-ONBOARDING-INVITE-ACCESS-P0`: owner-invite mail transport SPF re-measurement · 0 deployable units (**measurement record, not a deploy**) · **`TRACKING_FREE_SMTP_MEASUREMENT_PASS`, SPF pass**
+
+- **What:** one synthetic test message through the unmodified renderer + Google Workspace SMTP transport of candidate `4baa82911c47553389a28a9bba23de4afe1b982d`, operator workstation → owner test inbox, after the owner published `v=spf1 include:_spf.google.com ~all` for `salown.com` (`SALOWN-DNS-SPF-2026-10-13`). Approval `OWNER-INVITE-MAIL-MEASUREMENT-2026-10-13-C` (attempt 3, accepted 20:30:22Z). Secret versions `OWNER_INVITE_SMTP_USER` 2 / `OWNER_INVITE_SMTP_PASS` 1, in process memory only.
+- **Predecessor:** `R-2026-10-13-B` (attempt 2, SPF none) — superseded as the pinned measurement, kept on record; its local lock, send record, `.eml` and verdict archived as `measurement.attempt-20261013T152227Z.accepted.*`, not deleted.
+- **Result (raw MIME, verified offline):** **SPF pass**, `smtp.mailfrom` and Return-Path domain `salown.com` · DKIM pass `d=salown.com` · DMARC pass `header.from=salown.com` · From `salOWN <info@salown.com>` and Reply-To `info@salown.com` unchanged · 2 hrefs, only host `salown.com` · activation href, fragment and text URL unchanged · HTML byte-identical · no tracking host · no pixel. Delivered message sha256 `7c16e7be028583fcd54d2d6619eaa878809bc2620d1f6388c69b4ffebf78ebc6`.
+- **Record:** salown-app `work/owner-invite-smtp` `4647ac69` (tree `6ef146fd`, not merged to main) — evidence file + mail gate pinned to this message; verifier requires SPF / DKIM / DMARC for salown.com. SYNC: salown-app main `103a6b40`.
+- **Side effects:** none. No function, hosting or rules deploy; mail route stays `disabled`; no Firestore / Auth / tenant / invite record; no DNS change by this step.
+- **Does not authorise:** the dark transport release, the route release, R3, or any real invite email.
+
 ## R-2026-10-13-B — `SAAS-ONBOARDING-INVITE-ACCESS-P0`: owner-invite mail transport measurement · 0 deployable units (**measurement record, not a deploy**) · **`TRACKING_FREE_SMTP_MEASUREMENT_PASS`**
 
 - **What:** one synthetic test message through the unmodified renderer + Google Workspace SMTP transport (`google-workspace-smtp`, `smtp.gmail.com:465`) of candidate `4baa82911c47553389a28a9bba23de4afe1b982d` (tree `3cbe8c46`, `release/owner-invite-smtp-info-on-live-97c56f98`), sent from the operator workstation to the owner test inbox. Approval `OWNER-INVITE-MAIL-MEASUREMENT-2026-10-13-B` (attempt 2, accepted 15:22:27Z).
