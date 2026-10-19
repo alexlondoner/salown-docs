@@ -1,5 +1,17 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
+## R-2026-10-19-A — `ONLINE-EXTRAS-P1 r2 U2`: Admin Services → "Online extras" editor (service option layer only) · 1 unit (`hosting:salown`) · **LIVE — DEPLOYED_VERIFIED; window clean, no verification exception**
+
+- **Approval:** `ONLINE-EXTRAS-P1R2-U2-HOSTING-BA380C08-2026-10-19` + `ACK_P1R2_U2_SCOPE=ADMIN_EDITOR_ONLY_NO_PILOT_OR_MIRROR_WRITE` (spent). Candidate salown-app `release/online-extras-p1r2-u2-on-live-2c6e00b6` **`ba380c08594c34f7c88c3f61374f66ead191092d`** (tree `9bca7c73`), 5 commits on `2c6e00b6` (= source of `44c2640cbacaba36`), 7 files; supersedes `22636d34` (review F1 allowlist seed = applicable layers only, F2 inactive/malformed extras locked).
+- **Live:** hosting:salown `44c2640cbacaba36` → **`45a8ee73341851c9`** (release 2026-10-19T08:00:52Z, message carries approval + release id). Served 97/97 == candidate build; version config == frozen (8 headers · 2 redirects · 20 rewrites); 18-route route/redirect/header/cache contract == frozen (re-measured again at 08:33Z).
+- **Artefact vs the previous live served bytes:** 68 identical · 28 rename-only (hash cascade; index.html + entry chunk with /book, ManageBooking, payment, membership) · **1 content change: the Services chunk** (42,341 → 51,099 B).
+- **Pre-deploy gates (same run, fresh `git archive` workspace, own `npm ci`, CLI 15.26.0):** pins · next free id A · U1 functions-first pin (both revisions, archive `aa31b409`, config, trigger, Eventarc 27+2) · live 44c2640c == base 97/97 · neighbours == frozen · G1 vitest failing set == base (9) · G2 editor 53/53 · G3 save emulator 5/5 · G4 tsc 18 == base · G5 eslint source set == base (845), changed files 0 · G6 offline hosting config == live.
+- **Post-deploy:** outside hosting:salown unchanged — 144 functions, rules, scheduler, indexes/TTL, project IAM, Cloud Run + IAM, custom domains, DNS, the other 9 sites incl. salown-staff; U1 unchanged; mirrors `public/bookingOptions` 0/11 → 0/11.
+- **Window** 08:00:52Z → 08:33:26Z vs 07:32:00Z → 08:00:52Z: project-wide 0 ERROR+ in both; Cloud Run requests all 200/204 (schedulers as before + `admingetowneractivity` 2×200/2×204, `salowngetbusyslots` 1×200/1×204, `salownbrevowebhook` 1×200); U1 publishers 0 invocations. No verification exception.
+- **Rollback (not automatic):** `u2-kit/rollback-u2.sh --rollback` under `ONLINE-EXTRAS-P1R2-U2-HOSTING-ROLLBACK-<date>` → re-release `44c2640cbacaba36` (FINALIZED, config == frozen).
+- **Record:** local evidence `~/release-work/online-extras-p1r2-u2/runs/u2-deploy-20261019T075430Z/` (`LIVE.u2.candidate.json`).
+- **Main:** NOT integrated. **Does not authorise:** the pilot service save (separate approved data write), mirror creation, P2, main integration, the rollback.
+
 ## R-2026-10-18-B — `ONLINE-EXTRAS-P1 r2 U1`: two Firestore-trigger publishers create `tenants/{t}/public/bookingOptions` · 2 units CREATED (`functions:salown:salownPublishPublicBookingOptions`, `…OnService`) · **LIVE — DEPLOYED_VERIFIED (read-only post-verify after the Eventarc verifier fix); window clean, no verification exception**
 
 - **Approval:** `ONLINE-EXTRAS-P1R2-U1-FN-AA31B409-2026-10-18` + `ACK_P1R2_U1_CREATES=TWO_FIRESTORE_TRIGGERS_PUBLIC_MIRROR_WRITES` (spent). Candidate salown-app `release/online-extras-p1r2-u1-on-live-98cce922` **`aa31b409242d17f28bf6505292cabf116d562fb7`** (tree `d8c69920`), 6 commits on `98cce922`, 11 files.
