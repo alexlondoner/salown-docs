@@ -41,6 +41,25 @@ Every incident opens with `## YYYY-MM-DD — short title`, immediately followed 
 
 **Tag dictionary (CANONICAL — only these; sprawl forbidden):** `#security` `#stripe` `#secrets` `#config` `#deploy` `#normalization` `#permission` `#race` `#timezone` `#parser` `#email` `#data-loss` `#shared-infra`. A new tag is added only if a genuinely new class emerges (e.g. twins like `#payment`+`#payments`+`#stripe-payment` are FORBIDDEN → all `#stripe`). Every entry carries a `**Tags:**` line.
 
+## 2026-10-19 — Live credentials inside GCF source archives (SEC-INC-SECRETLOCAL)
+
+**Severity:** 🔴 Critical · **Owner:** owner + alish · **Status:** 🟡 Open (rotation prepared, not applied) · **Affected area:** functions deploy packaging / Secret Manager / Brevo, Anthropic, Google OAuth, Telegram credentials
+
+**Discovery:** ONLINE-EXTRAS P2 final check-only — the TOKEN live-archive byte comparison listed an untracked `.secret.local`; a read-only audit (names, shapes and truncated SHA-256 fingerprints only; no value ever printed) followed.
+**Impact:** live production credentials sat in project-readable (not public) source archives since 2026-07-31; GCS data-access logs are off, so past reads cannot be ruled out.
+**Root Cause:** deploys made before the A1.3 ignore policy used `ignore: ["node_modules", ".git"]`, which REPLACES the CLI default, so the whole local `functions/` dir was zipped — including `functions/.secret.local` (emulator secrets file, gitignored, therefore invisible to `git status`). Whitecross deploys likewise shipped an untracked helper `get-gmail-token.js` with a hard-coded OAuth client secret; an April archive of `onBookingCreated` had a Telegram bot token in `index.js`.
+**Bug Class:** Packaging ≠ git tree (gitignored file shipped by the deploy archiver)
+**Resolution:** OPEN. Scope (2026-10-19 re-scan of all 274 generations, `~/release-work/sec-inc-brevo/runs/rescan-*`): `BREVO_API_KEY` v1 + `ANTHROPIC_API_KEY` v1 (both == current Secret Manager) in 23 generations / 19 live functions; `GMAIL_CLIENT_SECRET` (v1–v2) in 71 generations / 28 live whitecross functions; `WC_TELEGRAM_TOKEN` (v1–v3, v3 bound to 4 live WC functions) in 1 noncurrent generation. Git history (5 repos, all objects) clean. Brevo rotation kit prepared (`~/release-work/sec-inc-brevo/README.md`): 16 units / 23 functions, each redeployed from its archive-matched live commit with a scanner-proven clean upload set; v1 stays ENABLED until a 23/23 @2 gate. Telegram, Anthropic, Google OAuth rotations follow.
+**Prevention:** A1.3 ignore list (main) + `scripts/functionsArchiveManifest.cjs`; the rotation kit adds a central fail-closed upload policy, an archive scanner (forbidden names, credential shapes, known fingerprints; mutation-tested, 9/9 mutants killed) on every upload set and every new live archive, and `fetch_archive` that never keeps a zip or secret-like file on disk.
+**Regression Tests:** `~/release-work/sec-inc-brevo/tools/test/test_archive_scan.py`, `scanner_mutants.py`, `test_kit_static.sh` (kit-local, not yet in a repo)
+**Related:** roadmap SEC-INC-SECRETLOCAL · candidate branches `sec/brevo-rotation-*` (salown-app, whitecross-site) · `scripts/functionsArchiveManifest.cjs` header claim "NOT in the live archive" is wrong and must be corrected
+
+**Lessons Learned:**
+- A deploy archive is the source DIRECTORY, not the git tree; "it is gitignored" protects nothing. Compare ALL archive files against git, and list strays by name only.
+- Firebase `functions:secrets:set` re-points every function AND destroys "stale" versions — never use it for a rotation with a rollback window; add the version with `gcloud secrets versions add --data-file=-` and redeploy targeted.
+- Secrets bound by pinned version make "disable v1" an outage for every unrebound function and for every traffic rollback onto a v1 revision: gate the disable on 23/23 rebinding.
+- An audit that greps for known shapes misses unknown shapes (the OAuth client secret was found only on the second pass): scan for credential shapes AND exact fingerprints of known leaked values.
+
 ## 2026-10-08 — Appointment reminder showed a raw service id (REMINDER-SERVICE-LABEL-P0)
 
 **Severity:** 🟠 High · **Owner:** alish/campaign-loyalty · **Status:** ✅ Resolved 2026-10-08 (`R-2026-10-08-B`, `salownsendreminder-00015-lef`) · **Affected area:** customer email — `salownSendReminder` (appointment reminder)
