@@ -1,5 +1,14 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
+## R-2026-10-20-C — `SEC-INC-SECRETLOCAL` Brevo rotation W1 · unit `LANDING`: rebind BREVO_API_KEY @1 → @2 from the live lineage, clean upload set · **LIVE — DEPLOYED_VERIFIED + OBSERVED_CLEAN (15 min)**
+
+- **Approval:** `SEC-INC-SECRETLOCAL-BREVO-W1-E08FE0CB-2026-10-20` + `ACK_SEC_BREVO_LANDING=BREVO_V1_TO_V2__MAX20_RESET__FUNCTION_REGION_ADDED` (owner, 2026-10-20).
+- **Candidate:** `5dea0898` · deployed 2026-10-20T16:13:31Z · new revision(s): salownLandingChat=salownlandingchat-00003-bas
+- **Rollback (v1 traffic, only while SM v1 ENABLED):** salownLandingChat=salownlandingchat-00002-loc — `rollback-fn.sh LANDING --v1-traffic` under its own approval.
+- **Verified:** gates G0–G6, bindings == live with BREVO_API_KEY@2, Ready + 100 % traffic, config == frozen + ACK items, new source archive scanner 0 hits, lib identical, 144-function inventory + neighbours unchanged, SM unchanged; observe.sh 15 min 0 ERROR / 0 secret-startup failures.
+- **Record:** `~/release-work/sec-inc-brevo/state/LANDING.verified` + `.observed`, `runs/deploy-LANDING.txt`. No email sent by Claude.
+- **Does not authorise:** W2/W3, SM v1 disable/destroy, deleting the old Brevo key.
+
 ## R-2026-10-20-B — `SEC-INC-SECRETLOCAL` Brevo rotation W1 · unit `WAITLIST`: rebind BREVO_API_KEY @1 → @2 from the live lineage, clean upload set · **LIVE — DEPLOYED_VERIFIED + OBSERVED_CLEAN (15 min)**
 
 - **Approval:** `SEC-INC-SECRETLOCAL-BREVO-W1-E08FE0CB-2026-10-20` + `ACK_SEC_BREVO_WAITLIST=BREVO_V1_TO_V2__TIMEOUT60_RESET__MAX20_RESET` (owner, 2026-10-20).
