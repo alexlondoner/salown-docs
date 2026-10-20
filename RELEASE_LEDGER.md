@@ -1,5 +1,14 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
+## R-2026-10-20-A — `SEC-INC-SECRETLOCAL` Brevo rotation W1 · unit `EXIT`: rebind BREVO_API_KEY @1 → @2 from the live lineage, clean upload set · **LIVE — DEPLOYED_VERIFIED + OBSERVED_CLEAN (15 min)**
+
+- **Approval:** `SEC-INC-SECRETLOCAL-BREVO-W1-E08FE0CB-2026-10-20` + `ACK_SEC_BREVO_EXIT=BREVO_V1_TO_V2__TIMEOUT60_RESET__MAX20_RESET__FUNCTION_REGION_ADDED` (owner, 2026-10-20).
+- **Candidate:** `854f2774` · deployed 2026-10-20T14:25:57Z · new revision(s): salownEmailExitAgreement=salownemailexitagreement-00013-zux salownSendExitSignLink=salownsendexitsignlink-00014-sam
+- **Rollback (v1 traffic, only while SM v1 ENABLED):** salownEmailExitAgreement=salownemailexitagreement-00012-mir salownSendExitSignLink=salownsendexitsignlink-00013-vum — `rollback-fn.sh EXIT --v1-traffic` under its own approval.
+- **Verified:** gates G0–G6, bindings == live with BREVO_API_KEY@2, Ready + 100 % traffic, config == frozen + ACK items, new source archive scanner 0 hits, lib identical, 144-function inventory + neighbours unchanged, SM unchanged; observe.sh 15 min 0 ERROR / 0 secret-startup failures.
+- **Record:** `~/release-work/sec-inc-brevo/state/EXIT.verified` + `.observed`, `runs/deploy-EXIT.txt`. No email sent by Claude.
+- **Does not authorise:** W2/W3, SM v1 disable/destroy, deleting the old Brevo key.
+
 ## R-2026-10-19-C — `ONLINE-EXTRAS-P1 r2` extra-enable pilot: one owner Admin "Save service" turning extras on for one service · **production validation, NOT a deploy** (no code, no config, no function, no hosting moved) · data units `tenants/whitecross/services/3TXlj8qHZos1JMubreZa` + created `tenants/whitecross/public/bookingOptions` · **VERIFIED — OWNER_APPROVED_FINAL_PILOT_CONFIGURATION (scope deviation: 10 extras vs the 1 approved, ratified by the owner)**
 
 - **Approval:** `ONLINE-EXTRAS-P1R2-PILOT-ENABLE-EXTRA-3TXLJ8QH-L3FSB0VY-2026-10-19` + `ACK_P1R2_PILOT_ENABLE_SCOPE=WHITECROSS_ONE_SERVICE_ONE_EXTRA_OPTIONAL_PAID_MIRROR_CREATE_NO_P2` (spent). Approved scope: ONE row, Waxing (Nose & Ears) → OPTIONAL_PAID, on **I CUT Deluxe**. Actor: the owner, live Admin (`45a8ee73341851c9`, source `ba380c08`). Claude did not write.
