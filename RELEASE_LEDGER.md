@@ -1,5 +1,14 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
+## R-2026-10-21-A — `SEC-INC-SECRETLOCAL` Brevo rotation W2 · unit `CONFIRM`: rebind BREVO_API_KEY @1 → @2 from the live lineage, clean upload set · **LIVE — DEPLOYED_VERIFIED + OBSERVED_CLEAN (15 min)**
+
+- **Approval:** `SEC-INC-SECRETLOCAL-BREVO-W2-078B3C16-2026-10-21` + `ACK_SEC_BREVO_CONFIRM=BREVO_V1_TO_V2__TIMEOUT60_RESET__MAX20_RESET__FUNCTION_REGION_ADDED` (owner, 2026-10-21).
+- **Candidate:** `c8a64d68` · deployed 2026-10-20T23:21:35Z · new revision(s): salownBookingConfirmationTrigger=salownbookingconfirmationtrigger-00047-yic salownBookingConfirmedEmailTrigger=salownbookingconfirmedemailtrigger-00045-zos
+- **Rollback (v1 traffic, only while SM v1 ENABLED):** salownBookingConfirmationTrigger=salownbookingconfirmationtrigger-00046-qem salownBookingConfirmedEmailTrigger=salownbookingconfirmedemailtrigger-00044-cas — `rollback-fn.sh CONFIRM --v1-traffic` under its own approval.
+- **Verified:** gates G0–G6, bindings == live with BREVO_API_KEY@2, Ready + 100 % traffic, config == frozen + ACK items, new source archive scanner 0 hits, lib identical, 144-function inventory + neighbours unchanged, SM unchanged; observe.sh 15 min 0 ERROR / 0 secret-startup failures.
+- **Record:** `~/release-work/sec-inc-brevo/state/CONFIRM.verified` + `.observed`, `runs/deploy-CONFIRM.txt`. No email sent by Claude.
+- **Does not authorise:** W3, SM v1 disable/destroy, deleting the old Brevo key.
+
 ## R-2026-10-20-F — `SEC-INC-SECRETLOCAL` Brevo rotation W1 · unit `ABANDONED`: rebind BREVO_API_KEY @1 → @2 from the live lineage, clean upload set · **LIVE — DEPLOYED_VERIFIED + OBSERVED_CLEAN (15 min)**
 
 - **Approval:** `SEC-INC-SECRETLOCAL-BREVO-W1-E08FE0CB-2026-10-20` + `ACK_SEC_BREVO_ABANDONED=BREVO_V1_TO_V2__TIMEOUT60_RESET__MAX20_RESET` (owner, 2026-10-20).
