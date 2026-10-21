@@ -1,5 +1,14 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
+## R-2026-10-21-Q — `ONLINE-EXTRAS-P2` unit `STAFF`: hosting:salown-staff from `cb8ad7f9` (detail sheet shows booking extras; display only, no checkout change) · **LIVE — DEPLOYED_VERIFIED + OBSERVED_CLEAN (15 min)**
+
+- **Approval:** `ONLINE-EXTRAS-P2-STAFF-CB8AD7F9-2026-10-21` + `ACK_P2_STAFF_SCOPE=DETAIL_SHEET_EXTRAS_DISPLAY_ONLY_NO_CHECKOUT_CHANGE` (owner, 2026-10-21; chain L–R).
+- **Deployed:** 2026-10-21T20:05Z · salown-staff `c950ff7c93da04a4` → `f54087aaf49fbf9a`; salown unchanged `45a8ee73341851c9`.
+- **Rollback:** `rollback-site.sh STAFF` → new release of `c950ff7c93da04a4`, own approval.
+- **Verified:** ORDER (all six P2-C function units serving their candidates: K–P), live == frozen, version config == frozen, served base 25/25, neighbours unchanged, G0s scanner on the upload dir 25 files 0 hits, vitest failing set ⊆ base, typecheck 0 new, eslint == base, P2 staff suites 7/7; post: served 25/25 == candidate, salown unchanged. Watch 15 min: live version stable, served 25/25 every minute, salown unchanged, P2 functions 0 5xx / 0 non-probe ERROR.
+- **Record:** `~/release-work/online-extras-p2/runs/d21-STAFF.out`, `runs/w21-STAFF.out`.
+- **Does not authorise:** HOSTING (R). HOSTING check-only after STAFF is BLOCKED by the neighbour gate (salown-staff moved since the freeze) — needs an owner decision on a site exception or a re-freeze.
+
 ## R-2026-10-21-P — `ONLINE-EXTRAS-P2C` unit `CANCEL-EMAIL`: salownSendCancellationEmail from `a246c186` (clean A1.3 upload set) · **LIVE — DEPLOYED_VERIFIED + OBSERVED_CLEAN (15 min)**
 
 - **Approval:** `ONLINE-EXTRAS-P2C-FN-CANCEL-EMAIL-A246C186-2026-10-21` + `ACK_P2C_FN_CONFIG=CANCEL_EMAIL__TIMEOUT60_RESET__MAX20_RESET` (owner, 2026-10-21; chain L–R, same-kit earlier-release inventory exception owner-approved 2026-10-21).
