@@ -1,5 +1,14 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
+## R-2026-10-21-K — `ONLINE-EXTRAS-P2C` unit `TOKEN`: salownGetBookingByToken from `8c986d0c` (extras lines in the token booking read model; clean A1.3 upload set) · **LIVE — DEPLOYED_VERIFIED + OBSERVED_CLEAN (15 min)**
+
+- **Approval:** `ONLINE-EXTRAS-P2C-FN-TOKEN-8C986D0C-2026-10-21` + `ACK_P2C_FN_CONFIG=TOKEN__TIMEOUT60_RESET__MAX20_RESET` (owner, 2026-10-21).
+- **Deployed:** 2026-10-21T16:04Z · `salowngetbookingbytoken-00064-gij` → `-00065-jux` (ACTIVE, Ready, 100 % traffic, timeout 60 / max 20, no secrets).
+- **Rollback:** `rollback-fn.sh TOKEN` → traffic 100 % to `-00064-gij`, own approval `ONLINE-EXTRAS-P2C-FN-TOKEN-ROLLBACK-<date>`.
+- **Verified:** P2 kit refrozen 2026-10-21 after the Brevo @2 rotation; all gates in the deploy run (pins, next free id, live == frozen, secret pin, inventory + neighbours, unit 1255/0, contract 52, config proof, namespace guard, SEC-INC scanner on the upload set 142 files 0 hits, upload/lib delta == pinned); post: archive == candidate, lib delta == pinned, 144-function inventory only the target moved, neighbours unchanged, new source archive scanner 0 hits (the live source no longer carries the untracked `.secret.local`). Watch 15 min: only Google GET rollout probes (4 requests, 2 onCall "Invalid request" lines), 0 5xx, 0 other ERROR.
+- **Record:** `~/release-work/online-extras-p2/runs/d21-TOKEN.out`, `runs/w21-TOKEN.out`.
+- **Does not authorise:** the other five P2-C functions, STAFF or HOSTING (each its own approval). TOKEN alone does not show extras to customers.
+
 ## R-2026-10-21-J — `SEC-INC-SECRETLOCAL` Brevo rotation W3 · unit `WC`: rebind BREVO_API_KEY @1 → @2 from the live lineage, clean upload set · **LIVE — DEPLOYED_VERIFIED + OBSERVED_CLEAN (15 min)**
 
 - **Approval:** `SEC-INC-SECRETLOCAL-BREVO-W3-5C197BD2-2026-10-21` + `ACK_SEC_BREVO_WC=BREVO_V1_TO_V2__TIMEOUT60_RESET__MAX20_RESET__FUNCTION_REGION_ADDED` (owner, 2026-10-21).
