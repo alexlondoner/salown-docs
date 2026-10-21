@@ -1,5 +1,14 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
+## R-2026-10-21-B — `SEC-INC-SECRETLOCAL` Brevo rotation W2 · unit `RESCHED-LINK`: rebind BREVO_API_KEY @1 → @2 from the live lineage, clean upload set · **LIVE — DEPLOYED_VERIFIED + OBSERVED_CLEAN (15 min)**
+
+- **Approval:** `SEC-INC-SECRETLOCAL-BREVO-W2-078B3C16-2026-10-21` + `ACK_SEC_BREVO_RESCHED_LINK=BREVO_V1_TO_V2__TIMEOUT60_RESET__MAX20_RESET__FUNCTION_REGION_ADDED` (owner, 2026-10-21).
+- **Candidate:** `2e4b6729` · deployed 2026-10-20T23:49:43Z · new revision(s): salownRescheduleByToken=salownreschedulebytoken-00078-jox
+- **Rollback (v1 traffic, only while SM v1 ENABLED):** salownRescheduleByToken=salownreschedulebytoken-00077-noc — `rollback-fn.sh RESCHED-LINK --v1-traffic` under its own approval.
+- **Verified:** gates G0–G6, bindings == live with BREVO_API_KEY@2, Ready + 100 % traffic, config == frozen + ACK items, new source archive scanner 0 hits, lib identical, 144-function inventory + neighbours unchanged, SM unchanged; observe.sh 15 min 0 ERROR / 0 secret-startup failures.
+- **Record:** `~/release-work/sec-inc-brevo/state/RESCHED-LINK.verified` + `.observed`, `runs/deploy-RESCHED-LINK.txt`. No email sent by Claude.
+- **Does not authorise:** W3, SM v1 disable/destroy, deleting the old Brevo key.
+
 ## R-2026-10-21-A — `SEC-INC-SECRETLOCAL` Brevo rotation W2 · unit `CONFIRM`: rebind BREVO_API_KEY @1 → @2 from the live lineage, clean upload set · **LIVE — DEPLOYED_VERIFIED + OBSERVED_CLEAN (15 min)**
 
 - **Approval:** `SEC-INC-SECRETLOCAL-BREVO-W2-078B3C16-2026-10-21` + `ACK_SEC_BREVO_CONFIRM=BREVO_V1_TO_V2__TIMEOUT60_RESET__MAX20_RESET__FUNCTION_REGION_ADDED` (owner, 2026-10-21).
