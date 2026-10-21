@@ -13,7 +13,7 @@
 
 - **Approval:** `SEC-INC-SECRETLOCAL-BREVO-W3-5C197BD2-2026-10-21` + `ACK_SEC_BREVO_WC=BREVO_V1_TO_V2__TIMEOUT60_RESET__MAX20_RESET__FUNCTION_REGION_ADDED` (owner, 2026-10-21).
 - **Candidate:** `e66d86a7` · deployed 2026-10-21T03:58:11Z · new revision(s): sendBookingConfirmation=sendbookingconfirmation-00105-fah sendBookingConfirmationOnUpdate=sendbookingconfirmationonupdate-00086-daf sendLoyaltyCardEmail=sendloyaltycardemail-00084-joh sendManualLoyaltyAdjustmentEmail=sendmanualloyaltyadjustmentemail-00040-lug sendReceipt=sendreceipt-00063-quw
-- **Rollback (v1 traffic, only while SM v1 ENABLED):** sendBookingConfirmation=sendbookingconfirmation-00104-dav sendBookingConfirmationOnUpdate=sendbookingconfirmationonupdate-00085-fah sendLoyaltyCardEmail=sendloyaltycardemail-00083-hem sendManualLoyaltyAdjustmentEmail=sendmanualloyaltyadjustmentemail-00039-vud sendReceipt=sendreceipt-00062-fav — `rollback-fn.sh WC --v1-traffic` under its own approval.
+- **Rollback (v1 traffic) — ⚠ VOID since 2026-10-21: SM BREVO_API_KEY v1 DISABLED 10:25Z and the old Brevo key deleted in the Brevo panel; a v1 revision can no longer send. Any rollback now = forward redeploy on @2 under its own approval. Original target, for the record:** sendBookingConfirmation=sendbookingconfirmation-00104-dav sendBookingConfirmationOnUpdate=sendbookingconfirmationonupdate-00085-fah sendLoyaltyCardEmail=sendloyaltycardemail-00083-hem sendManualLoyaltyAdjustmentEmail=sendmanualloyaltyadjustmentemail-00039-vud sendReceipt=sendreceipt-00062-fav — `rollback-fn.sh WC --v1-traffic` under its own approval.
 - **Verified:** gates G0–G6, bindings == live with BREVO_API_KEY@2, Ready + 100 % traffic, config == frozen + ACK items, new source archive scanner 0 hits, lib identical, 144-function inventory + neighbours unchanged, SM unchanged; observe.sh 15 min 0 ERROR / 0 secret-startup failures.
 - **Record:** `~/release-work/sec-inc-brevo/state/WC.verified` + `.observed`, `runs/deploy-WC.txt`. No email sent by Claude.
 - **Does not authorise:** SM v1 disable/destroy, deleting the old Brevo key.
@@ -22,7 +22,7 @@
 
 - **Approval:** `SEC-INC-SECRETLOCAL-BREVO-W3-5C197BD2-2026-10-21` + `ACK_SEC_BREVO_BACKUP=BREVO_V1_TO_V2__FUNCTION_REGION_ADDED` (owner, 2026-10-21).
 - **Candidate:** `dd3793bf` · deployed 2026-10-21T03:30:24Z · new revision(s): dailyFirestoreBackup=dailyfirestorebackup-00067-mof
-- **Rollback (v1 traffic, only while SM v1 ENABLED):** dailyFirestoreBackup=dailyfirestorebackup-00066-gov — `rollback-fn.sh BACKUP --v1-traffic` under its own approval.
+- **Rollback (v1 traffic) — ⚠ VOID since 2026-10-21: SM BREVO_API_KEY v1 DISABLED 10:25Z and the old Brevo key deleted in the Brevo panel; a v1 revision can no longer send. Any rollback now = forward redeploy on @2 under its own approval. Original target, for the record:** dailyFirestoreBackup=dailyfirestorebackup-00066-gov — `rollback-fn.sh BACKUP --v1-traffic` under its own approval.
 - **Verified:** gates G0–G6, bindings == live with BREVO_API_KEY@2, Ready + 100 % traffic, config == frozen + ACK items, new source archive scanner 0 hits, lib identical, 144-function inventory + neighbours unchanged, SM unchanged; observe.sh 15 min 0 ERROR / 0 secret-startup failures.
 - **Record:** `~/release-work/sec-inc-brevo/state/BACKUP.verified` + `.observed`, `runs/deploy-BACKUP.txt`. No email sent by Claude.
 - **Does not authorise:** SM v1 disable/destroy, deleting the old Brevo key.
@@ -31,7 +31,7 @@
 
 - **Approval:** `SEC-INC-SECRETLOCAL-BREVO-W3-5C197BD2-2026-10-21` + `ACK_SEC_BREVO_PWRESET=BREVO_V1_TO_V2__TIMEOUT60_RESET__FUNCTION_REGION_ADDED` (owner, 2026-10-21).
 - **Candidate:** `a60bfaad` · deployed 2026-10-21T03:02:50Z · new revision(s): sendPasswordResetPublic=sendpasswordresetpublic-00055-rig sendStaffPasswordReset=sendstaffpasswordreset-00057-xuk
-- **Rollback (v1 traffic, only while SM v1 ENABLED):** sendPasswordResetPublic=sendpasswordresetpublic-00054-zen sendStaffPasswordReset=sendstaffpasswordreset-00056-qul — `rollback-fn.sh PWRESET --v1-traffic` under its own approval.
+- **Rollback (v1 traffic) — ⚠ VOID since 2026-10-21: SM BREVO_API_KEY v1 DISABLED 10:25Z and the old Brevo key deleted in the Brevo panel; a v1 revision can no longer send. Any rollback now = forward redeploy on @2 under its own approval. Original target, for the record:** sendPasswordResetPublic=sendpasswordresetpublic-00054-zen sendStaffPasswordReset=sendstaffpasswordreset-00056-qul — `rollback-fn.sh PWRESET --v1-traffic` under its own approval.
 - **Verified:** gates G0–G6, bindings == live with BREVO_API_KEY@2, Ready + 100 % traffic, config == frozen + ACK items, new source archive scanner 0 hits, lib identical, 144-function inventory + neighbours unchanged, SM unchanged; observe.sh 15 min 0 ERROR / 0 secret-startup failures.
 - **Record:** `~/release-work/sec-inc-brevo/state/PWRESET.verified` + `.observed`, `runs/deploy-PWRESET.txt`. No email sent by Claude.
 - **Does not authorise:** SM v1 disable/destroy, deleting the old Brevo key.
@@ -40,7 +40,7 @@
 
 - **Approval:** `SEC-INC-SECRETLOCAL-BREVO-W3-5C197BD2-2026-10-21` + `ACK_SEC_BREVO_MANUAL_LOYALTY=BREVO_V1_TO_V2__TIMEOUT60_RESET__MAX20_RESET` (owner, 2026-10-21).
 - **Candidate:** `40b14db0` · deployed 2026-10-21T02:36:25Z · new revision(s): salownSendManualLoyaltyAdjustmentEmail=salownsendmanualloyaltyadjustmentemail-00052-zaf
-- **Rollback (v1 traffic, only while SM v1 ENABLED):** salownSendManualLoyaltyAdjustmentEmail=salownsendmanualloyaltyadjustmentemail-00051-fum — `rollback-fn.sh MANUAL-LOYALTY --v1-traffic` under its own approval.
+- **Rollback (v1 traffic) — ⚠ VOID since 2026-10-21: SM BREVO_API_KEY v1 DISABLED 10:25Z and the old Brevo key deleted in the Brevo panel; a v1 revision can no longer send. Any rollback now = forward redeploy on @2 under its own approval. Original target, for the record:** salownSendManualLoyaltyAdjustmentEmail=salownsendmanualloyaltyadjustmentemail-00051-fum — `rollback-fn.sh MANUAL-LOYALTY --v1-traffic` under its own approval.
 - **Verified:** gates G0–G6, bindings == live with BREVO_API_KEY@2, Ready + 100 % traffic, config == frozen + ACK items, new source archive scanner 0 hits, lib identical, 144-function inventory + neighbours unchanged, SM unchanged; observe.sh 15 min 0 ERROR / 0 secret-startup failures.
 - **Record:** `~/release-work/sec-inc-brevo/state/MANUAL-LOYALTY.verified` + `.observed`, `runs/deploy-MANUAL-LOYALTY.txt`. No email sent by Claude.
 - **Does not authorise:** SM v1 disable/destroy, deleting the old Brevo key.
@@ -49,7 +49,7 @@
 
 - **Approval:** `SEC-INC-SECRETLOCAL-BREVO-W3-5C197BD2-2026-10-21` + `ACK_SEC_BREVO_LOYALTY=BREVO_V1_TO_V2__TIMEOUT60_RESET__MAX20_RESET` (owner, 2026-10-21).
 - **Candidate:** `e8ee17ab` · deployed 2026-10-21T02:09:53Z · new revision(s): salownSendLoyaltyEmail=salownsendloyaltyemail-00069-qur
-- **Rollback (v1 traffic, only while SM v1 ENABLED):** salownSendLoyaltyEmail=salownsendloyaltyemail-00068-fur — `rollback-fn.sh LOYALTY --v1-traffic` under its own approval.
+- **Rollback (v1 traffic) — ⚠ VOID since 2026-10-21: SM BREVO_API_KEY v1 DISABLED 10:25Z and the old Brevo key deleted in the Brevo panel; a v1 revision can no longer send. Any rollback now = forward redeploy on @2 under its own approval. Original target, for the record:** salownSendLoyaltyEmail=salownsendloyaltyemail-00068-fur — `rollback-fn.sh LOYALTY --v1-traffic` under its own approval.
 - **Verified:** gates G0–G6, bindings == live with BREVO_API_KEY@2, Ready + 100 % traffic, config == frozen + ACK items, new source archive scanner 0 hits, lib identical, 144-function inventory + neighbours unchanged, SM unchanged; observe.sh 15 min 0 ERROR / 0 secret-startup failures.
 - **Record:** `~/release-work/sec-inc-brevo/state/LOYALTY.verified` + `.observed`, `runs/deploy-LOYALTY.txt`. No email sent by Claude.
 - **Does not authorise:** SM v1 disable/destroy, deleting the old Brevo key.
@@ -58,7 +58,7 @@
 
 - **Approval:** `SEC-INC-SECRETLOCAL-BREVO-W2-078B3C16-2026-10-21` + `ACK_SEC_BREVO_REMINDER=BREVO_V1_TO_V2__TIMEOUT60_RESET__MAX20_RESET` (owner, 2026-10-21).
 - **Candidate:** `6d08485a` · deployed 2026-10-21T01:09:18Z · new revision(s): salownSendReminder=salownsendreminder-00016-lon
-- **Rollback (v1 traffic, only while SM v1 ENABLED):** salownSendReminder=salownsendreminder-00015-lef — `rollback-fn.sh REMINDER --v1-traffic` under its own approval.
+- **Rollback (v1 traffic) — ⚠ VOID since 2026-10-21: SM BREVO_API_KEY v1 DISABLED 10:25Z and the old Brevo key deleted in the Brevo panel; a v1 revision can no longer send. Any rollback now = forward redeploy on @2 under its own approval. Original target, for the record:** salownSendReminder=salownsendreminder-00015-lef — `rollback-fn.sh REMINDER --v1-traffic` under its own approval.
 - **Verified:** gates G0–G6, bindings == live with BREVO_API_KEY@2, Ready + 100 % traffic, config == frozen + ACK items, new source archive scanner 0 hits, lib identical, 144-function inventory + neighbours unchanged, SM unchanged; observe.sh 15 min 0 ERROR / 0 secret-startup failures.
 - **Record:** `~/release-work/sec-inc-brevo/state/REMINDER.verified` + `.observed`, `runs/deploy-REMINDER.txt`. No email sent by Claude.
 - **Does not authorise:** W3, SM v1 disable/destroy, deleting the old Brevo key.
@@ -67,7 +67,7 @@
 
 - **Approval:** `SEC-INC-SECRETLOCAL-BREVO-W2-078B3C16-2026-10-21` + `ACK_SEC_BREVO_CANCEL_EMAIL=BREVO_V1_TO_V2__TIMEOUT60_RESET__MAX20_RESET` (owner, 2026-10-21).
 - **Candidate:** `b69d60c0` · deployed 2026-10-21T00:42:54Z · new revision(s): salownSendCancellationEmail=salownsendcancellationemail-00107-hox
-- **Rollback (v1 traffic, only while SM v1 ENABLED):** salownSendCancellationEmail=salownsendcancellationemail-00106-gik — `rollback-fn.sh CANCEL-EMAIL --v1-traffic` under its own approval.
+- **Rollback (v1 traffic) — ⚠ VOID since 2026-10-21: SM BREVO_API_KEY v1 DISABLED 10:25Z and the old Brevo key deleted in the Brevo panel; a v1 revision can no longer send. Any rollback now = forward redeploy on @2 under its own approval. Original target, for the record:** salownSendCancellationEmail=salownsendcancellationemail-00106-gik — `rollback-fn.sh CANCEL-EMAIL --v1-traffic` under its own approval.
 - **Verified:** gates G0–G6, bindings == live with BREVO_API_KEY@2, Ready + 100 % traffic, config == frozen + ACK items, new source archive scanner 0 hits, lib identical, 144-function inventory + neighbours unchanged, SM unchanged; observe.sh 15 min 0 ERROR / 0 secret-startup failures.
 - **Record:** `~/release-work/sec-inc-brevo/state/CANCEL-EMAIL.verified` + `.observed`, `runs/deploy-CANCEL-EMAIL.txt`. No email sent by Claude.
 - **Does not authorise:** W3, SM v1 disable/destroy, deleting the old Brevo key.
@@ -76,7 +76,7 @@
 
 - **Approval:** `SEC-INC-SECRETLOCAL-BREVO-W2-078B3C16-2026-10-21` + `ACK_SEC_BREVO_CANCEL_LINK=BREVO_V1_TO_V2__TIMEOUT60_RESET__MAX20_RESET__FUNCTION_REGION_ADDED` (owner, 2026-10-21).
 - **Candidate:** `79e232f6` · deployed 2026-10-21T00:16:16Z · new revision(s): salownCancelByToken=salowncancelbytoken-00072-del
-- **Rollback (v1 traffic, only while SM v1 ENABLED):** salownCancelByToken=salowncancelbytoken-00071-xaw — `rollback-fn.sh CANCEL-LINK --v1-traffic` under its own approval.
+- **Rollback (v1 traffic) — ⚠ VOID since 2026-10-21: SM BREVO_API_KEY v1 DISABLED 10:25Z and the old Brevo key deleted in the Brevo panel; a v1 revision can no longer send. Any rollback now = forward redeploy on @2 under its own approval. Original target, for the record:** salownCancelByToken=salowncancelbytoken-00071-xaw — `rollback-fn.sh CANCEL-LINK --v1-traffic` under its own approval.
 - **Verified:** gates G0–G6, bindings == live with BREVO_API_KEY@2, Ready + 100 % traffic, config == frozen + ACK items, new source archive scanner 0 hits, lib identical, 144-function inventory + neighbours unchanged, SM unchanged; observe.sh 15 min 0 ERROR / 0 secret-startup failures.
 - **Record:** `~/release-work/sec-inc-brevo/state/CANCEL-LINK.verified` + `.observed`, `runs/deploy-CANCEL-LINK.txt`. No email sent by Claude.
 - **Does not authorise:** W3, SM v1 disable/destroy, deleting the old Brevo key.
@@ -85,7 +85,7 @@
 
 - **Approval:** `SEC-INC-SECRETLOCAL-BREVO-W2-078B3C16-2026-10-21` + `ACK_SEC_BREVO_RESCHED_LINK=BREVO_V1_TO_V2__TIMEOUT60_RESET__MAX20_RESET__FUNCTION_REGION_ADDED` (owner, 2026-10-21).
 - **Candidate:** `2e4b6729` · deployed 2026-10-20T23:49:43Z · new revision(s): salownRescheduleByToken=salownreschedulebytoken-00078-jox
-- **Rollback (v1 traffic, only while SM v1 ENABLED):** salownRescheduleByToken=salownreschedulebytoken-00077-noc — `rollback-fn.sh RESCHED-LINK --v1-traffic` under its own approval.
+- **Rollback (v1 traffic) — ⚠ VOID since 2026-10-21: SM BREVO_API_KEY v1 DISABLED 10:25Z and the old Brevo key deleted in the Brevo panel; a v1 revision can no longer send. Any rollback now = forward redeploy on @2 under its own approval. Original target, for the record:** salownRescheduleByToken=salownreschedulebytoken-00077-noc — `rollback-fn.sh RESCHED-LINK --v1-traffic` under its own approval.
 - **Verified:** gates G0–G6, bindings == live with BREVO_API_KEY@2, Ready + 100 % traffic, config == frozen + ACK items, new source archive scanner 0 hits, lib identical, 144-function inventory + neighbours unchanged, SM unchanged; observe.sh 15 min 0 ERROR / 0 secret-startup failures.
 - **Record:** `~/release-work/sec-inc-brevo/state/RESCHED-LINK.verified` + `.observed`, `runs/deploy-RESCHED-LINK.txt`. No email sent by Claude.
 - **Does not authorise:** W3, SM v1 disable/destroy, deleting the old Brevo key.
@@ -94,7 +94,7 @@
 
 - **Approval:** `SEC-INC-SECRETLOCAL-BREVO-W2-078B3C16-2026-10-21` + `ACK_SEC_BREVO_CONFIRM=BREVO_V1_TO_V2__TIMEOUT60_RESET__MAX20_RESET__FUNCTION_REGION_ADDED` (owner, 2026-10-21).
 - **Candidate:** `c8a64d68` · deployed 2026-10-20T23:21:35Z · new revision(s): salownBookingConfirmationTrigger=salownbookingconfirmationtrigger-00047-yic salownBookingConfirmedEmailTrigger=salownbookingconfirmedemailtrigger-00045-zos
-- **Rollback (v1 traffic, only while SM v1 ENABLED):** salownBookingConfirmationTrigger=salownbookingconfirmationtrigger-00046-qem salownBookingConfirmedEmailTrigger=salownbookingconfirmedemailtrigger-00044-cas — `rollback-fn.sh CONFIRM --v1-traffic` under its own approval.
+- **Rollback (v1 traffic) — ⚠ VOID since 2026-10-21: SM BREVO_API_KEY v1 DISABLED 10:25Z and the old Brevo key deleted in the Brevo panel; a v1 revision can no longer send. Any rollback now = forward redeploy on @2 under its own approval. Original target, for the record:** salownBookingConfirmationTrigger=salownbookingconfirmationtrigger-00046-qem salownBookingConfirmedEmailTrigger=salownbookingconfirmedemailtrigger-00044-cas — `rollback-fn.sh CONFIRM --v1-traffic` under its own approval.
 - **Verified:** gates G0–G6, bindings == live with BREVO_API_KEY@2, Ready + 100 % traffic, config == frozen + ACK items, new source archive scanner 0 hits, lib identical, 144-function inventory + neighbours unchanged, SM unchanged; observe.sh 15 min 0 ERROR / 0 secret-startup failures.
 - **Record:** `~/release-work/sec-inc-brevo/state/CONFIRM.verified` + `.observed`, `runs/deploy-CONFIRM.txt`. No email sent by Claude.
 - **Does not authorise:** W3, SM v1 disable/destroy, deleting the old Brevo key.
@@ -103,7 +103,7 @@
 
 - **Approval:** `SEC-INC-SECRETLOCAL-BREVO-W1-E08FE0CB-2026-10-20` + `ACK_SEC_BREVO_ABANDONED=BREVO_V1_TO_V2__TIMEOUT60_RESET__MAX20_RESET` (owner, 2026-10-20).
 - **Candidate:** `bc734993` · deployed 2026-10-20T17:33:27Z · new revision(s): sendAbandonedCart=sendabandonedcart-00016-raf
-- **Rollback (v1 traffic, only while SM v1 ENABLED):** sendAbandonedCart=sendabandonedcart-00015-tex — `rollback-fn.sh ABANDONED --v1-traffic` under its own approval.
+- **Rollback (v1 traffic) — ⚠ VOID since 2026-10-21: SM BREVO_API_KEY v1 DISABLED 10:25Z and the old Brevo key deleted in the Brevo panel; a v1 revision can no longer send. Any rollback now = forward redeploy on @2 under its own approval. Original target, for the record:** sendAbandonedCart=sendabandonedcart-00015-tex — `rollback-fn.sh ABANDONED --v1-traffic` under its own approval.
 - **Verified:** gates G0–G6, bindings == live with BREVO_API_KEY@2, Ready + 100 % traffic, config == frozen + ACK items, new source archive scanner 0 hits, lib identical, 144-function inventory + neighbours unchanged, SM unchanged; observe.sh 15 min 0 ERROR / 0 secret-startup failures.
 - **Record:** `~/release-work/sec-inc-brevo/state/ABANDONED.verified` + `.observed`, `runs/deploy-ABANDONED.txt`. No email sent by Claude.
 - **Does not authorise:** W2/W3, SM v1 disable/destroy, deleting the old Brevo key.
@@ -112,7 +112,7 @@
 
 - **Approval:** `SEC-INC-SECRETLOCAL-BREVO-W1-E08FE0CB-2026-10-20` + `ACK_SEC_BREVO_MARKETING=BREVO_V1_TO_V2__TIMEOUT60_RESET__MAX20_RESET` (owner, 2026-10-20).
 - **Candidate:** `9a2c4279` · deployed 2026-10-20T17:07:01Z · new revision(s): sendMarketingEmail=sendmarketingemail-00073-buq
-- **Rollback (v1 traffic, only while SM v1 ENABLED):** sendMarketingEmail=sendmarketingemail-00072-taz — `rollback-fn.sh MARKETING --v1-traffic` under its own approval.
+- **Rollback (v1 traffic) — ⚠ VOID since 2026-10-21: SM BREVO_API_KEY v1 DISABLED 10:25Z and the old Brevo key deleted in the Brevo panel; a v1 revision can no longer send. Any rollback now = forward redeploy on @2 under its own approval. Original target, for the record:** sendMarketingEmail=sendmarketingemail-00072-taz — `rollback-fn.sh MARKETING --v1-traffic` under its own approval.
 - **Verified:** gates G0–G6, bindings == live with BREVO_API_KEY@2, Ready + 100 % traffic, config == frozen + ACK items, new source archive scanner 0 hits, lib identical, 144-function inventory + neighbours unchanged, SM unchanged; observe.sh 15 min 0 ERROR / 0 secret-startup failures.
 - **Record:** `~/release-work/sec-inc-brevo/state/MARKETING.verified` + `.observed`, `runs/deploy-MARKETING.txt`. No email sent by Claude.
 - **Does not authorise:** W2/W3, SM v1 disable/destroy, deleting the old Brevo key.
@@ -121,7 +121,7 @@
 
 - **Approval:** `SEC-INC-SECRETLOCAL-BREVO-W1-E08FE0CB-2026-10-20` + `ACK_SEC_BREVO_CAMPAIGN=BREVO_V1_TO_V2__MAX20_RESET` (owner, 2026-10-20).
 - **Candidate:** `c985c70f` · deployed 2026-10-20T16:40:28Z · new revision(s): sendCampaignBulk=sendcampaignbulk-00020-vug
-- **Rollback (v1 traffic, only while SM v1 ENABLED):** sendCampaignBulk=sendcampaignbulk-00019-kit — `rollback-fn.sh CAMPAIGN --v1-traffic` under its own approval.
+- **Rollback (v1 traffic) — ⚠ VOID since 2026-10-21: SM BREVO_API_KEY v1 DISABLED 10:25Z and the old Brevo key deleted in the Brevo panel; a v1 revision can no longer send. Any rollback now = forward redeploy on @2 under its own approval. Original target, for the record:** sendCampaignBulk=sendcampaignbulk-00019-kit — `rollback-fn.sh CAMPAIGN --v1-traffic` under its own approval.
 - **Verified:** gates G0–G6, bindings == live with BREVO_API_KEY@2, Ready + 100 % traffic, config == frozen + ACK items, new source archive scanner 0 hits, lib identical, 144-function inventory + neighbours unchanged, SM unchanged; observe.sh 15 min 0 ERROR / 0 secret-startup failures.
 - **Record:** `~/release-work/sec-inc-brevo/state/CAMPAIGN.verified` + `.observed`, `runs/deploy-CAMPAIGN.txt`. No email sent by Claude.
 - **Does not authorise:** W2/W3, SM v1 disable/destroy, deleting the old Brevo key.
@@ -130,7 +130,7 @@
 
 - **Approval:** `SEC-INC-SECRETLOCAL-BREVO-W1-E08FE0CB-2026-10-20` + `ACK_SEC_BREVO_LANDING=BREVO_V1_TO_V2__MAX20_RESET__FUNCTION_REGION_ADDED` (owner, 2026-10-20).
 - **Candidate:** `5dea0898` · deployed 2026-10-20T16:13:31Z · new revision(s): salownLandingChat=salownlandingchat-00003-bas
-- **Rollback (v1 traffic, only while SM v1 ENABLED):** salownLandingChat=salownlandingchat-00002-loc — `rollback-fn.sh LANDING --v1-traffic` under its own approval.
+- **Rollback (v1 traffic) — ⚠ VOID since 2026-10-21: SM BREVO_API_KEY v1 DISABLED 10:25Z and the old Brevo key deleted in the Brevo panel; a v1 revision can no longer send. Any rollback now = forward redeploy on @2 under its own approval. Original target, for the record:** salownLandingChat=salownlandingchat-00002-loc — `rollback-fn.sh LANDING --v1-traffic` under its own approval.
 - **Verified:** gates G0–G6, bindings == live with BREVO_API_KEY@2, Ready + 100 % traffic, config == frozen + ACK items, new source archive scanner 0 hits, lib identical, 144-function inventory + neighbours unchanged, SM unchanged; observe.sh 15 min 0 ERROR / 0 secret-startup failures.
 - **Record:** `~/release-work/sec-inc-brevo/state/LANDING.verified` + `.observed`, `runs/deploy-LANDING.txt`. No email sent by Claude.
 - **Does not authorise:** W2/W3, SM v1 disable/destroy, deleting the old Brevo key.
@@ -139,7 +139,7 @@
 
 - **Approval:** `SEC-INC-SECRETLOCAL-BREVO-W1-E08FE0CB-2026-10-20` + `ACK_SEC_BREVO_WAITLIST=BREVO_V1_TO_V2__TIMEOUT60_RESET__MAX20_RESET` (owner, 2026-10-20).
 - **Candidate:** `e2e41a6b` · deployed 2026-10-20T15:46:54Z · new revision(s): addToWaitlist=addtowaitlist-00039-yog
-- **Rollback (v1 traffic, only while SM v1 ENABLED):** addToWaitlist=addtowaitlist-00038-fof — `rollback-fn.sh WAITLIST --v1-traffic` under its own approval.
+- **Rollback (v1 traffic) — ⚠ VOID since 2026-10-21: SM BREVO_API_KEY v1 DISABLED 10:25Z and the old Brevo key deleted in the Brevo panel; a v1 revision can no longer send. Any rollback now = forward redeploy on @2 under its own approval. Original target, for the record:** addToWaitlist=addtowaitlist-00038-fof — `rollback-fn.sh WAITLIST --v1-traffic` under its own approval.
 - **Verified:** gates G0–G6, bindings == live with BREVO_API_KEY@2, Ready + 100 % traffic, config == frozen + ACK items, new source archive scanner 0 hits, lib identical, 144-function inventory + neighbours unchanged, SM unchanged; observe.sh 15 min 0 ERROR / 0 secret-startup failures.
 - **Record:** `~/release-work/sec-inc-brevo/state/WAITLIST.verified` + `.observed`, `runs/deploy-WAITLIST.txt`. No email sent by Claude.
 - **Does not authorise:** W2/W3, SM v1 disable/destroy, deleting the old Brevo key.
@@ -148,7 +148,7 @@
 
 - **Approval:** `SEC-INC-SECRETLOCAL-BREVO-W1-E08FE0CB-2026-10-20` + `ACK_SEC_BREVO_EXIT=BREVO_V1_TO_V2__TIMEOUT60_RESET__MAX20_RESET__FUNCTION_REGION_ADDED` (owner, 2026-10-20).
 - **Candidate:** `854f2774` · deployed 2026-10-20T14:25:57Z · new revision(s): salownEmailExitAgreement=salownemailexitagreement-00013-zux salownSendExitSignLink=salownsendexitsignlink-00014-sam
-- **Rollback (v1 traffic, only while SM v1 ENABLED):** salownEmailExitAgreement=salownemailexitagreement-00012-mir salownSendExitSignLink=salownsendexitsignlink-00013-vum — `rollback-fn.sh EXIT --v1-traffic` under its own approval.
+- **Rollback (v1 traffic) — ⚠ VOID since 2026-10-21: SM BREVO_API_KEY v1 DISABLED 10:25Z and the old Brevo key deleted in the Brevo panel; a v1 revision can no longer send. Any rollback now = forward redeploy on @2 under its own approval. Original target, for the record:** salownEmailExitAgreement=salownemailexitagreement-00012-mir salownSendExitSignLink=salownsendexitsignlink-00013-vum — `rollback-fn.sh EXIT --v1-traffic` under its own approval.
 - **Verified:** gates G0–G6, bindings == live with BREVO_API_KEY@2, Ready + 100 % traffic, config == frozen + ACK items, new source archive scanner 0 hits, lib identical, 144-function inventory + neighbours unchanged, SM unchanged; observe.sh 15 min 0 ERROR / 0 secret-startup failures.
 - **Record:** `~/release-work/sec-inc-brevo/state/EXIT.verified` + `.observed`, `runs/deploy-EXIT.txt`. No email sent by Claude.
 - **Does not authorise:** W2/W3, SM v1 disable/destroy, deleting the old Brevo key.
