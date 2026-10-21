@@ -1,5 +1,14 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
+## R-2026-10-21-D — `SEC-INC-SECRETLOCAL` Brevo rotation W2 · unit `CANCEL-EMAIL`: rebind BREVO_API_KEY @1 → @2 from the live lineage, clean upload set · **LIVE — DEPLOYED_VERIFIED + OBSERVED_CLEAN (15 min)**
+
+- **Approval:** `SEC-INC-SECRETLOCAL-BREVO-W2-078B3C16-2026-10-21` + `ACK_SEC_BREVO_CANCEL_EMAIL=BREVO_V1_TO_V2__TIMEOUT60_RESET__MAX20_RESET` (owner, 2026-10-21).
+- **Candidate:** `b69d60c0` · deployed 2026-10-21T00:42:54Z · new revision(s): salownSendCancellationEmail=salownsendcancellationemail-00107-hox
+- **Rollback (v1 traffic, only while SM v1 ENABLED):** salownSendCancellationEmail=salownsendcancellationemail-00106-gik — `rollback-fn.sh CANCEL-EMAIL --v1-traffic` under its own approval.
+- **Verified:** gates G0–G6, bindings == live with BREVO_API_KEY@2, Ready + 100 % traffic, config == frozen + ACK items, new source archive scanner 0 hits, lib identical, 144-function inventory + neighbours unchanged, SM unchanged; observe.sh 15 min 0 ERROR / 0 secret-startup failures.
+- **Record:** `~/release-work/sec-inc-brevo/state/CANCEL-EMAIL.verified` + `.observed`, `runs/deploy-CANCEL-EMAIL.txt`. No email sent by Claude.
+- **Does not authorise:** W3, SM v1 disable/destroy, deleting the old Brevo key.
+
 ## R-2026-10-21-C — `SEC-INC-SECRETLOCAL` Brevo rotation W2 · unit `CANCEL-LINK`: rebind BREVO_API_KEY @1 → @2 from the live lineage, clean upload set · **LIVE — DEPLOYED_VERIFIED + OBSERVED_CLEAN (15 min)**
 
 - **Approval:** `SEC-INC-SECRETLOCAL-BREVO-W2-078B3C16-2026-10-21` + `ACK_SEC_BREVO_CANCEL_LINK=BREVO_V1_TO_V2__TIMEOUT60_RESET__MAX20_RESET__FUNCTION_REGION_ADDED` (owner, 2026-10-21).
