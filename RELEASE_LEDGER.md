@@ -1,5 +1,14 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
+## R-2026-10-21-J — `SEC-INC-SECRETLOCAL` Brevo rotation W3 · unit `WC`: rebind BREVO_API_KEY @1 → @2 from the live lineage, clean upload set · **LIVE — DEPLOYED_VERIFIED + OBSERVED_CLEAN (15 min)**
+
+- **Approval:** `SEC-INC-SECRETLOCAL-BREVO-W3-5C197BD2-2026-10-21` + `ACK_SEC_BREVO_WC=BREVO_V1_TO_V2__TIMEOUT60_RESET__MAX20_RESET__FUNCTION_REGION_ADDED` (owner, 2026-10-21).
+- **Candidate:** `e66d86a7` · deployed 2026-10-21T03:58:11Z · new revision(s): sendBookingConfirmation=sendbookingconfirmation-00105-fah sendBookingConfirmationOnUpdate=sendbookingconfirmationonupdate-00086-daf sendLoyaltyCardEmail=sendloyaltycardemail-00084-joh sendManualLoyaltyAdjustmentEmail=sendmanualloyaltyadjustmentemail-00040-lug sendReceipt=sendreceipt-00063-quw
+- **Rollback (v1 traffic, only while SM v1 ENABLED):** sendBookingConfirmation=sendbookingconfirmation-00104-dav sendBookingConfirmationOnUpdate=sendbookingconfirmationonupdate-00085-fah sendLoyaltyCardEmail=sendloyaltycardemail-00083-hem sendManualLoyaltyAdjustmentEmail=sendmanualloyaltyadjustmentemail-00039-vud sendReceipt=sendreceipt-00062-fav — `rollback-fn.sh WC --v1-traffic` under its own approval.
+- **Verified:** gates G0–G6, bindings == live with BREVO_API_KEY@2, Ready + 100 % traffic, config == frozen + ACK items, new source archive scanner 0 hits, lib identical, 144-function inventory + neighbours unchanged, SM unchanged; observe.sh 15 min 0 ERROR / 0 secret-startup failures.
+- **Record:** `~/release-work/sec-inc-brevo/state/WC.verified` + `.observed`, `runs/deploy-WC.txt`. No email sent by Claude.
+- **Does not authorise:** SM v1 disable/destroy, deleting the old Brevo key.
+
 ## R-2026-10-21-I — `SEC-INC-SECRETLOCAL` Brevo rotation W3 · unit `BACKUP`: rebind BREVO_API_KEY @1 → @2 from the live lineage, clean upload set · **LIVE — DEPLOYED_VERIFIED + OBSERVED_CLEAN (15 min)**
 
 - **Approval:** `SEC-INC-SECRETLOCAL-BREVO-W3-5C197BD2-2026-10-21` + `ACK_SEC_BREVO_BACKUP=BREVO_V1_TO_V2__FUNCTION_REGION_ADDED` (owner, 2026-10-21).
