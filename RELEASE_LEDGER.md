@@ -1,5 +1,14 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
+## R-2026-10-21-M — `ONLINE-EXTRAS-P2C` unit `RESCHED-LINK`: salownRescheduleByToken from `4a00bd6e` (clean A1.3 upload set) · **LIVE — DEPLOYED_VERIFIED + OBSERVED_CLEAN (15 min)**
+
+- **Approval:** `ONLINE-EXTRAS-P2C-FN-RESCHED-LINK-4A00BD6E-2026-10-21` + `ACK_P2C_FN_CONFIG=RESCHED_LINK__TIMEOUT60_RESET__MAX20_RESET` (owner, 2026-10-21; chain L–R, same-kit earlier-release inventory exception owner-approved 2026-10-21).
+- **Deployed:** 2026-10-21T18:28Z · `salownreschedulebytoken-00078-jox` → `salownreschedulebytoken-00079-vos` (ACTIVE, Ready, 100 % traffic, timeout 60 / max 20, secrets == frozen).
+- **Rollback:** `rollback-fn.sh RESCHED-LINK` → traffic 100 % to salownreschedulebytoken-00078-jox, own approval `ONLINE-EXTRAS-P2C-FN-RESCHED-LINK-ROLLBACK-<date>`.
+- **Verified:** all gates in the deploy run (pins, next free id, live == frozen, secret pin, released-exception self-test + mutants, earlier P2 units re-proved against their recorded post-deploy state, inventory + neighbours, unit, contract, config proof, namespace guard, SEC-INC scanner on the upload set, upload/lib delta == pinned); post: archive == candidate, lib delta == pinned, only the target + recorded P2 units moved, neighbours unchanged, new source archive scanner 0 hits. Watch 15 min: salownRescheduleByToken: req=0 (google GET probe 0) 5xx=0 ERROR=0 (of which onCall-GET-probe 0) secret/startup=0.
+- **Record:** `~/release-work/online-extras-p2/runs/d21-RESCHED-LINK.out`, `runs/w21-RESCHED-LINK-*.out`, `state/released.json`.
+- **Does not authorise:** any other unit (each its own approval line).
+
 ## R-2026-10-21-L — `ONLINE-EXTRAS-P2C` unit `CONFIRM`: salownBookingConfirmationTrigger salownBookingConfirmedEmailTrigger from `aefd6a04` (clean A1.3 upload set) · **LIVE — DEPLOYED_VERIFIED + OBSERVED_CLEAN (15 min)**
 
 - **Approval:** `ONLINE-EXTRAS-P2C-FN-CONFIRM-AEFD6A04-2026-10-21` + `ACK_P2C_FN_CONFIG=CONFIRM__TIMEOUT60_RESET__MAX20_RESET` (owner, 2026-10-21; chain L–R, same-kit earlier-release inventory exception owner-approved 2026-10-21).
