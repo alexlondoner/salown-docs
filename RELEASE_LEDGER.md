@@ -1,5 +1,14 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
+## R-2026-10-21-R — `ONLINE-EXTRAS-P2` unit `HOSTING`: hosting:salown from `b6d05adf` (P2-A + P2-B + P2-C: pay-at-venue extras basket and manage-booking extras; no online payment, no tip) · **LIVE — DEPLOYED_VERIFIED + OBSERVED_CLEAN (15 min)** — extras basket now visible to customers
+
+- **Approval:** `ONLINE-EXTRAS-P2-HOSTING-B6D05ADF-2026-10-21` + `ACK_P2_HOSTING_SCOPE=PAY_AT_VENUE_BASKET_AND_MANAGE_EXTRAS_NO_ONLINE_PAYMENT_NO_TIP` (owner, 2026-10-21; chain L–R) + owner-approved same-chain STAFF exception for the neighbour gate (2026-10-21).
+- **Deployed:** 2026-10-21T22:15Z (deploy run site-HOSTING-deploy-20261021T220718Z) · salown `45a8ee73341851c9` → `99b7ef02d812f209`; salown-staff unchanged `f54087aaf49fbf9a`.
+- **Rollback:** `rollback-site.sh HOSTING` → new release of `45a8ee73341851c9`, own approval. (Functions K–P stay backward-compatible with the old site.)
+- **Verified:** ORDER (K–P functions + STAFF Q serving their candidates), live == frozen, version config == frozen, served base 97/97; STAFF exception (`tools/released_site.py`, 31 tests + 25/25 mutants, run as a gate): STAFF DEPLOYED_VERIFIED + OBSERVED_CLEAN, live salown-staff == recorded `f54087aaf49fbf9a`, row == recorded, 25/25 served == STAFF candidate manifest, config == recorded, every other hosting site == freeze; neighbours otherwise unchanged; G0s scanner 123 files 0 hits; vitest failing set ⊆ base; typecheck none new; eslint == base; P2 suites 111/111; hosting config proof == live. Post: served 97/97 == candidate, salown-staff unchanged. Watch 15 min: live stable, 97/97 every minute, salown-staff unchanged, P2 functions 0 5xx / 0 non-probe ERROR.
+- **Record:** `~/release-work/online-extras-p2/runs/d21-HOSTING.out`, `runs/w21-HOSTING.out`, `state/sites.json`, `state/released.json`.
+- **Not done (by owner instruction):** no test booking, no production data write, no main integration (main twin still owed), no other secret work. Real-traffic exercise of the extras basket still open.
+
 ## R-2026-10-21-Q — `ONLINE-EXTRAS-P2` unit `STAFF`: hosting:salown-staff from `cb8ad7f9` (detail sheet shows booking extras; display only, no checkout change) · **LIVE — DEPLOYED_VERIFIED + OBSERVED_CLEAN (15 min)**
 
 - **Approval:** `ONLINE-EXTRAS-P2-STAFF-CB8AD7F9-2026-10-21` + `ACK_P2_STAFF_SCOPE=DETAIL_SHEET_EXTRAS_DISPLAY_ONLY_NO_CHECKOUT_CHANGE` (owner, 2026-10-21; chain L–R).
