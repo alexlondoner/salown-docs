@@ -1,5 +1,14 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
+## R-2026-10-22-C — `CANCEL-EMAIL-SERVICE-LABEL`: salownSendCancellationEmail from `2fa58ec7` (staff/admin cancellation email named "Unknown service" for catalogue bookings; resolver now gets the booking record) · **LIVE — DEPLOYED_VERIFIED + OBSERVED_CLEAN (15 min)** · owner real staff-cancel check PENDING
+
+- **Approval:** `CANCEL-EMAIL-SERVICE-LABEL-FN-2FA58EC7-2026-10-22` + `ACK_CEL_FN_CONFIG=CANCEL_EMAIL__TIMEOUT60_RESET__MAX20_RESET` (owner, 2026-10-22).
+- **Why:** owner live test — a staff/admin cancel of a whitecross booking (Full Skin Fade & Beard Luxury + Face Mask) emailed "Unknown service". The call site handed the resolver `{ service: b.serviceId || b.service, serviceName }` (no identity, an opaque id in place of the name). Customer-link cancel (`salownCancelByToken`) already passed the record. Known since INCIDENTS 2026-10-08 (abandoned-cart entry).
+- **Deployed:** 2026-10-22T13:01Z · `salownsendcancellationemail-00108-woz` → `-00109-yuy`; branch `release/cancel-email-service-label-on-live-a246c186` (1 commit on live `a246c186`: `index.ts` call site + `emails/cancellationServiceLabel.test.js`).
+- **Rollback:** `~/release-work/cancel-email-label/rollback-fn.sh CANCEL-EMAIL` → traffic 100% `-00108-woz` (binds BREVO@2), own approval `CANCEL-EMAIL-SERVICE-LABEL-FN-ROLLBACK-<date>`.
+- **Verified:** live archive == `a246c186` 118/118, secrets BREVO@2 pinned, inventory 144 == freeze, neighbours unchanged; unit 2745/0; contract 21/21; G2h real compiled handlers on the emulator (5 booking shapes): live staff-cancel 5/5 "Unknown service" (control), candidate == customer-link path 5/5, raw id 0, extras rows identical; call-site mutants 7/7; legacy email output 20/20 == live; scanner 0 hits; upload delta = lib/index.js + src/index.ts only. Post: archive == `2fa58ec7`, only this function moved. Watch 15 min: 0 requests, 0 5xx, 0 ERROR.
+- **Open:** owner real staff/admin cancel of a test booking with extras → email shows the service name + extra lines. No total line in cancellation emails = `ONLINE-EXTRAS-BREAKDOWN-PARITY` scope.
+
 ## R-2026-10-22-B — `ONLINE-EXTRAS-ALLSVC-CONFIG` whitecross: the 13 other main services get I CUT Deluxe's option fields (same 10 Extras, OPTIONAL_PAID) · **APPLIED — CONFIG_APPLIED_VERIFIED** (production configuration, not a deploy)
 
 - **Approval:** `ONLINE-EXTRAS-ALLSVC-CONFIG-WHITECROSS-13SVC-2026-10-22` + `ACK_ALLSVC_SCOPE=WHITECROSS_13_MAIN_SERVICES_TWO_OPTION_FIELDS_SAME_10_OPTIONAL_PAID_ONLY` (owner, 2026-10-22; after R-2026-10-22-A was DEPLOYED_VERIFIED + OBSERVED_CLEAN).
