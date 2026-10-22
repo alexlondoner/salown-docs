@@ -1,5 +1,14 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
+## R-2026-10-22-F — `ONLINE-EXTRAS-BREAKDOWN-PARITY` (P3) unit `CONFIRM`: salownBookingConfirmationTrigger salownBookingConfirmedEmailTrigger from `bf375a3a` (main service + page-ordered extras + stored total) · **LIVE — DEPLOYED_VERIFIED + OBSERVED_CLEAN (15 min)**
+
+- **Approval:** `ONLINE-EXTRAS-P3-FN-CONFIRM-BF375A3A-2026-10-22` + `ACK_P3_FN_CONFIG=CONFIRM__TIMEOUT60_RESET__MAX20_RESET` (owner, 2026-10-22).
+- **Deployed:** 2026-10-22T20:14Z · `salownbookingconfirmationtrigger-00048-xow` → `salownbookingconfirmationtrigger-00049-tas` `salownbookingconfirmedemailtrigger-00046-har` → `salownbookingconfirmedemailtrigger-00047-veq`.
+- **Rollback:** `rollback-fn.sh CONFIRM` → traffic 100 % to salownbookingconfirmationtrigger-00048-xow salownbookingconfirmedemailtrigger-00046-har, own approval `ONLINE-EXTRAS-P3-FN-CONFIRM-ROLLBACK-<date>`.
+- **Verified:** every gate in the deploy run (pins, next free id, live == frozen, secret pin, inventory + neighbours, unit/vitest failing set ⊆ base, contract / extras suites, no-extras golden vs LIVE, mutation gate, config proof, scanner, upload/lib or bundle delta == pinned); post-verify clean; watch 15 min clean (`runs/w22-CONFIRM*.out`).
+- **Record:** `~/release-work/online-extras-p3/runs/d22-CONFIRM.out`, `runs/w22-CONFIRM*.out`.
+- **Does not authorise:** any other unit (each its own approval line).
+
 ## R-2026-10-22-E — `ONLINE-EXTRAS-BREAKDOWN-PARITY` (P3) unit `TOKEN`: salownGetBookingByToken from `18be56f7` (lines in the writer-stamped booking-time order + `priceSummary`; no ids, no stamp returned) · **LIVE — DEPLOYED_VERIFIED + OBSERVED_CLEAN (15 min, re-run)**
 
 - **Approval:** `ONLINE-EXTRAS-P3-FN-TOKEN-18BE56F7-2026-10-22` + `ACK_P3_FN_CONFIG=TOKEN__TIMEOUT60_RESET__MAX20_RESET` (owner, 2026-10-22).
