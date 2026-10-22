@@ -1,5 +1,13 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
+## R-2026-10-22-E — `ONLINE-EXTRAS-BREAKDOWN-PARITY` (P3) unit `TOKEN`: salownGetBookingByToken from `18be56f7` (lines in the writer-stamped booking-time order + `priceSummary`; no ids, no stamp returned) · **LIVE — DEPLOYED_VERIFIED + OBSERVED_CLEAN (15 min, re-run)**
+
+- **Approval:** `ONLINE-EXTRAS-P3-FN-TOKEN-18BE56F7-2026-10-22` + `ACK_P3_FN_CONFIG=TOKEN__TIMEOUT60_RESET__MAX20_RESET` (owner, 2026-10-22).
+- **Deployed:** 2026-10-22T18:30Z · `salowngetbookingbytoken-00065-jux` → `-00066-yep` (ORDER: WRITER `-00011-xer` serving its candidate; released-exception proved WRITER against its recorded state).
+- **Rollback:** `rollback-fn.sh TOKEN` → traffic 100 % to `-00065-jux`, own approval `ONLINE-EXTRAS-P3-FN-TOKEN-ROLLBACK-<date>`.
+- **Watch:** the chain's first watch was broken at t+11 by an in-place edit of `tools/p2watch.sh` while it ran (operator error; all readings to t+11 were 0 requests / 0 5xx / 0 ERROR) → chain STOPPED. A fresh read-only 15-min watch then ran clean (`runs/w22-TOKEN-salownGetBookingByToken.out`; the interrupted one kept as `.interrupted.out`).
+- **Record:** `~/release-work/online-extras-p3/runs/d22-TOKEN.out`. Remaining units (CONFIRM … HOSTING) NOT deployed; the chain resumes only on the owner's word.
+
 ## R-2026-10-22-D — `ONLINE-EXTRAS-BREAKDOWN-PARITY` (P3) unit `WRITER`: salownCreateBooking from `ffb9e9be` (main service + page-ordered extras + stored total) · **LIVE — DEPLOYED_VERIFIED + OBSERVED_CLEAN (15 min)**
 
 - **Approval:** `ONLINE-EXTRAS-P3-FN-WRITER-FFB9E9BE-2026-10-22` + `ACK_P3_FN_CONFIG=` (owner, 2026-10-22).
