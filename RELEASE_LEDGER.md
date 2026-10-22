@@ -1,5 +1,12 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
+## R-2026-10-22-I — `ONLINE-EXTRAS-BREAKDOWN-PARITY` (P3) unit `CANCEL-LINK`: salownCancelByToken from `b427fd18` · **NOT RELEASED — deploy failed, traffic unchanged; chain STOPPED**
+
+- **Approval:** `ONLINE-EXTRAS-P3-FN-CANCEL-LINK-B427FD18-2026-10-22` (owner, 2026-10-22) — spent on a failed attempt.
+- **What happened:** 2026-10-22T21:17Z deploy created revision `salowncancelbytoken-00074-pit`; it went Ready at 21:23:47Z, then Ready=False at 21:27:51Z ("container failed to start and listen on PORT=8080 within the allocated timeout"); firebase-tools reported the deploy failed. No container stdout/stderr, no crash trace in the revision logs.
+- **Live state (read 21:3xZ):** Cloud Run traffic 100 % on `salowncancelbytoken-00073-qey` (latestReady); the function resource now names `-00074-pit` as its revision (latestCreated). Customer self-cancel unchanged. No retry, no rollback (nothing to roll back: traffic never moved).
+- **Not started:** CANCEL-EMAIL (J), STAFF (K), HOSTING (L). Next: diagnose `-00074-pit` (read-only), re-freeze CANCEL-LINK (live describe now names -00074-pit), new dated approval lines.
+
 ## R-2026-10-22-H — `ONLINE-EXTRAS-BREAKDOWN-PARITY` (P3) unit `NOTIFY-UPDATED`: salownNotifyBookingUpdated from `7b026820` (main service + page-ordered extras + stored total) · **LIVE — DEPLOYED_VERIFIED + OBSERVED_CLEAN (15 min)**
 
 - **Approval:** `ONLINE-EXTRAS-P3-FN-NOTIFY-UPDATED-7B026820-2026-10-22` + `ACK_P3_FN_CONFIG=NOTIFY_UPDATED__TIMEOUT60_RESET__MAX20_RESET` (owner, 2026-10-22).
