@@ -1,5 +1,15 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
+## R-2026-10-22-A — `ONLINE-EXTRAS-P2-PAYVENUE` unit `HOSTING`: hosting:salown from `b889c195` (extras basket also for `pay_at_venue`; hosted-channel payment keeps it off; shared extras kept when the main service changes; no payment change) · **LIVE — DEPLOYED_VERIFIED + OBSERVED_CLEAN (15 min)**
+
+- **Approval:** `ONLINE-EXTRAS-P2-PAYVENUE-HOSTING-B889C195-2026-10-22` + `ACK_P2_PAYVENUE_SCOPE=EXTRAS_GATE_PAY_AT_VENUE_OR_OFF_AND_BASKET_CARRY_NO_PAYMENT_CHANGE` (owner, 2026-10-22).
+- **Why:** whitecross stores `paymentMode: 'pay_at_venue'`; the P2 page gate accepted only `'off'`, so the basket never appeared on salown.com/book/whitecross.
+- **Deployed:** 2026-10-22 (deploy run site-HOSTING-deploy-20261022T095236Z) · salown `99b7ef02d812f209` → `32a0f8e58eb441d2`; salown-staff unchanged `f54087aaf49fbf9a`. Branch `release/online-extras-payvenue-gate-on-live-b6d05adf` (`ccb0acb8` + `b889c195`, 4 files on live `b6d05adf`).
+- **Rollback:** `rollback-site.sh HOSTING` → new release of `99b7ef02d812f209`, own approval `ONLINE-EXTRAS-P2-PAYVENUE-HOSTING-ROLLBACK-<date>` (check-only OK).
+- **Verified:** pins; ORDER (6 P2 functions + STAFF on their candidates); live == frozen, config == frozen, served 97/97 == base; G0s 123 files 0 hits; vitest failing ⊆ base; typecheck none new; eslint == base; P2 suites 136/136 (production whitecross shapes, 14 main services × 0/1/2/10 extras); mutants 23/23; bundle = entry chunk only (+608 B, 4 semantic hunks). Emulator E2E with live writer/token/email code: 56 bookings correct. Post: served 97/97 == candidate. Watch 15 min clean (P2 functions 0 5xx / 0 non-probe ERROR).
+- **Record:** `~/release-work/online-extras-payvenue/runs/d22-HOSTING.out`, `runs/w22-HOSTING.out`, `runs/bundle-diff-c22b-semantic.txt`.
+- **Next (separate approval):** whitecross 13-main-service option config (`~/release-work/online-extras-allsvc-config`). Follow-up `ONLINE-EXTRAS-BREAKDOWN-PARITY` (ROADMAP) non-blocking.
+
 ## R-2026-10-21-R — `ONLINE-EXTRAS-P2` unit `HOSTING`: hosting:salown from `b6d05adf` (P2-A + P2-B + P2-C: pay-at-venue extras basket and manage-booking extras; no online payment, no tip) · **LIVE — DEPLOYED_VERIFIED + OBSERVED_CLEAN (15 min)** — extras basket now visible to customers
 
 - **Approval:** `ONLINE-EXTRAS-P2-HOSTING-B6D05ADF-2026-10-21` + `ACK_P2_HOSTING_SCOPE=PAY_AT_VENUE_BASKET_AND_MANAGE_EXTRAS_NO_ONLINE_PAYMENT_NO_TIP` (owner, 2026-10-21; chain L–R) + owner-approved same-chain STAFF exception for the neighbour gate (2026-10-21).
