@@ -1,5 +1,14 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
+## R-2026-10-22-B — `ONLINE-EXTRAS-ALLSVC-CONFIG` whitecross: the 13 other main services get I CUT Deluxe's option fields (same 10 Extras, OPTIONAL_PAID) · **APPLIED — CONFIG_APPLIED_VERIFIED** (production configuration, not a deploy)
+
+- **Approval:** `ONLINE-EXTRAS-ALLSVC-CONFIG-WHITECROSS-13SVC-2026-10-22` + `ACK_ALLSVC_SCOPE=WHITECROSS_13_MAIN_SERVICES_TWO_OPTION_FIELDS_SAME_10_OPTIONAL_PAID_ONLY` (owner, 2026-10-22; after R-2026-10-22-A was DEPLOYED_VERIFIED + OBSERVED_CLEAN).
+- **Written:** 2026-10-22T11:05:27Z–11:05:28Z, 13 × Firestore `:commit` on `tenants/whitecross/services/<id>`, mask {`allowedOptionIds`, `optionConfig`}, precondition `updateTime` = value just read; values = I CUT Deluxe's fields as frozen.
+- **Verified:** 13 targets == source fields, every other field unchanged; I CUT Deluxe, the 10 Extras and settings unchanged; `public/bookingOptions` = 14 services, each the same 10 options; fleet (11 tenants, 81 docs) moved only the 13 targets + whitecross mirror; hosting salown `32a0f8e58eb441d2` / whitecrossbarbers-saas `1cb1026123b8a014` / salown-staff `f54087aaf49fbf9a` unchanged; mirror publisher 30 log entries, ERROR+ 0.
+- **Rollback:** `~/release-work/online-extras-allsvc-config/config.sh --rollback` (own approval `ONLINE-EXTRAS-ALLSVC-CONFIG-WHITECROSS-ROLLBACK-<date>`): removes the two fields from the 13 services (frozen pre-state = absent); mirror returns to I CUT Deluxe only. Rehearsed on the emulator.
+- **Record:** `~/release-work/online-extras-allsvc-config/runs/a22-config.out`, `state/writes.json`, `frozen/allsvc.frozen.json`. Tool self-test 18/18; emulator rehearsal (apply, idempotent re-run, stale refusal, rollback) OK.
+- **Effect:** on salown.com/book/whitecross every main service offers the 10 extras; the extras are no longer listed as standalone services there. whitecrossbarbers.com unaffected.
+
 ## R-2026-10-22-A — `ONLINE-EXTRAS-P2-PAYVENUE` unit `HOSTING`: hosting:salown from `b889c195` (extras basket also for `pay_at_venue`; hosted-channel payment keeps it off; shared extras kept when the main service changes; no payment change) · **LIVE — DEPLOYED_VERIFIED + OBSERVED_CLEAN (15 min)**
 
 - **Approval:** `ONLINE-EXTRAS-P2-PAYVENUE-HOSTING-B889C195-2026-10-22` + `ACK_P2_PAYVENUE_SCOPE=EXTRAS_GATE_PAY_AT_VENUE_OR_OFF_AND_BASKET_CARRY_NO_PAYMENT_CHANGE` (owner, 2026-10-22).
