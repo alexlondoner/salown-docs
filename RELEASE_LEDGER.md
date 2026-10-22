@@ -1,5 +1,14 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
+## R-2026-10-22-G — `ONLINE-EXTRAS-BREAKDOWN-PARITY` (P3) unit `RESCHED-LINK`: salownRescheduleByToken from `b2619908` (main service + page-ordered extras + stored total) · **LIVE — DEPLOYED_VERIFIED + OBSERVED_CLEAN (15 min)**
+
+- **Approval:** `ONLINE-EXTRAS-P3-FN-RESCHED-LINK-B2619908-2026-10-22` + `ACK_P3_FN_CONFIG=RESCHED_LINK__TIMEOUT60_RESET__MAX20_RESET` (owner, 2026-10-22).
+- **Deployed:** 2026-10-22T20:38Z · `salownreschedulebytoken-00079-vos` → `salownreschedulebytoken-00080-buf`.
+- **Rollback:** `rollback-fn.sh RESCHED-LINK` → traffic 100 % to salownreschedulebytoken-00079-vos, own approval `ONLINE-EXTRAS-P3-FN-RESCHED-LINK-ROLLBACK-<date>`.
+- **Verified:** every gate in the deploy run (pins, next free id, live == frozen, secret pin, inventory + neighbours, unit/vitest failing set ⊆ base, contract / extras suites, no-extras golden vs LIVE, mutation gate, config proof, scanner, upload/lib or bundle delta == pinned); post-verify clean; watch 15 min clean (`runs/w22-RESCHED-LINK*.out`).
+- **Record:** `~/release-work/online-extras-p3/runs/d22-RESCHED-LINK.out`, `runs/w22-RESCHED-LINK*.out`.
+- **Does not authorise:** any other unit (each its own approval line).
+
 ## R-2026-10-22-F — `ONLINE-EXTRAS-BREAKDOWN-PARITY` (P3) unit `CONFIRM`: salownBookingConfirmationTrigger salownBookingConfirmedEmailTrigger from `bf375a3a` (main service + page-ordered extras + stored total) · **LIVE — DEPLOYED_VERIFIED + OBSERVED_CLEAN (15 min)**
 
 - **Approval:** `ONLINE-EXTRAS-P3-FN-CONFIRM-BF375A3A-2026-10-22` + `ACK_P3_FN_CONFIG=CONFIRM__TIMEOUT60_RESET__MAX20_RESET` (owner, 2026-10-22).
