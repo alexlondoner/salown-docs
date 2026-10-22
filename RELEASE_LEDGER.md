@@ -1,5 +1,14 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
+## R-2026-10-22-D — `ONLINE-EXTRAS-BREAKDOWN-PARITY` (P3) unit `WRITER`: salownCreateBooking from `ffb9e9be` (main service + page-ordered extras + stored total) · **LIVE — DEPLOYED_VERIFIED + OBSERVED_CLEAN (15 min)**
+
+- **Approval:** `ONLINE-EXTRAS-P3-FN-WRITER-FFB9E9BE-2026-10-22` + `ACK_P3_FN_CONFIG=` (owner, 2026-10-22).
+- **Deployed:** 2026-10-22T18:05Z · `salowncreatebooking-00010-tob` → `salowncreatebooking-00011-xer`.
+- **Rollback:** `rollback-fn.sh WRITER` → traffic 100 % to salowncreatebooking-00010-tob, own approval `ONLINE-EXTRAS-P3-FN-WRITER-ROLLBACK-<date>`.
+- **Verified:** every gate in the deploy run (pins, next free id, live == frozen, secret pin, inventory + neighbours, unit/vitest failing set ⊆ base, contract / extras suites, no-extras golden vs LIVE, mutation gate, config proof, scanner, upload/lib or bundle delta == pinned); post-verify clean; watch 15 min clean (`runs/w22-WRITER*.out`).
+- **Record:** `~/release-work/online-extras-p3/runs/d22-WRITER.out`, `runs/w22-WRITER*.out`.
+- **Does not authorise:** any other unit (each its own approval line).
+
 ## R-2026-10-22-C — `CANCEL-EMAIL-SERVICE-LABEL`: salownSendCancellationEmail from `2fa58ec7` (staff/admin cancellation email named "Unknown service" for catalogue bookings; resolver now gets the booking record) · **LIVE — DEPLOYED_VERIFIED + OBSERVED_CLEAN (15 min) + OWNER_VERIFIED** (real staff/admin cancel 2026-10-22T13:29Z, 200 on -00109-yuy, ERROR 0; owner: email shows the service name + extras)
 
 - **Approval:** `CANCEL-EMAIL-SERVICE-LABEL-FN-2FA58EC7-2026-10-22` + `ACK_CEL_FN_CONFIG=CANCEL_EMAIL__TIMEOUT60_RESET__MAX20_RESET` (owner, 2026-10-22).
