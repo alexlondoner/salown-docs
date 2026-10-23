@@ -1,5 +1,14 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
+## R-2026-10-23-C — `ONLINE-EXTRAS-BREAKDOWN-PARITY` (P3) unit `STAFF`: hosting:salown-staff from `fe41f709` (main service + page-ordered extras + stored total) · **LIVE — DEPLOYED_VERIFIED + OBSERVED_CLEAN (15 min)**
+
+- **Approval:** `ONLINE-EXTRAS-P3-STAFF-FE41F709-2026-10-23` + `ACK_P3_STAFF_SCOPE=DETAIL_SHEET_BREAKDOWN_DISPLAY_ONLY_NO_CHECKOUT_CHANGE` (owner, 2026-10-23).
+- **Deployed:** 2026-10-23T15:59Z · hosting:salown-staff `f54087aaf49fbf9a` → `c80748a54239a527`.
+- **Rollback:** `rollback-site.sh STAFF` → new release of `f54087aaf49fbf9a`, own approval `ONLINE-EXTRAS-P3-STAFF-ROLLBACK-<date>`.
+- **Verified:** every gate in the deploy run (pins, next free id, live == frozen, secret pin, inventory + neighbours, unit/vitest failing set ⊆ base, contract / extras suites, no-extras golden vs LIVE, mutation gate, config proof, scanner, upload/lib or bundle delta == pinned); post-verify clean; watch 15 min clean (`runs/w-2026-10-23-STAFF*.out`).
+- **Record:** `~/release-work/online-extras-p3/runs/d-2026-10-23-STAFF.out`, `runs/w-2026-10-23-STAFF*.out`.
+- **Does not authorise:** any other unit (each its own approval line).
+
 ## R-2026-10-23-B — `ONLINE-EXTRAS-BREAKDOWN-PARITY` (P3) unit `CANCEL-EMAIL`: salownSendCancellationEmail from `46daa037` (main service + page-ordered extras + stored total) · **LIVE — DEPLOYED_VERIFIED + OBSERVED_CLEAN (15 min)**
 
 - **Approval:** `ONLINE-EXTRAS-P3-FN-CANCEL-EMAIL-46DAA037-2026-10-23` + `ACK_P3_FN_CONFIG=CANCEL_EMAIL__TIMEOUT60_RESET__MAX20_RESET` (owner, 2026-10-23).
