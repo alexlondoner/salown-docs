@@ -7,6 +7,19 @@ Owner rules that still apply (see memory MEMORY.md + project_online_extras_p1.md
 - Don't edit a script while a running process executes it (broke the TOKEN watch on 2026-10-22 — memory feedback_no_edit_running_script).
 - Main integration (main twin) is NOT to be done in this phase.
 
+## 0. UPDATE 2026-10-23 (read this first)
+- **-00074-pit diagnosed → PLATFORM_FAILURE** (no instance ever started; build/spec/archive/cold start clean). Report:
+  `runs/diag-CANCEL-LINK-00074-pit-2026-10-23.md`. Not deleted. Recorded `state/failed_attempts.json` (FAILED_ATTEMPT).
+- **Gate fix:** serving base = sole untagged 100 % Ready Cloud Run revision (`tools/serving.py`, tests 72, mutants 47/47, run
+  in every deploy-fn). Function resource may name another revision ONLY as the recorded failed attempt; split/tag/other newer
+  revision/config or source mismatch/frozen-digest drift → STOP. Post-verify requires the new revision to serve 100 % + Ready.
+  ORDER gates (deploy-fn WRITER check, deploy-site `fn_unit_serves_candidate`) use `serves_candidate` (serving rev's own
+  source) — before the fix STAFF's ORDER wrongly reported CANCEL-LINK=candidate. rollback-fn classifies by the serving archive.
+  chain.sh run files now dated `d-<date>-` / `w-<date>-`. Pre-change copies `state/pre-20261023/`.
+- **Re-frozen 2026-10-23** (inventory diff = 6 released + 1 recorded failed attempt, 0 unexplained; neighbours unchanged).
+  Check-only CANCEL-LINK, CANCEL-EMAIL, STAFF, HOSTING + 4 rollback check-only: all OK (`runs/c23b-*.out`, `runs/rb23b-*.out`).
+- 2026-10-22 approvals void. New lines for 2026-10-23 presented to the owner; next free id R-2026-10-23-A. Nothing deployed.
+
 ## 1. What is LIVE (all verified)
 
 | Release | What | Live | Rollback target |
