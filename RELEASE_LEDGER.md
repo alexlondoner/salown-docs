@@ -1,5 +1,14 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
+## R-2026-10-23-D — `ONLINE-EXTRAS-BREAKDOWN-PARITY` (P3) unit `HOSTING`: hosting:salown from `afa54daa` (main service + page-ordered extras + stored total) · **LIVE — DEPLOYED_VERIFIED + OBSERVED_CLEAN (15 min)**
+
+- **Approval:** `ONLINE-EXTRAS-P3-HOSTING-AFA54DAA-2026-10-23` + `ACK_P3_HOSTING_SCOPE=MANAGE_BOOKING_BREAKDOWN_DISPLAY_ONLY_NO_PAYMENT_CHANGE` (owner, 2026-10-23).
+- **Deployed:** 2026-10-23T16:28Z · hosting:salown `32a0f8e58eb441d2` → `29e1dbb95722adcc`.
+- **Rollback:** `rollback-site.sh HOSTING` → new release of `32a0f8e58eb441d2`, own approval `ONLINE-EXTRAS-P3-HOSTING-ROLLBACK-<date>`.
+- **Verified:** every gate in the deploy run (pins, next free id, live == frozen, secret pin, inventory + neighbours, unit/vitest failing set ⊆ base, contract / extras suites, no-extras golden vs LIVE, mutation gate, config proof, scanner, upload/lib or bundle delta == pinned); post-verify clean; watch 15 min clean (`runs/w-2026-10-23-HOSTING*.out`).
+- **Record:** `~/release-work/online-extras-p3/runs/d-2026-10-23-HOSTING.out`, `runs/w-2026-10-23-HOSTING*.out`.
+- **Does not authorise:** any other unit (each its own approval line).
+
 ## R-2026-10-23-C — `ONLINE-EXTRAS-BREAKDOWN-PARITY` (P3) unit `STAFF`: hosting:salown-staff from `fe41f709` (main service + page-ordered extras + stored total) · **LIVE — DEPLOYED_VERIFIED + OBSERVED_CLEAN (15 min)**
 
 - **Approval:** `ONLINE-EXTRAS-P3-STAFF-FE41F709-2026-10-23` + `ACK_P3_STAFF_SCOPE=DETAIL_SHEET_BREAKDOWN_DISPLAY_ONLY_NO_CHECKOUT_CHANGE` (owner, 2026-10-23).
