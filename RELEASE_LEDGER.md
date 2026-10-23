@@ -1,5 +1,14 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
+## R-2026-10-23-A — `ONLINE-EXTRAS-BREAKDOWN-PARITY` (P3) unit `CANCEL-LINK`: salownCancelByToken from `b427fd18` (main service + page-ordered extras + stored total) · **LIVE — DEPLOYED_VERIFIED + OBSERVED_CLEAN (15 min)**
+
+- **Approval:** `ONLINE-EXTRAS-P3-FN-CANCEL-LINK-B427FD18-2026-10-23` + `ACK_P3_FN_CONFIG=CANCEL_LINK__TIMEOUT60_RESET__MAX20_RESET` (owner, 2026-10-23).
+- **Deployed:** 2026-10-23T14:13Z · `salowncancelbytoken-00073-qey` → `salowncancelbytoken-00075-gab`.
+- **Rollback:** `rollback-fn.sh CANCEL-LINK` → traffic 100 % to salowncancelbytoken-00073-qey, own approval `ONLINE-EXTRAS-P3-FN-CANCEL-LINK-ROLLBACK-<date>`.
+- **Verified:** every gate in the deploy run (pins, next free id, live == frozen, secret pin, inventory + neighbours, unit/vitest failing set ⊆ base, contract / extras suites, no-extras golden vs LIVE, mutation gate, config proof, scanner, upload/lib or bundle delta == pinned); post-verify clean; watch 15 min clean (`runs/w-2026-10-23-CANCEL-LINK*.out`).
+- **Record:** `~/release-work/online-extras-p3/runs/d-2026-10-23-CANCEL-LINK.out`, `runs/w-2026-10-23-CANCEL-LINK*.out`.
+- **Does not authorise:** any other unit (each its own approval line).
+
 ## R-2026-10-22-I — `ONLINE-EXTRAS-BREAKDOWN-PARITY` (P3) unit `CANCEL-LINK`: salownCancelByToken from `b427fd18` · **NOT RELEASED — deploy failed, traffic unchanged; chain STOPPED**
 
 - **Approval:** `ONLINE-EXTRAS-P3-FN-CANCEL-LINK-B427FD18-2026-10-22` (owner, 2026-10-22) — spent on a failed attempt.
