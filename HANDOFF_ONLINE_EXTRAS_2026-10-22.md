@@ -20,6 +20,7 @@ Owner rules that still apply (see memory MEMORY.md + project_online_extras_p1.md
   Check-only CANCEL-LINK, CANCEL-EMAIL, STAFF, HOSTING + 4 rollback check-only: all OK (`runs/c23b-*.out`, `runs/rb23b-*.out`).
 - 2026-10-22 approvals void. New lines for 2026-10-23 presented to the owner; next free id R-2026-10-23-A. Nothing deployed.
 - **2026-10-23 evening: P3 COMPLETE (all units live).** R-2026-10-23-A CANCEL-LINK `-00075-gab` (rb -00073-qey) · B CANCEL-EMAIL `-00110-lup` (rb -00109-yuy) · C STAFF `c80748a54239a527` (rb f54087aa) · D HOSTING `29e1dbb95722adcc` (rb 32a0f8e5). All DEPLOYED_VERIFIED + OBSERVED_CLEAN. Chain stop at STAFF (pre-existing `chain.sh` env-assignment bug, exit 127, nothing contacted) fixed with `env`; resumed on owner "devam". Next: owner live check with a real extras booking → then abandoned-cart A/B/C → main integration prompt → cleanup. Membership/Onboarding prompts stay paused.
+- ✅ **2026-10-23 17:06Z OWNER_VERIFIED → P3 DONE.** Real booking (The Full Experience + Face Mask + Nose Wax): staff detail, confirmation email, Manage Booking all show main service £40, extras in page order, Total £58 · 50 min. Next: abandoned-cart A/B/C → main integration prompt → cleanup.
 
 ## 1. What is LIVE (all verified)
 
