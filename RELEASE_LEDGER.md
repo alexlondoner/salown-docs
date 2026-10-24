@@ -1,5 +1,15 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
+## R-2026-10-24-A — `ABANDONED-CART-DASHBOARD-BOOKING-ID` unit `HOSTING`: hosting:salown from `8e30897d` ("Finish your booking" request names the booking by its document id; no function change) · **LIVE — DEPLOYED_VERIFIED + OBSERVED_CLEAN (15 min)**
+
+- **Approval:** `ABANDONED-CART-DOCID-HOSTING-8E30897D-2026-10-24` + `ACK_ABANDONED_CART_SCOPE=FINISH_BOOKING_REQUEST_NAMES_DOC_ID_NO_FUNCTION_CHANGE` (owner, 2026-10-24; the 2026-10-23 approval expired unused).
+- **Deployed:** 2026-10-24T13:58:12Z · hosting:salown `29e1dbb95722adcc` → `f544310dfadb6d8f` (candidate `8e30897d`, tree `0b4f7d82`, single parent = live source `afa54daa`; patch-id == void first cut `8fa8aac5`).
+- **Rollback:** `rollback-site.sh HOSTING` → new release of `29e1dbb95722adcc`, own approval `ABANDONED-CART-DOCID-HOSTING-ROLLBACK-<date>`.
+- **Verified:** every gate in the deploy run (branch/tree/parent pins, next free id, live == frozen, neighbours unchanged, served 97/97 == base, sendAbandonedCart `-00016-raf` gen 1792517282814496 + module sha pinned → function delta 0, G0s 0 hits, vitest failing set == base 9, tsc/eslint == base, request suite 12/12, live server contract 11/11, mutation 10/10, hosting config == live, bundle content delta == index chunk only); post-verify served 97/97 == candidate, salown-staff `c80748a5` unchanged; watch 15 min clean (6 samples: version, served bytes, staff, sAC revision; 0 Cloud Run ERROR logs since deploy).
+- **Record:** `~/release-work/abandoned-cart-docid/kit/runs-deploy-24.out`, `runs/site-HOSTING-deploy-20261024T135233Z`, `runs/monitor-24.out`.
+- **Pending:** owner real "Finish your booking" test on a pending booking. Main twin owed.
+- **Does not authorise:** any other unit or any function deploy.
+
 ## R-2026-10-23-D — `ONLINE-EXTRAS-BREAKDOWN-PARITY` (P3) unit `HOSTING`: hosting:salown from `afa54daa` (main service + page-ordered extras + stored total) · **LIVE — DEPLOYED_VERIFIED + OBSERVED_CLEAN (15 min)**
 
 - **Approval:** `ONLINE-EXTRAS-P3-HOSTING-AFA54DAA-2026-10-23` + `ACK_P3_HOSTING_SCOPE=MANAGE_BOOKING_BREAKDOWN_DISPLAY_ONLY_NO_PAYMENT_CHANGE` (owner, 2026-10-23).
