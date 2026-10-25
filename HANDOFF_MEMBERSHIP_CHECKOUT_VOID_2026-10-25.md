@@ -36,9 +36,10 @@ Passive 900 s, no call, no smoke, 09:20:55Z → 09:40:36Z. 0 callable / POST req
 
 ## 4. Owed — in order, each its own scope
 
-1. **Main twin (CC + B3 + VOID)** into current `origin/main`, semantic integration, **no deploy**. Needs a widened claim (`functions/src/checkout/executor.ts`, `voidExecutor.ts`, `memberships/redeemSeam.ts`, `legacyProjection.ts`, the void tests, runbook). Main carries its own unapproved checkout changes — integrate around them, do not ship them.
+1. ~~**Main twin (CC + B3 + VOID)**~~ — ✅ DONE 2026-10-25: salown-app main `6281f76c` (no deploy, `[skip ci]`), SYNC + claim removal `15752293`. See §6.
 2. **Production canary on a demo tenant** — separate scope, own data-cleanup / rollback plan, own dated owner approval. **Mandatory before membership is enabled for any tenant.** Only after it can the status move beyond `DORMANT_NO_TRAFFIC`.
 3. E-Admin → E-Staff (MEMBERSHIP-PHASE1 plan), each its own approval.
+4. **`MEMBERSHIP-VOID-C2A-ADVANCE-COMPAT`** (open debt, see §6) — before C2a ships to production or Membership is enabled on any tenant.
 
 ## 5. Do not
 
@@ -46,3 +47,15 @@ Passive 900 s, no call, no smoke, 09:20:55Z → 09:40:36Z. 0 callable / POST req
 - Do not call this release OWNER_VERIFIED.
 - Do not reuse the probe exception for any other release.
 - Do not enable `membershipEnabled` on any tenant before the canary.
+
+## 6. Main twin — `6281f76c` (2026-10-25, no deploy)
+
+Main-only record. Changes nothing in production: the live release above stays `DORMANT_NO_TRAFFIC`, **NOT OWNER_VERIFIED**, canary pending.
+
+- **Integrated live sources:** CC `45788e2b` → B3 `ba888c48` → VOID r2 `73d0a8fb`. 18 paths on main base `6698da28`.
+- `checkout/executor.ts`: three-way merge (base `f7d59aac`). Every line the live chain added and every line main added is present; the 3 lines live removed are gone. Legacy projection fields are applied first, then main's C2a write-set, so the advance projection decides `platformDepositAmount` (pinned by a static ordering test).
+- Byte-identical to `73d0a8fb`: `voidExecutor.ts`, `legacyProjection.ts`, `memberships/redeemSeam.ts` + their tests, `release.json`, runbook. Test files adapted to main only by appending: the wire test passes through the ONB-PD2 `gated()` wrapper; the membership isolation test pins the B3 `redeemSeam` edge.
+- **Preserved main-only, NOT live:** C2a advance, Connect D (`WEBHOOK_VERIFIED_RAILS`), refund R3, pricing state, C2b-B0 legacy-projection parity. `index.ts`, onboarding, whatsapp, owner-invite, `src`, packages, rules unchanged.
+- **Tests:** unit failing set candidate == base (1 pre-existing OWNERSHIP test); emulator base 1128/1128, candidate 1227/1227. EMU 39 was added after that candidate run's mirror was copied, so the void suite was rerun on a fresh mirror: 43/43 including EMU 39. Mutation 91/91 killed (r2's 87 + 4 twin mutants), baseline green. Kit `~/release-work/membership-main-twin/`.
+- **Open debt `MEMBERSHIP-VOID-C2A-ADVANCE-COMPAT`:** owner decision (a), 2026-10-25 — a checkout that carries C2a advance fields (`advanceAllocation`, `platformDepositAmount`, `advanceLedgerVersion`) is refused `VOID_BASIS_CORRUPT` with zero writes. No automatic reversal of advance fields and no new error code were added. Must be resolved before C2a ships to production or Membership is enabled. The live release is unaffected (it has no C2a).
+- Note: main's C2b plan (legacy-projection parity) overlaps with the CC legacy projection now on main; reconcile when C2b is picked up.
