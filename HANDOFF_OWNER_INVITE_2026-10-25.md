@@ -92,3 +92,21 @@ first.
   ROADMAP `b2837d7` · `3556667`.
 
 **Next safe step:** new R6 session → A1/A2 main twin (no deploy) → then R6-B preparation.
+
+## 10. Update 2026-10-27 — R6-A main twin DONE (supersedes the "Main twin OPEN" bullet and next step of §9)
+
+- **Main twin landed:** salown-app main `bf28cd3c` (`[skip ci]`): R6 modules / tests / fixtures / mail gate byte-identical to
+  `5a83a7e0`; `sendPasswordResetPublic` = live A1 handler; `sendStaffPasswordReset` = main's K3 gate + the live A2 SMTP transport,
+  escaping and options. `actionCodeSettings` identical to the live continue URL; main lacked `timeoutSeconds: 60` /
+  `maxInstances: 12` → twin takes the live options. Gates: unit base 4148 / 0 fail vs twin 4205 / 0 fail, emulator 1240/1240
+  (base + twin), A1 emulator 4/4, mutation 20/20 + 17/17, reset mail gate twin 0 / base 3, tsc 0. Runbook "Main twin debt" CLOSED.
+- **Claim `SAAS-OWNER-INVITE-R6` closed:** salown-app main `a5b7225d`.
+- **No production change:** no deploy, no Auth config change, no email, no callable, no Firestore/Auth write. Live A1
+  `-00056-hiy` and A2 `-00058-cop` unchanged (re-measured before the twin: revisions, `USER@2` + `PASS@1`, archives = candidates).
+- **K3 is on main only, NOT live** (`cc38e330`; `STAFF-RESET-TARGET-SCOPE` P1 stays open). Main is not a release source for
+  either reset function.
+- Kept: canary tenant `salown-canary-20261026` + its owner account, kits `~/release-work/r6-a{1,2}/kit`, all R6 freeze /
+  deploy / monitor / rollback evidence.
+
+**Next safe step:** short cleanup (twin temp worktrees) → new R6-B session (authorized domain, app-owned reset page,
+10–128 password policy — a separate Auth/UI package, each Auth config change its own dated approval).
