@@ -66,3 +66,29 @@ salown-app main: claim widen `c16fadc6` → re-pin + runbooks `cc1b181e` → twi
 
 Owner runs the canary (§4) when ready; the session runs `check-live.sh` and the precondition reads
 first.
+
+## 9. Update 2026-10-27 — canary PASS, R6-A LIVE + OWNER_VERIFIED (supersedes §4, §6, §8)
+
+- **Canary PASS 2026-10-26** (`salown-app/ops/releases/owner-invite-canary-20261026/RESULT.md`): tenant
+  `salown-canary-20261026`, owner uid `oi_3esEA7…` — **kept** (R6-B verification uses it; cleanup only under its own approval).
+- **R6-A1** `sendPasswordResetPublic` `-00056-hiy` from `5a83a7e0` — `R-2026-10-26-A`; **R6-A2** `sendStaffPasswordReset`
+  `-00058-cop` from `1b8dbd72` — `R-2026-10-27-A`. Both: Google Workspace SMTP (`OWNER_INVITE_SMTP_USER@2` + `PASS@1`, sender
+  `info@salown.com`), no Brevo, timeout 60 / maxInstances 12 unchanged; A1 adds rate limit (client 10/h, target 3/h), uniform
+  answer, 3.5 s floor, escaping, fixed log codes. **OWNER_VERIFIED 2026-10-27** (mail mailed-by / signed-by `salown.com`, link
+  straight to `havuz-44f70.firebaseapp.com/__/auth/action`). Detail: `RELEASE_LEDGER.md`, `salown-app/ops/runbooks/owner-invite-r6.md`
+  "R6-A LIVE + OWNER_VERIFIED", `ops/releases/r6-a{1,2}/RECORD.md`.
+- **Rollback:** traffic only → `sendpasswordresetpublic-00055-rig` / `sendstaffpasswordreset-00057-xuk`
+  (`OWNER-INVITE-R6-<A1|A2>-ROLLBACK-<date>`, `~/release-work/r6-a<1|2>/kit/rollback.sh --traffic`); a rebuild of `a60bfaad` is NOT
+  a rollback (resets timeoutSeconds). Rollback re-opens the Brevo tracking leak — forward-fix preferred.
+- **Evidence kept (no cleanup):** kits `~/release-work/r6-a1/kit`, `~/release-work/r6-a2/kit` (freezes, kit digests, deploy /
+  check-only / rollback runs), worktrees `~/release-work/r6-a{1,2}/salown-app`, CLI `~/release-work/r6-cli`, records worktree
+  `~/release-work/r6-records/salown-app`.
+- **Main twin OPEN** (claim `SAAS-OWNER-INVITE-R6` stays blocked / handoff-ready): main has the Brevo handlers and no R6 modules;
+  main's `sendStaffPasswordReset` carries K3 (`cc38e330`, not live) → twin keeps K3 and swaps only transport + escaping. Steps in
+  the runbook "Main twin debt". The twin session must also claim `functions/src/index.ts`.
+- **Follow-ups, not started (ROADMAP):** R6-B (after the twin), `STAFF-RESET-TARGET-SCOPE` P1 (fix exists on main as K3),
+  `RESET-MAIL-DELIVERABILITY` P2 (owner direction `noreply@`; alias = owner action; scope + Reply-To open).
+- Commits: salown-app main `51da7fa2`; docs ledger `fa34ea2` · `2bfb97d` · `da350af` · `4ebd553` · `c653bd8` · `e9bb458`,
+  ROADMAP `b2837d7` · `3556667`.
+
+**Next safe step:** new R6 session → A1/A2 main twin (no deploy) → then R6-B preparation.
