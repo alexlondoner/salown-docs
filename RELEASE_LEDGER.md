@@ -1,5 +1,15 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
+## R-2026-10-28-A — `SAAS-OWNER-INVITE-R6B-B1`: R6-B1 HOSTING-DARK, app-owned `/reset-password` page (dark: no mail links to it yet) · 1 unit (`hosting:salown`) · **LIVE — DEPLOYED_VERIFIED (2026-10-28); OWNER_VERIFIED pending**
+
+- **Approval:** `OWNER-INVITE-R6B-B1-HOSTING-3039445D-2026-10-28` + `ACK_R6B_B1_SCOPE=RESET_PAGE_DARK_HOSTING_ONLY_NO_AUTH_CONFIG_NO_FUNCTION` (owner, 2026-10-28, Europe/London).
+- **Deployed:** 2026-10-28T09:26:48Z · `salown` `f544310dfadb6d8f` (R-2026-10-24-A, source `8e30897d`) → **`7d6e1bf7b682d6c5`** from candidate `3039445d` (tree `97afe829`, single parent `8e30897d`, branch `release/r6-b1-on-live-8e30897d-r3`). Superseded, never deploy: `dba8cb03`, `99306f99`. Main is not the release source; main-only `firebase.json` predeploy lines not carried. Run `~/release-work/r6-b1/kit/runs/site-HOSTING-deploy-20261028T092002Z`.
+- **Diff:** served bytes vs live — 68 identical, 28 hash-rename only, content change only in the entry chunk (`index-*.js`, 1 390 468 → 1 396 129 B); version config == live + one `/reset-password` header glob (`X-Robots-Tag: noindex, nofollow`, `Referrer-Policy: no-referrer`, CSP). No function, rules, Auth config, mail or callable.
+- **Gates (inside the deploy run):** pins, lineage, neighbours, reset senders (`-00056-hiy`, `-00058-cop`) and Auth fields == frozen; scanner 0 hits; vitest 6759 pass, failing set ⊆ base; tsc 18 = base; eslint ⊆ base; reset suites 67/67; mutation 22/22 killed; browser QA 390 + 1440 on the Hosting emulator 181/181 (base negative control 90/181).
+- **Post-deploy:** live `7d6e1bf7b682d6c5`; served 97/97 == candidate; `salown-staff` `c80748a54239a527` unchanged; CSP + `no-referrer` present on `/reset-password` and absent on `/login` on salown.com, www.salown.com and salown.web.app; Auth config (callbackUri, authorized domains, password policy) unchanged.
+- **Rollback:** `~/release-work/r6-b1/kit/rollback-site.sh HOSTING` → `f544310dfadb6d8f` (FINALIZED), own approval. Safe while B3a is not live; after B3a, roll back B3a first. Not used.
+- **Next, each with its own approval:** owner check of the dark page → `salown.com` authorized domain → B3a → STAFF-RESET-TARGET-SCOPE → B3b → compatibility work → B4. Main twin of B1: OPEN.
+
 ## R-2026-10-27-A — `SAAS-OWNER-INVITE-R6`: R6-A2 STAFF-RESET, staff password reset sent directly over Google Workspace SMTP (no Brevo click tracking) · 1 unit (`functions:salown:sendStaffPasswordReset`) · **LIVE — DEPLOYED_VERIFIED + OWNER_VERIFIED (2026-10-27)**
 
 - **Approval:** `OWNER-INVITE-R6-A2-DEPLOY-2026-10-27` + `ACK_R6_A2=BREVO_API_KEY_REMOVED__OWNER_INVITE_SMTP_USER_2__OWNER_INVITE_SMTP_PASS_1` (owner, 2026-10-27, Europe/London). Given only after A1 (`R-2026-10-26-A`) was OWNER_VERIFIED.
