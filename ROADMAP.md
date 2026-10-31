@@ -676,6 +676,35 @@ required. ⚠️ *Corrected the same day by `18405c6`: that flag was an analyser
 
 ---
 
+### 5.3a `FIN-STAFF-WRITEOFF` — forgiving a staff member's prepaid wages is a server-recorded write-off, not a data edit · **PREPARED — NOT DEPLOYED** *(added 2026-10-31, claim `alish/fin-writeoff`)*
+
+Owner decision 2026-10-31: September overpayments to one staff member (paid £300 in weeks contracted at
+£250) are forgiven; the £163.33 prepaid at cutoff Sun 2026-10-25 is closed by an explicit write-off. The
+contract stays £250, no payment / staffComp / startDate / rota / history is edited.
+
+* **Design:** callable `salownFinanceStaffWriteOff` recomputes the G4 weekly-ledger balance inside ONE
+  transaction (integer 1/420-penny units; `functions/src/finance/staffLedgerCore.ts`, golden-pinned to
+  `src/utils/financeStaffLedger.ts` by `packages/shared/src/financeStaffLedger.golden.json`), requires
+  `expectedBalanceBeforePence`, caps the amount at the prepaid, and creates
+  `financeBalanceAdjustments/wo_<barberId>_<cutoff>` + `auditLogs/<same id>` atomically (create-only,
+  requestId + payloadHash idempotency, immutable `rv_` reversal). Rules: browser write closed, read =
+  owner/admin, excluded from both catch-alls. Finance: separate **Staff overpayment write-off** P&L
+  line (daily, month, waterfall, statement, partnership share) and a weekly-ledger column; cash/bank
+  untouched.
+* **Units (separate dated approvals, in order):** 1 functions (`release/fin-staff-writeoff-fn-on-live-73d0a8fb`),
+  2 rules (`…-rules-on-live-3b449025`, served `4bdefed6`), 3 hosting:salown (`…-hosting-on-live-def5efcf`,
+  live `4666739f`). Runbook `salown-app/ops/runbooks/fin-staff-writeoff.md`.
+* **Evidence (prep):** 32 hand-derived golden cases on both cores; live read-only replay of both cores =
+  −16333 p; emulator 12/12; rules 13/13; mutation 52/52; base-vs-work failing sets identical.
+
+Backlog opened by this item (not in this release):
+
+| Item | Why |
+|---|---|
+| `FIN-PAYMENT-BARBERID-DQ` | `finance_payments` / `advances` carry `barberName` only, so the ledger and the write-off match payments by the Finance row NAME. Historical payments are deliberately NOT rewritten; a forward-only `barberId` on new payments + a read-side preference is the follow-up. |
+| `FIN-PERIOD-CLOSE-WRITEOFF` | The period-close domain has no write-off line. The callable refuses a closed month (`PERIOD_CLOSED`); before `FINANCE_PERIOD_CLOSE_MODE` leaves `legacy`, a close must fold the month's write-offs in. |
+| `AUDITLOGS-TENANT-WRITABLE` | `auditLogs` rules allow tenant create/update, so an `auditLogs` row is not immutable. The write-off's authoritative record is the server-only adjustment document. |
+
 ### 5.Z `TEST-HARNESS-READABILITY` — the frontend suite no longer answers "is this green?" · **CONFIRMED_OPEN** *(added 2026-09-23 by `ADMIN-PICKER-5MIN`)*
 
 Three separate defects in the harness, all **measured** during one release, not inferred. None is a product bug and none was fixed then — the release under way was scoped to the Admin picker, and changing a test suite mid-release is how a gate stops meaning anything.
