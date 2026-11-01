@@ -1,5 +1,14 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
+## R-2026-11-01-A — `FIN-STAFF-WRITEOFF` unit 1: new callable `salownFinanceStaffWriteOff` (owner-only prepaid write-off + reversal; server-only writer of `financeBalanceAdjustments`) · 1 unit (`functions:salown:salownFinanceStaffWriteOff`) · **LIVE — DEPLOYED_VERIFIED + DORMANT_NO_TRAFFIC; real write-off behaviour NOT OWNER_VERIFIED (2026-11-01)**
+
+- **Approval:** `FIN-STAFF-WRITEOFF-FN-DEPLOY-2026-11-01` + RELEASE_ID/CANDIDATE/SCOPE + `ACK_AUTH=ACTIVE_TENANT_OWNER_ONLY__ADMIN_STAFF_SUPERADMIN_SUSPENDED_OFFBOARDED_STALE_CLAIM_REFUSED` + `ACK_NO_INVOCATION=POSTDEPLOY_READ_ONLY__NO_CALLABLE__NO_PRODUCTION_WRITE` (owner, 2026-11-01, Europe/London).
+- **Deployed:** absent (144 fns) → `salownfinancestaffwriteoff-00001-kal` (GEN_2, nodejs22, europe-west2, codebase salown, 100 %), 2026-11-01T13:36:20Z, candidate `1e0b46f5` (one commit on `73d0a8fb`). Kit `~/release-work/fin-staff-writeoff-fn`. r1 `207a83fe` NEVER DEPLOY.
+- **Pre-deploy:** freeze re-measured (144 fns, rules 4bdefed6, salown 4666739f, salown-staff c80748a5, 0 adjustment docs, disk 10.45 GiB); unit 48/48; check-only + gated guard OK.
+- **Post-deploy (read-only):** 145 fns, list diff = one added line; archive `lib/finance/staffWriteOff.js` == kit build (sha256 22c4faa8…), no secret/env/log file; rules/hosting unchanged; 0 adjustment docs; 0 requests, 0 WARNING/ERROR to 13:37:38Z; callable not invoked; disk 11.28 GiB.
+- **Rollback:** `firebase functions:delete salownFinanceStaffWriteOff --region europe-west2 --project havuz-44f70` — own dated approval, only while the collection is empty. Not used.
+- **Next:** unit 2 rules `b476fcdf` (own approval).
+
 ## R-2026-10-31-A — `RESET-PAGE-LOADING-STYLE` (S2): `/reset-password` is served its own static shell — the salOWN look from the first paint until the link check ends; fixed dark; no field focus; no layout shift · 1 unit (`hosting:salown`) · **LIVE — DEPLOYED_VERIFIED + OWNER_VERIFIED (2026-10-31)**
 
 - **Approval:** `OWNER-INVITE-R6-RESET-LOADING-DEPLOY-2026-10-31` + `ACK_RESET_LOADING=RESET_PAGE_LOADING_SHELL_HOSTING_ONLY_REWRITE_ONLY_NO_CSP_NO_AUTH_CONFIG_NO_FUNCTION`. Claim `RESET-PAGE-LOADING-STYLE` (main `a27e3c4b`, prepared `56558f98`).
