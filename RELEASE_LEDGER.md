@@ -1,5 +1,15 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
+## R-2026-11-01-E — `FIN-STAFF-WRITEOFF` Finance premium entitlement: `tenants/whitecross.features.finance = true` · 1 production write (Firestore field) · **WRITTEN + VERIFIED (2026-11-01); real write-off NOT done, UI NOT OWNER_VERIFIED**
+
+- **Approval:** `FIN-STAFF-WRITEOFF-FINANCE-FLAG-WRITE-2026-11-01` + `RELEASE_ID=R-2026-11-01-E` + `APPROVE_DIRECT_WRITE=ONLY_TENANTS_WHITECROSS_FEATURES_FINANCE_TRUE` + `ACK_INDIRECT_WRITE` + `ACK_PRECONDITION` + `ACK_NO_CALLABLE` + `ACK_NO_WRITEOFF` + `ACK_CUTOFF` (owner, 2026-11-01, Europe/London; supersedes the owner's earlier same-evening void of the first E block).
+- **Write:** `tenants/whitecross` `features.finance` absent → `true`; Firestore REST patch, `updateMask.fieldPaths=features.finance`, precondition `currentDocument.updateTime=2026-09-20T22:36:13.887615Z`; committed **2026-11-01T23:46:20.085455Z** (23:46 London, before the 00:00 cutoff; script stop line 23:55).
+- **Pre (23:46:17 London):** root 37 fields / 14 features, hashes non-features `1a87a141` + features-minus-finance `44a05952`; `public/booking` updateTime 2026-07-16T02:11:01Z, content-without-`updatedAt` hash `ed8e7524`; `public/profile` 2026-09-28T23:15:55Z; 0 `financeBalanceAdjustments`; fn `-00002-lok`; callable 0 POST (4 h); disk 17.4 GiB.
+- **Post (read-only):** root 37 fields / 15 features, both hashes identical, `finance: true`; `public/booking` updateTime → 2026-11-01T23:46:24.257559Z with content-without-`updatedAt` identical (`ed8e7524`) — the expected indirect write by `salownSyncPublicBooking` ("[whitecross] public/booking synced", once); `salownRepublishProfileOnEdit` no-op, `public/profile` unchanged; 0 adjustment docs; callable 0 POST; rules `8e8a84b5`, salown `db2393e5`, salown-staff `c80748a5` unchanged.
+- **Behaviour now:** the live function accepts a write-off/reversal from the owner of the whitecross claim; the live UI (R-2026-11-01-C, r2) still hides the control from the `superAdmin`-flagged owner until hosting r3 `e46798ee`.
+- **Rollback:** patch `updateMask.fieldPaths=features.finance` with the field omitted — own dated approval; VALID while `financeBalanceAdjustments` is empty. Not used.
+- **Next:** hosting r3 `e46798ee` (own dated approval) → owner UI check (no press) → the real £163.33 write-off (own approval).
+
 ## R-2026-11-01-D — `FIN-STAFF-WRITEOFF` r3 fn: `salownFinanceStaffWriteOff` — owner of the CLAIM tenant (the `superAdmin` flag neither admits nor refuses) + Finance premium entitlement `features.finance === true` read in the transaction (`FINANCE_NOT_ENABLED`) · 1 unit (`functions:salown:salownFinanceStaffWriteOff`) · **LIVE — DEPLOYED_VERIFIED + DORMANT_NO_CALLABLE; real write-off behaviour NOT OWNER_VERIFIED (2026-11-01)**
 
 - **Approval:** `FIN-STAFF-WRITEOFF-FN-R3-DEPLOY-2026-11-01` + `RELEASE_ID=R-2026-11-01-D` + `CANDIDATE=fbb50ce2` + `SCOPE=functions:salown:salownFinanceStaffWriteOff` + `ACK_ENTITLEMENT` + `ACK_NO_INVOCATION` + `ACK_DISK` (owner, 2026-11-01, Europe/London). Config difference accepted by the owner the same evening (below).
