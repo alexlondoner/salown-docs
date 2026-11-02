@@ -127,4 +127,4 @@ Rules:
 - Verify after setup: Settings → Filters lists the rule; `in:spam <platform>` is empty.
 - If the parser's sender criteria change (`functions/src/parsers/*.ts`), update this table and every tenant's filter.
 
-Status: HeroHairs (`durvezek@gmail.com`) Treatwell filter added 2026-11-02. Whitecross and other tenants: **not yet verified**.
+Status (2026-11-02): HeroHairs (`durvezek@gmail.com`, Treatwell only) — `from:(noreply@treatwell.co.uk)` filter added. Whitecross (`whitecrossbarbers@gmail.com`, Treatwell+Booksy+Fresha) — `from:(treatwell.co.uk OR treatwell.com OR booksy.com OR fresha.com)` filter added alongside its existing forward filters; Spam had no aggregator mail. No other tenant has an aggregator mailbox configured.
