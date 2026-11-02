@@ -41,6 +41,26 @@ Every incident opens with `## YYYY-MM-DD — short title`, immediately followed 
 
 **Tag dictionary (CANONICAL — only these; sprawl forbidden):** `#security` `#stripe` `#secrets` `#config` `#deploy` `#normalization` `#permission` `#race` `#timezone` `#parser` `#email` `#data-loss` `#shared-infra`. A new tag is added only if a genuinely new class emerges (e.g. twins like `#payment`+`#payments`+`#stripe-payment` are FORBIDDEN → all `#stripe`). Every entry carries a `**Tags:**` line.
 
+## 2026-11-02 — HeroHairs Treatwell bookings lost to Gmail Spam (parser reads INBOX only)
+
+**Severity:** 🟠 High · **Owner:** owner + alish · **Status:** ✅ Resolved (data) / 🟡 Open (platform-wide filter rollout) · **Affected area:** email parsers — Treatwell ingestion
+
+**Discovery:** owner — two 30 Oct sales (and a client profile) were missing from the HeroHairs calendar/dashboard.
+**Impact:** three prepaid Treatwell bookings (two on 30 Oct, one on 31 Oct, £40 each) never reached salOWN, so they were not on the calendar or dashboard and could not be checked out.
+**Root Cause:** Gmail put the three Treatwell "repeat booking" notification mails into Spam. The IMAP parser searches only INBOX (`from: noreply@treatwell.co.uk`, 7-day window), so they were never examined; nothing in salOWN recorded a failure. The owner believed the mails were also forwarded to the inbound parse address, but Gmail forwarding was **disabled** (address added, never switched on) — and Gmail does not forward Spam anyway. The configured backup (`features.treatwellIcalSync: true`) had no iCal URL, so it was inactive.
+**Bug Class:** Silent ingestion gap — external mailbox classification outside the parser's search scope.
+**Resolution:** owner moved the 3 mails out of Spam; the cron imported all three at 15:18Z (CONFIRMED). Gmail filter `from:(noreply@treatwell.co.uk)` → "Never send it to Spam" added in the HeroHairs mailbox (owner-approved). Reconciliation 1 Oct–2 Nov: 34 Treatwell booking refs in Gmail, 33 in Firestore, the remaining 1 a deliberate staff deletion (tombstone). No code change, no deploy.
+**Prevention:** onboarding/contract rule for every tenant — "never Spam" filter per enabled aggregator sender (`TENANTS.md` → "Aggregator mailbox"). Open hardening: Spam-folder visibility in the parser, or iCal as a second path.
+**Regression Tests:** none (mailbox configuration, not code).
+**Related:** commits — (docs only) · files `functions/src/parsers/treatwell.ts`, `functions/src/parsers/shared.ts` (`imapSearchAndFetch`), `PARSER_NOTES.md` #10, `TENANTS.md`
+
+**What happened / Diagnosis / Fix:** Read-only chain check first: the bookings were absent from Firestore (not mis-dated, not on another staffer, not cancelled, no tombstone, no quarantine, no staged `parseInbox`), and `parserStats/treatwell` was HEALTHY with every logged import present — so the loss was before the parser. The decisive step was the mailbox itself: `in:anywhere` search for the guest names showed the 30 Oct mails labelled **Spam**, while the same guests' earlier mails sat in Inbox and had imported.
+
+**Lessons Learned:**
+- "HEALTHY parser + missing booking + no trace anywhere" = look at the mailbox (Spam/All Mail) before the code.
+- A forward address being *listed* in Gmail settings is not forwarding being *on*; check the selected radio.
+- A feature flag for a backup path (`treatwellIcalSync`) is not a backup without its config value.
+
 ## 2026-10-19 — Live credentials inside GCF source archives (SEC-INC-SECRETLOCAL)
 
 **Severity:** 🔴 Critical · **Owner:** owner + alish · **Status:** 🟡 Open (rotation prepared, not applied) · **Affected area:** functions deploy packaging / Secret Manager / Brevo, Anthropic, Google OAuth, Telegram credentials

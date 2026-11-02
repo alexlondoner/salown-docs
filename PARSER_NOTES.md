@@ -180,6 +180,13 @@ skipped. Because the comment gave the impression "it's handled," it was overlook
 **Fix:** `const orderRef = refMatch[1];` was re-added below `externalId` (`functions/index.js:2293`).
 **Lesson:** When deleting/renaming a variable definition, grep ALL of its uses (`grep -n "orderRef" functions/index.js`). `node -c` does NOT CATCH a runtime ReferenceError — only syntax. A run/lint or a real email test is needed. Look for the same pattern in the other parsers too: if there's a `treatwellRef`/`orderRef`-type orphan variable in one parser, grep for the `freshaRef`/`booksyRef` equivalent in Fresha/Booksy.
 
+### 10. Booking email in Gmail Spam (2026-11-02, HeroHairs/Treatwell — CLOSED)
+**Symptom:** individual bookings never appear — no Firestore doc, no tombstone, no quarantine, no parser error, `parserStats` HEALTHY. Other bookings from the same platform land normally.
+**Root cause:** Gmail classified three Treatwell "repeat booking" mails as Spam. `imapSearchAndFetch` searches INBOX only, so the parser never saw them (`examined` does not count them either).
+**Diagnosis:** in the salon mailbox search `in:spam <platform>` and `in:anywhere <guest name>`; compare the T-refs against `tenants/{tid}/bookings/TREATWELL-<ref>`.
+**Fix:** move the mails out of Spam (the next cron run imports them, if still inside the 7-day window) + Gmail filter "Never send it to Spam" for the platform sender. Onboarding rule for all tenants: `TENANTS.md` → "Aggregator mailbox".
+**Open hardening:** the parser could also search `[Gmail]/Spam` (read-only, never auto-import blindly), or a tenant can add the Treatwell iCal URL as a second ingestion path.
+
 ---
 
 ## Booksy-Specific Notes

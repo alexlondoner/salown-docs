@@ -102,3 +102,29 @@ tenants/{tenantId}/
 Self-signup exists at `/signup`; the separate application approval/invite flow also exists. Source implementation is not proof of successful provisioning for every account. See `CONNECT_PROFILE_READINESS.md` for the draft/public-profile distinction.
 Custom claims are set in Firebase Auth: e.g. `{ tenantId: 'whitecross' }`.
 Each tenant panel blocks cross-tenant login.
+
+### Aggregator mailbox — mandatory "never Spam" filters (every tenant, at contract/onboarding)
+
+*Added 2026-11-02 after HeroHairs lost three Treatwell bookings to Gmail's Spam folder (see INCIDENTS.md 2026-11-02).*
+
+The email parsers read **only the INBOX** of the salon's booking mailbox (`settings/emailConfig.email`), and only
+mail from the exact sender below, within a 7-day window. A booking email that Gmail classifies as Spam is invisible
+to salOWN: no error, no quarantine entry, no alert. Forwarding does not help either — Gmail never forwards Spam.
+
+So before a salon goes live with any aggregator, and as a clause in the onboarding agreement, the salon (or we, with
+the owner's approval) must add one Gmail filter per enabled platform in that mailbox, action **"Never send it to Spam"**
+(TR UI: *Asla Spam'a gönderme*), and nothing else (no archive / skip-inbox / mark-read / delete):
+
+| Platform | Filter `from:` (must match the parser's IMAP criteria) |
+|---|---|
+| Treatwell | `noreply@treatwell.co.uk` |
+| Booksy | `no-reply@booksy.com` |
+| Fresha | `fresha.com` |
+
+Rules:
+- The filter must **not** skip the Inbox or archive — the parser only searches INBOX.
+- Do not let anyone mark these mails as spam or delete/archive them within minutes of arrival.
+- Verify after setup: Settings → Filters lists the rule; `in:spam <platform>` is empty.
+- If the parser's sender criteria change (`functions/src/parsers/*.ts`), update this table and every tenant's filter.
+
+Status: HeroHairs (`durvezek@gmail.com`) Treatwell filter added 2026-11-02. Whitecross and other tenants: **not yet verified**.
