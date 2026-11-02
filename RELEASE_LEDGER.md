@@ -1,5 +1,16 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
+## R-2026-11-02-C — `FIN-WRITEOFF-MONTHLY-VIEW` hosting: Finance Overview staff Remaining / monthly breakdown include write-offs and reversals (by `effectiveDate` month, docId-keyed, separate "Written off" column only when adjustment rows exist; failed read → alert) · 1 unit (`hosting:salown`) · **LIVE — DEPLOYED_VERIFIED + OWNER_VERIFIED (2026-11-02)**
+
+- **Approval:** `FIN-WRITEOFF-MONTHLY-VIEW-HOSTING-DEPLOY-2026-11-02` + `RELEASE_ID=R-2026-11-02-C` + `CANDIDATE=f3b901acfcc86ca82a49ed0fadfd4b164456daec` + `SCOPE=hosting:salown` + `ACK_HOSTING` + `ACK_NO_WRITE` + `ACK_PRECONDITION` + `ACK_ROLLBACK` + `ACK_DATE` (owner, 2026-11-02, Europe/London).
+- **Deployed:** salown `f9fd6656722bde6e` (R-2026-11-02-A, source `e46798ee`) → **`f1e23512b73b9d99`** released 2026-11-02T17:09:10Z from candidate `f3b901ac` (one commit on `e46798ee`, 3 paths: `src/pages/Finance.tsx`, `src/utils/financeBalanceAdjustments.ts`, its test; branch `release/fin-writeoff-monthly-view-on-live-e46798ee`, pushed 2026-11-02 with the owner's OK). Kit `~/release-work/fin-writeoff-monthly-view/salown-app`, firebase-tools 15.26.0, `firebase deploy --only hosting:salown --project havuz-44f70`.
+- **Check-only:** vitest 6844 pass, same 20-fail set as base; tsc 54 identical; build OK; mutation 15/15; only `Finance.js` content changed.
+- **Pre-deploy (17:08 London):** kit clean, HEAD == origin == `f3b901ac`; main `6b901177`; salown `f9fd6656`, salown-staff `c80748a5`, rules `8e8a84b5`; fn `-00002-lok`, 145 functions; whitecross root/booking hashes unchanged; 1 adjustment doc (updateTime 09:51:21.842476Z); callable 1 POST (the R-2026-11-02-B write-off); disk 19 GiB.
+- **Post-deploy (read-only):** served bytes of all 98 non-reserved files == kit build; vs live r3 build: same 98-file logical set, content change only `Finance.js` (230812 → 232443 B); salown-staff, rules, functions unchanged; tenant data unchanged; adjustment doc fields == R-2026-11-02-B evidence; no new callable request; REL-1 staff-bundle dirt restored, kit clean; disk 19 GiB.
+- **Rollback:** re-release salown `f9fd6656722bde6e` — own dated approval; data untouched. Not used.
+- **Owner check (2026-11-02, screenshot):** Muhamed Written off +£163.33 (Oct row), Sep −£163.33 unchanged, Jun–Aug unchanged, Nov paid £400; Kadim/Arda "–". Cumulative Remaining shows **+£66.66**, not +£66.67: wages accrue at £41.666…/day in exact fractions (Sep balance −163.3333…), the write-off is 16333p, leaving a −£0.0033 residual; the weekly ledger rounds per week and shows £66.67. Owner ACCEPTED the 1p display difference (no rounding follow-up). → OWNER_VERIFIED.
+- **Next:** push records (own OK) → FIN-WRITEOFF-MAXINSTANCES-EXPLICIT → shared main twin.
+
 ## R-2026-11-02-B — `FIN-STAFF-WRITEOFF` real write-off: Muhamed (`barber-1781007454543`) prepaid £163.33 at cutoff 2026-10-25 · 1 production write via the owner UI · **WRITTEN + VERIFIED (2026-11-02)**
 
 - **Approval:** `FIN-STAFF-WRITEOFF-REAL-WRITEOFF-2026-11-02` + `RELEASE_ID=R-2026-11-02-B` + `APPROVE_WRITE` + `ACTOR=OWNER_PRESSES_IN_UI` + `ACK_EFFECT` + `ACK_STOP` + `ACK_ROLLBACK` + `ACK_DATE` (owner, 2026-11-02, Europe/London). Owner UI check passed the same morning (button visible on staff-panel week 19–25 Oct).
