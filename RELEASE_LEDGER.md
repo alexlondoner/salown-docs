@@ -1,5 +1,17 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
+## FINANCE-ENTITLEMENT-UI — source-only main twin (2026-11-04) · **no release, no deploy** · main `b33c8194`
+
+- **Approval:** owner, 2026-11-04 — `APPROVE_MAIN_PUSH=FINANCE-ENTITLEMENT-UI-SOURCE-TWIN` + `COMMIT=b33c8194` + `TREE=20d99059` + `EXPECTED_PARENT=5529608e` + `PATH_COUNT=12` + `REQUIRE_SKIP_CI=true` + `ACK_SOURCE_ONLY` + `ACK_TSC=PARITY_58_EQ_58`; `SUPERSEDED=ca56ae50__NEVER_PUSH` (first twin, carried a new TS2591 from a raw `process.env.TZ` write; never pushed).
+- **Commit:** main **`b33c8194f1ac487137e7e81e06e04961986e2e05`**, tree `20d99059ba7b5c5b8dbb4e91af640fd0e63d4a27`, single parent `5529608ec17e883da67e4e1b6beef00907b62305` (origin/main measured exactly that at 14:39:47Z), `[skip ci]`, explicit paths; pushed fast-forward 2026-11-04T14:40:04Z. Blob port, not a cherry-pick (the live lineage `f3b901ac` shares no ancestor with main; main held the live-base blob for every touched source path).
+- **Paths (12, all inside claim `FINANCE-ENTITLEMENT-UI--alish--fin-entitlement-ui`, scope amended `5529608e`):** M `CLAUDE.md` (Finance line: `features.finance === true` + owner/super-admin, not whitecross-only), `src/components/Sidebar.tsx`, `src/components/packages/PackageFinancePanel.tsx`, `src/pages/AppRouter.tsx`, `src/pages/Barbers.tsx`, `src/pages/Reports.tsx`, `src/utils/offboardConfirm.ts` + `.test.ts`; A `src/utils/financeEntitlement.ts` + `.test.ts`, `src/context/FinanceEntitlementContext.tsx`, `src/billing/financeEntitlement.render.test.tsx` (render matrix; TZ pinned with `vi.stubEnv`).
+- **Equivalence with live:** the 10 production source blobs are identical to candidate `644517be` (R-2026-11-03-B, salown `f02a03d9`); `src/billing/financeEntitlement.render.test.tsx` and `CLAUDE.md` are main-only.
+- **Gates (isolated base = main `5529608e` vs twin):** render matrix 28/28; focused 5 files / 110 tests pass; tsc **58 = 58**, identical set; full vitest fail set of the twin (solo run) a subset of base — 0 new failures; build OK; `build:staff` output byte-identical to base; mutations 5/5 killed (whitecross literal, relative catch-all [hard-timeout], `finance` back in OWNER_ONLY, Barbers literal, super-admin bypass), re-run after the amend M1/M2/M5 killed; `git diff --check` clean; release-guard `[skip ci]` OK.
+- **Post-push (read-only, 14:40:20Z + 14:45:21Z):** origin main `b33c8194`; salown `f02a03d99b1d6b11`, salown-staff `f0796fa0a2f1a72c` (no new hosting release — `[skip ci]` held; the workflow's `src/**` filter matches this commit), rules `8e8a84b5` / `4c00eef7`, 145 functions (name + updateTime list identical).
+- **Not touched:** tracked stale `hosting/staff-bundle/` (separate hygiene item); `src/pages/priorityTenants.render.test.tsx` (dropped from the claim scope).
+- **Backlog (not in this twin):** whitecross literals in `BookingDetailPanel` (lines ~550 / ~2333) and PayTab; no Finance toggle in super-admin `Tenants.jsx`.
+- **Evidence:** `~/release-work/fin-entitlement-ui/evidence/twin/` (prepush / postpush snapshots, tsc / vitest / render / mutation logs).
+
 ## WHITECROSS-BARBER-MOBILE-RETIRE — source-only main twin (2026-11-04) · **no release, no deploy** · whitecross-site main `feb70a48`
 
 - **Approval:** owner, 2026-11-04 Europe/London — `APPROVE_MAIN_PUSH=WHITECROSS-BARBER-MOBILE-RETIRE-MAIN-TWIN`, `COMMIT=feb70a48`, `TREE=5664f41d`, `EXPECTED_PARENT=9549c94c`, `PATH_COUNT=4`, `REQUIRE_SKIP_CI=true`, `ACK_SOURCE_ONLY=NO_DEPLOY__NO_PRODUCTION_WRITE`, `ACK_PARITY=MAIN_EQUALS_LIVE_SAAS_58_OF_58__APP_7_OF_7`.
