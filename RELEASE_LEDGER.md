@@ -1,5 +1,15 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
+## R-2026-11-04-A — Whitecross public Google rating `4.9` / `460 reviews` · `hosting:whitecrossbarbers-saas` · **LIVE — DEPLOYED_VERIFIED (2026-11-04)**
+
+- **Approval:** owner, 2026-11-04 — after local preview, “live'a al”; target stated as Whitecross, `https://whitecrossbarbers.com`, `hosting:whitecrossbarbers-saas` only.
+- **Source:** Whitecross repo main **`39ef5892b6eb7ff9ee598de8bdc437ccc0afc021`**, tree `8af933638b99b10422306e7e5a1c5ab035f8b7bd`; owner-provided Google Business Profile screenshot shows **4.9 / 460** (858×920, sha256 `2b91afae8d11b02fa5fd41386a30a4806146694bb8fe7250b07e2bac9bb2b9bf`).
+- **Deployed:** `whitecrossbarbers-saas` **`1cb1026123b8a014` → `e03a66b427ddc471`**, FINALIZED 2026-11-04T11:47:33.221Z; release message `R-2026-11-04-A Whitecross Google rating 4.9 / 460 (39ef5892)`.
+- **Scope:** 58-file live artefact re-released with exactly four changed files: `/index.html`, `/barbican-barbers.html`, `/london-barbers.html`, `/st-pauls-barbers.html`. Visible copy, SEO metadata, FAQ copy and `Barbershop.aggregateRating` moved from Google 4.8 / 441 to 4.9 / 460. Review carousel, Booksy/Fresha values, JavaScript, functions, rules and production data unchanged.
+- **Gates:** pre-live REL-18 identity 58/58; source test 4/4; isolated candidate 58 files; manifest delta exactly four pages; origin main pinned to `39ef5892`; release ID free immediately before deploy.
+- **Post-verify:** new release predecessor is `1cb1026123b8a014`; served bytes **58/58** equal the isolated candidate; both `whitecrossbarbers-saas.web.app` and `whitecrossbarbers.com` publish `ratingValue: 4.9` and `reviewCount: 460` on all four pages.
+- **Rollback:** re-release hosting version `1cb1026123b8a014` — separate dated approval required. Not used.
+
 ## STAFF-NOTIFICATION-CLICK-R4 — source-only main twin (2026-11-04) · **no release, no deploy** · main `c830791e`
 
 - **Approval:** owner, 2026-11-04 — `APPROVE_MAIN_PUSH=STAFF-NOTIFICATION-CLICK-R4-SOURCE-TWIN` + `COMMIT=c830791e` + `TREE=8c6df1b7` + `EXPECTED_PARENT=54bf474c` + `PATH_COUNT=12` + `REQUIRE_SKIP_CI=true` + `ACK_SOURCE_ONLY=NO_DEPLOY__NO_PRODUCTION_WRITE` (prepare-only approval earlier the same day).
