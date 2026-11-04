@@ -1940,6 +1940,17 @@ bookings confirmed D1/D2 and changed the plan twice.
     measured:** 0 mobile-shaped checkouts / walk-ins since 2026-06-20 (fingerprint finds 22 / 15
     before, last 2026-06-02). 0 bookings carry `refundedAmount`. Detail:
     `whitecross-site/ops/rel20/README.md` on the kit branch.
+  - **2026-11-04 owner decision: REL-20 NOT DEPLOYED (superseded), no r2, retire barber-mobile.**
+    `WHITECROSS-BARBER-MOBILE-RETIRE` `BLOCKED` on owner approval — REL-21 check-only candidate
+    `663dfb29` (branch `release/whitecross-rel21-barber-mobile-retire`, source `4487b2c2`, guard
+    on `…-kit` `48076bd7`): `barber-mobile/` becomes a redirect stub to
+    `whitecrossbarbers.com/#booking` + self-unregistering `sw.js` + `app.js`/`styles.css` shims,
+    same 7 paths, **no `firebase*.json` change**, retiring both `whitecrossbarbers-saas`
+    (`/barber-mobile/`) and `whitecrossbarbers-app`. Hermetic emulator+Chrome matrix 34/0
+    (installed old worker removed, every old URL → booking, REL-19 pages byte-identical).
+    Until then the drift (live `8a810102` vs main `dacefe56`) is accepted on purpose.
+    Follow-ups: orphan `createMobileCheckout` (ACTIVE, 0 calls/60 d), dead push code.
+    Detail: `whitecross-site/ops/rel21/README.md` on the kit branch.
 - **D3 live measurement.** 0 bookings carry `refundedAmount` today, but refunds DO happen: a
   real £10 `charge.refunded` landed 2026-08-30 (`REFUND_MANUAL_DETECTED`, origin
   `STRIPE_DASHBOARD`) and the booking was deleted afterwards. Severity corrected 🟠 → 🟡
