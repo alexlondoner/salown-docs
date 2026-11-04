@@ -1952,8 +1952,8 @@ bookings confirmed D1/D2 and changed the plan twice.
     Follow-ups: orphan `createMobileCheckout` (ACTIVE, 0 calls/60 d), dead push code.
     Detail: `whitecross-site/ops/rel21/README.md` on the kit branch.
   - **2026-11-04 saas half LIVE — `R-2026-11-04-B`** `whitecrossbarbers-saas` `e03a66b427ddc471` →
-    **`b78c4137ce40ec78`**, `DEPLOYED_VERIFIED` (58/58, only 4 `/barber-mobile/` files, REL-19 4.9/460
-    byte-identical, production Chrome → `#booking`); **owner test pending**. App site still
+    **`b78c4137ce40ec78`**, `DEPLOYED_VERIFIED` + **`OWNER_VERIFIED`** (58/58, only 4 `/barber-mobile/` files, REL-19
+    4.9/460 byte-identical, production Chrome → `#booking`). App site still
     `e652bfac69724b22` (old app) — separate approval after the saas owner test.
 - **D3 live measurement.** 0 bookings carry `refundedAmount` today, but refunds DO happen: a
   real £10 `charge.refunded` landed 2026-08-30 (`REFUND_MANUAL_DETECTED`, origin

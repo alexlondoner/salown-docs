@@ -1,6 +1,6 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
-## R-2026-11-04-B — Whitecross barber-mobile retired on the public site (`/barber-mobile/` → booking) · `hosting:whitecrossbarbers-saas` · **LIVE — DEPLOYED_VERIFIED (2026-11-04), OWNER test pending**
+## R-2026-11-04-B — Whitecross barber-mobile retired on the public site (`/barber-mobile/` → booking) · `hosting:whitecrossbarbers-saas` · **LIVE — DEPLOYED_VERIFIED + OWNER_VERIFIED (2026-11-04)**
 
 - **Approval:** owner, 2026-11-04 Europe/London — `APPROVE_DEPLOY=WHITECROSS-BARBER-MOBILE-RETIRE-SAAS`, `SCOPE=hosting:whitecrossbarbers-saas ONLY`, `CANDIDATE=663dfb29`, `TREE=461267d9`, `KIT_COMMIT=40ab2ab4`, `PREVIOUS=e03a66b427ddc471`, ACK delta / rating / redirect / no-data / no-app-site / stop-no-auto-rollback. Supersedes REL-20 (`92242080`, never deployed).
 - **Source:** whitecross-site candidate **`663dfb29621c8ea249cb230f2def9bd9e1250052`** (tree `461267d9c3d8be11ad00e69f4e2f6bf6db7b5ca5`, branch `release/whitecross-rel21-barber-mobile-retire`) = source `4487b2c2` (4 files under `barber-mobile/`) + kit `ops/rel21/`; run from kit `40ab2ab4`. **Not on main** (main twin after OWNER_VERIFIED of both sites).
@@ -8,6 +8,7 @@
 - **Scope:** same 60 API paths; hash changed on exactly `/barber-mobile/{index.html,sw.js,app.js,styles.css}` (stub → `https://whitecrossbarbers.com/#booking`, self-unregistering worker, two redirect/comment shims). `manifest.json`, icons and the other 54 site files byte-identical, incl. REL-19 `/index.html`, `/barbican-barbers.html`, `/london-barbers.html`, `/st-pauls-barbers.html` (Google 4.9 / 460). No functions, rules, config or data touched.
 - **Gates:** live identity `e03a66b427ddc471` twice (check + apply); workspace 58/58 vs manifest, only 4 barber-mobile files moved, REL-19 4/4 bytes + rating test, stub test; candidate guard (origin ref, tree, chain, 58/58 blobs, nothing extra); rollback version FINALIZED; hermetic emulator + Chrome matrix 34/0; negative controls 5/5 refused; ledger ID re-measured free before deploy and before this row.
 - **Post-verify:** `verify.sh saas --live` 6/0 — `whitecrossbarbers-saas.web.app`, `whitecrossbarbers.com`, `saas.whitecrossbarbers.com` byte-identical, 58/58 release bytes, REL-19 4/4 + 4.9/460; HTTP: all 7 `/barber-mobile/*` paths 200 (`max-age=3600`), `/barber-mobile` and `www.` 301 as before; headless Chrome on production: `/barber-mobile/`, `/barber-mobile`, `saas.…/barber-mobile/?bookingId=x` → `https://whitecrossbarbers.com/#booking`. `whitecrossbarbers-app` still **`e652bfac69724b22`** (old app, not in scope).
+- **Owner verify:** 2026-11-04 `OWNER_VERIFY=WHITECROSS-BARBER-MOBILE-RETIRE-SAAS RESULT=PASS` — `/barber-mobile/` → booking section; main site unchanged, Google 4.9 / 460; no old login, blank page or error.
 - **Rollback:** re-release `e03a66b427ddc471` (`bash ops/rel21/rollback.sh saas --apply` with a separate dated approval). No automatic rollback. Not used.
 
 ## R-2026-11-04-A — Whitecross public Google rating `4.9` / `460 reviews` · `hosting:whitecrossbarbers-saas` · **LIVE — DEPLOYED_VERIFIED (2026-11-04)**
