@@ -13,8 +13,9 @@
 
 ## 0. The verdict in one paragraph
 
-The product works: two live salons (whitecross, herohairs), the apply → approve → set-password
-funnel is live, the hosted booking page creates through the authoritative callable, and the
+The product works: two live salons (whitecross, herohairs), the owner-invite onboarding is
+live (R1A/R1B callables, the `/activate` page, canary passed 2026-10-26 — ROADMAP
+`SAAS-ONBOARDING-INVITE-ACCESS-P0`), the hosted booking page creates through the authoritative callable, and the
 campaign chain is closed end-to-end. **Most of ROADMAP's P0 rows are Whitecross-specific
 finance/rota depth (`FIN-*`, `ROTA-*`) and do not block a new salon's first month.** What
 actually blocks marketing is a short list of commercial, legal and "first stranger walks in"
@@ -43,7 +44,7 @@ Stripe entirely in TEST mode · TR payment integrity hold active · 0 `checkoutR
 
 ## 1. Gate A — must close BEFORE the first marketing message goes out
 
-| # | Work ID | What | ROADMAP status (2026-09-07) | Why it gates marketing |
+| # | Work ID | What | ROADMAP status | Why it gates marketing |
 |---|---|---|---|---|
 | A1 | `LEG-1` | salOWN Terms of Service + Privacy pages; landing footer links are `href="#"` (`hosting/index.html:652-653`) | `PLANNED` (filed P2) — **drafts written 2026-09-07:** [LEGAL_TERMS_DRAFT.md](LEGAL_TERMS_DRAFT.md) · [LEGAL_PRIVACY_DRAFT.md](LEGAL_PRIVACY_DRAFT.md), owner fields + solicitor pending | Ad platforms reject a site with dead legal links; GDPR requires a privacy notice before collecting sign-up data. **Proposed P0.** |
 | A2 | *(owner decision)* | Pricing + how the first paying salons pay. salOWN has **no subscription pipeline** (`M3` is vision); landing deliberately shows no price ("Request a demo") | — | You cannot market without knowing what you charge and how you collect. Manual invoice or a Stripe Payment Link needs **zero code**; `M1`/`M3` are not prerequisites. |
@@ -66,9 +67,9 @@ can promote staff → admin and the claim actually changes (read-only Auth proof
 | B2 | `ADM-H5` | Super-admin cannot open an owner account directly; the only working path is demo request → Applications → Approve. "Add Tenant" + "Set Claim" produce an empty shell (no `tenantRole`) | `PLANNED` | Fine while every lead arrives through the form. Breaks the day a salon is closed on the phone and must be opened by hand. Keep `/signup` + `provisionTenant` active (memory: keep-self-onboarding-active). |
 | B3 | `T-g` | Signup creates the Auth user **before** the tenant, no rollback → orphan accounts on provisioning failure (2 exist) | open | Every marketing-driven signup is another chance to mint an orphan. |
 | B4 | Secret namespacing | `BREVO_API_KEY`, Telegram, OpenAI, Google OAuth still shared names; ROADMAP: *"namespace all shared secrets before tenant #4"* | 🔵 | Tenant #4. |
-| B5 | `EV2` | No health-check / uptime job; availability is unprovable | `PLANNED` | First "your site was down" support ticket. |
+| B5 | `EV2` | No health probe yet; availability is not yet provable end-to-end | `PLANNED` — not fully closed: S1 delete protection, S2a uptime checks and S2b backup alerting are live (ROADMAP EV2); the S5 health probe remains open, see `EV2-S5-OWNERSHIP-RED` | First "your site was down" support ticket. |
 | B6 | `B4` | Phone country code inconsistent across 5 entry points (no +353); splits one client into two | 🔵 | First Irish / non-UK salon. |
-| B7 | `B7` | WhatsApp booking confirmations (Meta Cloud API, plan-gated) — infrastructure on `main` at `b3b6cb4`, secrets do not exist, owner buys the number 2026-09-06 | `PUSHED_NOT_LIVE` | Not a blocker; a **selling point**. Ships via [WHATSAPP_PLAN.md](WHATSAPP_PLAN.md) §6–7 once the four `WHATSAPP_*` secrets exist. |
+| B7 | `B7` | WhatsApp booking confirmations (Meta Cloud API, plan-gated) — infrastructure on `main` at `b3b6cb4`, secrets do not exist; blocked on the outstanding Meta / SIM / external setup | `PUSHED_NOT_LIVE` | Not a blocker; a **selling point**. Ships via [WHATSAPP_PLAN.md](WHATSAPP_PLAN.md) §6–7 once the four `WHATSAPP_*` secrets exist. |
 
 ---
 
