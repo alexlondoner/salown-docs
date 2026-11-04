@@ -1955,7 +1955,12 @@ bookings confirmed D1/D2 and changed the plan twice.
     **`b78c4137ce40ec78`**, `DEPLOYED_VERIFIED` + **`OWNER_VERIFIED`** (58/58, only 4 `/barber-mobile/` files, REL-19
     4.9/460 byte-identical, production Chrome → `#booking`).
   - **2026-11-04 app half LIVE — `R-2026-11-04-C`** `whitecrossbarbers-app` `e652bfac69724b22` →
-    **`45408dd16fa4d81f`**, `DEPLOYED_VERIFIED` + **`OWNER_VERIFIED`** (7/7, live config kept, Chrome → `#booking`). Remaining: owner test, then main twin (cherry-pick `4487b2c2`) and claim close. App site still
+    **`45408dd16fa4d81f`**, `DEPLOYED_VERIFIED` + **`OWNER_VERIFIED`** (7/7, live config kept, Chrome → `#booking`).
+  - **2026-11-04 `WHITECROSS-BARBER-MOBILE-RETIRE` = `LIVE_VERIFIED`, DONE.** Main twin `feb70a48`
+    (source-only, `[skip ci]`): main == live saas 58/58, app 7/7; claim closed `d21fa91e`. D4 is
+    resolved by retirement (the refund-blind code is no longer served or on main). Not verified
+    on a real device: an installed home-screen PWA (emulator matrix only). Separate open items:
+    orphan `createMobileCheckout`, dead legacy push code, `whitecrossbarbers-clientapp` entry. Remaining: owner test, then main twin (cherry-pick `4487b2c2`) and claim close. App site still
     `e652bfac69724b22` (old app) — separate approval after the saas owner test.
 - **D3 live measurement.** 0 bookings carry `refundedAmount` today, but refunds DO happen: a
   real £10 `charge.refunded` landed 2026-08-30 (`REFUND_MANUAL_DETECTED`, origin
