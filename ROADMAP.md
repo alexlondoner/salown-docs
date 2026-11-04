@@ -1293,6 +1293,10 @@ year. No private pool, no `stable` channel.
 
 Verified against production in this pass (2026-08-12) unless dated otherwise:
 
+- **`STAFF-NOTIFICATION-CLICK-R4`** *(2026-11-04)* — tapping a Staff App push opens the right booking, cold
+  and warm: Staff hosting `R-2026-11-03-A` (salown-staff `f0796fa0`, source `7752c4c2`) + push functions
+  `R-2026-11-03-C` (`-00042-moq` / `-00042-ciw`, source `f19ddecb`, `maxInstances: 20` pinned). DEPLOYED_VERIFIED +
+  OWNER_VERIFIED on iPhone. Open: the confirmed-trigger send path is not yet exercised live; main twin; claim close.
 - **`9af1272` BARBER-HOURS-PROPAGATION-RACE-P0** — one transaction, seven days, field-scoped dotted
   paths; supersedes the `HOURS-SAFETY-A` pin. Live on `11cc739f548c5e10`.
 - **`HOURS-CASING-B` `10febff`** — `salowngetbusyslots-00064-foj`, live 2026-08-10.
