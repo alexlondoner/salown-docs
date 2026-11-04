@@ -1298,6 +1298,11 @@ Verified against production in this pass (2026-08-12) unless dated otherwise:
   and warm: Staff hosting `R-2026-11-03-A` (salown-staff `f0796fa0`, source `7752c4c2`) + push functions
   `R-2026-11-03-C` (`-00042-moq` / `-00042-ciw`, source `f19ddecb`, `maxInstances: 20` pinned). DEPLOYED_VERIFIED +
   OWNER_VERIFIED on iPhone. Open: the confirmed-trigger send path is not yet exercised live. Main twin `c830791e`; claim closed `cd79306e`.
+- **`FINANCE-ENTITLEMENT-UI`** *(2026-11-04)* — Finance access follows the tenant root `features.finance === true`
+  instead of the whitecross tenant-id literal: `R-2026-11-03-B` (salown `f1e23512b73b9d99` → `f02a03d99b1d6b11`,
+  release source `644517be`). `LIVE_VERIFIED` (DEPLOYED_VERIFIED + OWNER_VERIFIED): the whitecross owner sees and opens
+  Finance, `/app/zzz` lands once on `/app/dashboard` with no loop, the Barbers departure copy is unchanged. Source-only
+  main twin `b33c8194` (no deploy); records docs `7fce84f5`, SYNC `7c92dd7d`; claim closed `68811272`. Rollback = re-release `f1e23512b73b9d99`.
 - **`9af1272` BARBER-HOURS-PROPAGATION-RACE-P0** — one transaction, seven days, field-scoped dotted
   paths; supersedes the `HOURS-SAFETY-A` pin. Live on `11cc739f548c5e10`.
 - **`HOURS-CASING-B` `10febff`** — `salowngetbusyslots-00064-foj`, live 2026-08-10.
