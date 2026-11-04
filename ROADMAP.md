@@ -1928,6 +1928,18 @@ bookings confirmed D1/D2 and changed the plan twice.
   writes. Now mirrors `hasAuthoritativeRefund`, proven by driving the real extracted source
   over a 9-row matrix. ⚠️ That target's actual staff usage is UNVERIFIED (FCM disabled
   2026-06-19, staff moved to the salOWN staff app).
+  - **2026-11-04 `WHITECROSS-BARBER-MOBILE-DRIFT` — still `PUSHED_NOT_LIVE`; REL-20 check-only
+    kit prepared, nothing deployed.** Candidate `92242080` (tree `fad1cf51`, parent `96592a8c`,
+    branch `release/whitecross-rel20-barber-mobile-d4`; kit + guard on `…-kit` `6baf4fb7`):
+    REL-19 live `e03a66b427ddc471` with only `/barber-mobile/app.js` → blob `e6a1c0b6`. Both
+    `whitecrossbarbers-saas` (`/barber-mobile/`) **and** `whitecrossbarbers-app`
+    (`e652bfac69724b22`, its own deploy unit) serve the old `8a810102` blob. **Correction:**
+    "mirrors `hasAuthoritativeRefund`" is not exact — gap A (no `paymentState` gate; unreachable
+    from `functions/refunds.js`, which always stamps it) and gap B (verified rail + refund + no
+    `stripeAmountPaid` falls back to the stale deposit, as live does; reachable). **Usage now
+    measured:** 0 mobile-shaped checkouts / walk-ins since 2026-06-20 (fingerprint finds 22 / 15
+    before, last 2026-06-02). 0 bookings carry `refundedAmount`. Detail:
+    `whitecross-site/ops/rel20/README.md` on the kit branch.
 - **D3 live measurement.** 0 bookings carry `refundedAmount` today, but refunds DO happen: a
   real £10 `charge.refunded` landed 2026-08-30 (`REFUND_MANUAL_DETECTED`, origin
   `STRIPE_DASHBOARD`) and the booking was deleted afterwards. Severity corrected 🟠 → 🟡
