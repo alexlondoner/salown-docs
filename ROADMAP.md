@@ -1955,8 +1955,7 @@ bookings confirmed D1/D2 and changed the plan twice.
     **`b78c4137ce40ec78`**, `DEPLOYED_VERIFIED` + **`OWNER_VERIFIED`** (58/58, only 4 `/barber-mobile/` files, REL-19
     4.9/460 byte-identical, production Chrome → `#booking`).
   - **2026-11-04 app half LIVE — `R-2026-11-04-C`** `whitecrossbarbers-app` `e652bfac69724b22` →
-    **`45408dd16fa4d81f`**, `DEPLOYED_VERIFIED` (7/7, live config kept, Chrome → `#booking`); owner test
-    pending. Remaining: owner test, then main twin (cherry-pick `4487b2c2`) and claim close. App site still
+    **`45408dd16fa4d81f`**, `DEPLOYED_VERIFIED` + **`OWNER_VERIFIED`** (7/7, live config kept, Chrome → `#booking`). Remaining: owner test, then main twin (cherry-pick `4487b2c2`) and claim close. App site still
     `e652bfac69724b22` (old app) — separate approval after the saas owner test.
 - **D3 live measurement.** 0 bookings carry `refundedAmount` today, but refunds DO happen: a
   real £10 `charge.refunded` landed 2026-08-30 (`REFUND_MANUAL_DETECTED`, origin
