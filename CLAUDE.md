@@ -37,7 +37,7 @@ All tenant data lives under `tenants/{tenantId}/...`.
 | [INVARIANTS.md](docs/INVARIANTS.md) | **Breaks the system if violated** — money/date/booking/matching/security/deploy invariants, with source citations; read BEFORE touching the relevant area |
 | [KNOWN_QUIRKS.md](docs/KNOWN_QUIRKS.md) | Odd but **intentional** behaviors — "don't mistake for a bug and fix"; INVARIANTS/latent-bug distinction inside |
 | [DECISIONS.md](docs/DECISIONS.md) | **Why we did it this way** (ADR): email/payment/POS/deletion/repo decisions + rationale + rejected alternatives |
-| [PRINCIPLES.md](docs/PRINCIPLES.md) | **How we engineer** (P1-P14) — each principle tagged ⚙️ machine-enforceable / 🧠 human-discipline. (DECISIONS=why, INVARIANTS=what won't break, PRINCIPLES=how) |
+| [PRINCIPLES.md](docs/PRINCIPLES.md) | **How we engineer** (P1-P19; §6 = workspace & verification hygiene) — each principle tagged ⚙️ machine-enforceable / 🧠 human-discipline. (DECISIONS=why, INVARIANTS=what won't break, PRINCIPLES=how) |
 | [PARSER_NOTES.md](docs/PARSER_NOTES.md) | Booksy/Fresha/Treatwell parser architecture, dedup system, recurring bug patterns |
 | [TREATMENT_PACKAGE_SYSTEM.md](docs/TREATMENT_PACKAGE_SYSTEM.md) | **TR-B session packages** (LIVE): immutable commercial snapshot, append-only `packageLedger`, entitlement consumed exactly once (derived doc ids), owner-only Payment settings, and WHY package payments earn no loyalty (`price: 0` at link time — no checkout code changed) |
 | [TR_CHECKOUT_ARCHITECTURE.md](docs/TR_CHECKOUT_ARCHITECTURE.md) | **TR-D1 in-salon checkout** (server executor DEPLOYED 2026-08-02, deliberately unreachable): one transaction over booking + tenders + receivable + package entitlement + loyalty + receipt, the read-before-write ordering rule and WHY a refusal may never follow the package seam, idempotent intent/result recovery, and the explicit `stockQty` deferral |
@@ -137,17 +137,19 @@ serving customers today.*
 - `git fetch --prune`; report `HEAD` / `origin/main` / ahead / behind / working tree, per repo;
 - `./ops/claims/claims.sh check <path>` for every path you intend to touch, then claim exactly
   those paths (claims protocol rules 1–9, including **rule 7: a competing claim is a hard stop**);
-- mark or register your Work ID as `IN_PROGRESS`.
+- mark or register your Work ID as `IN_PROGRESS`;
+- plan workspaces and verification per [PRINCIPLES.md §6](docs/PRINCIPLES.md) (P15–P19).
 
 ### At completion
 
 - update your Work ID's status and its **Last verified** date;
 - record the implementation SHA;
 - state **pushed** vs **deployed** explicitly — they are different sentences;
-- record the test gates you actually ran;
+- record the test gates you actually ran **and** those you deliberately skipped (PRINCIPLES P15);
 - record the live revision/version **only after production verification**;
 - if you released anything, add the `RELEASE_LEDGER.md` row **including the rollback identity**;
-- release your claim and leave a clean `0/0` tree, or say plainly that you did not.
+- release your claim and leave a clean `0/0` tree, or say plainly that you did not;
+- end with the PRINCIPLES P18 closure report (`WORKSPACE_CLOSED`, or `WORKSPACE_OPEN — <blocker>`).
 
 ### End of day — one designated reconciliation pass
 
