@@ -1,5 +1,17 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
+## CHECKOUT-SAVE-UNPAID-MAIN-TWIN — source-only rules main twin of `R-2026-11-05-A` + `R-2026-10-16-A` (2026-11-06) · **no release, no deploy** · main `d60e9cd0`
+
+- **Approval:** owner, 2026-11-06 — `TASK=CHECKOUT-SAVE-UNPAID-DOUBLE-AWARD-MAIN-TWIN` (port the live B1/B2 fix to main, keep main's newer rules, canonical gate, B1/B2/COA/M3 negative controls, `[skip ci]`; FORBIDDEN rules deploy, production write, hosting/functions/storage/UI change) + scope choice "Also bring M3 to main" (`R-2026-10-16-A` M3 booking-cover rules were never on main) — merge semantically, stop on any unresolved behaviour conflict. `DEPLOY=NO`, `PRODUCTION_WRITE=NO`.
+- **Commit:** salown-app main **`d60e9cd0c955ed094e428e54f29f19d59357e9bd`**, tree `99ba1672da61425e47bf66b699af289d79978a0a`, single parent `6ae8401f` (own claim; `merge-base --is-ancestor origin/main` measured before the push), fast-forward, `[skip ci]`. 6 paths: M `firestore.rules`, M `ops/test-rules-emulator.sh` (+ `membershipM3`, `checkoutLifecycle` suites), A `test/rules/checkoutLifecycle.emulator.test.js`, A `test/rules/membershipM3.emulator.test.js` (both byte-equal to `62823767`), M `test/rules/availabilityFrom.emulator.test.js`, M `test/rules/checkoutOverAllocation.emulator.test.js` (main == `b476fcdf` for both, now == `62823767`).
+- **Construction (not a cherry-pick):** start from live source `62823767:firestore.rules` (served sha256 `ea53b45e…c787`, ruleset `429f9246`) and add only main's ONB-PD hunks (`tenantLifecycleActive` suspended + `TRIAL_GRACE`, `tenantAcceptsPublicBookings`, the anonymous-create `tenantAcceptsPublicBookings(tenantId)` line). Candidate sha256 **`ae2d7b0d…b7e6`**.
+  - **vs live `429f9246`:** + the 3 ONB-PD hunks only; nothing removed.
+  - **vs main `e40b7e69`:** + M3 (`m3StampKeys` / `m3Covered` / `m3UpdateAllowed`, stamp ban on create, `m3UpdateAllowed()` on update, no delete of a covered booking, `membershipBookingCover` read admin / write false) + B1/B2 (`checkoutLifecycleHeld()` on every bookings update); nothing removed.
+  - **Behaviour overlap checked:** M3 and B1/B2 sit above the role branch on create/update/delete; ONB-PD gates tenant access and the anonymous create only — no conflict. Main's `src/firestoreActions.ts` already writes `checkoutRevision`.
+- **Gates:** canonical `ops/test-rules-emulator.sh` **23 suites 438/438 PASS** (firebase-tools 15.26.0, firestore v1.22.0; emulator ports remapped in the working tree's `firebase.json` only, every other tracked file blob-identical to the commit, `firebase.json` restored). Negative controls (each mutant hits once): no B1 → 5 fail, no B2 → 4, no COA → 14, no M3 → 4 (same counts as the `R-2026-11-05-A` gate); all assertion failures, 0 emulator start errors.
+- **Not done:** no deploy; main remains a non-deploy source (ONB-PD hunks are still not live). Main's `firestore.rules` now carries both live releases plus ONB-PD.
+- **Evidence:** `~/release-work/checkout-save-unpaid-double-award/main-twin/` (`gate-twin.log`, `negctl-*.log`).
+
 ## R-2026-11-05-A — Checkout applied once per revision and never left from a browser · `firestore:rules` · **LIVE — DEPLOYED_VERIFIED; Save-unpaid protection OWNER_VERIFIED (2026-11-05); normal Admin checkout / correction / Staff checkout await natural transactions**
 
 - **Work ID:** `CHECKOUT-SAVE-UNPAID-DOUBLE-AWARD` (strategy `FIRESTORE_RULE_B1_PLUS_B2`).
@@ -11,7 +23,7 @@
 - **Owner verify (transaction-based, no fixed wait):** Save-unpaid protection **OWNER_VERIFIED** 2026-11-05 (owner accepted the evidence) — "Save unpaid draft" on a completed Whitecross booking (hash `0bfa5e1ad7`) refused: Monitoring `rules/evaluation_count` exactly 1 `DENY UPDATE` at 20:53Z, booking still `CHECKED_OUT` / `checkoutRevision` 1, last write its 13:50Z checkout, 0 function ERROR entries. Normal Admin checkout, a correction on it and a Staff checkout are **not yet observed** under the new rules — verified in a separate short session on the first natural transactions (no synthetic bookings; booking hash `0bfa5e1ad7` not to be retried). Data Access audit logs are OFF, so rule denials are visible only in the Monitoring metric (method + time, no path).
 - **Observed UI gap (pre-existing, not fixed):** the refusal was silent — the cart-step "Save draft" sets `checkoutError` but the banner renders only on the payment step; the panel stays open. ROADMAP `SAVE-UNPAID-REFUSAL-COPY`.
 - **Rollback:** re-release `8e8a84b5` (separate dated approval). No automatic rollback. Not used.
-- **Not done (owner 2026-11-05):** main twin and UI code not prepared; claim closed; worktrees removed. Release branch `origin/release/save-unpaid-rules-on-live-b476fcdf` @ `62823767` kept as the source pin.
+- **Not done (owner 2026-11-05):** main twin and UI code not prepared (main twin since done 2026-11-06: main `d60e9cd0`, see CHECKOUT-SAVE-UNPAID-MAIN-TWIN); claim closed; worktrees removed. Release branch `origin/release/save-unpaid-rules-on-live-b476fcdf` @ `62823767` kept as the source pin.
 - **Evidence:** `~/release-work/checkout-save-unpaid-double-award/` (`gate-r4-ports-remapped.log`, `negctl-*.log`, `rules.diff`, `push-pin/`, `deploy/`).
 
 ## PUSH-TRIGGER-TREATWELL-GATE-DRIFT — source-only main twin (2026-11-04) · **no release, no deploy** · main `3cc88943`
@@ -825,7 +837,7 @@
 - **Post-deploy:** only the `cloud.firestore` release moved; functions (142), hosting, storage rules, scheduler, indexes / TTL, project IAM, Cloud Run IAM, custom domains, DNS unchanged; 0 SetIamPolicy; 13421 documents (only 1 `parserStats` + 1 `platform`, background); membership groups empty; 0 stamped bookings; 0 project ERROR. Window 15:19:10Z → 15:24:51Z.
 - **Rollback (not automatic):** `rollback-m3-rules.sh --apply` under its own `MEMBERSHIP-M3-RULES-ROLLBACK-<date>` → `7cb25b67` (re-point only). Check-only after release: OK.
 - **Record:** salown-app `work/membership-d2-records` `52a25f2c` — `ops/releases/membership-m3-rules/release-R-2026-10-16-A.json`, runbook `ops/runbooks/membership-m3-rules.md`; evidence `~/release-work/membership-m3/rules-d/runs/run-20261016T150431Z/`.
-- **Note:** main's `firestore.rules` is not live (never-released ONB-PD hunks, no D2) — the next rules release must be cut from `3b449025`.
+- **Note:** main's `firestore.rules` is not live (never-released ONB-PD hunks, no D2) — the next rules release must be cut from `3b449025`. *(2026-11-06: M3 rules now on main via `d60e9cd0`, CHECKOUT-SAVE-UNPAID-MAIN-TWIN; main still carries unreleased ONB-PD hunks.)*
 - **Does not authorise:** ML `e8ee17ab`, Admin / Staff / UI, enabling membership or `checkoutSettings` for any tenant, an authenticated smoke, the rollback.
 
 ## R-2026-10-15-D — `MEMBERSHIP-PHASE1`: M3 B3, membership redemption in the server checkout (K1) on CC · 1 unit (`functions:salown:salownCheckoutBooking`) · **LIVE — window clean; unreachable until a salon has membership + checkoutSettings and a till sends `applyMembership`**
