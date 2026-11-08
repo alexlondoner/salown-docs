@@ -1,5 +1,39 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
+## R-2026-11-08-D — Staff sheet recognises legacy Website Stripe-paid bookings · `hosting:salown-staff` · **LIVE — DEPLOYED_VERIFIED**
+
+- **Approval:** `APPROVAL_ID=WEBSITE-PREPAID-PROVIDER-MISSING-STAFF`, `CANDIDATE=8e7436a8`, `EXPECTED_LIVE=ROLLBACK=f0796fa0a2f1a72c`, `AUTO_ROLLBACK=NO`.
+- **Source:** `8e7436a8018a5cab73e760b76c52c10f5a2c7c6d` (tree `6cd2c4a0`, parent live `7752c4c2`), `origin/release/website-prepaid-staff-on-live-7752c4c2`.
+- **Pre:** served `staff-Cq3s7lOL.js` `c8ee50d1…` + `sw.js` `1cce1e34…` == recorded `f0796fa0`.
+- **Deploy:** isolated `git archive`, firebase-tools 15.26.0, `--only hosting:salown-staff`: `f0796fa0a2f1a72c` → **`2ee7ec0b777bcdfd`**.
+- **Post-verify:** 25/25 served files byte-equal to the candidate build; entry `staff-pA_AowHt.js`; snapshot diff = this site only.
+- **Rollback:** Console → Hosting → `salown-staff` → `f0796fa0a2f1a72c`.
+- **Work ID:** `WEBSITE-PREPAID-PROVIDER-MISSING` (claim `7056cb94` on main). Rail 2b `isLegacyWebsiteStripePaid`: provider-less `WCB-` Website FULL booking counts as Stripe-paid only with PAID + amount > 0 + `pi_` + `cs_live_` + no refund + no `paymentRequirement` + not checked out/cancelled/no-show. No data write, no backfill; £61 / August records CLOSED_NO_ACTION (owner). Not dispute-aware.
+- **Owner verify:** `PENDING_NATURAL_BOOKING` (census: 0 upcoming legacy FULL bookings). Deposit-with-balance row can use `a9112214b9`.
+
+## R-2026-11-08-C — Admin till recognises legacy Website Stripe-paid bookings · `hosting:salown` · **LIVE — DEPLOYED_VERIFIED**
+
+- **Approval:** `APPROVAL_ID=WEBSITE-PREPAID-PROVIDER-MISSING-ADMIN`, `CANDIDATE=bbf1d360`, `EXPECTED_LIVE=ROLLBACK=9ddc3aa74c58cda4`, `AUTO_ROLLBACK=NO`.
+- **Source:** `bbf1d360c8f793fb18cf5dc2713880033d8e4d71` (tree `1a517e3f`, parent live `0ea09ef8`), `origin/release/website-prepaid-admin-on-live-0ea09ef8`.
+- **Pre:** served `index-DNzF_R8u.js` byte-equal to the R-2026-11-08-A verified entry.
+- **Deploy:** isolated `git archive`, firebase-tools 15.26.0, `--only hosting:salown`: `9ddc3aa74c58cda4` → **`d33d2a59988fbb22`**.
+- **Post-verify:** 58/58 `public-bundle` files byte-equal to the candidate build; entry `index-CwG2js8W.js`; snapshot diff = this site only.
+- **Rollback:** Console → Hosting → `salown` → `9ddc3aa74c58cda4`.
+- **Work ID:** `WEBSITE-PREPAID-PROVIDER-MISSING` (claim `7056cb94` on main). Rail 2b `isLegacyWebsiteStripePaid`: provider-less `WCB-` Website FULL booking counts as Stripe-paid only with PAID + amount > 0 + `pi_` + `cs_live_` + no refund + no `paymentRequirement` + not checked out/cancelled/no-show. No data write, no backfill; £61 / August records CLOSED_NO_ACTION (owner). Not dispute-aware.
+- **Owner verify:** `PENDING_NATURAL_BOOKING` (census: 0 upcoming legacy FULL bookings). Deposit-with-balance row can use `a9112214b9`.
+
+## R-2026-11-08-B — server twin of the legacy Website Stripe-paid rail · `salownCheckoutBooking` · **LIVE — DEPLOYED_VERIFIED**
+
+- **Approval:** `APPROVAL_ID=WEBSITE-PREPAID-PROVIDER-MISSING-FN`, `CANDIDATE=f07b70b6`, `EXPECTED_LIVE=salowncheckoutbooking-00009-sam`, `ROLLBACK=73d0a8fb`, `AUTO_ROLLBACK=NO`.
+- **Source:** `f07b70b67105bd03cf79bebb0e3c12b94af0309c` (tree `eef02db3`, parent live `73d0a8fb`), `origin/release/website-prepaid-functions-on-live-73d0a8fb`.
+- **Pre:** live archive 93/93 `src` files == `73d0a8fb`; 145 functions + all sites + rules == 11:21Z snapshot.
+- **Deploy:** isolated `git archive` (`salown-app` dir name required by the namespace guard), `./scripts/deploy-functions.sh salownCheckoutBooking` (check-only PASS first): `-00009-sam` → **`-00010-xaz`** (2026-11-08T21:22:06Z), traffic 100 % latest.
+- **Post-verify:** new archive 93/93 `src` == `f07b70b6`; `lib/checkout/executor.js` == workspace build and the only lib file changed; revision config (scaling, timeout, SA, concurrency, resources, env, secret versions) equal to `-00009-sam`; snapshot diff = this function only. TR executor path only — whitecross never reaches it.
+- **Rollback:** redeploy `73d0a8fb` via the wrapper.
+- **Known:** live twin still predates BL-6 / Connect rails (pre-existing drift, not this release).
+- **Work ID:** `WEBSITE-PREPAID-PROVIDER-MISSING` (claim `7056cb94` on main). Rail 2b `isLegacyWebsiteStripePaid`: provider-less `WCB-` Website FULL booking counts as Stripe-paid only with PAID + amount > 0 + `pi_` + `cs_live_` + no refund + no `paymentRequirement` + not checked out/cancelled/no-show. No data write, no backfill; £61 / August records CLOSED_NO_ACTION (owner). Not dispute-aware.
+- **Owner verify:** `PENDING_NATURAL_BOOKING` (census: 0 upcoming legacy FULL bookings). Deposit-with-balance row can use `a9112214b9`.
+
 ## R-2026-11-08-A — Admin till applies money already paid to the whole goods total (online-extras due parity) · `hosting:salown` · **LIVE — DEPLOYED_VERIFIED; NOT OWNER_VERIFIED**
 
 - **Work ID:** `SAVE-UNPAID-REFUSAL-COPY__ONLINE-EXTRAS-DUE-PARITY` (scope amend approved 2026-11-08).
