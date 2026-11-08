@@ -1,5 +1,15 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
+## R-2026-11-08-A — Admin till applies money already paid to the whole goods total (online-extras due parity) · `hosting:salown` · **LIVE — DEPLOYED_VERIFIED; NOT OWNER_VERIFIED**
+
+- **Work ID:** `SAVE-UNPAID-REFUSAL-COPY__ONLINE-EXTRAS-DUE-PARITY` (scope amend approved 2026-11-08).
+- **Approval:** `APPROVAL_ID=ONLINE-EXTRAS-DUE-PARITY-R-2026-11-08-A`, `CANDIDATE=0ea09ef8`, `TARGET=hosting:salown ONLY`, `EXPECTED_LIVE=ROLLBACK=1b0668f7f0f18d01`, `ACK_BASELINE` typecheck 20 / full vitest 24 parity with `bb594585`, `ACK_SCOPE` one real BookingForm chunk, `AUTO_ROLLBACK=NO`.
+- **Source:** salown-app **`0ea09ef83cb3b58e810f31014ad9ded56dba3b39`**, parent `bb594585`, pinned at `origin/release/save-unpaid-refusal-copy-on-live-644517be`, not on main. `deskStartingTotal()` = goods − min(paid, goods).
+- **Deploy:** isolated `git archive 0ea09ef8` (tree == commit); released 2026-11-08T11:21:09Z: salown `1b0668f7f0f18d01` → **`9ddc3aa74c58cda4`**.
+- **Post-verify:** served `index-DNzF_R8u.js` + `BookingForm-D5Jaspri.js` byte-equal to candidate; marker `-Math.max(0,Math.min(Number.isFinite(` = 1 in BookingForm, 0 in entry; 100 → 100 files, 28 changed pairs (1 real + 27 rename), 0 staff-bundle; snapshot diff = salown release line only.
+- **Read-only booking check (`APPROVE_READONLY=ONLINE-EXTRAS-SINGLE-BOOKING-VERIFY`)**, booking `836106a5cc` (whitecross, 2026-11-06): **INCONCLUSIVE**. Expected £61 (service £55 + Nose Wax £6); paid online £61 (Stripe, 1 capture); recorded at desk £61 CARD with receipt `paidEarlier 0`; possible overcharge **£61**, not £6. Root cause for THIS booking is different: the booking has **no `paymentProvider`**, so `resolvePrePaidAmount` (webhook rail needs EXTERNAL_CHECKOUT/SALOWN_CONNECT) answers £0 and the till asks for the whole £61 — R-2026-11-08-A does not change that shape. Whether the desk card was physically charged is not visible in Firestore (terminal statement needed). No write, no refund. Evidence `due-parity/booking-836106a5cc-readonly.txt`.
+- **Owner verify (pending, read-only):** needs a booking with online extra AND `paymentProvider` set → £0 due + "Fully paid by Website"; deposit-with-balance = natural booking pending.
+
 ## R-2026-11-06-B — A booking paid in full is not offered "Save unpaid" / "Save as draft" · `hosting:salown` · **LIVE — DEPLOYED_VERIFIED; NOT OWNER_VERIFIED (read-only UI check pending)**
 
 - **Work ID:** `SAVE-UNPAID-REFUSAL-COPY` correction of `R-2026-11-06-A` (owner check PARTIAL: Website fully-paid CONFIRMED booking still offered "Save as draft").
