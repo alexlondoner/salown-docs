@@ -1,5 +1,14 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
+## WEBSITE-PREPAID-PROVIDER-MISSING-MAIN-TWIN — source-only main twin of `R-2026-11-08-B/C/D` (2026-11-09) · **no release, no deploy** · main `61914047`
+
+- **Approval:** owner, 2026-11-09 — `APPROVE_MAIN_TWIN=WEBSITE-PREPAID-PROVIDER-MISSING`, `DEPLOY=NO`, `PRODUCTION_WRITE=NO`.
+- **Commit:** `6191404713290bbe7b9580d04e290582f977e279`, single parent `5fd45b47` (origin/main), `[skip ci]`. 5 paths: M `src/firestoreActions.ts`, M `functions/src/checkout/executor.ts`, A `test/fixtures/legacyWebsitePrepaid.json` (blob `107efb81` = deployed), A `src/legacyWebsitePrepaid.test.ts` (as `8e7436a8`), A `functions/src/checkout/legacyWebsitePrepaid.test.js` (as `f07b70b6`, incl. sha256 pin). Port only; release branches not merged.
+- **Parity:** marked twin block sha256 `97373ff5…cf65` in both main files = all three deployed sources; rail 2b after the webhook rail, before DEPOSIT, in both resolvers. `src/firestoreActions.ts`, `checkoutDeskPrePaid.ts`, `bookingUtils.ts`, `pages/clientHistory.ts` byte-equal to `bbf1d360` and `8e7436a8`; `src/staff/` == `8e7436a8`.
+- **Known gap:** main has no `deskStartingTotal` (ONLINE-EXTRAS-DUE-PARITY, R-2026-11-08-A lineage); it lands with the SAVE-UNPAID-REFUSAL-COPY main twin, not here.
+- **Gates vs `5fd45b47`:** vitest fail set cand ⊆ base (20 vs 21, 0 new; +57 pass) · tsc 0 = 0 · functions 1 = 1 (+51) · ESLint 0 · builds OK.
+- **Claim:** released `d39f66d5`; validate OK. **Owner verify:** still `PENDING_NATURAL_BOOKING` (not part of this twin).
+
 ## R-2026-11-08-D — Staff sheet recognises legacy Website Stripe-paid bookings · `hosting:salown-staff` · **LIVE — DEPLOYED_VERIFIED**
 
 - **Approval:** `APPROVAL_ID=WEBSITE-PREPAID-PROVIDER-MISSING-STAFF`, `CANDIDATE=8e7436a8`, `EXPECTED_LIVE=ROLLBACK=f0796fa0a2f1a72c`, `AUTO_ROLLBACK=NO`.
