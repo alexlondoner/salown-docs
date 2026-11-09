@@ -1,5 +1,16 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
+## SAVE-UNPAID-MAIN-TWIN — source-only Admin main twin of `R-2026-11-06-A/B` + `R-2026-11-08-A` (2026-11-09) · **no release, no deploy** · main `a1d92766`
+
+- **Approval:** owner, 2026-11-09 — `TASK=SAVE-UNPAID-MAIN-TWIN-CLOSE` (prepare) + `APPROVE_MAIN_PUSH=SAVE-UNPAID-MAIN-TWIN`, `CANDIDATE=1188c7d0`, `DEPLOY=NO`, `PRODUCTION_WRITE=NO`, `AUTO_ROLLBACK=NO`.
+- **Source-only main twin. No deploy; live release unchanged** — hosting:salown stays `d33d2a59988fbb22` (read-only audit 2026-11-09: 58/58 served `public-bundle` files byte-equal to a fresh build of `bbf1d360`; no hosting, channel, Functions or rules release since).
+- **Commit:** `a1d92766588dfd067f9b6301b63e9e42d8d7cb43` (tree `4c0cd0dd`), single parent `75c932d1`, `[skip ci]`; candidate `1188c7d0` rebased over claim-file-only commits (tree differs from it only by `ops/claims/STAFF-NATIVE-D1-P0…claim`). 5 paths, all claimed: `CheckoutPanel.tsx`, `saveUnpaidGuard.ts`, `en/panel.ts`, `tr/panel.ts` blob-equal to live `bbf1d360` = `0ea09ef8`; `saveUnpaidRefusalCopy.test.tsx` = live file + 45 lines (legacy Website rail × due parity block, panel-flag wiring pin). Main's pre-twin copies equalled `644517be`, so the live diff `644517be..0ea09ef8` applied as-is. Resolver deps (`firestoreActions.ts`, `checkoutDeskPrePaid.ts`, `bookingUtils.ts`, `importedPrepaidTill.ts`) == `bbf1d360`. No release branch merged; server and Staff code unchanged.
+- **Gates vs untouched main `7da3f5bf` (same worktree, functions lib built first):** tsc 0 = 0 · focused 9 suites 304/304 · full vitest failures cand 21 ⊆ base 23 (0 new; base-only 2 green in isolation on both refs; gated-release "wrapper refuses main with no manifest" fails identically on both) · ESLint 0 · Admin build OK. Pre-push after rebase: focused 304/304 + tsc 0 re-run; full suite/build not re-run (rebase over claim files only).
+- **Bundle delta vs main:** 58 → 58; 2 real chunks (`index-*` dictionaries, `BookingForm-*` CheckoutPanel), 26 rename-only; markers `completedSaleNotUnpaid`, `prepaidNotUnpaid`, `data-checkout-error` present, as in live.
+- **Negative controls:** 9/9 red (old extras formula, flag not passed, guard ignores flag, no CHECKED_OUT check, write-before-refusal, independent paidAmount/paymentType rule, no overpayment cap, deposit counted fully prepaid in panel / in helper).
+- **Claim:** SAVE-UNPAID-REFUSAL-COPY released `f490ef0c`; validate OK (4 claims, 55 paths, 0 conflicts).
+- **Owner verify:** unchanged — R-2026-11-08-A NOT OWNER_VERIFIED; still awaits a natural legacy booking. This main twin is not owner verification.
+
 ## WEBSITE-PREPAID-PROVIDER-MISSING-MAIN-TWIN — source-only main twin of `R-2026-11-08-B/C/D` (2026-11-09) · **no release, no deploy** · main `61914047`
 
 - **Approval:** owner, 2026-11-09 — `APPROVE_MAIN_TWIN=WEBSITE-PREPAID-PROVIDER-MISSING`, `DEPLOY=NO`, `PRODUCTION_WRITE=NO`.
