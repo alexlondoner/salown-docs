@@ -1,5 +1,19 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
+## R-2026-11-10-A — Admin Sales team-member filter lists current staff only · `hosting:salown` · **LIVE — OWNER_VERIFIED 2026-11-10**
+
+- **Approval:** owner — `APPROVE_DEPLOY=SALES-FILTER-ACTIVE-STAFF-ONLY__ADMIN`, `TARGET=hosting:salown ONLY`, `AUTO_ROLLBACK=NO`.
+- **Version:** `d33d2a59988fbb22` → `518528f0f2304469` (release 2026-11-10T14:51:23Z). Rollback target `d33d2a59988fbb22`. **Live `hosting:salown` baseline is now `518528f0f2304469`, source `2dd0a240`.**
+- **Source:** `2dd0a240` (tree `cc63d5a7`, parent `bbf1d360` = previous live source) on `release/sales-active-staff-filter-on-live-bbf1d360`; isolated `git archive` build, firebase-tools 15.26.0.
+- **Change:** Sales chips come from `isInactiveStaff` + `isWithinAvailabilityWindow` on the tenant's day; the filter matches by staff document id, a name only as a unique fallback. Historical rows, totals and CSV unchanged. Owner decision: a name-only sale whose name matches more than one staff document sits under no chip and stays in All.
+- **Pre-verify:** live file set 98/98 byte-equal to a clean `bbf1d360` build; dry-run OK.
+- **Post-verify:** served 98/98 byte-equal to the candidate build; snapshot diff = the `hosting salown` line only (146 functions, 9 other sites, Firestore and Storage rulesets unchanged); `/staff-bundle` still 302 → staff.salown.com.
+- **Gates vs `bbf1d360`:** focused 119/119 · vitest same 33 failures, 0 new · tsc 54 = 54 · ESLint 0 · mutants 14/14 killed · bundle +1,293 B, one chunk with real content change (`Bookings`).
+- **Owner verify (2026-11-10, after refresh):** former-staff chip hidden PASS · active chips visible PASS · active filter works PASS · historical sales under All PASS · totals and revenue preserved PASS. No rollback.
+- **Knock-on:** PLATFORM-GOODWILL Admin candidate `1df840e9` = `STALE_AFTER_SALES_RELEASE — REBIND REQUIRED` (cut on `bbf1d360`); after its production freeze it must rebind onto `2dd0a240`. Its Functions/parser candidates are unaffected.
+- **Main twin:** prepared, NOT pushed — `882f456b` (tree `4c03257d`) on main `8e2ae512`, six blobs identical to `2dd0a240`; gates vs main: focused 119/119 · vitest 37 = 37, 0 new · tsc 63 = 63 · ESLint 0 · build OK. Push needs separate owner approval.
+- **Claim:** `SALES-FILTER-ACTIVE-STAFF-ONLY` open (`efd5f2de`) until the twin is pushed and verified.
+
 ## STAFF-PUSH-SECURITY-R2-MAIN-TWIN — source-only main twin of `R-2026-11-09-A/B/C` (2026-11-10) · **no release, no deploy** · main `3aebf6af` / `c36878f7` / `5064373e`
 
 - **Approval:** owner — `MAIN_CODE_PUSH=YES`, `APPROVE_MAIN_TWIN=STAFF-PUSH-SECURITY-R2`, then `DECISION_FCM_HASH_PIN=A_DUAL_EXACT_HASH`, `DECISION_RULES_AUTHORITY=A_UPDATE_EXACT_A3_FORM`, `APPROVE_CONTINUE_MAIN_TWIN=STAFF-PUSH-SECURITY-R2`, `DEPLOY=NO`, `PRODUCTION_WRITE=NO`.
