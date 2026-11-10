@@ -11,9 +11,11 @@
 - **Gates vs `7180673a`:** functions 1 = 1 · vitest 0 new · ops CI set 16 = 16 (topology) · Staff 547/547 · tsc 0 = 0 · builds OK · canonical rules gate (git-archive kit) static 20/20 + 455/455 · live-lineage static 20/20 + fcmTokens 17/17 · mutants: security 6/6, C1–C4, hash-pin 5/5, authority 12/12 killed.
 - **Release-source pins:** `release/staff-push-security-r2-a1/-a2/-a3` = `072e4995` / `5322097a` / `abd4d2ed`.
 - **Claim:** `STAFF-NATIVE-D1-P0` shrunk `cb0f0d72` (Unit A released; `functions/src/index.ts` available for PLATFORM-GOODWILL re-claim); Native Unit B `3f7da383` SUPERSEDED / RE-CUT REQUIRED. SYNC `54f08aaf`.
-- **Owner verify:** real-device push lifecycle still pending.
+- **Owner verify:** ~~real-device push lifecycle still pending~~ → **OWNER_VERIFIED 2026-11-10** (see `R-2026-11-09-A/B/C`). Unit A closed; Native Unit B (`3f7da383` superseded) stays open for re-cut.
 
-## R-2026-11-09-C — fcmTokens server-only for every browser principal · `cloud.firestore` · **LIVE — DEPLOYED_VERIFIED**
+## R-2026-11-09-C — fcmTokens server-only for every browser principal · `cloud.firestore` · **LIVE — DEPLOYED_VERIFIED; OWNER_VERIFIED (2026-11-10)**
+
+- **Owner verify (2026-11-10):** **OWNER_VERIFIED** — `OWNER_VERIFY=STAFF-PUSH-SECURITY-R2`, real devices (owner phone + a second phone, same account): push on device 1 PASS, push on device 2 PASS, one panel booking reached both PASS, logout on device 1 stopped only device 1 PASS, device 2 kept receiving PASS. Both test bookings cancelled; second phone logged out. No deploy, no TestFlight/App Store.
 
 - **Approval:** `APPROVE_DEPLOY=STAFF-PUSH-SECURITY-R2__A3_FIRESTORE_RULES`, `PRODUCTION_READ=METADATA_ONLY`.
 - **Source:** `abd4d2ed` (tree `ac9d9793`, on live ruleset source `62823767`), pin `release/staff-push-security-r2-a3`.
@@ -22,14 +24,18 @@
 - **Post:** snapshot diff = cloud.firestore only. No production document read/write.
 - **Rollback (not used):** re-release ruleset `429f9246`.
 
-## R-2026-11-09-B — Staff PWA registers push through the callable · `hosting:salown-staff` · **LIVE — DEPLOYED_VERIFIED**
+## R-2026-11-09-B — Staff PWA registers push through the callable · `hosting:salown-staff` · **LIVE — DEPLOYED_VERIFIED; OWNER_VERIFIED (2026-11-10)**
+
+- **Owner verify (2026-11-10):** **OWNER_VERIFIED** — `OWNER_VERIFY=STAFF-PUSH-SECURITY-R2`, real devices (owner phone + a second phone, same account): push on device 1 PASS, push on device 2 PASS, one panel booking reached both PASS, logout on device 1 stopped only device 1 PASS, device 2 kept receiving PASS. Both test bookings cancelled; second phone logged out. No deploy, no TestFlight/App Store.
 
 - **Approval:** `APPROVE_DEPLOY=STAFF-PUSH-SECURITY-R2__A2_STAFF_PWA`.
 - **Source:** `5322097a` (tree `6efc5474`, on live Staff source `8e7436a8`), pin `release/staff-push-security-r2-a2`.
 - **Deploy (2026-11-09 18:30Z):** isolated git-archive kit: `2ee7ec0b777bcdfd` → **`45c541ee1faa78e0`**; entry `staff-pA_AowHt.js` → `staff-Cvs5eoMK.js`; 25/25 served files byte-equal to the kit build; snapshot diff = this site only.
 - **Rollback target recorded at deploy:** `f0796fa0a2f1a72c` (not used).
 
-## R-2026-11-09-A — `salownStaffPushInstallation` callable · Functions · **LIVE — DEPLOYED_VERIFIED**
+## R-2026-11-09-A — `salownStaffPushInstallation` callable · Functions · **LIVE — DEPLOYED_VERIFIED; OWNER_VERIFIED (2026-11-10)**
+
+- **Owner verify (2026-11-10):** **OWNER_VERIFIED** — `OWNER_VERIFY=STAFF-PUSH-SECURITY-R2`, real devices (owner phone + a second phone, same account): push on device 1 PASS, push on device 2 PASS, one panel booking reached both PASS, logout on device 1 stopped only device 1 PASS, device 2 kept receiving PASS. Both test bookings cancelled; second phone logged out. No deploy, no TestFlight/App Store.
 
 - **Source:** `072e4995` (tree `0e81d669`, on live fn source `f07b70b6`), pin `release/staff-push-security-r2-a1`.
 - **Deploy (2026-11-09 16:39:52Z):** isolated git-archive kit, `salownStaffPushInstallation` only, europe-west2, nodejs22 → revision **`salownstaffpushinstallation-00001-has`**; 145 → 146 functions, the 145 unchanged (revision + config hash); deployed archive == `072e4995`.
