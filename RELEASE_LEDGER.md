@@ -11,8 +11,8 @@
 - **Gates vs `bbf1d360`:** focused 119/119 · vitest same 33 failures, 0 new · tsc 54 = 54 · ESLint 0 · mutants 14/14 killed · bundle +1,293 B, one chunk with real content change (`Bookings`).
 - **Owner verify (2026-11-10, after refresh):** former-staff chip hidden PASS · active chips visible PASS · active filter works PASS · historical sales under All PASS · totals and revenue preserved PASS. No rollback.
 - **Knock-on:** PLATFORM-GOODWILL Admin candidate `1df840e9` = `STALE_AFTER_SALES_RELEASE — REBIND REQUIRED` (cut on `bbf1d360`); after its production freeze it must rebind onto `2dd0a240`. Its Functions/parser candidates are unaffected.
-- **Main twin:** prepared, NOT pushed — `882f456b` (tree `4c03257d`) on main `8e2ae512`, six blobs identical to `2dd0a240`; gates vs main: focused 119/119 · vitest 37 = 37, 0 new · tsc 63 = 63 · ESLint 0 · build OK. Push needs separate owner approval.
-- **Claim:** `SALES-FILTER-ACTIVE-STAFF-ONLY` open (`efd5f2de`) until the twin is pushed and verified.
+- **Main twin (2026-11-10, source only, no deploy):** salown-app main `cb92fe51` (parent `91a245d3`, `[skip ci]`, fast-forward, 6 paths, blobs identical to `2dd0a240`); prepared as `882f456b` on `8e2ae512` and re-seated after one unrelated claim commit. Gates vs main: focused 119/119 · vitest 37 = 37, 0 new · tsc 63 = 63 · ESLint 0 · build OK. Actions runs 727 → 727.
+- **Claim:** `SALES-FILTER-ACTIVE-STAFF-ONLY` released `462c5e8e` (with the SYNC entry).
 
 ## STAFF-PUSH-SECURITY-R2-MAIN-TWIN — source-only main twin of `R-2026-11-09-A/B/C` (2026-11-10) · **no release, no deploy** · main `3aebf6af` / `c36878f7` / `5064373e`
 
