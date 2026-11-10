@@ -1,5 +1,41 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
+## STAFF-PUSH-SECURITY-R2-MAIN-TWIN — source-only main twin of `R-2026-11-09-A/B/C` (2026-11-10) · **no release, no deploy** · main `3aebf6af` / `c36878f7` / `5064373e`
+
+- **Approval:** owner — `MAIN_CODE_PUSH=YES`, `APPROVE_MAIN_TWIN=STAFF-PUSH-SECURITY-R2`, then `DECISION_FCM_HASH_PIN=A_DUAL_EXACT_HASH`, `DECISION_RULES_AUTHORITY=A_UPDATE_EXACT_A3_FORM`, `APPROVE_CONTINUE_MAIN_TWIN=STAFF-PUSH-SECURITY-R2`, `DEPLOY=NO`, `PRODUCTION_WRITE=NO`.
+- **Source-only. A1/A2/A3 were already live (below); nothing deployed, live unchanged.** Fast-forward `7180673a..5064373e`, three `[skip ci]` commits, 20 paths, remote tree `ee4a9fea` == local; Actions run count unchanged (727). No release branch merged.
+- **A1 `3aebf6af`:** `pushInstallation{,Callable}.ts` + both tests byte-equal to `072e4995`; export block in `functions/src/index.ts` placed before the Membership exports (main pins them last). **Ungated, as live** — tenant-lifecycle gating (ONB-PD `gated()` vs a security-lifecycle exception for logout/unregister) is an open owner decision, not decided here.
+- **A2 `c36878f7`:** `src/staff/StaffApp.tsx` + `src/staff/push/` byte-equal to `5322097a`.
+- **A3 `5064373e`:** main `firestore.rules` + exactly the three closures (blob `ac86b9c8`). Main ≠ live by design: it keeps main's unreleased ONB-PD rules and the two existing suite lines; twin-vs-`abd4d2ed` == the `62823767`→`f490ef0c` ONB-PD delta exactly. Main-only test changes (owner-approved): fcmTokens Part A accepts exactly two full-sha256 pre-A3 sources (`ea53b45e…c787` live 429f9246, `ae2d7b0d…b7e6` main f490ef0c); `ops/rules-authority.test.js` pins the exact A3 root read / fcmTokens block / catch-all conjunct with negative controls; `ops/test-rules-emulator.sh` runs that static guard fail-closed.
+- ⚠️ **Gate gap on `R-2026-11-09-C`:** its gate ran the rules emulator suites only and did not cover the `ops/rules-authority.test.js` static guard (red against `abd4d2ed` until this twin). Live behaviour was correct; now wired into the rules gate. Debt: shared `stripRulesComments` hides `firestore.rules` lines 20–1069 from the global-write-grant scan.
+- **Gates vs `7180673a`:** functions 1 = 1 · vitest 0 new · ops CI set 16 = 16 (topology) · Staff 547/547 · tsc 0 = 0 · builds OK · canonical rules gate (git-archive kit) static 20/20 + 455/455 · live-lineage static 20/20 + fcmTokens 17/17 · mutants: security 6/6, C1–C4, hash-pin 5/5, authority 12/12 killed.
+- **Release-source pins:** `release/staff-push-security-r2-a1/-a2/-a3` = `072e4995` / `5322097a` / `abd4d2ed`.
+- **Claim:** `STAFF-NATIVE-D1-P0` shrunk `cb0f0d72` (Unit A released; `functions/src/index.ts` available for PLATFORM-GOODWILL re-claim); Native Unit B `3f7da383` SUPERSEDED / RE-CUT REQUIRED. SYNC `54f08aaf`.
+- **Owner verify:** real-device push lifecycle still pending.
+
+## R-2026-11-09-C — fcmTokens server-only for every browser principal · `cloud.firestore` · **LIVE — DEPLOYED_VERIFIED**
+
+- **Approval:** `APPROVE_DEPLOY=STAFF-PUSH-SECURITY-R2__A3_FIRESTORE_RULES`, `PRODUCTION_READ=METADATA_ONLY`.
+- **Source:** `abd4d2ed` (tree `ac9d9793`, on live ruleset source `62823767`), pin `release/staff-push-security-r2-a3`.
+- **Deploy (2026-11-09 20:24:50Z):** isolated git-archive kit, firebase-tools 15.26.0, `--only firestore:rules`: `429f9246` → **`a5f92395-132a-4524-bf30-eb1bb9c78331`**; live source sha256 `edf88dab…` == `abd4d2ed`.
+- **Pre/gate:** live 429f9246 source == `62823767` (`ea53b45e…`); rules gate base 21/416, cand 22/432; C1–C4 mutants killed. Static guard `ops/rules-authority.test.js` NOT run (gap, see main twin).
+- **Post:** snapshot diff = cloud.firestore only. No production document read/write.
+- **Rollback (not used):** re-release ruleset `429f9246`.
+
+## R-2026-11-09-B — Staff PWA registers push through the callable · `hosting:salown-staff` · **LIVE — DEPLOYED_VERIFIED**
+
+- **Approval:** `APPROVE_DEPLOY=STAFF-PUSH-SECURITY-R2__A2_STAFF_PWA`.
+- **Source:** `5322097a` (tree `6efc5474`, on live Staff source `8e7436a8`), pin `release/staff-push-security-r2-a2`.
+- **Deploy (2026-11-09 18:30Z):** isolated git-archive kit: `2ee7ec0b777bcdfd` → **`45c541ee1faa78e0`**; entry `staff-pA_AowHt.js` → `staff-Cvs5eoMK.js`; 25/25 served files byte-equal to the kit build; snapshot diff = this site only.
+- **Rollback target recorded at deploy:** `f0796fa0a2f1a72c` (not used).
+
+## R-2026-11-09-A — `salownStaffPushInstallation` callable · Functions · **LIVE — DEPLOYED_VERIFIED**
+
+- **Source:** `072e4995` (tree `0e81d669`, on live fn source `f07b70b6`), pin `release/staff-push-security-r2-a1`.
+- **Deploy (2026-11-09 16:39:52Z):** isolated git-archive kit, `salownStaffPushInstallation` only, europe-west2, nodejs22 → revision **`salownstaffpushinstallation-00001-has`**; 145 → 146 functions, the 145 unchanged (revision + config hash); deployed archive == `072e4995`.
+- **Post:** startup TCP probe OK, 0 ERROR entries, no production call.
+- **Rollback (not used):** delete the new function (no prior revision).
+
 ## SAVE-UNPAID-MAIN-TWIN — source-only Admin main twin of `R-2026-11-06-A/B` + `R-2026-11-08-A` (2026-11-09) · **no release, no deploy** · main `a1d92766`
 
 - **Approval:** owner, 2026-11-09 — `TASK=SAVE-UNPAID-MAIN-TWIN-CLOSE` (prepare) + `APPROVE_MAIN_PUSH=SAVE-UNPAID-MAIN-TWIN`, `CANDIDATE=1188c7d0`, `DEPLOY=NO`, `PRODUCTION_WRITE=NO`, `AUTO_ROLLBACK=NO`.
