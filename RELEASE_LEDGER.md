@@ -1,5 +1,46 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
+## R-2026-11-10-E — NEW guarded owner/admin callable `salownPlatformGoodwillReschedule` · `functions:salown` (europe-west2) · **LIVE — DEPLOYED_VERIFIED (no UI caller yet)**
+
+- **Approval:** owner — `APPROVE_DEPLOY=PLATFORM-GOODWILL-RECONCILE__FUNCTIONS_GUARDED`, `ADMIN_HOSTING_DEPLOY=NO`, `MANUAL_FUNCTION_INVOCATION=NO`, `AUTO_ROLLBACK=NO`.
+- **Revision:** absent (404) → **`salownplatformgoodwillreschedule-00001-leg`** (2026-11-10T18:23:13Z), 100 % traffic.
+- **Source:** `36aa1cc9` (tree `4a884d76`, functions/src tree `1700aa84`) on `release/platform-goodwill-callable`, cut on the live salownParseEmails lineage `a1206b3c` → parser `813e6229`; isolated `git archive` kit, `npm ci` from the lockfile.
+- **Guard:** `ops/gatedReleaseGuard.v2.mjs` only (release tooling v2, `release/platform-goodwill-guard-v2` = `0904e512`), exact exception `platform-goodwill-callable`, via `ops/releases/platform-goodwill/preflight-callable.sh`; v1 guard frozen and not used. Tooling sha pins OK; closure 22/22; the three allowed ONB-PD modules only (gatedCallable, tenantCallableGate, tenantAccessPolicy), 0 forbidden; 85 exports, 3 schedules; no `.env`; wrapper `--check-only` OK.
+- **Archive parity:** deployed archive 216/216 entries byte-equal to the kit; 110/110 source files blob-equal to `36aa1cc9`; 0 untracked/secret/debug names.
+- **Config:** europe-west2, nodejs22, 256Mi, 60 s, compute default SA, no secrets, invoker `allUsers` (= `salownReassignBooking`); auth, tenant and role enforced in the handler (`gated()` + tenant policy + owner/admin). **Non-blocking observed config difference:** `maxInstances` is unset (platform default) while comparable existing callables (salownReassignBooking, salownCheckoutBooking, salownCreateAdminBooking, salownCreateStaffBooking) carry 20; the code declares only `{ region }` for all of them. Not changed; pinning it needs a separate code + deploy approval (backlog `PLATFORM-GOODWILL-CALLABLE-MAXINSTANCES-PIN`).
+- **Post-verify:** startup/import ERROR 0; not invoked; no data read. Admin UI not released (Admin candidate must be rebound onto `2dd0a240`), so no UI caller yet — expected intermediate state.
+- **Gates (pre-deploy):** canonical emulator 705/705 PASS; work ↔ C parity 46 rows, 0 differ; callable mutants 16/16 killed.
+- **Rollback:** no automatic deletion. Without the Admin UI the callable has no caller; deleting the function needs its own explicit owner approval.
+
+## R-2026-11-10-D — Booksy parser defence · `salownParseInboxDispatch` · `functions:salown` (europe-west2) · **LIVE — DEPLOYED_VERIFIED**
+
+- **Approval:** as `R-2026-11-10-E`.
+- **Revision:** `salownparseinboxdispatch-00015-fik` → **`salownparseinboxdispatch-00016-xac`** (2026-11-10T18:16:43Z), 100 % traffic. Rollback target `-00015-fik` (separate approval).
+- **Source:** `2505011e` (tree `b0a526df`) on `release/platform-goodwill-inbox-dispatch`, parent = live lineage `04c65482` (pre-deploy archive 97/97 blob-equal). Change: Booksy slot-marker verdict (SAME/HELD skip, DISTINCT imports, STALE → parserReview) + owner-change detection (`booksy.ts`, `shared.ts`, `canary.ts`, new `booksyOwnerChange.ts`).
+- **Archive parity:** 192/192 byte-equal to the kit; 98/98 source blob-equal to `2505011e`; lib delta vs previous live = exactly the 3 parser modules + booksyOwnerChange.
+- **Config parity:** normalized config, env values, secrets, service account, region and Firestore trigger (filters/retry/region) identical to `-00015-fik`.
+- **Post-verify:** startup/import ERROR 0; no manual invocation, no data read; v1 guard "no gated hunk"; wrapper `--check-only` OK.
+
+## R-2026-11-10-C — Booksy parser defence · `salownManualImport` · `functions:salown` (europe-west2) · **LIVE — DEPLOYED_VERIFIED**
+
+- **Approval:** as `R-2026-11-10-E`.
+- **Revision:** `salownmanualimport-00121-wam` → **`salownmanualimport-00122-dur`** (2026-11-10T16:26:12Z), 100 % traffic. Rollback target `-00121-wam` (separate approval).
+- **Source:** `18035f42` (tree `2c51cf66`) on `release/platform-goodwill-manual-import`, parent = live lineage `cc654dbc` (pre-deploy archive 100/100 blob-equal). Same parser patch as D.
+- **Archive parity:** 198/198 byte-equal to the kit; 101/101 source blob-equal to `18035f42`.
+- **Config parity:** normalized config, env values, secrets, service account and region identical to `-00121-wam`.
+- **Post-verify:** startup/import ERROR 0; not invoked, no data read.
+
+## R-2026-11-10-B — Booksy parser defence · `salownParseEmails` · `functions:salown` (europe-west2) · **LIVE — DEPLOYED_VERIFIED**
+
+- **Approval:** as `R-2026-11-10-E`. Order B → C → D → E, each pre-described immediately before deploy.
+- **Revision:** `salownparseemails-00131-rap` → **`salownparseemails-00132-faf`** (2026-11-10T15:56:34Z), 100 % traffic. Rollback target `-00131-rap` (separate approval).
+- **Source:** `813e6229` (tree `f2aa7769`) on `release/platform-goodwill-parse-emails`, parent = live lineage `a1206b3c` (pre-deploy archive 96/96 blob-equal). Same parser patch as D.
+- **Archive parity:** 190/190 byte-equal to the kit; 97/97 source blob-equal to `813e6229`.
+- **Config parity:** normalized config, env values, secrets, service account and region identical to `-00131-rap`; scheduler `firebase-schedule-salownParseEmails-europe-west2` unchanged (every 5 minutes, ENABLED).
+- **Post-verify:** startup/import ERROR 0; scheduled runs after deploy 30 × HTTP 200 on `-00132-faf`; cron not triggered manually; no data read.
+- **Release snapshot (B–E):** pre → final differs only in these four function lines (146 → 147 functions); the other 143 functions, 10 hosting sites (`hosting:salown` `518528f0` from `R-2026-11-10-A`, untouched here), Firestore `a5f92395` / Storage `4c00eef7` rules, 5 indexes READY and secrets (0 new versions) unchanged. Actions runs 727 → 727 (release-branch pins push 2026-11-10).
+- **No Admin hosting in this release.**
+
 ## R-2026-11-10-A — Admin Sales team-member filter lists current staff only · `hosting:salown` · **LIVE — OWNER_VERIFIED 2026-11-10**
 
 - **Approval:** owner — `APPROVE_DEPLOY=SALES-FILTER-ACTIVE-STAFF-ONLY__ADMIN`, `TARGET=hosting:salown ONLY`, `AUTO_ROLLBACK=NO`.
