@@ -1,6 +1,6 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
-## R-2026-11-11-A — Admin walk-in / booking client search: typing never selects a client · `hosting:salown` · **LIVE — OWNER_VERIFIED 2026-11-11 (reported regression); main twin pending**
+## R-2026-11-11-A — Admin walk-in / booking client search: typing never selects a client · `hosting:salown` · **LIVE — OWNER_VERIFIED 2026-11-11 (reported regression) — MAIN**
 
 - **Work ID:** `ADMIN-CLIENT-SEARCH-NO-PREMATURE-AUTOSELECT`. **Approval:** owner — `APPROVE_DEPLOY=ADMIN-CLIENT-SEARCH-HOSTING-SALOWN` (hosting:salown only).
 - **Version:** `9c43863a7b35705c` (`R-2026-11-10-F`) → **`89410d5a738f172f`** (2026-11-11T12:42:06Z). Rollback target `9c43863a7b35705c`. **Live `hosting:salown` baseline is now `89410d5a738f172f`, source `5248dabf`.**
@@ -11,7 +11,7 @@
 - **Release-source gates (standard install, vs pristine `0bfd8023`):** tsc 19 = 19 errors (same set) · vitest 19 failed tests / 10 files / 7 load errors = same sets · touched-file ESLint 0 · build OK. Rendered-form harness 34/34 and mutants 24/24 (task evidence; the render test is not in the release commit).
 - **Owner verify (read-only, 2026-11-11):** 5/5 PASS — short name not auto-selected, input stayed editable, longer name stayed available, explicit click selected the correct customer, no rollback required. **Not owner-tested:** the ambiguous-save "Choose existing" / "Continue as new" paths and the unambiguous-save "Link to this client" / "Add as new client" paths; these are verified technically only (render harness + mutants). No booking was created for the test.
 - **Side note:** the pre-deploy `firebase deploy --dry-run` left draft hosting version `20f436a246295ca8` (status CREATED, unreleased). Not deleted.
-- **Main twin:** pending — source-only, separate `MAIN_CODE_PUSH` approval; it restores the rendered-form test, which main can run. Claim `ADMIN-CLIENT-SEARCH-NO-PREMATURE-AUTOSELECT--alish--admin-client-search` stays open until then.
+- **Main twin:** source-only main `7a17a913` (tree `26f910af`, parent `422069bb`) — the six released paths are byte-identical to live source `5248dabf`, and main restores the rendered-form regression test from candidate `14b690de`; no deploy. Closure `aebdbb42` corrected SYNC and released claim `ADMIN-CLIENT-SEARCH-NO-PREMATURE-AUTOSELECT--alish--admin-client-search`.
 - **Follow-up (separate work):** `CLIENT-PICKER-IDENTITY-CONSISTENCY-R1`.
 
 ## R-2026-11-10-F — PLATFORM-GOODWILL-RECONCILE Admin UI ("Changed on <Platform>" dialog) · `hosting:salown` · **LIVE — OWNER_VERIFIED 2026-11-10**
