@@ -1,5 +1,32 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
+## R-2026-11-11-C — Staff new-booking sheet: a picked client and what is typed over them never mix · `hosting:salown-staff` · **LIVE — technically verified, NOT owner-tested on live — MAIN `d6abf700`**
+
+- **Work ID:** `CLIENT-PICKER-IDENTITY-CONSISTENCY-R1`. **Approval:** owner — `APPROVE_DEPLOY=CLIENT-PICKER-IDENTITY-R1__STAFF` (hosting:salown-staff only).
+- **Version:** `45c541ee1faa78e0` → **`1992043483840999`** (2026-11-11T20:44:16Z). Rollback target `45c541ee1faa78e0`. **Live `hosting:salown-staff` baseline is now `1992043483840999`, source `7949b618`.**
+- **Source:** `7949b618` (tree `559b24b2`, parent `5322097a` = previous live Staff source) pinned `release/client-picker-identity-r1-staff-on-live-5322097a`. 4 paths: `src/staff/sheets/NewBookingSheet.tsx`, its render test, `src/lib/clientIdentityDraft.ts` + test.
+- **Behaviour:** picking a client fills name, phone, e-mail and id together; editing the name of a picked client drops the pick and empties phone / e-mail, so the previous person's contact is never saved under a new name. Same rule on web and native (no platform branch).
+- **Pre-verify:** live `45c541ee1faa78e0` served 25/25 byte-equal to a pristine `5322097a` build.
+- **Post-verify:** served 25/25 byte-equal to the kit build (+2 Firebase auto files); changed `index.html` and the single entry (`staff-DINWdEZ1.js`, +359 B); the other 23 files incl. `sw.js` identical. Snapshot diff = the `hosting salown-staff` line only.
+- **Release-source gates (vs pristine `5322097a`):** tsc 0 = 0 · touched-file ESLint 0 · build OK · vitest 20 → 21 failing: the one extra is `ops/releases/gate3-export/gate3Export.test.js` "real candidate trees" (timeout flake; 27/27 alone). New suites 32/32 (helper 18, sheet render 14).
+- **Main twin:** source-only main `d6abf700` (tree `dd554509`, parent `6bea6c07`); closure `22cb2642` (SYNC + claim released). No deploy.
+- **Not done:** no manual check on live; native iOS shell not rebuilt, no device verification.
+
+## R-2026-11-11-B — Admin checkout assign-client and booking form: a picked client and what is typed over them never mix · `hosting:salown` · **LIVE — technically verified, NOT owner-tested on live — MAIN `d6abf700`**
+
+- **Work ID:** `CLIENT-PICKER-IDENTITY-CONSISTENCY-R1`. **Approval:** owner — `APPROVE_DEPLOY=CLIENT-PICKER-IDENTITY-R1__ADMIN` (hosting:salown only).
+- **Version:** `89410d5a738f172f` (`R-2026-11-11-A`) → **`25e8f50a9679e1f7`** (2026-11-11T20:21:00Z). Rollback target `89410d5a738f172f`. **Live `hosting:salown` baseline is now `25e8f50a9679e1f7`, source `25c44a91`.**
+- **Source:** `25c44a91` (tree `1f3dbe7d`, parent `5248dabf` = live `R-2026-11-11-A` source) pinned `release/client-picker-identity-r1-admin-on-live-5248dabf`. 6 paths: `BookingForm.tsx`, `CheckoutPanel.tsx`, `lib/clientIdentityDraft.ts` + test, en/tr `panel.ts`. The three jsdom render suites are not in the release commit (lineage has no jsdom).
+- **Behaviour — checkout assign-client:** the list uses the shared suggestion rule (hidden and merged-away clients are not offered); a hand-over writes all seven identity fields, blanks included; the loyalty box is cleared and re-read by client id, and a late answer cannot overwrite the current client; redeemed points and a client-bound promo code are reset on hand-over or removal (a manual discount stays); a failed assign / remove, or a booking row that cannot be found, shows an error and keeps the previous client.
+- **Behaviour — BookingForm (create mode only):** editing one field of a picked client drops the pick and clears the other identity fields. **This path is currently unreachable in the Admin UI**: the calendar opens `WalkInForm` for both "New booking" and "Walk-in", and the Sales page opens `BookingForm` only in edit mode, which is unchanged.
+- **Pre-verify:** live `89410d5a738f172f` served 98/98 byte-equal to a pristine `5248dabf` build.
+- **Post-verify:** served 98/98 byte-equal to the kit build (+2 Firebase auto files), entry `index-AjmOpJ18.js`; `/`, `/app`, `/login`, `/app/bookings`, `/reset-password` 200; landing unchanged; 0 staff-bundle files served. Snapshot diff = the `hosting salown` line only.
+- **Release-source gates (vs pristine `5248dabf`):** tsc 19 = 19 errors (same set) · vitest 19 = 19 failing, 6 = 6 load errors · touched-file ESLint 0 · build OK. Render suites (BookingForm 15, CheckoutPanel 23) and mutants 24/24 ran on the main-lineage candidate `4df6669e`, whose source files are byte-identical.
+- **Owner check (2026-11-11):** walk-in typing still selects nobody (read-only check run by the agent in the owner's signed-in browser, nothing saved). Checkout was NOT exercised on live (assign writes the booking on selection); owner accepted it as technically verified.
+- **Main twin:** source-only main `d6abf700` (tree `dd554509`, parent `6bea6c07`) — Admin paths byte-identical to `25c44a91`, plus the render suites; closure `22cb2642` (SYNC + claim released). No deploy.
+- **Superseded, not deployed:** candidate `eb6fdd65` (added a server refusal of loyalty over-redemption in `functions/src/checkout/executor.ts`; canonical emulator gate FAILED 2/1328 — `LPE11`, `VOID EMU 24`).
+- **Open follow-ups:** BookingForm EDIT mode still cannot change or clear the client link (`salownEditBookingForm` accepts name / e-mail / phone only); server still clamps a loyalty over-redemption; the checkout audit line still names the booking's original client.
+
 ## R-2026-11-11-A — Admin walk-in / booking client search: typing never selects a client · `hosting:salown` · **LIVE — OWNER_VERIFIED 2026-11-11 (reported regression) — MAIN**
 
 - **Work ID:** `ADMIN-CLIENT-SEARCH-NO-PREMATURE-AUTOSELECT`. **Approval:** owner — `APPROVE_DEPLOY=ADMIN-CLIENT-SEARCH-HOSTING-SALOWN` (hosting:salown only).
