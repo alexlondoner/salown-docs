@@ -1,6 +1,18 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
-## R-2026-11-10-E — NEW guarded owner/admin callable `salownPlatformGoodwillReschedule` · `functions:salown` (europe-west2) · **LIVE — DEPLOYED_VERIFIED (no UI caller yet)**
+## R-2026-11-10-F — PLATFORM-GOODWILL-RECONCILE Admin UI ("Changed on <Platform>" dialog) · `hosting:salown` · **LIVE — OWNER_VERIFIED 2026-11-10**
+
+- **Approval:** owner — `APPROVE_DEPLOY=PLATFORM-GOODWILL-RECONCILE__ADMIN_HOSTING` (hosting:salown only).
+- **Version:** `518528f0f2304469` (`R-2026-11-10-A`) → **`9c43863a7b35705c`** (2026-11-10T21:10:27Z). Rollback target `518528f0f2304469`. **Live `hosting:salown` baseline is now `9c43863a7b35705c`, source `0bfd8023`.**
+- **Source:** `0bfd8023` (tree `c48c0262`, parent `2dd0a240` = live `R-2026-11-10-A` source) pinned `release/platform-goodwill-admin-on-live-2dd0a240`. Diff vs parent: 4 Goodwill Admin paths (`BookingDetailPanel.tsx`, `PlatformGoodwillDialog.tsx` + render test, `utils/platformGoodwill.ts`); Sales Filter files byte-equal (6/6). Isolated git-archive kit (1128/1128 MATCH), `npm run deploy:panel`; 98 files, 30 uploaded.
+- **Post-verify:** served 98/98 byte-equal to the kit build (+2 Firebase auto files), entry `index-DXLoeP4P.js`; `/`, `/app`, `/login`, `/reset-password` = candidate; `/staff-bundle(/**)` 302 → staff.salown.com. Snapshot diff = the `hosting salown` line only (147 functions with `B–E` revisions unchanged, 9 other sites, Firestore `a5f92395` / Storage `4c00eef7`, 5 indexes READY, 0 new secret versions). Note: the salown predeploy also runs `build:staff` locally; its output is in salown's ignore list, `salown-staff` stayed `45c541ee`.
+- **Owner verify (read-only, 2026-11-10):** 7/7 PASS. No reconcile submitted, no booking or production data changed, no rollback.
+- **Main twin (2026-11-11, source only, no deploy):** salown-app main `17892989` + SYNC/claim close `9d36bd7f` (parent `4922a8dd`, fast-forward, `[skip ci]`; Actions 727 → 727). 26 paths, all in the claim: live bytes for the callable core, slot move, tenant gate, parser files and Admin dialog/util/test; three-way live hunks for `booksy.ts`, `BookingDetailPanel.tsx`, `index.ts`; tooling v2 + gate test from `0904e512`. Reference copies `ops/releases/platform-goodwill/base/*` + `port-to-live.py` are not on main (hashes in release evidence; never in a deploy closure).
+- **Wiring (owner `CALLABLE_DECISION=MAIN_CANONICAL_FORM`):** live wiring and main canonical wiring sit at different positions, behaviour equivalent. Live `36aa1cc9`: `onCall({ region: 'europe-west2' }, PGW.platformGoodwillHandler)` in `index.ts`. Main: `onCall({ region: 'europe-west2' }, gated('salownPlatformGoodwillReschedule', …runPlatformGoodwill…))` in `bookings/platformGoodwill.ts`, re-exported from `index.ts`. Same name, region, handler, one `gated()`; main's static gated test not relaxed (passes).
+- **Twin gates (main `4922a8dd` → twin):** Functions fail set 4 = 4 (pre-existing) · vitest 8 files / 3 tests = same set · canonical emulator 1 = 1 (pre-existing EMU 14 loyaltyLapsed) · ops in a worktree 19 = 19 (environmental) · tsc 0 = 0 · build OK · focused Goodwill 56/56 + 33/33 · behaviour parity 46 scenarios twin = live = work (0 differ) · mutants 30/30 killed (twin mutants kill the same rows as live).
+- **Claim:** `PLATFORM-GOODWILL-RECONCILE` released `9d36bd7f`.
+
+## R-2026-11-10-E — NEW guarded owner/admin callable `salownPlatformGoodwillReschedule` · `functions:salown` (europe-west2) · **LIVE — DEPLOYED_VERIFIED; UI caller live in `R-2026-11-10-F` (OWNER_VERIFIED); main twin `17892989`**
 
 - **Approval:** owner — `APPROVE_DEPLOY=PLATFORM-GOODWILL-RECONCILE__FUNCTIONS_GUARDED`, `ADMIN_HOSTING_DEPLOY=NO`, `MANUAL_FUNCTION_INVOCATION=NO`, `AUTO_ROLLBACK=NO`.
 - **Revision:** absent (404) → **`salownplatformgoodwillreschedule-00001-leg`** (2026-11-10T18:23:13Z), 100 % traffic.
