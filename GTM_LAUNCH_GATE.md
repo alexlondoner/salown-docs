@@ -81,7 +81,7 @@ can promote staff → admin and the claim actually changes (read-only Auth proof
 | Turkey | KVKK (not started) · lift the TR payment integrity hold · `TR-U11` controlled TRY E2E · `TR-P2` remaining i18n | `BLOCKED` / `PLANNED` |
 | "Multi-location" | `LOC-1` — nothing reads a location today | `PLANNED` |
 | "Self-serve plan upgrade" | `COM-M1` request → approve queue | `PLANNED` |
-| A native app / App Store listing | `D1` Capacitor | `DORMANT` (owner decision) |
+| A native app / App Store listing | `D1` Capacitor (`STAFF-NATIVE-D1`) | `IN_PROGRESS` since 2026-11-09 — source on main only; not signed, no device test, no TestFlight / App Store *(earlier: `DORMANT`, owner decision)* |
 
 Do not write a promise into the landing page that sits in this table with an open status.
 
