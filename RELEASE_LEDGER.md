@@ -1,5 +1,27 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
+## R-2026-11-12-A — Admin "Changed on <Platform>" dialog loads the stored booking: no silent 30-minute duration · `hosting:salown` · **LIVE — OWNER_VERIFIED 2026-11-12 (panel entry) — MAIN `da7f9340`**
+
+- **Work ID:** `GOODWILL-BOOKSY-DURATION`. **Approval:** owner — claim push, release pin, `hosting:salown` only (2026-11-12).
+- **Version:** `25e8f50a9679e1f7` (`R-2026-11-11-B`) → **`3a95f85620b17e0b`** (2026-11-12T14:02:12Z). Rollback target `25e8f50a9679e1f7`. **Live `hosting:salown` baseline is now `3a95f85620b17e0b`, source `268bf390`. Cut the next Admin release from `268bf390`, never from `25c44a91`.**
+- **Source:** `268bf390` (tree `70d26aac`, parent `25c44a91` = live `R-2026-11-11-B` source), pinned `release/goodwill-booksy-duration-on-live-25c44a91`. 4 paths: `PlatformGoodwillDialog.tsx`, `utils/platformGoodwill.ts`, `PlatformGoodwillDialog.render.test.tsx` (rewritten), `utils/platformGoodwill.snapshot.test.ts` (new, node).
+- **Cause:** the dialog took its initial values and its stale guard from the screen's display-mapped booking. On the Dashboard, `endTime` is a label and Booksy imports carry no `duration`, so a 60-minute booking opened at 30. On Bookings, `startTime` is a JS Date, so the date and time were empty and `expected.startMs` was NaN. RCA 2026-11-12: the server stored 60; the owner corrected it by hand.
+- **Behaviour:**
+  - The dialog reads `tenants/{tid}/bookings/{docId}` once.
+  - Duration = stored end − start, else `duration`, else empty and required. There is no 30 default and no catalog value. A span/field conflict uses the span and says so.
+  - It refuses with an explicit message on a read error, a missing document, a non-platform booking, a closed status or no stored start.
+  - Late answers are ignored. Server authority, confirmation, idempotency and `STALE_BOOKING` handling are unchanged.
+- **Pre-verify:** live `25e8f50a9679e1f7` served 98/98 byte-equal to a pristine `25c44a91` build. No dry-run.
+- **Post-verify:**
+  - Served 98/98 byte-equal to the kit build (+2 Firebase auto files). Entry `index-CotLsgq7.js`; old `index-AjmOpJ18.js` is 404.
+  - Snapshot diff = the `hosting salown` line only. Functions, rules and Staff `1992043483840999` are unchanged.
+- **Release-source gates (vs `25c44a91`, both without jsdom and with a `--no-save` jsdom harness):** failing sets equal to base in both modes (20 = 20; 52 = 52) · tsc 55 = 55 / 44 = 44 · focused 19 + 28 · ESLint 0 · mutants 10/10 · build OK.
+- **Owner check (2026-11-12):** a new Booksy booking, 16:30–17:05 (a 30-minute service plus a free 5-minute add-on), opened from the booking panel. The dialog showed 35 minutes, with the correct date, time and barber. It was cancelled and nothing was saved.
+  - **Not tried:** the Bookings-screen entry (pending check), and submitting a new update.
+- **Main twin:** source-only main `da7f9340` (tree `a0dd9194`, parent `7ada4094` = claim), 4 paths byte-identical to `268bf390`. Gates vs main base: tsc 63 = 63; vitest 30 = 30 failing and 9 = 9 load errors (2 load flakes swapped, both pass alone). Closure `662be6f4` (SYNC + claim released). No deploy.
+- **Owner decision:** a free Booksy add-on that does not arrive as an Extra-service line needs no code change (its time is in the span).
+- **Open follow-ups:** `BOOKSY-PARSER-DURATION-FIELD`, `BOOKSY-RESCHEDULE-DURATION-DIVERGENCE`, `DASHBOARD-WEEK-GRID-DURATION`, `GW-AUDIT-BARBER-ID`.
+
 ## R-2026-11-11-C — Staff new-booking sheet: a picked client and what is typed over them never mix · `hosting:salown-staff` · **LIVE — technically verified, NOT owner-tested on live — MAIN `d6abf700`**
 
 - **Work ID:** `CLIENT-PICKER-IDENTITY-CONSISTENCY-R1`. **Approval:** owner — `APPROVE_DEPLOY=CLIENT-PICKER-IDENTITY-R1__STAFF` (hosting:salown-staff only).
