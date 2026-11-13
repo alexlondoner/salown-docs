@@ -1,5 +1,59 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
+## R-2026-11-13-A — Admin booking detail panel "Edit booking" opens the full booking form; the form keeps the booking's own service · `hosting:salown` · **LIVE — technically verified; OWNER_VERIFIED in part (form flows, see below) — MAIN `ddd0d725`**
+
+- **Work ID:** `BOOKING-EDIT-CLIENT-LINK`. **Approval:** owner in chat — `hosting:salown` only, after the gates were green (2026-11-13).
+- **Version:** `a0cf1f678400679f` (`R-2026-11-12-D`) → **`4f0802be72c050ff`** (2026-11-13T12:45:19Z; deploy 12:45:06Z–12:45:21Z, 98 files). Rollback target `a0cf1f678400679f`. **Live `hosting:salown` baseline is now `4f0802be72c050ff`, source `f9f1e5a8`. Cut the next Admin release from `f9f1e5a8`.**
+- **Source:** `f9f1e5a8` (tree `2eabc99e`, 4 commits on the live source `9a36e8bd`, 8 paths), pinned `release/becl-edit-entry-on-live-9a36e8bd`. Kit `~/release-work/becl-entry-kit-admin` (git archive, tree equal, firebase CLI 15.26.0).
+- **Why:** after `R-2026-11-12-D` no screen opened the booking form for an EXISTING booking (Bookings never raised its form state, Dashboard never put a booking in the form preset, the panel ignored `onEdit`), so the form half of that release — link indicator, pick / hand-over, `clientLinkId` on `salownEditBookingForm` — had no entry point.
+- **Behaviour:**
+  - The booking detail panel has an "Edit booking" action (Bookings/Sales and Dashboard) that opens the existing form for the selected booking. Opening writes nothing. It is not offered over unsaved inline edits, nor for a finished, platform or block booking, nor for a service the form cannot match.
+  - After a form save, Bookings re-reads its list and replaces the open booking; Dashboard relies on its listener.
+  - Service identity: the form matches a stored service by id / docId / legacyId (it used to open on the first catalogue service), sends the booking's stored id when the service is untouched and the picked row's document id when it is changed. Payload keys unchanged.
+- **Pre-verify:** live `a0cf1f678400679f` / source `9a36e8bd` re-measured unchanged at 12:44Z; served set = the previous kit 98/98. No dry-run.
+- **Post-verify:** predeploy rebuild = kit manifest; served 98/98 = kit; kit vs previous live set: 68 identical, 28 chunks renamed, 2 html changed; old entry `index-aIW8Vq22.js` 404; snapshot diff = the `hosting salown` line only (Functions, rules and Staff unchanged). A later read-only check on 2026-11-13 re-hashed the public entry bundle only (`index-Of2cIkV_.js` = kit); no fresh 98/98 or version-API read was made then.
+- **Release-source gates (vs `9a36e8bd`, own install):** tsc error set identical (55 lines); full vitest 7164 tests, the same 20 failing assertions and the same 7 unloadable jsdom files as the base, none new; ESLint 0 on the 8 changed files. The jsdom screen tests are not on the Admin lineage (its lockfile has no jsdom) and passed in a harness against the same product code (work branch `75cced2a`, 49 files, 918/918).
+- **Owner check (2026-11-13, live, owner's own test booking and test client):**
+  - **Seen in the owner's screen text:** the form opens on the stored service, date, time, barber and contact with "Linked client"; an untouched save kept service and price and asked nothing; a phone correction saved without a question and the panel showed it; a changed name raised "Is this still the same client?" and "Same client" saved the new name; picking another client showed "Will be moved to client" and replaced phone and e-mail.
+  - **Reported by the owner as passed, without detail:** the link still shown after "Same client"; the hand-over; a refused "Remove link" with the name kept; the same open + untouched save from Bookings/Sales.
+  - **Not tried on live:** the partly-saved notice (needs a team-member move, which can notify staff); the hand-over locks (membership cover, package session, CHECKED_OUT, promotion snapshot).
+  - Seen, not changed: a form save rewrites the name in title case ("LIMITED" → "Limited"), also on an otherwise untouched save.
+- **Main:** integrated on main `ddd0d725` together with `R-2026-11-12-B/C/D` (entry below). No deploy from main.
+- **Open:** the form's CREATE path still sends the picker id, not the document id (`BOOKING-FORM-CREATE-SERVICE-DOCID`).
+
+## R-2026-11-12-D — Admin booking edit form + detail panel: link, hand over or remove a booking's client link through the edit callables · `hosting:salown` · **LIVE — technically verified; superseded as the live Admin by `R-2026-11-13-A` (which carries it) — MAIN `ddd0d725`**
+
+- **Work ID:** `BOOKING-EDIT-CLIENT-LINK`. **Approval:** owner in session (2026-11-12 ~18:20Z) — claim push, release pins, `salownEditBookingForm`, `salownPatchBookingDetails`, then `hosting:salown`, if the gates on the final candidates were green. Not included: Staff, any other function, rules, the main twin.
+- **Version:** `3a95f85620b17e0b` (`R-2026-11-12-A`) → **`a0cf1f678400679f`** (2026-11-12T18:53:58Z, 98 files). Rollback target `3a95f85620b17e0b`; if the functions go back too, roll Admin back FIRST (it sends `clientLinkId`).
+- **Source:** `9a36e8bd` (tree `e73f1fee`, on the live source `268bf390`, 11 paths), pinned `release/becl-admin-on-live-268bf390`. The four Goodwill paths of `R-2026-11-12-A` are byte-identical to `268bf390`.
+- **Behaviour:** the Admin booking edit form and the booking detail panel send `clientLinkId` (absent = untouched, id = hand-over proven in the transaction under the tenant with the merge chain followed, `''` = unlink). When the name changes the operator is asked "same client / different person". Identity and date/time of a panel save go in ONE `salownPatchBookingDetails` transaction; a team-member move is still its own `salownReassignBooking` call, and if it is stored while the rest is refused the form shows a persistent "Partly saved" notice and a retry does not resend the move.
+  - **Refused, not solved:** an unlink that keeps the previous client's name (with or without contact), phone or e-mail (`CLIENT_UNLINK_STILL_MATCHES`); a hand-over on membership cover, a package session, CHECKED_OUT or an eligible loyalty promotion snapshot (`CLIENT_LINK_LOCKED`). No `clientLinkRemovedFrom` record is written (withdrawn before release, option A).
+  - The locks protect ONLY the two edit callables; other writers of booking identity are not covered (`CHECKOUT-ASSIGN-CLIENT-SERVER`, `BOOKING-IDENTITY-RULES-CLOSURE`).
+- **Pre-verify:** live `3a95f85620b17e0b` served 98/98 = a clean `268bf390` build; live identity re-read immediately before the deploy. No dry-run.
+- **Post-verify:** predeploy rebuild = kit manifest 98/98; served = kit (+2 Firebase auto files, 0 `staff-bundle` files); old entry `index-CotLsgq7.js` 404, new `index-aIW8Vq22.js` 200; markers `partial-save-notice` and `pg-duration-unknown` in the served bundle; snapshot diff = the three lines of `R-2026-11-12-B/C/D` (Staff `1992043483840999`, rules and every other function unchanged).
+- **Release-source gates:** own-install tsc and vitest failure sets identical to pristine `268bf390`; the two jsdom screen tests ran in a harness against the release's product code (248/248).
+- **Owner check:** none recorded in the repo for this version. An earlier session's notes (not a repo record) mention a partial check on 2026-11-12 evening (the name question and "Same client"); that check also found the form had no entry point, which led to `R-2026-11-13-A`. The owner checks that count are listed under `R-2026-11-13-A`.
+- **Main:** see `R-2026-11-13-A`.
+
+## R-2026-11-12-C — `salownPatchBookingDetails` accepts `clientLinkId`; identity + date/time in one transaction · `functions:salown` (europe-west2) · **LIVE — DEPLOYED_VERIFIED — MAIN `ddd0d725` (source only, see below)**
+
+- **Work ID:** `BOOKING-EDIT-CLIENT-LINK`. **Approval:** as `R-2026-11-12-D`.
+- **Revision:** `salownpatchbookingdetails-00005-qen` → **`-00006-waj`** (2026-11-12T18:52:07Z; archive generation `1794509464112805`). Rollback `-00005-qen` (source `7c0e1ecd`).
+- **Source:** `da292050` (tree `bbf4157b`, on its live source `7c0e1ecd`), pinned `release/becl-patch-on-live-7c0e1ecd`. Kit `becl-kit-fn-patch`, `deploy-functions.sh salownPatchBookingDetails`. The lineage gained `functions/src/clients/canonicalClient.ts` unchanged from main (blob `446bb4b5`); compiled output differs from the previous live archive in four files (`priceEditCore.js`, `priceEditExecutor.js` changed; `clientUnlinkGuard.js`, `canonicalClient.js` new).
+- **Gates:** unit 2793 pass / 0 fail; lineage emulator gate 694/694 PASS.
+- **Post-verify:** served archive `lib/` and `src/` = kit, file for file; new revision at 100 %; no WARNING-or-higher log line between the deploy and 18:53Z.
+- **Next change to this function:** cut from `da292050`, never from main and never from the `salownEditBookingForm` pin.
+
+## R-2026-11-12-B — `salownEditBookingForm` accepts `clientLinkId` (link / hand-over / unlink, locks, merge chain) · `functions:salown` (europe-west2) · **LIVE — DEPLOYED_VERIFIED — MAIN `ddd0d725` (source only, see below)**
+
+- **Work ID:** `BOOKING-EDIT-CLIENT-LINK`. **Approval:** as `R-2026-11-12-D`. Order B → C → D.
+- **Revision:** `salowneditbookingform-00002-muv` → **`-00003-zoz`** (2026-11-12T18:49:50Z; archive generation `1794509335353331`). Rollback `-00002-muv` (source `3e9e21de`).
+- **Source:** `b989d565` (tree `943cb560`, on its live source `3e9e21de`), pinned `release/becl-edit-on-live-3e9e21de`. This lineage's executor is OLDER than main's (no ISO date shape, no passive-move refusal, no pre-payment lanes) and was kept so. Same four compiled-file difference as `R-2026-11-12-C`.
+- **Gates:** unit 2664 pass / 0 fail; lineage emulator gate 660/660 PASS.
+- **Post-verify:** served archive `lib/` and `src/` = kit, file for file; new revision at 100 %; no WARNING-or-higher log line in the first minutes.
+- **Next change to this function:** cut from `b989d565`. **The two functions run from DIFFERENT lineages; never one branch for both.**
+- **Main (B, C, D and `R-2026-11-13-A`):** integrated on main `ddd0d725` (17 commits replayed onto `f7d704ab`: 10 from the twin `f6a017ca`, 7 from `75cced2a`; release branches not merged), closure `78f4b48f` (SYNC + claim released), 2026-11-13. Main keeps its own executor; main vs each live source equals that source's pre-existing delta to `f7d704ab` (Admin vs `f9f1e5a8`, edit fn vs `b989d565`, patch fn vs `da292050`), plus the three jsdom tests kept off the Admin lineage. Gates vs base `f7d704ab`: tsc 0 = 0, builds 0, functions unit 4501/0 (base 4439/0), ESLint on changed files = base, full vitest no candidate-only failure after the TMPDIR layout artefact was removed (`ops/functions-ownership` + `ops/gated-release` 115/115 on both), emulator gate 1337/1337 PASS, `staffAppNativePush` 15/15 on both (the earlier 5/55 vs 0/31 did not reproduce; cause not established). **Main integration is not a release:** nothing was deployed from main; the live identities above are unchanged.
+
 ## R-2026-11-12-A — Admin "Changed on <Platform>" dialog loads the stored booking: no silent 30-minute duration · `hosting:salown` · **LIVE — OWNER_VERIFIED 2026-11-12 (panel entry) — MAIN `da7f9340`**
 
 - **Work ID:** `GOODWILL-BOOKSY-DURATION`. **Approval:** owner — claim push, release pin, `hosting:salown` only (2026-11-12).
