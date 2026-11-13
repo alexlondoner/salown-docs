@@ -71,6 +71,8 @@ can promote staff → admin and the claim actually changes (read-only Auth proof
 | B6 | `B4` | Phone country code inconsistent across 5 entry points (no +353); splits one client into two | 🔵 | First Irish / non-UK salon. |
 | B7 | `B7` | WhatsApp booking confirmations (Meta Cloud API, plan-gated) — infrastructure on `main` at `b3b6cb4`, secrets do not exist; blocked on the outstanding Meta / SIM / external setup | `PUSHED_NOT_LIVE` | Not a blocker; a **selling point**. Ships via [WHATSAPP_PLAN.md](WHATSAPP_PLAN.md) §6–7 once the four `WHATSAPP_*` secrets exist. |
 
+**`/signup` link condition (ROADMAP `PROVISION-TENANT-IDEMPOTENT`, P1 — relates to B3):** no page, ad, e-mail or landing link may point to `/signup` (or to `/hub`) until `PROVISION-TENANT-IDEMPOTENT` is `LIVE_VERIFIED`. The item becomes P0 the day such a link is proposed. Evidence: today `/signup` has no inbound link in the hosting pages (no `href` to it anywhere under `hosting/` on salown-app `46360fdb`), is disallowed at `hosting/robots.txt:6` and served only as an SPA route (`src/App.tsx:26`, rewrite `firebase.json:72`, noindex header `firebase.json:30`). One in-app exception: `/hub` (`src/App.tsx:35`, rewrite `firebase.json:75`) renders `HubLanding`, whose three buttons navigate to `/signup` (`src/pages/HubLanding.tsx:110`, `:129`, `:224`; same lines in `9a36e8bd`, the source of Admin `R-2026-11-12-D` (`a0cf1f67`) recorded live in salown-app `SYNC.md` at `46360fdb`; served bytes not read in this task); `/hub` itself has no inbound link under `hosting/`, is not in `hosting/sitemap.xml` and is not disallowed in `robots.txt`, so the condition covers links to `/hub` too.
+
 ---
 
 ## 3. Gate C — only if the marketing promise includes it
