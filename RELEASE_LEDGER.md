@@ -1,6 +1,6 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
-## R-2026-11-14-B — self-signup `provisionTenant` creates the tenant atomically, resumes its own unfinished signup and refuses instead of overwriting · Functions `provisionTenant` · **DEPLOYED — ARTIFACT/CONFIG/SERVING VERIFIED; BEHAVIOUR NOT LIVE-VERIFIED — MAIN `2c23d735`**
+## R-2026-11-14-B — self-signup `provisionTenant` creates the tenant atomically, resumes its own unfinished signup and refuses instead of overwriting · Functions `provisionTenant` · **DEPLOYED — LIVE_VERIFIED (normal signup path, 2026-11-14); welcome mail FAILED (pre-existing) — MAIN `2c23d735`**
 
 - **Work ID:** `PROVISION-TENANT-IDEMPOTENT`. **Approval:** owner in chat, `PTI-PROVISION-2026-11-14`, for `functions:salown:provisionTenant` only. The owner accepted the limits L-A…L-I for this targeted release; that acceptance covers no account repair, claim/account deletion, message or other release.
 - **Revision:** `provisiontenant-00139-veq` (`R-2026-10-12-C`, src `153c1956`) → **`provisiontenant-00140-fij`** (archive gen `1794681297006273`, updateTime 2026-11-14T18:35:58.655984362Z). Europe-west2, codebase `salown`, nodejs22, 256Mi/1 cpu/60 s/concurrency 80.
@@ -34,8 +34,10 @@
   - Main's policy is `self-signup/barber+rota@1`; the release's is `barber@1`.
   - Main's identity path is the guarded writer `applyTenantClaims` (tenant gate, re-read, and its own compensation outside the slot lease). Live writes the claim directly through `ensureOwnerIdentityCore`.
   - **Main is not a provisionTenant release source:** a deploy from main changes policy and writer behaviour and needs its own release.
+- **Live verification (2026-11-14 21:51Z, owner-performed, `PTI-SIGNUP-LIVE-VERIFY`):** one real signup through the live `/signup` (Admin `494c7209`) with an address the owner controls; test tenant `first-class-barbers`, kept. Read-only check of that account only: 1 Auth user, claims exactly `{tenantId, tenantRole: owner}`; exactly 1 tenant owned by the uid (`trial`, `free`, `draft`, 14.00 d); owner barber; `staff/{uid}` owner; slot `completed` with policy `self-signup/barber@1`; no rota rollout; exactly 1 `tenant_self_signup` audit row; callable POST 200 on `00140-fij`, 0 ERROR entries. **Welcome mail NOT sent:** `Welcome email failed: Invalid login: 535-5.7.8` — the handler's Gmail login as `hello@` with `GMAIL_PASS` v1 (2026-05-11), unchanged by this release. Fix prepared as `PTI-WELCOME-MAIL-INFO-SMTP` (candidate `55cd3ef1`, not deployed). Not live-verified: retry/idempotency, concurrency, suspend/purge windows, State S (emulator evidence / open limits).
 - **Open (ROADMAP, separate Work IDs):**
-  - `PTI-SIGNUP-LIVE-VERIFY` (not done; the Signup client release still waits for it)
+  - `PTI-SIGNUP-LIVE-VERIFY` (LIVE_VERIFIED for the normal path, 2026-11-14; see above)
+  - `PTI-WELCOME-MAIL-INFO-SMTP` (welcome mail; prepared, not deployed)
   - `PTI-SIGNUP-STATE-S-REVIEW`
   - `PTI-SIGNUP-SUSPEND-PURGE-WINDOW`
   - `CLAIM-WRITER-NO-CAS`
