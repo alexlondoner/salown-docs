@@ -1,9 +1,26 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
+## R-2026-11-14-A — Admin day grid, week grid and client conflict advisory use one booking length; a Booksy booking keeps its stored start→end · `hosting:salown` · **LIVE — technically verified; OWNER_VERIFIED (day card) — MAIN `c02040b9`**
+
+- **Work ID:** `BOOKSY-GRID-DURATION` (closes `DASHBOARD-WEEK-GRID-DURATION` + the day-view gap of the 14 Nov RCA). **Approval:** owner in chat — `hosting:salown` only (2026-11-14).
+- **Version:** `4f0802be72c050ff` (`R-2026-11-13-A`) → **`a8544b9fa43dc70e`** (2026-11-14T18:02:09Z; deploy 18:01:56Z–18:02:11Z, 98 files, 30 uploaded). Rollback target `4f0802be72c050ff` — method verified against the Hosting API discovery doc: `POST https://firebasehosting.googleapis.com/v1beta1/sites/salown/releases?versionName=sites/salown/versions/4f0802be72c050ff` (target FINALIZED, `maxVersions` 999999); `hosting:clone salown@VERSION` is NOT a verified method. **Live `hosting:salown` baseline is now `a8544b9fa43dc70e`, source `494c7209`. Cut the next Admin release from `494c7209`.**
+- **Source:** `494c7209` (tree `9c8cd0ad`; 2 commits on the live source `f9f1e5a8`, 8 paths), pinned `release/booksy-grid-duration-on-live-f9f1e5a8`. Kit `~/release-work/booksy-grid-duration-kit/ws-admin-494c7209` (git archive, 1138/1138 tracked files = tree, two builds identical, manifest sha256 `198261c3…d4b0`), firebase-tools 15.26.0.
+- **Why:** a Booksy "I CUT Royal" booking stored 11:00–12:00 (`startTime`/`endTime`, no `duration`, `serviceId` = service document id) was drawn 30 minutes tall in both views and the client conflict check saw 11:00–11:30, so 11:30 looked free. The server already used `endTime`.
+- **Behaviour:**
+  - One resolver `conflictUtils.getBookingSpan`. Booksy: stored span (Timestamps, else the Dashboard's labels, strict, end > start) → `duration` → catalogue (id/name, then document id) or 30, the last two flagged as an estimate: dashed card border + tooltip "Estimated length — no stored end time" / "Süre tahmini; kayıtlı bitiş saati yok" (day + week card, day hover card). Other sources unchanged: `duration` first (INV-BK-8).
+  - The day grid keeps its existing 480-minute display bound in the grid layer only (`calendarGridRecords.dayGridMinutes`); the resolver, week grid and conflict check keep the real span (no new bound). BLOCKED, the checked-out cap and the 30-minute floor unchanged. Ranges past midnight: Timestamp ranges unchanged (elapsed minutes); no range the old code accepted is refused.
+  - No server, Staff, rules or parser change. No booking data written.
+- **Pre-verify:** live `4f0802be72c050ff` / staff `1992043483840999` re-read at ~18:00Z; served set = base kit 98/98.
+- **Post-verify:** predeploy rebuild = kit manifest; served 98/98 = kit; old entry `index-Of2cIkV_.js` 404; `hosting:salown-staff` unchanged `1992043483840999`.
+- **Release-source gates (vs `f9f1e5a8`, own install):** tsc error set identical (44); tests related to the changed modules: failing set identical to base; ESLint 0 on the 8 files; focused 106/106; mutants 26/26; unminified build: of 295 source regions only the changed modules differ (dictionaries: the one added key).
+- **Owner check (2026-11-14, live):** the Booksy card covers 11:00–12:00 in the day view. The 11:30 conflict advisory was checked by tests only (no real booking saved).
+- **Main:** twin `c02040b9` (patch byte-identical), closure `ea7e2108` (SYNC + claim released).
+- **Open:** `ADMIN-RESCHEDULE-MODAL-DIRECT-WRITE`, `STAFF-RESCHEDULE-CANDIDATE-LENGTH`, `BOOKING-SPAN-480-CONTRACT`; parser `BOOKSY-PARSER-DURATION-FIELD` / `BOOKSY-RESCHEDULE-DURATION-DIVERGENCE`.
+
 ## R-2026-11-13-A — Admin booking detail panel "Edit booking" opens the full booking form; the form keeps the booking's own service · `hosting:salown` · **LIVE — technically verified; OWNER_VERIFIED in part (form flows, see below) — MAIN `ddd0d725`**
 
 - **Work ID:** `BOOKING-EDIT-CLIENT-LINK`. **Approval:** owner in chat — `hosting:salown` only, after the gates were green (2026-11-13).
-- **Version:** `a0cf1f678400679f` (`R-2026-11-12-D`) → **`4f0802be72c050ff`** (2026-11-13T12:45:19Z; deploy 12:45:06Z–12:45:21Z, 98 files). Rollback target `a0cf1f678400679f`. **Live `hosting:salown` baseline is now `4f0802be72c050ff`, source `f9f1e5a8`. Cut the next Admin release from `f9f1e5a8`.**
+- **Version:** `a0cf1f678400679f` (`R-2026-11-12-D`) → **`4f0802be72c050ff`** (2026-11-13T12:45:19Z; deploy 12:45:06Z–12:45:21Z, 98 files). Rollback target `a0cf1f678400679f`. Was the `hosting:salown` baseline until `R-2026-11-14-A`.
 - **Source:** `f9f1e5a8` (tree `2eabc99e`, 4 commits on the live source `9a36e8bd`, 8 paths), pinned `release/becl-edit-entry-on-live-9a36e8bd`. Kit `~/release-work/becl-entry-kit-admin` (git archive, tree equal, firebase CLI 15.26.0).
 - **Why:** after `R-2026-11-12-D` no screen opened the booking form for an EXISTING booking (Bookings never raised its form state, Dashboard never put a booking in the form preset, the panel ignored `onEdit`), so the form half of that release — link indicator, pick / hand-over, `clientLinkId` on `salownEditBookingForm` — had no entry point.
 - **Behaviour:**
