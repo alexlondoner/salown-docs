@@ -1,5 +1,47 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
+## R-2026-11-14-B — self-signup `provisionTenant` creates the tenant atomically, resumes its own unfinished signup and refuses instead of overwriting · Functions `provisionTenant` · **DEPLOYED — ARTIFACT/CONFIG/SERVING VERIFIED; BEHAVIOUR NOT LIVE-VERIFIED — MAIN `2c23d735`**
+
+- **Work ID:** `PROVISION-TENANT-IDEMPOTENT`. **Approval:** owner in chat, `PTI-PROVISION-2026-11-14`, for `functions:salown:provisionTenant` only. The owner accepted the limits L-A…L-I for this targeted release; that acceptance covers no account repair, claim/account deletion, message or other release.
+- **Revision:** `provisiontenant-00139-veq` (`R-2026-10-12-C`, src `153c1956`) → **`provisiontenant-00140-fij`** (archive gen `1794681297006273`, updateTime 2026-11-14T18:35:58.655984362Z). Europe-west2, codebase `salown`, nodejs22, 256Mi/1 cpu/60 s/concurrency 80.
+- **Source:** **`9c8129f6`** (tree `07b37bc1`), the single-parent child of the live source `153c1956` with exactly 7 paths. It is on the local branch `release/provision-tenant-idempotent-on-live-153c1956` (not pushed). Upload set 154 files, manifest `f0a912ee6c4fc398`. Signup policy **`self-signup/barber@1`**.
+- **Kit:** `~/release-work/provision-tenant-release-20261114/kit`, digest `c87d5d41d2e2fdc7`, firebase-tools 15.26.0. Run `kit/runs/deploy-20261114T183352Z`.
+- **Behaviour (from code and emulator tests, not observed live):**
+  - The root, the barber and a per-uid `selfSignupSlots/{uid}` are written in one `tx.create` transaction; then the owner identity; then an audit row and a mail attempt, once only.
+  - A same-uid retry resumes that uid's own unfinished signup instead of creating a second tenant.
+  - A name race uses a bounded suffix retry and never overwrites a root.
+  - Named refusals with no side effects.
+  - The completion transaction re-reads the root and refuses a non-resumable one (suspended/purged).
+  - The live identity writer `ensureOwnerIdentityCore` is unchanged.
+- **Pre-verify:**
+  - check-only 8/8 at 18:19Z and again inside D2.
+  - Live `00139-veq`: archive sha256 pinned, 78 non-lib files == `153c1956`; 100 % traffic; config and secret versions == 02:35Z.
+  - The upload set rebuilt at D3 == the gated build.
+  - Config proof OK.
+- **Post-verify (class 0):**
+  - `00140-fij` is Ready and serves 100 %.
+  - The archive is identical to the manifest (154/154), and the revision was built from that generation.
+  - Config unchanged (21 function + 11 revision fields).
+  - Of 147 functions only provisionTenant moved; rules `a5f92395`, all hosting sites (`salown` `a8544b9fa43dc70e`, `salown-staff` `1992043483840999`) and the 5 scheduler jobs are unchanged.
+  - Not run: smoke, signup call, census, error-log read. **Handler behaviour is NOT live-verified.**
+- **Rollback (none run; each needs its own owner approval; absolute `--pre`):**
+  - RB-1: `gcloud run services update-traffic provisiontenant --to-revisions provisiontenant-00139-veq=100` via `kit/rollback.sh --execute rb1`. The target is still Ready.
+  - RB-2: a re-release from `153c1956` (`rollback/salown-app`, 152/152 == the 00139 archive).
+  - Neither has been exercised in this project, and neither undoes the `selfSignupSlots` rows.
+- **Release-source gates:** gate PASS 426/425/0 (1 lineage skip), firestore+auth harness 69/69, offline kit harness 40/40, pv-selftest 25/25.
+- **Main:** twin `2c23d735` = `2ab59d14` rebased onto `976c2cd4` with no conflict. The `functions/` tree `73ba4d9d` is identical to the gated twin (gate PASS 1414/1414). Functions unit tests on the rebased tree: 4609 tests, 4513 pass, 0 fail, 95 skipped, 1 todo.
+- **Main ≠ live, kept on purpose (do not merge the release branch into main):**
+  - Main's policy is `self-signup/barber+rota@1`; the release's is `barber@1`.
+  - Main's identity path is the guarded writer `applyTenantClaims` (tenant gate, re-read, and its own compensation outside the slot lease). Live writes the claim directly through `ensureOwnerIdentityCore`.
+  - **Main is not a provisionTenant release source:** a deploy from main changes policy and writer behaviour and needs its own release.
+- **Open (ROADMAP, separate Work IDs):**
+  - `PTI-SIGNUP-LIVE-VERIFY` (not done; the Signup client release still waits for it)
+  - `PTI-SIGNUP-STATE-S-REVIEW`
+  - `PTI-SIGNUP-SUSPEND-PURGE-WINDOW`
+  - `CLAIM-WRITER-NO-CAS`
+  - `LEGACY-SUSPEND-ACCESS-REVOCATION`
+  - `SHARED-CLAIM-WRITER-SLOT-COORD`
+
 ## R-2026-11-14-A — Admin day grid, week grid and client conflict advisory use one booking length; a Booksy booking keeps its stored start→end · `hosting:salown` · **LIVE — technically verified; OWNER_VERIFIED (day card) — MAIN `c02040b9`**
 
 - **Work ID:** `BOOKSY-GRID-DURATION` (closes `DASHBOARD-WEEK-GRID-DURATION` + the day-view gap of the 14 Nov RCA). **Approval:** owner in chat — `hosting:salown` only (2026-11-14).
