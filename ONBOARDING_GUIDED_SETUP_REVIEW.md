@@ -186,9 +186,9 @@ Sample strings (en; tr through the dictionaries):
 
 Today a new salon becomes bookable as soon as one service exists, at the signup default hours (F4/F5). Only the hard services gate in the wizard keeps owners walking through hours. Releasing "skip" first would let new salons start taking bookings unconfigured.
 
-**Order:**
+**Order** (refined in §8.2 R4):
 1. W1
-2. **W3 (server gate) live and verified**
+2. **W3a (guard) → W3b (marker writers), both live and verified**
 3. W2 (skippable checklist)
 4. W4
 5. W5 whenever D5 is settled
@@ -241,6 +241,59 @@ Every tenant **without** the marker is treated as **open**. That covers every te
 | T10 | Mutation: drop the "absent = open" branch | T1 fails (proves the compatibility test bites) |
 
 Plus a read-only production census before release: count of tenants carrying any `onlineBooking.state` (expected 0). A non-zero count stops the release.
+
+### 8.2 Additional requirements (owner, 2026-11-15)
+
+**R1. The marker and the publication state are server-managed.**
+- `onlineBooking.state` and its audit fields (`openedAt`, `openedBy`) are written only by the Admin SDK: `provisionTenant`, the approve saga, and the owner's "open/pause" callable.
+- They must **not** be added to `tenantRootEditableKeys()` (`firestore.rules`, S8 allow-list). Because that rule judges `diff().affectedKeys()`, a client add, change **or delete** of the key is already refused.
+- Required rules tests (S8 suite style), each as owner, admin, staff and anonymous:
+
+| # | Case | Expected |
+|---|---|---|
+| RT1 | Delete `onlineBooking` | Refused |
+| RT2 | Set `state: 'open'` | Refused |
+| RT3 | Change `openedAt` / `openedBy` | Refused |
+| RT4 | Overwrite the whole root without it | Refused |
+| RT5 | Nested-map replacement | Refused |
+| RT6 | Admin `create` of a missing root (rules `:583` allows the tenant's admin to create its own root with editable keys only) | A root re-created this way has **no marker**, which C1 would read as "open". The W3a design must close this. Recommended: narrow the create arm to super-admin. Pinned by a test; decided at W3a, not assumed here. |
+| RT7 | Super-admin path unchanged | — |
+
+**R2. C1 defines only this gate's effect.**
+- "No marker = current behaviour" means only that the new readiness gate does not refuse.
+- It skips none of the other checks, which stay in force in the same transaction and in the same order:
+  - the tenant lifecycle capability (`createBooking.ts:745-748`);
+  - status/suspension;
+  - staff `availabilityFrom`/until and passive;
+  - leave, slot conflicts and busy slots;
+  - service `active`/`selfBooking`;
+  - extras/options guards;
+  - deposits;
+  - the privileged role re-read.
+- Test: T1's golden includes a no-marker tenant that is in grace/suspended. It must still be refused by the lifecycle gate.
+
+**R3. Every tenant-creation path is inventoried and each gets an explicit policy.**
+- The inventory below is from main `46d97d6f`. Each function's **live** lineage is re-measured at W3 release time (per-function live lineage).
+- New salons do **not** arrive only through `/signup`.
+
+| Path | Where | Today | Policy at W3b |
+|---|---|---|---|
+| Self-signup | `provisionTenant` (`index.ts:411`, `tenants/selfSignupProvision.ts:255` `tx.create`) | `onboardingComplete: false`, type from the form | write `onlineBooking.state: 'setup'` |
+| Early-access approval / owner invite | `approveApplication` (`index.ts:3786`) → `onboarding/approveSaga.ts:275` `tx.create`; root at `index.ts:3833-3838` (type canonical from the application, `onboardingComplete: false`). The older approve code in provisionTenant's live source tree defaults `'barbershop'`, so measure the live `approveApplication` revision. | new salon | write `'setup'` (same rule as self-signup) |
+| Co-create demo seeder | `scripts/cocreateDemo/seeder.cjs:263-268` (operator script, `onboardingComplete: false`) | demo/test | owner decides: `'setup'` or explicitly `'open'` for demos |
+| UK demo seeder | `scripts/seedDemoTenant.cjs:293-297` (`'salon'`, `onboardingComplete: true`) | demo | explicit policy (likely no marker or `'open'`) |
+| TR demo seeder | `scripts/seedTrDemoTenant.cjs:213-219` (`'Beauty'`, `onboardingComplete: true`) | demo | explicit policy |
+| Super-admin / client | rules `allow create` (`firestore.rules:583`): super-admin, or admin of that tenant with editable keys only | not a product path | see RT6 |
+| Rehearsal | `ops/rehearsals/newSalonReadiness.mjs` | test harness | follows the provisioning path it calls |
+
+No other `tx.create`/`set` of a tenant root was found in `functions/src` (search: `tx.create(` on `tenantRef`; `businessType:` writers).
+
+**R4. Release order (refined, binding).**
+1. **W3a, guard first.** The server gate in `salownCreateBooking` (reads the marker; absent = this gate passes) plus the owner open/pause callable plus the rules tests RT1–RT7 and T1–T10. Since no tenant carries the marker yet, this release changes no behaviour for anyone.
+2. **W3b, marker writers.** `provisionTenant` and `approveApplication` write `'setup'` for new tenants only, each its own live-lineage release.
+3. **W2, skip UI.** "Do this later" / checklist, only after W3a and W3b are LIVE_VERIFIED.
+
+Existing salons are never written or migrated at any step. W1 is independent: copy only, no gate, no marker.
 
 ## 9. Open questions and limits
 - F4 and F5 come from code, not from a live observation. A read-only check of a test tenant (`settings/hours` against owner `dayHours`) would confirm F4 without writing.
