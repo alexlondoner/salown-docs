@@ -42,6 +42,32 @@
   - (2) the next nightly `dailyFirestoreBackup` export (03:00 UK, 2026-11-19) must be SUCCESSFUL. The writer is the Firestore service agent via IAM `roles/storage.admin`, which rules do not evaluate.
 - **Main (salown-app):** none. salown-app has no `storage.rules`; SSOT placement is a follow-up.
 
+## R-2026-11-18-E — booking confirmation mail via the platform route · Functions `salownBookingConfirmationTrigger`, `salownBookingConfirmedEmailTrigger` (europe-west2) · **LIVE — DEPLOYED_VERIFIED; owner handover delivered — MAIN `1a6dc880`**
+
+- **Work ID:** `EMAIL-SENDER-SPLIT` unit `confirm`. **Approval:** owner in chat 2026-11-18 ("EMAIL-SENDER-SPLIT yayını onaylı", kit `4d5611f7b6ed`; decisions: herohairs included, whitecross Reply-To unchanged, others Reply-To = validated `settings.shopEmail`, no bulk resend).
+- **Revisions:** `-00049-tas` → **`salownbookingconfirmationtrigger-00050-kew`**, `-00047-veq` → **`salownbookingconfirmedemailtrigger-00048-cuz`** (14:39Z). Rollback = traffic to the old revisions (restores Gmail selection).
+- **Source:** `3630c9ec` on live `bf375a3a` (pin `3a88e3b8`, `release/email-sender-split-confirm-on-live-bf375a3a`). Secrets BREVO_API_KEY:2 (unchanged); runtime 20/256Mi/1/60/80 now declared (= live).
+- **Behaviour:** confirmation mail always "{Salon} via salOWN" <noreply@salown.com> via Brevo; Reply-To = `settings.shopEmail` only when one valid address (no CR/LF/list/display name); whitecross payload byte-identical (no Reply-To); `settings/emailConfig` not read; one carrier, no Gmail fallback.
+- **Verify:** RESULT NEW + scope PASS (147 fns, only targets); logs = deploy-time GET 403 probes only. Owner handover 14:45Z: `sent via brevo`, Brevo delivered, `confirmationEmailSentAt` stamped. Reply-To **not verified live**.
+
+## R-2026-11-18-D — staff-reschedule mail via the platform route; the trigger finally binds Brevo · Functions `salownNotifyBookingUpdated` (europe-west2) · **LIVE — DEPLOYED_VERIFIED; owner handover delivered — MAIN `1a6dc880`**
+
+- **Work ID:** `EMAIL-SENDER-SPLIT` unit `notifyupdated`; approval as `R-2026-11-18-E`.
+- **Revision:** `-00114-sew` → **`salownnotifybookingupdated-00115-gut`** (14:36Z). Source `166918a8` on live `7b026820` (pin `392fc62b`). **+BREVO_API_KEY:2** (it bound no secret: staff-reschedule mail failed "BREVO_API_KEY secret not set", whitecross 7×/30 d; compute SA already had accessor, no IAM change). Telegram/in-app paths unchanged; eventTrigger identical.
+- **Verify:** RESULT NEW + scope PASS; owner handover 14:48Z: `rescheduleEmail (staff): sent via brevo`, Brevo delivered. Whitecross staff-reschedule mail now sends under its existing trigger conditions (owner-approved); no bulk resend of past failures.
+
+## R-2026-11-18-C — customer-link reschedule mail via the platform route · Functions `salownRescheduleByToken` (europe-west2) · **LIVE — DEPLOYED_VERIFIED — MAIN `1a6dc880`**
+
+- **Revision:** `-00080-buf` → **`salownreschedulebytoken-00081-ret`** (14:34Z). Source `6701cc19` on live `b2619908` (pin `d12ad3b8`). First run 14:29Z RESULT STOP (firebase-tools "Failed to list functions" before upload; measured unchanged); one owner-approved re-run PASS. Owner handover 14:46Z: Brevo delivered.
+
+## R-2026-11-18-B — customer-link cancellation mail via the platform route · Functions `salownCancelByToken` (europe-west2) · **LIVE — DEPLOYED_VERIFIED — MAIN `1a6dc880`**
+
+- **Revision:** `-00076-gep` (U2) → **`salowncancelbytoken-00077-zax`** (14:28Z). Source `06bac765` on live `a26d4895` (pin `2a1f7d51`). Secrets BREVO:2 + SALOWN_STRIPE_SECRET_KEY:1 kept; refund suite 20/20. Owner handover 14:54Z: CANCELLED / customer / email-link, `cancellationEmailSentAt`, Brevo delivered.
+
+## R-2026-11-18-A — staff cancellation e-mail via the platform route · Functions `salownSendCancellationEmail` (europe-west2) · **LIVE — DEPLOYED_VERIFIED (not owner-tested) — MAIN `1a6dc880`**
+
+- **Revision:** `-00110-lup` → **`salownsendcancellationemail-00111-nug`** (14:26Z). Source `472c37bf` on live `46daa037` (pin `806ca62c`). SA ledger/rate unchanged (replay refused, emulator 5/5); probe 401 PASS. **Common to A–E:** new `emails/platformSender.ts` (pure), `sendPlatformCustomerEmail`; local gates per candidate: sender test 14/14 (3 mutants killed), call-site emulator 4/4·4/4·5/5 (unpatched base 1/4), bookings emulator suites 105–145 all pass, npm test = base + workspace guard. Release plan: `~/release-work/email-sender-split-20261118/EMAIL_SENDER_SPLIT_RELEASE_PLAN.md`.
+
 ## R-2026-11-17-B — customer manage-link cancel refunds on salOWN's own Stripe platform · Functions `salownCancelByToken` (europe-west2) · **LIVE — DEPLOYED_VERIFIED; sandbox S3b PASS (one £28 full refund) — MAIN `39af3c80`**
 
 - **Work ID:** `SALOWN-STRIPE-PLATFORM` unit **U2**. **Approval:** owner in chat 2026-11-17 — "U2 deploy onaylı: aday a26d4895, kit fd0a1df10ee4. Release pin push'u dahil."

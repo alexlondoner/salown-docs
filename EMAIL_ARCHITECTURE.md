@@ -1,6 +1,15 @@
 # EMAIL_ARCHITECTURE.md
 
-## Core Rule — Sender Routing (ACTUAL STATE, 2026-06-25)
+## Core Rule — Sender Routing (ACTUAL STATE, 2026-11-18 — EMAIL-SENDER-SPLIT, R-2026-11-18-A..E)
+
+**Customer booking mail** — confirmation (both triggers), staff and customer-link reschedule, customer-link and staff
+cancellation — ALWAYS goes through Brevo as `"{Salon} via salOWN" <noreply@salown.com>` (`emails/platformSender.ts`,
+`sendPlatformCustomerEmail`). Reply-To = `settings/settings.shopEmail` only when it is one valid address (no CR/LF, list or
+display name); otherwise none. `settings/emailConfig` (Gmail + app password) is **only** the Booksy/Fresha/Treatwell IMAP
+credential and is not read by these paths. whitecross: unchanged payload (no Reply-To). One carrier, no fallback.
+Reminder / abandoned cart / campaigns still use the legacy table below (`EMAIL-LEGACY-SENDERS`).
+
+## Legacy routing — reminder, abandoned cart, campaigns (state since 2026-06-25)
 
 Routing is determined inside `_sendCustomerEmail()`. There are two inputs: the tenant's
 `tenants/{id}/settings/emailConfig` (Gmail + appPassword) and the `FORCE_SALOWN_SENDER_TENANTS`
