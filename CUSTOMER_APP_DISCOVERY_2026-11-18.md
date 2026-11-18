@@ -13,6 +13,18 @@
   - Live `whitecrossbarbers.com/loyalty.html` bytes.
   - Live HTTP status of `/loyalty/x`, `/manage/x` and `/.well-known/apple-app-site-association`.
 - **Not touched:** Stripe (`SALOWN-STRIPE-PLATFORM`), onboarding (`ONB-GUIDED-SETUP` W3a/W3b), native Staff (`STAFF-NATIVE-D1`) claims and paths.
+- **Revision 2 (same day):** C1, C2 and C5 are now **proven** — by emulator tests against the live ruleset text, by local tests, and against the deployed function sources. Results, legitimate-flow dependencies and narrow fixes are in **§K**, which supersedes C1/C2/C5 where they differ. Workspace: `salown-app` `origin/main` **`cea82423`** archive.
+
+> **Product direction (owner, 2026-11-18):**
+> - **Decided:**
+>   - one multi-salon **salOWN** customer app;
+>   - **salOWN Pro** stays separate as the business app;
+>   - per-salon App Store apps are **out of scope** for the first release.
+> - **Not decided:**
+>   - plan / pricing;
+>   - final bundle id;
+>   - account-deletion policy.
+> - **E-mail OTP is a recommendation only.** Provider, cost and security design must be reviewed before it counts as chosen.
 
 > **Main vs live.** Every finding is labelled **LIVE** (measured on production bytes or the live ruleset), **MAIN** (read in `ab671a7f` source only) or **UNVERIFIED**. Live Cloud Functions revisions were **not** measured in this pass. A callable described from main source is "main source", not "live behaviour". Note that main's `firestore.rules` differs from the live ruleset: main contains the unreleased `tenantLifecycleActive` W3a gate. The booking/client clauses quoted below were checked in **both**.
 
@@ -146,27 +158,31 @@ Legend:
 
 The "Reach" line on each finding says who can trigger it. None of these was exploited or tested against production. Findings marked *PLAUSIBLE* need an emulator test before they count as confirmed.
 
-### C1. MEDIUM — the public booking update rule bypasses the server cancel/reschedule logic (LIVE rule)
+### C1. HIGH (raised from MEDIUM) — the public booking update rule bypasses the server cancel/reschedule logic — CONFIRMED on the LIVE ruleset in the emulator (§K1)
 
-- **Where:** live ruleset `bookings` update (lines 126-137); main `firestore.rules:722-737`.
-- **What the rule allows:** any unauthenticated caller may update a booking whose `clientEmail` is set, provided `clientEmail` and `bookingId` are unchanged and only `status`, `rescheduledTo`, `cancelledAt`, `cancelReason`, `date`, `time`, `startTime`, `endTime`, `rescheduledAt`, `barberName`, `barberId` or `updatedAt` change.
-- **What it bypasses:** the cancellation/reschedule windows, the conflict check, the refund flow and the tenant gate, all of which live in the callables.
-- **Reach:** needs the Firestore **doc id**.
-  - Strangers cannot guess it (20 random characters).
-  - The booker has it: `salownCreateBooking` returns `docId` (`functions/src/index.ts:1548`).
-  - So this is self-service tampering by the person who booked: moving their own slot onto someone else's, or changing status.
-- *PLAUSIBLE, not tested:* whether `PENDING → CONFIRMED` (escaping `salownCleanupExpiredPending`, `index.ts:4787-4797`) is blocked by `m3UpdateAllowed()` / `checkoutLifecycleHeld()` needs an emulator case.
-- **Customer-app implication:** an authenticated app must never write bookings directly. This clause should be narrowed or removed once the remaining legacy writers are gone (`whitecross-site` reschedule pages were already moved to callables).
+- **Where:** live ruleset `bookings` update; main `firestore.rules:722-737`.
+- **Correction to revision 1:** the rule does **not** need the caller to know the e-mail.
+  - It only requires that the stored `clientEmail` is non-empty and stays unchanged, and that `bookingId` exists and stays unchanged.
+  - **The document id is the only credential.**
+- **Proven:**
+  - cancel inside the window, or after the start time;
+  - move onto an occupied slot;
+  - cancel a deposit-paid booking with no refund;
+  - an unpaid `PENDING → CONFIRMED`;
+  - any status string, plus checked-out aliases other than the exact `CHECKED_OUT`.
+- Detail: §K1.
 
-### C2. MEDIUM — the public booking create rule allows direct `addDoc` (LIVE rule)
+### C2. MEDIUM–HIGH — the public booking create rule allows direct writes with server-owned fields — CONFIRMED on the LIVE ruleset in the emulator (§K1)
 
-- **Where:** live lines 104-125; main `:696-721`.
-- **What it allows:** `status in ['PENDING','CONFIRMED']` with a tenant that accepts public bookings. Money and identity fields are banned. Caller-chosen `bookingId`, `clientEmail`, `price`, `source` and time are allowed.
-- **Risks:**
-  - slot squatting with no server conflict check;
-  - a confirmation e-mail sent under the salon's name to any address (`salownBookingConfirmationTrigger`, `index.ts:4678-4727`, for `source:'website'|'salown'`, `emails/index.ts:106-109`), i.e. spam or phishing;
-  - a duplicate `bookingId` can shadow a real customer's manage link, because the lookup is `limit 1` (`shared.ts:23-26`).
-- **Reach:** unauthenticated. Writers that still depend on this are `BookingPage.tsx:1044` (fallback) and Whitecross `loyalty.html:1298`.
+- **Where:** live ruleset `bookings` create; main `:696-721`.
+- **Correction to revision 1:** the **live** ruleset has **no** `tenantAcceptsPublicBookings()` gate. It exists only in main (`firestore.rules:98, 704`).
+  - Live accepts anonymous creates even for an absent, suspended, `TRIAL_EXPIRED` or `INVITE_PENDING` tenant.
+- **Proven:** anonymous creation of `CONFIRMED` bookings that carry server-owned fields which are not on the deny-list:
+  - `platformDepositAmount`, `stripeAmountPaid`, `paymentState:'PAID'`, `refundedAmount`;
+  - `testMode`, `suppressNewBookingNotification`;
+  - `package*`, `checkout*`.
+- **Also proven:** overlap with an existing booking, and a duplicate `bookingId`.
+- Detail and legitimate writers: §K1–K2.
 
 ### C3. MEDIUM — the manage link is a weak, permanent bearer credential (MAIN source; live UI uses it)
 
@@ -185,7 +201,12 @@ The "Reach" line on each finding says who can trigger it. None of these was expl
 - **It must not be revived or used as a template.** Re-opening `clients` or `bookings` reads to the public for it would be a PII leak.
 - Its booking path writes `status:'CONFIRMED'` directly (C2). Whether that is reachable live while the read path fails is **UNVERIFIED**.
 
-### C5. HIGH (blocker for the plan) — customer Auth users in the same project could call owner-onboarding and AI functions (MAIN)
+### C5. HIGH (blocker for the plan) — customer Auth users in the same project could call owner-onboarding and AI functions — CONFIRMED by local tests; live gate = main gate (CONFIRMED-LIVE-SOURCE), §K3
+
+> **Revision 2:**
+> - Proven in-process and end to end in the Auth+Firestore emulator: a claim-less user, and a user carrying `acct:'customer'`, both become the **owner of a new trial tenant**, and both reach the Anthropic call in `askAI`.
+> - **This is reachable today, not only after a customer app exists.** The public owner signup (`src/pages/Signup.tsx:231`) lets anyone create a claim-less account.
+> - Detail: §K3.
 
 - **`provisionTenant`** (`functions/src/index.ts:411-447`) requires only `request.auth` and no existing `tenantId` claim. It does not check `email_verified` or the account type.
   - A customer Auth account could create a trial salon as its owner.
@@ -363,6 +384,11 @@ Firebase Auth user (uid)  ── custom claim {acct:'customer'}  (set server-sid
 | 7 | Public reviews | Medium | High (moderation, fraud) |
 
 ### E6. Open decisions (owner)
+
+> **Revision 2 status:**
+> - **E-OPEN-2 is partly decided:** one multi-salon app; per-salon apps are out of scope. Plan and pricing stay open.
+> - **E-OPEN-1** is now a separate design topic (§K6) and is **not** decided.
+> - **E-OPEN-3:** the bundle id is not decided.
 
 - **E-OPEN-1** — the account-deletion contract for the salon-held client record (unlink only, or also file an erasure request to each salon). Needs a UK GDPR check.
 - **E-OPEN-2** — whether salons opt in per tenant and which plan includes it.
@@ -595,3 +621,222 @@ Copy rules: always name the salon. Show deadlines as clock times. Never show bal
 4. **CUSTAPP-WEB-PORTAL v1:** steps H-order 3.
 5. **CUSTAPP-NATIVE:** after D1's Apple prerequisites and E-OPEN-2/3.
 6. **Docs push:** this file to `salown-docs` + a ROADMAP row. Not pushed by this session.
+
+---
+
+## K. Revision 2 — verification round (2026-11-18)
+
+**Scope:**
+- Emulator and local tests only, plus read-only live metadata and source.
+- No production document read or written.
+- No rules change, no deploy, no product-code push.
+- No mail, OTP or message sent.
+- No other session's claim (W3a, e-mail, Stripe, native) touched.
+
+**Workspace:** `~/release-work/customer-app-discovery/ws/salown-app`, a `git archive` of `salown-app` `origin/main` **`cea82423`**.
+
+**Evidence:** kept locally under `~/release-work/customer-app-discovery/evidence/` (rules logs, principal test logs, sweep JSON, live describe output and downloaded live sources). The test files live in the workspace under `test/rules/custapp/` and `functions/src/custapp/`. Nothing is committed to any repo; publishing the evidence needs a separate approval.
+
+**Levels used below:**
+- **CONFIRMED**: an executed test.
+- **CONFIRMED-LIVE-SOURCE**: the deployed artifact was read.
+- **PLAUSIBLE**: code reading only.
+
+### K1. Public booking rules — reproduced on the LIVE ruleset text
+
+**Setup:**
+- **Rules under test:** live `cloud.firestore` ruleset `a5f92395-132a-4524-bf30-eb1bb9c78331`, sha256 `edf88dab…a9560cb`. The suite asserts this hash. The same suite was also run against main `cea82423` `firestore.rules`.
+- **Suite:** `test/rules/custapp/bookingAnonWrites.emulator.test.js`, 134 cases.
+- **Environment:** Firestore emulator, project `demo-custapp`, pinned CLI 15.26.0, one `emulators:exec` per ruleset.
+
+**Results:**
+- **Live:** exit 0, 134/134. **Main:** exit 0, 134/134.
+- A first live run exited 1 because of three wrong test expectations (no rule difference). It is kept as `c1c2-live.run1-expectation-bugs.log`.
+- The only live-vs-main difference is the tenant create gate below.
+
+**The anonymous UPDATE contract (live), CONFIRMED.** A write is allowed if and only if all of the following hold:
+- **Document shape:** the stored doc has a non-empty `clientEmail` and a `bookingId` field, and both stay unchanged. The caller proves nothing else: **the doc id is the only credential**.
+- **Changed keys:** they must be a subset of `status, rescheduledTo, cancelledAt, cancelReason, date, time, startTime, endTime, rescheduledAt, barberName, barberId, updatedAt`. Everything else is denied (money, identity, `paymentState`, `refundedAmount`, `expiresAt`, notes, …).
+- **`a1` (barber `availabilityFrom`):** checked only when the barber doc exists and the date is a valid key. A `ghost` barber id or a `not-a-date` date passes.
+- **`checkoutLifecycleHeld`:** blocks only the exact `CHECKED_OUT` / `checked_out` strings.
+  - `PAID`, `DONE`, `COMPLETE` and `checked-out` are allowed. The app's `normalizeBookingStatus` (`src/utils/bookingUtils.ts:71`) treats some of these as checked out.
+  - A `CHECKED_OUT` booking can still have its date/time moved.
+- **`m3`:** blocks a status change only on membership-covered bookings. A reschedule of a covered booking is still allowed.
+
+**Cases (expected = observed on live):**
+
+| Case | Result |
+|---|---|
+| Cancel 1 h before start with an 8 h window; cancel after start; `NO_SHOW` | ALLOW. The callable would refuse (`functions/src/index.ts:1907-1913`). |
+| Reschedule onto a slot already held by another CONFIRMED booking of the same barber | ALLOW. No conflict check. |
+| Cancel a Connect-deposit or external-deposit booking, then un-cancel back to CONFIRMED | ALLOW. Read-back still shows `DEPOSIT_PAID`, `paidAmount 10`, with no refund fields. |
+| Set `paymentState:REFUNDED` together with a cancel | DENY |
+| `PENDING → CONFIRMED` on an unpaid Stripe hold; status `HACKED` / `BLOCKED` / `123` | ALLOW. `salownCleanupExpiredPending` (`index.ts:4782`) sweeps only PENDING, so a forged confirmation sticks. |
+| Clearing `expiresAt` at the same time | DENY |
+| Anonymous read / list of bookings | DENY |
+
+**Refunds:** the only Stripe refund call is inside `salownCancelByToken` (`index.ts:1928`). No trigger refunds on status → CANCELLED.
+- **CONFIRMED:** a rules-level cancel never refunds.
+- **PLAUSIBLE:** the customer keeps a deposit-paid cancellation with no refund record, and the salon sees an inconsistent state.
+
+**Triggers that would fire on these writes.** PLAUSIBLE: cited, not executed.
+- **PENDING → CONFIRMED:** customer confirmation e-mail (`index.ts:4913-4940`), WhatsApp (4979), FCM push (4752), Telegram and in-app (`salownNotifyBookingUpdated`).
+- **CANCELLED:** Telegram and in-app (3090-3125).
+
+**The anonymous CREATE contract (live), CONFIRMED.**
+- **Allowed:**
+  - `status` `CONFIRMED` or `PENDING`, including a 2-field minimal doc;
+  - caller-chosen `price` 0.01, `source:'Admin'`, a `WCB-` booking id, a past start, any e-mail;
+  - an overlapping slot;
+  - a **duplicate `bookingId`** with a different e-mail;
+  - barber `any`.
+- **Allowed — server-owned keys missing from the deny-list:**
+  - `platformDepositAmount`, `stripeAmountPaid`, `paymentState:'PAID'`, `paymentType`;
+  - `stripeSessionId` / `stripePaymentIntentId`, `refundedAmount`;
+  - `checkoutRevision`, `receiptPaidToday_p`, `cancelledBy`, `notes`, `paymentProvider`;
+  - `sendLoyaltyEmail`, `testMode`, `suppressNewBookingNotification`;
+  - `packagePrepaid`, `clientPackageId`, `checkoutStatus`;
+  - a forged "fully prepaid" booking.
+- **Denied:**
+  - other statuses (`CHECKED_OUT`, `CANCELLED`, `PAID`, lowercase, `UNPAID`, missing);
+  - the 14 listed forbidden keys;
+  - a barber whose `availabilityFrom` is in the future.
+- **Tenant gate:** live **ALLOWs** anonymous creates under a missing, suspended, `TRIAL_EXPIRED` or `INVITE_PENDING` tenant. Main **DENYs** them (unreleased `tenantAcceptsPublicBookings`).
+- **PLAUSIBLE effects** (cited, not executed):
+  - confirmation e-mail, WhatsApp, Telegram and push on a CONFIRMED create (`index.ts:4678-4700, 4968, 3028, 4729`);
+  - `testMode` / `suppressNewBookingNotification` silencing staff alerts (`functions/src/notifications/index.ts` ~346-349);
+  - the till treating forged `platformDepositAmount` / `stripeAmountPaid` as prepaid;
+  - a duplicate `bookingId` making the real customer's manage link resolve to the wrong doc or "not found" (`functions/src/bookings/shared.ts:20-30`, `limit 1`).
+
+**Reach:** the doc id.
+- salOWN: `salownCreateBooking` returns `docId` to the booker (`index.ts:1548`).
+- Whitecross legacy and group bookings: **doc id = `bookingId` (`WCB-…`)**. It appears in e-mailed manage links (`emails/index.ts:233,317`, `reminderEmail.ts:77`) and in `success.html?id=` / `?cancelled=` URLs. So for Whitecross the update credential travels in links.
+
+**Severity:**
+- **C1 → HIGH.** Window, conflict and refund bypass, plus unpaid self-confirmation, using a credential that travels in links.
+- **C2 → MEDIUM–HIGH.** Forged payment and notification flags, an ungated tenant state, and spam under the salon's name.
+
+### K2. Legitimate flows that still use direct client writes
+
+Read-only. Live bytes of 8 Whitecross files (`script.js`, `index.html`, `loyalty.html`, `success.html`, `cancel.html`, `Reschedule.html`, `manage.html`, `campaign-resolver.js`) were compared by sha256 to the working copy: **all match**.
+
+| Id | Writer | Write | Live reachable? |
+|---|---|---|---|
+| S1 | `salown-app src/pages/BookingPage.tsx:1044` | anonymous `addDoc` fallback | **No.** Mode pinned `callable` (`src/utils/hostedBookingCutover.ts:36`); the live bundle contains `"callable"`. |
+| **W1** | `whitecross-site/script.js:2400` (called at :2599) | anonymous `setDoc`, PENDING, client-chosen id `WCB-…`, plus `soldAddOns`, `paymentType`, `paymentState`, `expiresAt` | **Yes.** Always used for **Extras** (add-ons). Plain bookings fall back to it when the `c1Cutover` flag does not resolve true. |
+| **W2** | `whitecross-site/script.js:2861` | **group booking**: one anonymous `setDoc` per member, PENDING, client-chosen ids, `group*` fields | **Yes** |
+| W6 | `whitecross-site/loyalty.html:1298` | anonymous `addDoc`, status **CONFIRMED**, source `App`, no `barberId` or duration | Rules allow it, but the page cannot load a client first (A2), so practical reach is UNVERIFIED |
+| W3–W5 | `whitecross-site/script.js:3459, 3478, 3513` | anonymous updates | **Dead.** They write keys outside the allow-list, or depend on a denied anonymous query. |
+| — | `cancel.html`, `Reschedule.html` | callables only | No direct write |
+
+**Further dependencies:**
+- Whitecross `createCheckoutSession` and its webhook look the booking up by **path** `bookings/${bookingId}`, so the client-chosen id is part of the Whitecross payment contract.
+- Staff and panel writers go through `isTenantAny` and are unaffected by any anonymous-branch change.
+- **No legitimate live flow depends on the anonymous UPDATE branch.**
+
+### K3. Customer principal vs business functions
+
+**Live vs main** (CONFIRMED-LIVE-SOURCE: read-only `gcloud functions describe` plus the downloaded `function-source.zip`):
+
+| | `provisionTenant` | `askAI` |
+|---|---|---|
+| Live revision | `provisiontenant-00141-vuw` (2026-11-15T01:36:54Z) | `askai-00106-hif` (2026-07-15T23:47:23Z) |
+| Owning codebase | `salown` (whitecross removed its copy 2026-08-12) | `salown` |
+| Live gate | refuses no-auth; refuses `token.tenantId` / live `customClaims.tenantId` | refuses no-auth only |
+| Equal to main? | **Yes.** The handler diff is business-type canonicalisation and rota rollout only. | **Yes for claim-less callers.** Main adds a `gated()` wrapper that returns early for tokens without `tenantId` (`functions/src/onboarding/tenantCallableGate.ts:150-151`). |
+
+Neither function looks at `email_verified` or at any account-type marker.
+
+**Local tests.** All network is blocked except the emulator ports, SMTP is stubbed, the Anthropic SDK is stubbed, and the run makes 0 outbound attempts. Files are in `functions/src/custapp/`.
+
+| Test | Result | Proves |
+|---|---|---|
+| `askAI.principal.test.js` | exit 0, 5/5 | No-auth is refused before the model call. A claim-less user (email verified or not) and an `acct:'customer'` user all reach `messages.create`, and the context they supply is forwarded. **CONFIRMED** |
+| `provisionTenant.principal.test.js` | exit 0, 6/6 | No-auth gets `unauthenticated`; a `tenantId` claim gets `failed-precondition`; all three customer variants get past the gate. **CONFIRMED** |
+| `provisionTenant.principal.emulator.test.js` (Auth + Firestore emulator) | exit 0, 5/5 | Each customer uid **creates a trial tenant** and receives `{tenantId, tenantRole:'owner'}`. For `acct:'customer'` the claim survives next to the owner claim. Welcome-mail stub: 0 sends. **CONFIRMED end to end** |
+| `callableSweep.principal.emulator.test.js` | exit 0 | All 85 exported callables called with empty data, as anonymous, claim-less and `acct:'customer'`. Triage only. |
+
+**Inventory — what a claim-less or customer principal reaches beyond a logged-out caller** (sweep plus code):
+
+| Entry | Claim-less / customer can | Class |
+|---|---|---|
+| `provisionTenant` (`index.ts:411`) | become owner of a new trial salon | **Legitimate only via explicit owner signup.** Must stay possible for a person who chooses to become a business; must not be reachable silently from a customer session. CONFIRMED |
+| `askAI` (`ai/askAI.ts:16`) | unlimited Haiku calls with chosen context (≈10×2000 characters per call) | **Unauthorised use.** Business feature, cost exposure. **Reachable today by anyone via public owner signup.** CONFIRMED |
+| `salownRequestDataExport`, `salownStaffLifecycle`, `salownCloseFinancePeriod`, `salownSetStaffRole`, `salownStaffPushInstallation` | pass the "signed in" check, then validate input first (the sweep sent empty data) | **PLAUSIBLE safe.** The code refuses on the tenant/role/staff doc after validation (e.g. `pushInstallation.ts:269-275`). Needs a valid-input negative test before it counts as CONFIRMED. |
+| `salownOwnerInvite*`, `sendPasswordResetPublic`, booking / `*ByToken` / exit-token callables | same as logged-out | public by design |
+| `salownLandingChat`, `addToWaitlist` (HTTP) | same as anyone | public by design; separate cost risk |
+| other 65 callables | refused | — |
+| salown-app Firestore rules | nothing beyond own-uid `staff/{uid}` | PLAUSIBLE (no `isAuth()`-only grant found) |
+
+**Found outside salown-app in the same project.** These are not customer-app items, but **any signed-in account reaches them, and anyone can obtain a signed-in account today via the public owner signup**:
+
+| Entry | Finding | Level |
+|---|---|---|
+| **Storage rules** (live release `firebase.storage/havuz-44f70.firebasestorage.app` → ruleset `4c00eef7-e45c-4b35-856a-b0e911018990`, created 2026-04-30, released 2026-05-24) | `allow read: if true; allow write: if request.auth != null;` on `/{allPaths=**}`. Anyone reads every object; **any signed-in user can overwrite or delete any object** (tenant logos, gallery, …). Deployed from whitecross-site `storage.rules`. | **CONFIRMED-LIVE-SOURCE** (live ruleset text fetched) · **CRITICAL** |
+| **whitecross `createMobileCheckout`** (us-central1, `createmobilecheckout-00055-zag`) | gate is `if (!request.auth)` only (`whitecross-site/functions/index.js:2694`), then takes caller-supplied `bookingId`, `amount`, `loyaltyPointsEarned`, `sendLoyaltyEmail` | gate **CONFIRMED-LIVE-SOURCE**; effect (webhook marks CHECKED_OUT and awards points) **PLAUSIBLE** · **CRITICAL**. ROADMAP already lists it as an orphan (0 calls in 60 d) still ACTIVE. |
+| whitecross `sendReceipt`, `sendManualLoyaltyAdjustmentEmail`, `backfillClientStats`, `sendProInterest` (HTTP) | reported open to anyone | **PLAUSIBLE**: not tested here. Needs its own review before any statement. |
+
+### K4. QR: two different purposes, two different designs
+
+**C6 stays a separate finding.** The live Admin `Clients-BawILY2F.js` sends the full loyalty URL, bearer token included, to `api.qrserver.com`.
+
+| Purpose | What the QR should carry | Why |
+|---|---|---|
+| **"Find / book this salon"** (window sticker, counter card, receipt) | a **token-free** salon link, e.g. `https://salown.com/s/{tenantId}` (later a universal link that opens the app and falls back to web) | It identifies a public place, not a person. Copying it is harmless, so there is no expiry, revocation or rate limit to design. |
+| **"Connect this customer's app to their record at this salon"** | a **short-lived, single-use customer invite** bound to one `clients/{id}` | It grants access to a person's history, so it must expire, be redeemable once, be revocable, and never be the login itself |
+
+**Why the owner-invite infrastructure must not be copied as is** (`functions/src/onboarding/inviteCore.ts`):
+- **Reusable:** the pure token primitives — 128-bit locator + 256-bit secret, only sha256 stored, `timingSafeEqual` against a dummy hash, one uniform `invalid` reason, server clock only (`inviteCore.ts:12-60`).
+- **Owner-specific, does not transfer:**
+  - the trial/lifecycle state machine (`APPLICATION_PENDING → … → SUBSCRIBED`);
+  - server-side account creation;
+  - the 7-day TTL sized for an e-mailed link;
+  - the Auth/Firestore/Brevo saga;
+  - e-mail-only delivery to an address an operator vetted.
+- **Customer-invite threat model differences** (design questions, not decided):
+  - **Shown on a staff screen in the salon.** It can be photographed or seen over a shoulder, which argues for minutes-not-days TTL and redemption only by a **signed-in** customer.
+  - **The client record's e-mail/phone was never verified.** Redemption should either require the redeemer's verified e-mail to match or be **confirmed by staff**, and must not merely trust whoever scans first.
+  - **Lifecycle hooks:** the invite must die on client merge, delete or anonymisation; one active invite per client; audit actor = staff uid.
+  - **Rate limits:** per tenant and per staff.
+  - **Already-linked records:** what happens when the record is already linked to another account (family / shared phone, §C10).
+- The QR image must be rendered locally, never by a third-party image service.
+
+### K5. Narrow fixes, in priority order (proposals; nothing changed)
+
+1. **Storage rules (CRITICAL):** restrict writes to tenant staff per path. This is whitecross-site-owned and needs its own work item, an emulator test and a release.
+2. **`createMobileCheckout` (CRITICAL):** retire the orphan, or require a Whitecross tenant staff principal. Whitecross-owned.
+3. **Remove the anonymous booking UPDATE branch.**
+   - Keep the `isSuperAdmin() || isTenantAny()` arms.
+   - K2 shows no legitimate live flow depends on it.
+   - Gate: a new emulator suite (K1 cases flipped to DENY) plus the existing rules gate.
+4. **Release main's `tenantAcceptsPublicBookings` create gate.** It already exists in main; it is W3a-owned, so coordinate with that claim and do not take it over.
+5. **Anonymous CREATE allow-list (`hasOnly`)** built from the union of the W1/W2/W6 payloads. It rejects `platformDepositAmount`, `stripe*`, `refundedAmount`, `checkoutRevision`, `receipt*`, `testMode`, `suppressNewBookingNotification`, `package*`, `checkout*`, `cancelledBy`, `sendLoyaltyEmail`, and pins `source` / `price` handling.
+6. **`askAI`:** require a business principal (tenant claim + role, or super-admin).
+7. **`provisionTenant`:** accept only an explicit owner-signup intent (server-issued short-lived ticket, or separate Identity Platform tenants) and refuse any `acct` customer marker. This must land **before** any customer sign-in exists.
+8. **Move remaining direct writers to callables, then set anonymous create to false:**
+   - (a) W6 loyalty booking;
+   - (b) remove the W1 plain-booking fallback once `c1Cutover` is stable;
+   - (c) W1 **Extras** (needs callable support for `soldAddOns`);
+   - (d) W2 **group bookings**, together with the Whitecross checkout/webhook doc-id contract.
+9. **Customer-facing hygiene:** a local QR renderer (C6) and replacing or hiding the dead `/loyalty` links (C7).
+10. **Manage link (C3):** rate limits + App Check on `*ByToken`.
+
+### K6. Customer account model — open decisions (none decided)
+
+| # | Decision | Notes |
+|---|---|---|
+| K6-1 | **Principal separation mechanism** | Choose between: a server-set `acct` claim with deny-by-default business gates; Identity Platform multi-tenancy (separate customer and business auth tenants); or a separate Firebase project for customers. A claim set after account creation leaves a no-claim window, so the gates must deny by default. |
+| K6-2 | **One human as both customer and salon owner** | Options: separate uids (one Firebase project allows one account per e-mail unless multi-tenancy is used); one uid with both roles and an explicit audited "become a business" path; or account linking. **A deliberate owner signup must stay possible; silent use of business features must not.** |
+| K6-3 | **Sign-in method** | E-mail OTP is the recommendation only. Provider, sender (ties to EMAIL-SENDER-SPLIT), cost, abuse limits and the `createCustomToken` IAM requirement must be reviewed first. Nothing chosen, no secret created. |
+| K6-4 | **Link creation** | Verified-e-mail suggestion vs a staff-confirmed invite vs both. Rules for multiple candidate records (family, shared phone). Never name-only. |
+| K6-5 | **Customer invite design** | §K4: TTL, redeem conditions, staff confirmation, lifecycle hooks. |
+| K6-6 | **Account deletion — a separate design topic, not decided.** Keep these apart: | (a) the platform account (credentials, links, devices, preferences); (b) each salon's client record and visit/finance history (the salon's records); (c) retention duties (e.g. financial records); (d) how a customer's erasure request reaches each salon, and who answers it. Apple 5.1.1(v) needs in-app deletion of the **account**; what happens to (b)–(d) needs a legal / UK GDPR review. |
+| K6-7 | Plan / pricing, final bundle id | Owner: not decided. |
+
+### K7. Not done in this round
+
+- No live Functions revision describe for the token callables.
+- No callable-level test of the duplicate-`bookingId` manage-link shadowing.
+- No valid-input negative tests for the five "PLAUSIBLE safe" callables.
+- No test of the whitecross HTTP functions listed as PLAUSIBLE.
+- The live **Storage** behaviour was read from the ruleset text, not exercised.
