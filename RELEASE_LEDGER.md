@@ -1,5 +1,36 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
+## R-2026-11-17-B — customer manage-link cancel refunds on salOWN's own Stripe platform · Functions `salownCancelByToken` (europe-west2) · **LIVE — DEPLOYED_VERIFIED; sandbox S3b PASS (one £28 full refund) — MAIN `39af3c80`**
+
+- **Work ID:** `SALOWN-STRIPE-PLATFORM` unit **U2**. **Approval:** owner in chat 2026-11-17 — "U2 deploy onaylı: aday a26d4895, kit fd0a1df10ee4. Release pin push'u dahil."
+- **Revision:** `salowncancelbytoken-00075-gab` (2026-10-23; bound `BREVO_API_KEY:2` + **`STRIPE_SECRET_KEY:5` = Whitecross live** → a Connect refund could never succeed) → **`salowncancelbytoken-00076-gep`** (2026-11-17T19:34:45Z, 100%). Rollback target `-00075-gab` (traffic only; restores the failing-refund binding; not used).
+- **Source:** **`a26d4895`** (tree `855a4682`) = live source `b427fd18` (Cloud source zip == b427fd18 `functions/`, 117/117) + `0bec6f65` (refund block reads `SALOWN_STRIPE_SECRET_KEY`) + explicit live runtime options; pin `cb9ae015` on `release/salown-stripe-names-cancel-on-live-b427fd18`. Kit `~/release-work/onb-w3a-20261115/stripe/kit/u2`, id `fd0a1df10ee4`.
+- **Config:** secrets `BREVO_API_KEY:2` + `SALOWN_STRIPE_SECRET_KEY:1`; `maxInstances 20`, 256Mi, cpu 1, 60 s, concurrency 80 declared = live (undeclared fields reset on deploy); Cloud Run maxScale 20; SA/ingress unchanged; IAM unchanged.
+- **Behaviour:** customer cancel allowed iff `startTime − now ≥ cancellationWindowHours` (tenant setting, default 8 h; exactly 8 h allowed; started appointments refused); Connect booking → full refund on the booking's connected account with `Stripe-Account`; repeat/concurrent cancel → no second refund; Stripe refund error → `CANCELLED`, money state stays `PAID`, e-mail makes no money claim; Whitecross BL-4 `EXTERNAL_CHECKOUT` intent branch unchanged. Reschedule window (default 2 h) inspected, unchanged.
+- **Pre-verify:** full preflight 0 FAIL (live = pinned `-00075-gab`; U1-FIX six exact @100; SALOWN latest v1; BREVO latest v2; rollback Ready; Keychain verifier ALL PASS, webhook enabled).
+- **Post-verify:** RESULT NEW + scope PASS (147 functions, only the target; only artifact + secret rename); probes 2/2 (400 / 404, nothing written); 15-min logs: Google GET probe on the new revision + own probes only.
+- **Release-source gates:** targeted emulator suite 20/20 (London + LA TZ; live base 20/20 on its own key; negative control 17/20 as designed); unit parity with base; kit fixtures 32/32; source-config gate 11/11.
+- **Sandbox check (owner, 2026-11-18 10:50Z, test tenant `first-class-barbers`):** customer manage-link cancel → Stripe refund 2800 gbp succeeded (exactly one; PI refunded), `charge.refunded` delivered (pending 0, HTTP 200), booking `CANCELLED / cancelledBy customer / email-link / REFUNDED / refundedAmount 28`. Financial reflection verified for this one `CANCELLED` booking only. An earlier £28 booking was cancelled from the staff panel → no refund (known gap, not U2). Customer e-mails failed (tenant Gmail 535) — separate EMAIL-SENDER-SPLIT review.
+- **Main:** twin `39af3c80` (see R-2026-11-16-A); closure `ab671a7f`.
+
+## R-2026-11-17-A — the six salOWN Connect functions declare `maxInstances: 12` (U1-FIX) · Functions `salownConnectStart/Callback/Disconnect/Status`, `salownCreateCheckoutSession`, `salownConnectWebhook` (europe-west2) · **LIVE — DEPLOYED_VERIFIED — MAIN `39af3c80`**
+
+- **Work ID:** `SALOWN-STRIPE-PLATFORM` unit **U1-FIX**. **Approval:** owner in chat 2026-11-17 — "20→12 deploy onaylı".
+- **Revisions:** A4 (`R-2026-11-16-A`, maxInstanceCount 20) → Start `-00014-xon`, Callback `-00015-jod`, Disconnect `-00013-gis`, Status `-00013-hiv`, Webhook `-00016-wiy`, Checkout `-00016-qof` (10:51:43–10:51:50Z; maxInstanceCount 12, revision maxScale 12). Rollback target = the A4 revisions (not used).
+- **Source:** **`5bfd1a49`** (tree `d8ca396b`; `2036850d` + `maxInstances: 12` on the six), pin `bdfd4966` on `release/salown-stripe-names-connect-on-live-124c67e0`; kit `92e401d28cf9`.
+- **Post-verify:** ALL_NEW + scope PASS (147 functions; only the six; only artifact + maxInstanceCount); SALOWN_* v1 unchanged; probes 6/6; logs 0 ERROR (8 WARNING = own probes + deploy-time GET on the webhook); IAM unchanged.
+
+## R-2026-11-16-A — salOWN Connect moves to salOWN's own Stripe sandbox platform (`SALOWN_STRIPE_*`) · Functions `salownConnectStart/Callback/Disconnect/Status`, `salownCreateCheckoutSession`, `salownConnectWebhook` (europe-west2) · **LIVE — DEPLOYED; release STOPPED on a measured maxInstances reset, closed by R-2026-11-17-A**
+
+- **Work ID:** `SALOWN-STRIPE-PLATFORM` unit **U1** (A4). Platform = separate salOWN Stripe account (sandbox `acct_1UcQzrGwJ7s9YMPx`); Whitecross's account is never the salOWN platform.
+- **Revisions:** Start `-00012-wis` → `-00013-yom`, Callback `-00013-biq` → `-00014-wek`, Disconnect `-00011-boz` → `-00012-jod`, Status `-00011-lec` → `-00012-zay`, Webhook `-00014-gif` → `-00015-ruz`, Checkout `-00014-gow` → `-00015-bep` (2026-11-16 21:33–21:36Z). Before: shared `STRIPE_*` bindings (v4 DESTROYED; a redeploy from main would have bound v5 = Whitecross live).
+- **Source:** **`2036850d`** on live `124c67e0` (secret rename `65c40e82`; callback never reflects the OAuth `error` value `a73e60fc`; Disconnect keeps the link unless Stripe confirms `2036850d`), pin `b1b44267`; kit `746e1600cd0e`.
+- **Config:** secrets exactly `SALOWN_STRIPE_SECRET_KEY` / `SALOWN_STRIPE_CONNECT_CLIENT_ID` / `SALOWN_STRIPE_CONNECT_WEBHOOK_SECRET` v1; firebase-tools granted per-secret `secretAccessor` to the compute SA. **Measured diff:** undeclared `maxInstances` reset 12 → 20 on the six → release STOPPED, owner chose a fix-forward (R-2026-11-17-A).
+- **Post-verify:** ALL_NEW; probes 6/6; logs 0 ERROR; 17 non-target "diffs" = eventFilters order only (kit compare defect, fixed in the next kit).
+- **Sandbox E2E (owner, 2026-11-17, test tenant `first-class-barbers`; webhook enabled by owner):** S1 OAuth connect PASS (new test account via "Create a new account"); S2 test-card £28 FULL → `CONFIRMED / PAID`, webhook 200, no application fee. Test mode only — no live keys.
+- **Main twin `39af3c80` (2026-11-18, no deploy):** the seven salOWN Stripe exports on main declare/read only `SALOWN_STRIPE_*` (incl. main's mode-guard reads), carry the live runtime options and the safe Disconnect, behind main's own CAP / ONB-PD / C2 / mode-guard protections (unchanged). Deploy manifest of the seven == deployed candidates. Release branches not merged. Tests `payments/salownStripePlatform{,.emulator}.test.js`. Closure `ab671a7f`.
+- **Not done:** old shared `STRIPE_*` secrets untouched (Whitecross ownership, separate decision); no live-mode payments.
+
 ## R-2026-11-15-B — Signup requires a business type (no pre-selection); onboarding wizard examples by type, in the tenant's language; small-screen service row · `hosting:salown` · **LIVE — technically verified; OWNER_VERIFIED (signup business type only; wizard screens NOT owner-checked live) — MAIN `b995e0e5`**
 
 - **Work ID:** `ONB-GUIDED-SETUP` phase **W1** only. **Approval:** owner in chat — `hosting:salown` only (2026-11-15).
