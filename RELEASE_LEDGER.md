@@ -1,5 +1,30 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
+## R-2026-11-18-H — Firestore rules: the anonymous bookings UPDATE arm is removed · Firestore rules (`cloud.firestore`) · **LIVE — DEPLOYED_VERIFIED; owner UI test PASS — MAIN `1d7bfddd`**
+
+- **Work ID:** `SEC-BOOKING-ANON-UPDATE-P0` (found by alish/sec-p0; patch handed to the `firestore.rules` holder, ONB-GUIDED-SETUP-W3A).
+- **Approval:** owner in chat, 2026-11-18: "SEC-BOOKING-ANON-UPDATE-P0 yayını onaylı", kit `79e0b656eeb5`, live-first. No automatic rollback (the old rules re-open the hole).
+- **Hole:** `tenants/{t}/bookings/{b}` `allow update` had a third disjunct for unauthenticated callers. Anyone who knew a booking doc id could change `status`, `date`, `time`, `startTime`, `endTime`, `barberName`, `barberId`, `cancelledAt` and the other allow-listed fields. There was no email proof, no cancel window, no refund and no slot check. No live client used it: customer cancel/reschedule go through `salownCancelByToken` / `salownRescheduleByToken` (Admin SDK), and Stripe confirm/expiry are server-side.
+- **Release:** ruleset `a5f92395-132a-4524-bf30-eb1bb9c78331` (source salown-app `abd4d2ed`, text sha256 `edf88dab…`) → **`2d81a63c-9279-4ceb-9256-a32f7774ed36`**, deployed 2026-11-18 15:59:51–16:00:26Z (`firebase deploy --only firestore:rules`, pinned CLI 15.26.0, exit 0).
+  - **Rollback identity:** `a5f92395`. **Rolling back RE-OPENS the hole**; prefer a narrow forward fix.
+- **Source:** live lineage `abd4d2ed` + rules commit `99d5812c` (-12/+7, only the UPDATE disjunct; anonymous CREATE unchanged) + test updates `667fe277`, pin `1f14838d` pushed. Served text sha256 **`244bc43994ceea783678b11c52b7afe9e3b36288cbcd3af30756172183030e88`** = candidate.
+- **Gates (emulator, isolated dirs):**
+  - full rules gate base 22/22 and candidate 22/22 (after the expected checkoutLifecycle / checkoutOverAllocation / fcmTokens updates);
+  - independent sec suite 192/192 on both rulesets, 43 transitions ALLOW→DENY, no other change;
+  - callables still work under the candidate rules; rules-authority result identical base vs candidate.
+- **Post-verify (read-only):**
+  - `cloud.firestore` → `2d81a63c`, served text = candidate;
+  - Storage `16e25a89` unchanged; project IAM identical;
+  - 147 functions identical (the kit reported STOP because 12 triggers listed `eventFilters` in a different order; order-normalised they are identical, revisions and update times unchanged — kit defect, no retry, no rollback);
+  - 15-min masked logs 15:59:51–16:15:00Z: 0 requests, 0 WARNING+ (no traffic).
+- **Owner UI test (first-class-barbers, 17:14–17:19Z), masked logs:**
+  - online booking → confirmation sent via Brevo, staff reschedule from the panel → `rescheduleEmail (staff)` sent via Brevo, customer manage-link cancel → `salownCancelByToken` 200;
+  - 0 WARNING+ across the eight booking/mail functions. A staff-auth panel cancellation at 17:14Z is also in the logs (origin not confirmed).
+- **Expected security result (owner):** staff of a `TRIAL_EXPIRED` tenant can no longer act through the anonymous arm. No bypass is added back.
+- **Main (salown-app) `1d7bfddd`:** same UPDATE removal, the stale `[ONB-PD]` create-rule comment reworded, checkoutLifecycle / checkoutOverAllocation suites updated, fcmTokens MAIN pin re-pinned to `babd8a4f…` (recomputed independently). Main rules gate PASS (24 suites, 455 pass, 0 fail); sec suite 192/192 on main before and after.
+- **Note:** main commit `1d7bfddd`'s message says `R-2026-11-18-G`; G was already taken by FOUNDER-CARD. The correct id is **H**. Not rewritten (pushed).
+- **Follow-up:** the kit's inline function compare must normalise `eventFilters` order (`bau_deploy.sh`).
+
 ## R-2026-11-18-G — founder digital business card `/founder` + vCard, noindex · `hosting:salown` · **LIVE — DEPLOYED_VERIFIED; OWNER_VERIFIED 2026-11-18 — MAIN `854d74c4`**
 
 - **Approval:** owner — founder card release approved for `b3b96bf0`; the owner then asked in their own words to add the phone `+447402233467`, so the deployed candidate is `cfeb7a58` = `b3b96bf0` + that phone only (page Call button + vCard `TEL`; 3 paths, +6/−1). Closing (main twin, ledger, own claim) approved after the owner's phone check.
