@@ -41,6 +41,64 @@ Every incident opens with `## YYYY-MM-DD — short title`, immediately followed 
 
 **Tag dictionary (CANONICAL — only these; sprawl forbidden):** `#security` `#stripe` `#secrets` `#config` `#deploy` `#normalization` `#permission` `#race` `#timezone` `#parser` `#email` `#data-loss` `#shared-infra`. A new tag is added only if a genuinely new class emerges (e.g. twins like `#payment`+`#payments`+`#stripe-payment` are FORBIDDEN → all `#stripe`). Every entry carries a `**Tags:**` line.
 
+## 2026-11-18 — Storage bucket world-readable: nightly full Firestore exports and tenant files reachable through the Firebase Storage API (SEC-STORAGE-RULES-P0)
+
+**Severity:** 🔴 Critical · **Owner:** salOWN owner · **Status:** 🟡 Open (rules closed by `R-2026-11-18-F`; follow-ups open) · **Affected area:** Firebase Storage `havuz-44f70.firebasestorage.app` (all salOWN apps + whitecross panels), `dailyFirestoreBackup`
+
+**Discovery:** security review during CUSTOMER-APP discovery (2026-11-18, alish/customer-app-discovery → alish/sec-p0). The live Storage ruleset text was read through the Rules REST API and reproduced in the Storage emulator.
+
+**Impact:**
+- From 2026-05-24 (ruleset `4c00eef7`) to 2026-11-18T15:11Z, the Storage rules allowed **anyone** to read and list **every object**, and **any signed-in account** to write or delete any object.
+- The bucket holds the nightly **full Firestore export** (`firestore-backups/YYYY-MM-DD/`, about 30 days retained, 4,194 objects on 2026-11-18), i.e. every tenant's client and booking personal data, plus tenant media.
+- Public e-mail/password sign-up lets anyone obtain a signed-in account.
+- **Whether anyone accessed the exports is UNKNOWN.** Production was deliberately not probed.
+
+**Root Cause:**
+- The initial deny-nothing `storage.rules` (whitecross-site, 2026-04-30) was never narrowed.
+- `dailyFirestoreBackup` was later pointed at the same Firebase-facing default bucket.
+- Storage rules live outside the salown-app rules SSOT, emulator gate and deploy guards, so nothing tied "this bucket holds private exports" to "rules must deny".
+
+**Bug Class:** Permission mismatch / unguarded security config outside the SSOT.
+
+**Resolution:**
+- `R-2026-11-18-F` released ruleset `16e25a89-08a9-46b6-90e5-2d7d05c80126` (sha256 `c56a0a24…`):
+  - deny by default; no list;
+  - no client access to `firestore-backups/**`;
+  - finance ledgers owner/admin-only;
+  - public `get` only for tenant media; tenant owner/admin writes.
+- Source fast-forwarded to whitecross-site `main` `c92c5f34`.
+- **Not done (owner decision for this round):** deleting or moving backups (kept as evidence; deletion alone does not fix access), bucket IAM / ACL / PAP / UBLA changes, key revocation, password resets.
+
+**Access logs:**
+- The project has **no Data Access audit config** and the bucket has **no access logging**, so object reads were not recorded.
+- **The absence of logs is not evidence of no access.**
+- Read-only metadata on 2026-11-18 (counts only): 0 backup objects with a download token, 0 objects with public ACLs, no public IAM members.
+
+**Prevention / follow-ups (open):**
+- Move exports to a private bucket with UBLA + PAP enforced.
+- Decide the retention and fate of the existing export objects.
+- Bring `storage.rules` into the salown-app rules SSOT with an emulator gate and deploy guard.
+- Mirror the tenant lifecycle gate.
+- Decide on Data Access logs for Storage.
+- Review user-managed service-account keys.
+- Handle the Auth password-hash parameters that were exposed in a local agent transcript (separate plan).
+- Owner / legal assessment of UK GDPR / ICO breach-notification duty. Not decided here.
+
+**Regression Tests:** `test/rules/storage/storageRules.emulator.test.mjs` (64 cases + 5 mutations). It lives in the release workspace only (`~/release-work/sec-p0/ws/salown-app`) and is not yet in a repository. That is part of the SSOT follow-up.
+
+**Related:** `R-2026-11-18-F` · whitecross-site `c92c5f34` · claims `SEC-P0-STORAGE-BOOKING` (salown-app) / `SEC-P0-WC-STORAGE-MOBILECHECKOUT` (whitecross-site) · `CUSTOMER_APP_DISCOVERY_2026-11-18.md` §K.
+
+**What happened / Diagnosis / Fix:** see the ledger row. Pending verifications:
+- the owner upload smoke test;
+- the 2026-11-19 03:00 export completing (the writer is the Firestore service agent via IAM, which rules do not evaluate).
+
+**Lessons Learned:**
+- A bucket that holds private data must never share a deny-nothing ruleset with public media. Backups belong in a bucket no client SDK can address.
+- Every ruleset a project serves needs the same SSOT + emulator gate. `storage.rules` sat in a repo whose deploy guards never looked at it.
+- "No access logs" must be stated as "unknown", never as "no access".
+
+---
+
 ## 2026-11-02 — HeroHairs Treatwell bookings lost to Gmail Spam (parser reads INBOX only)
 
 **Severity:** 🟠 High · **Owner:** owner + alish · **Status:** ✅ Resolved (data) / 🟡 Open (platform-wide filter rollout) · **Affected area:** email parsers — Treatwell ingestion

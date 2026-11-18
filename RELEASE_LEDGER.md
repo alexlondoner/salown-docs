@@ -1,5 +1,47 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
+## R-2026-11-18-F — Storage rules: deny by default; private `firestore-backups/**` and `tenants/*/finance/**`; public `get` only for tenant media · Storage rules (`firebase.storage/havuz-44f70.firebasestorage.app`) · **LIVE — DEPLOYED_VERIFIED (served text = candidate); owner upload smoke test + next nightly export PENDING — whitecross-site MAIN `c92c5f34`**
+
+- **Work ID:** `SEC-STORAGE-RULES-P0` (incident 2026-11-18, see INCIDENTS.md).
+- **Approval:** owner in chat, 2026-11-18: "SEC-STORAGE-RULES-P0 onaylı", for commit `c92c5f34` and candidate sha256 `c56a0a24…`, followed by a fast-forward push to whitecross-site `main` with `[skip ci]`.
+- **Release:** ruleset `4c00eef7-e45c-4b35-856a-b0e911018990` (text sha256 `fccc9cba…aadd`, `read: if true; write: if request.auth != null` on `/**`, released 2026-05-24) → **`16e25a89-08a9-46b6-90e5-2d7d05c80126`**, created 2026-11-18T15:11:31.713Z and released 2026-11-18T15:11:32.626Z.
+  - **Rollback identity:** `4c00eef7`. **Rolling back RE-OPENS the exposure**, so there is no automatic rollback; prefer a narrow forward fix.
+- **Source:** whitecross-site `c92c5f34` (parent `ad2371ca`; changes `storage.rules` only), sha256 **`c56a0a24ccee32222d899bdcfec276127dc8ab98436106e1b60a42123398f210`**.
+  - Fast-forwarded to whitecross-site `origin/main` after verification. The remote `storage.rules` sha256 equals the candidate.
+  - This prevents a later whole-project or `--only storage` deploy from re-publishing the open rules.
+  - whitecross CI is path-filtered to `barber-panel/**`, and the commit carries `[skip ci]`.
+- **Command:** kit `~/release-work/sec-p0/storage-hotfix-kit/deploy-storage-rules.sh --deploy` → `firebase deploy --only storage --project havuz-44f70`, pinned CLI 15.26.0, from a clean clone at `c92c5f34`.
+  - Preflight asserted: pinned HEAD + clean tree, candidate sha, `firebase.json` storage = `{rules: storage.rules}` (default bucket), and live = `4c00eef7` with the expected sha.
+- **Behaviour:**
+  - Deny by default; `list` is denied everywhere.
+  - `firestore-backups/**` has no client grant.
+  - `tenants/{t}/finance/{f}`: get / create / update only for owner/admin of the same tenant or super-admin; xlsx / xls / octet-stream up to 25 MiB; no delete.
+  - Public `get` for `tenants/{t}/logo`, `cover`, `gallery/{f}`, `barbers/{id}/photo`, `team/{id}`.
+  - Media writes: owner/admin of the same tenant or super-admin; `image/*` except SVG, up to 10 MiB.
+  - Gallery delete: owner / super-admin.
+  - **Not mirrored:** the Firestore tenant-lifecycle gate.
+- **Release-source gates (emulator, `demo-storage-p0`):**
+  - live text 64/64 (hole cases succeed as expected);
+  - candidate 64/64 (every hostile case denied, 12 legitimate-caller replays pass);
+  - mutations M1–M5 all killed;
+  - suite `test/rules/storage/storageRules.emulator.test.mjs` (release workspace).
+- **Post-verify (read-only, independent shell):**
+  - storage release → `16e25a89`, and the served ruleset text sha256 = candidate;
+  - `cloud.firestore` still `a5f92395`;
+  - bucket IAM, project IAM + auditConfigs and bucket config (minus etag / update time) are hash-identical before and after;
+  - the 147 functions are identical, `updateTime` included;
+  - no production object was read and no exploit probe was run.
+- **Outside the rules (metadata, counts only):**
+  - 0 of 4,194 `firestore-backups/` objects carry a download token;
+  - 15 tenant-media objects carry tokens (intended public images);
+  - 0 objects have public ACLs; 0 finance objects;
+  - bucket and project IAM have no public members;
+  - **UBLA off and PAP `inherited`** (not enforced). Unchanged by this release.
+- **Pending:**
+  - (1) owner upload smoke test: Admin logo / cover / gallery / team photo; barber-panel gallery + barber photo; public pages show images;
+  - (2) the next nightly `dailyFirestoreBackup` export (03:00 UK, 2026-11-19) must be SUCCESSFUL. The writer is the Firestore service agent via IAM `roles/storage.admin`, which rules do not evaluate.
+- **Main (salown-app):** none. salown-app has no `storage.rules`; SSOT placement is a follow-up.
+
 ## R-2026-11-17-B — customer manage-link cancel refunds on salOWN's own Stripe platform · Functions `salownCancelByToken` (europe-west2) · **LIVE — DEPLOYED_VERIFIED; sandbox S3b PASS (one £28 full refund) — MAIN `39af3c80`**
 
 - **Work ID:** `SALOWN-STRIPE-PLATFORM` unit **U2**. **Approval:** owner in chat 2026-11-17 — "U2 deploy onaylı: aday a26d4895, kit fd0a1df10ee4. Release pin push'u dahil."
