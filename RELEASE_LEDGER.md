@@ -23,7 +23,7 @@
 - **Expected security result (owner):** staff of a `TRIAL_EXPIRED` tenant can no longer act through the anonymous arm. No bypass is added back.
 - **Main (salown-app) `1d7bfddd`:** same UPDATE removal, the stale `[ONB-PD]` create-rule comment reworded, checkoutLifecycle / checkoutOverAllocation suites updated, fcmTokens MAIN pin re-pinned to `babd8a4f…` (recomputed independently). Main rules gate PASS (24 suites, 455 pass, 0 fail); sec suite 192/192 on main before and after.
 - **Note:** main commit `1d7bfddd`'s message says `R-2026-11-18-G`; G was already taken by FOUNDER-CARD. The correct id is **H**. Not rewritten (pushed).
-- **Follow-up:** the kit's inline function compare must normalise `eventFilters` order (`bau_deploy.sh`).
+- **Kit follow-up DONE 2026-11-18 (local, no deploy):** compare moved to `bau_compare.py`, only `eventFilters` order normalised; offline test 11/11 on the real pre/post snapshots (order-only PASS, every real content change STOP); kit id `79e0b656eeb5` → `5bd5720a2832`. Re-evaluated verdict for this run: PASS.
 
 ## R-2026-11-18-G — founder digital business card `/founder` + vCard, noindex · `hosting:salown` · **LIVE — DEPLOYED_VERIFIED; OWNER_VERIFIED 2026-11-18 — MAIN `854d74c4`**
 
