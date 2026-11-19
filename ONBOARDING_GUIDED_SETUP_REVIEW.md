@@ -295,6 +295,64 @@ No other `tx.create`/`set` of a tenant root was found in `functions/src` (search
 
 Existing salons are never written or migrated at any step. W1 is independent: copy only, no gate, no marker.
 
+### 8.3 W3a implementation record (2026-11-15; on main 2026-11-19 `ce1b32a7`; NOT deployed)
+
+Claim `ONB-GUIDED-SETUP-W3A` (`alish/onb-w3a`, still open). Main **`ce1b32a7`** (2026-11-19, `[skip ci]`) = origin/main `7c5fb251` + one squashed W3a commit (tree `57700eda`, identical to the tested local head `7d3bfa18`). It carries the owner decisions Q1–Q4 (§8.3.6) and keeps both 18 Nov fixes: SEC-BOOKING-ANON-UPDATE-P0 (no anonymous bookings UPDATE arm) and the salOWN Stripe platform options (SALOWN_STRIPE_SECRET_KEY, maxInstances 12). **Main is not the release source**: the live-lineage units are in §8.3.5.
+
+**8.3.1 What W3a does**
+
+| Surface | Change |
+|---|---|
+| `functions/src/onboarding/onlineBookingGate.ts` (new) | Pure gate `onlineBookingGateAllowsPublic(root)`: no `onlineBooking` key → pass (C1); key present → only a map with `state === 'open'` passes; `setup`, `paused`, `null`, non-map, unknown or missing state refuse (T9). §3 readiness evaluation, owner action decision, and the transaction that applies it. |
+| `createBookingCore` (`salownCreateBooking`) | Gate on the **public** branch only, directly after the lifecycle gate, on the root already read in the transaction, before any write. Same neutral reason `TENANT_NOT_ACCEPTING_BOOKINGS` (C4). The privileged branch (Admin / Staff-App) never reaches it (C3). |
+| `salownCreateCheckoutSession` | Same gate on the same root read, before Stripe or any write. |
+| `salownSetOnlineBooking` (new callable) | `{action: 'confirmHours' \| 'open' \| 'pause'}`. Outer gate: `gated()` (`NORMAL_SETTINGS`) + `requireTenantActor({roles:['owner']})` — claim tenant only, owner claim **and** owner staff doc, access status, lifecycle; super-admin is **not** admitted (D3: owner decision). Inside one transaction it re-reads the owner staff doc, the root, services, barbers and salon hours, re-checks §3 and writes a dotted-path patch on the marker map + one audit row. A tenant **without** the marker gets `NOT_APPLICABLE` and is **never written**. |
+| `firestore.rules` | `tenantOnlineBookingOpen(tid)` added to the **anonymous** booking create (same root `get()` as `tenantAcceptsPublicBookings`, counted once). Tenant root (Q2): `allow create: if isSuperAdmin() && !('onlineBooking' in request.resource.data)`; `allow delete: if isSuperAdmin() && !('onlineBooking' in resource.data)`; super-admin update arm gains `onlineBookingUntouched()`. `onlineBooking` is not in `tenantRootEditableKeys()` (R1). No browser principal can add, change or delete the marker. |
+| `createBooking.ts` exports | `resolveEffectiveStaffShift`, `barberStatusOf` and the new `serviceQualifies` (the candidate-set `qualifiedFor` now delegates to it) — so readiness uses the booking flow's own rules (Q4). Golden vs base unchanged. |
+
+**8.3.2 Every entry that can create a booking** (main `9ffe39c1`; whitecross-site `d21fa91e`, read-only)
+
+| Entry | Who | W3a gate |
+|---|---|---|
+| `salownCreateBooking` → `createBookingCore` public branch (hosted `/book`, `/s/` via `/book`, whitecross-site plain single booking) | public | **yes** |
+| `salownCreateCheckoutSession` (deposit for an existing PENDING booking; does not create) | public | **yes** (defence in depth, mirrors the lifecycle gate) |
+| Rules anonymous `create` on `bookings` — legacy BookingPage direct create (only if `HOSTED_BOOKING_CREATE_MODE` is switched to `'legacy'`; today `'callable'`), whitecross-site Extras bookings (`script.js:2400/2599/3478`) and group bookings (`:2861`) | public (client write) | **yes** (rules) |
+| `salownCreateAdminBooking` / `salownCreateStaffBooking` (same core, `privileged`), `salownCreateWalkIn` / `salownCreateStaffWalkIn`, `salownCreateBlock`, product sale / checkout sale docs, panel direct `addDoc` (walk-in, sale, `blockTime`) | tenant staff | no (C3) |
+| Platform imports: Booksy / Fresha / Treatwell email parsers, Treatwell iCal (`salownParseEmails`, `salownInboundEmail`, `salownParseInboxDispatch`, `salownManualImport`) | platform | no — a booking taken on another platform is not a salOWN online booking; **owner to confirm** (§8.3.6 Q3) |
+| Operator seed scripts (`seedDemoTenant.cjs`, `cocreateDemo/seeder.cjs`) | operator (Admin SDK) | no |
+| Update-only: Connect / Stripe webhooks (PENDING→CONFIRMED), `salownRescheduleByToken`, `salownCancelByToken`, `salownCleanupExpiredPending` | — | not a create; token paths unchanged (C3/T8) |
+| whitecross-site `createCheckoutSession` (us-central1, Admin SDK merge-set on a client-named booking id) | public | not gated; whitecross carries no marker and is a separate repo; noted, out of scope |
+
+**8.3.3 RT6 finding.** The tenant-admin create arm on the root was **already unreachable**: `isAdmin → isTenant → tenantLifecycleActive` `get()`s the root, and a missing root errors and denies (S8 §9 already asserted 403 for owner/admin/staff). It was therefore closed by an incidental property, not by a rule. Measured writers of a new root: `provisionTenant` (`selfSignupProvision.ts:255` `tx.create`), `approveApplication` (`approveSaga.ts:275` `tx.create`) — both Admin SDK — operator scripts (Admin SDK) and super-admin. No browser tenant writer exists, so narrowing the arm to `isSuperAdmin()` changes no effective permission. One browser super-admin writer does exist: Super Admin → Tenants → **Add Tenant** (`setDoc` in the separate super-admin repo; pinned by `ownerInviteRootStatusGuard` §5 and `ownerInviteLifecycle`). It is kept: a super-admin create is allowed only without the marker (Q2). Consequence for W3b: roots created by Add Tenant are unmarked (C1 = open) unless W3b moves Add Tenant to a server path. A marked root cannot be deleted from the browser (delete + re-create would strip the marker); deleting such a tenant needs an Admin SDK path. Server root writers use `update()` (never a whole-root `set()` without merge), so none can drop the marker. Dependencies updated with the change: S8 `§10f` (mutation anchor) and the `tenantAccessPolicy.test.js` S8 parity pin.
+
+**8.3.4 Evidence** (handoff `~/release-work/onb-w3a-20261115/HANDOFF-2026-11-18.md` § "UPDATE 2026-11-19"; logs in `evidence/`)
+
+*Gates on the main tree `57700eda` (local, 2026-11-19; port-remapped emulator copy, only `firebase.json` emulator ports differ):*
+| Gate | Result |
+|---|---|
+| Functions unit (`npm test`) | PASS (0 fail) |
+| Rules emulator gate (`ops/test-rules-emulator.sh`, 25 suites) | **478/478** |
+| Functions emulator gate (`npm run test:emulator`, both phases) | general 1410/1410 + packages 27/27 = **1437/1437** (firebase-tools 15.26.0, emulator v1.22.0) |
+| Root `vitest run` | 20 fail in 8 files — the **identical** failing set on origin/main `7c5fb251`; W3a touches none of those files |
+
+*Release-unit gates (2026-11-19):* R `2e08baef` rules gate **455/455** (23 suites; §8 parity needs `W3A_MARKER_LIB`); C `452dcb24` build + unit 35/0 (12 skip); A `aa35b334` / B-narrow `2a326d8d` unchanged since their 15 Nov gates (marker module blob `972aea7b` = main).
+Two test pins moved with the rebase: fcmTokens MAIN pre-A3 pin `e46fa8f8…` (recomputed with the suite's own reconstruction; origin/main reproduces its own `babd8a4f…`), and `onlineBookingMarker` §6 C3, which now asserts that an anonymous bookings UPDATE is refused on every tenant, marked or not.
+
+*Functions emulator gate runtime (separate follow-up `TEST-APPROVESAGA-SNAPSHOT-SPEED`):* the gate needs ~64 min awake. `approveSaga.emulator.test.js` `snapshot()` walks every tenant left in the shared emulator by earlier files (measured: 394 tenants → 26.6 s for the first test, 0.46 s after an emulator clear). macOS lid-close sleep on battery kills the run (pmset timestamps match the observed hangs). Same on origin/main — not W3a.
+
+**8.3.5 Release plan A → R (2026-11-19; nothing approved, nothing deployed).** Kit `~/release-work/onb-w3a-20261115/live/kit/README.md` § "CURRENT RELEASE PLAN".
+- Live, measured read-only 2026-11-19: `salownCreateBooking` = `salowncreatebooking-00011-xer` (src `ffb9e9be`, 100 %); cloud.firestore = `2d81a63c` (served sha256 `244bc439…` = `667fe277:firestore.rules`); `salownSetOnlineBooking` absent.
+- **Census** (read-only, field mask `onlineBooking` only, readTime 2026-11-19T18:58:32Z): **14 tenant roots, 14 ABSENT**, 0 marked; count(tenants) = 14.
+1. **A** functions:salownCreateBooking ← `aa35b334` (on live `ffb9e9be`). `check.sh A` OK 19 Nov. Approval id `ONB-W3A-FN-BOOKING-AA35B334-<date>`. Rollback: traffic 100 % → `-00011-xer`.
+2. **R** firestore:rules ← `2e08baef` (= the 4 W3a hunks on live `244bc439`, byte-equal; sha256 `6dd09c90…`). `check.sh R` OK 19 Nov. After A is post-verified. Approval id `ONB-W3A-RULES-2E08BAEF-<date>`. Rollback: re-release `2d81a63c` (keeps the anonymous-UPDATE removal).
+- Expected behaviour change with 0 marked roots: none (C1). B-narrow `2a326d8d` and C `452dcb24` (U1-FIX `5bfd1a49`) are a separate decision under D4(b). W3b (marker writers) and W2 stay blocked until W3a is LIVE_VERIFIED.
+
+**8.3.6 Owner decisions (2026-11-15) and how W3a implements them**
+- **Q1 Hours confirmation is bound to one hours configuration.** `confirmHours` stores `hoursConfirmedAt/By` **and** `hoursConfirmedFingerprint` = sha256 of the weekly pattern (Sun–Sat start/end from the booking resolver, dated layers removed) of every ready staffer, sorted by id. Readiness compares it with the current value: none → `HOURS_NOT_CONFIRMED`, different → `HOURS_CHANGED`; a bare timestamp without a fingerprint does not count. It changes when a ready staffer's weekly shift changes, when salon hours change for a staffer who falls back to them, or when someone joins / leaves the ready set; dated leave, a closed day, names, services and bookings do not change it. **Effect on an open salon:** none — the public gate reads only `state`, so an `open` salon keeps taking bookings on its new hours; the stale confirmation blocks the **next** `open` (e.g. after a pause) until the owner confirms again. No trigger writes the marker. Unmarked salons: never written (`NOT_APPLICABLE`).
+- **Q2 No browser principal writes the marker, super-admin included.** Rules above; RT7 now asserts super-admin refusal for dotted / map / nested / overwrite (incl. Add Tenant on an existing id) / mixed edits / create-with-marker / delete of a marked root, while plan / feature / telegram edits, Add Tenant and delete of an unmarked root still work. Broad-allow check: the only matches that can cover `tenants/{id}` are `/tenants/{tenantId}` and the root `/{document=**}`, which stays read-only (SEC-CATCHALL-1); mutation 7j restores its `write` and sees the bypass, 7g–7i drop each new guard.
+- **Q3 Platform imports** (Booksy / Fresha / Treatwell parsers, iCal, manual import) stay outside the gate (static pin).
+- **Q4 Staff readiness = the booking flow's rules, temporary states excluded.** Not ready: passive (status or `active:false`, absolute), `availabilityUntil` before today, a malformed availability date or an empty window, `leave` with no end that has begun, no weekday on which `resolveEffectiveStaffShift` gives a shift with end > start (dated `shiftChanges` ignored). Ready: dated leave (current or future), a future `availabilityFrom`, `availabilityUntil` today or later, a closed override today, own hours or the salon-hours fallback. Services: `active !== false`, `selfBooking !== false`, paired with a ready staffer through `serviceQualifies` (id or name; empty list = everyone). `open` re-checks services, staff and the hours confirmation inside its write transaction (unchanged).
+
 ## 9. Open questions and limits
 - F4 and F5 come from code, not from a live observation. A read-only check of a test tenant (`settings/hours` against owner `dayHours`) would confirm F4 without writing.
 - Booksy statements marked "search summary" were not confirmed: the help-centre pages returned 403.
