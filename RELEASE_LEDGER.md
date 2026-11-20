@@ -1,5 +1,15 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
+## R-2026-11-20-B — Functions: `salownSetOnlineBooking` (owner "accept online bookings" callable, W3a unit B) · `functions:salown:salownSetOnlineBooking` · **LIVE — DEPLOYED_VERIFIED (measured); NOT called live (no owner call, no marker written)**
+
+- **Work ID:** `ONB-GUIDED-SETUP` W3a, unit B. **Approval:** owner in chat, 2026-11-20 (`ONB-W3A-FN-SETONLINEBOOKING-1A3AC96C-2026-11-20`; kit pre-check first, deploy only this function, no retry/rollback/delete on STOP).
+- **Release:** function CREATED (live was ABSENT): `salownsetonlinebooking-00001-hew`, ACTIVE, europe-west2, 2026-11-20T12:42:52Z; isolated firebase-tools 15.26.0; kit run `deploy-B-20261120T124108Z`. **Rollback = DELETE the new function** (no previous revision; own approval; not used). Deleting does not undo any marker it wrote (none exist).
+- **Source:** `1a3ac96caeb83752cd75cbb37d8596f869927606` (= `2a326d8d` + explicit runtime options + one static pin test; unit A `aa35b334` is an ancestor, so the archive carries live A's createBooking). Manifest digest `3adc32c0…bd1ab`. Runtime declared: 256MiB, cpu 1, timeoutSeconds 60, concurrency 80, maxInstances 2, minInstances 0, no secrets, no env vars.
+- **Behaviour:** owner only; root `suspended` and TRIAL_GRACE refused (owner decision 2026-11-15); a tenant without the `onlineBooking` marker is refused NOT_APPLICABLE and never written; `open` re-checks readiness server-side. Nothing in the UI calls it yet.
+- **Pre / post (read-only):** function describe 404, census 14/14 tenant roots ABSENT (12:38Z), `salownCreateBooking` `-00012-jad`, Firestore `3c642ce6`. Post: only `salownSetOnlineBooking` added (120 functions in europe-west2); us-central1 28 unchanged; Firestore `3c642ce6` and Storage `16e25a89` unchanged; live config == declared values; new object = the function source archive only.
+- **Tests (candidate):** build 0; unit 39/39; B emulator 15/15. **Main twin `c8db3caa`** (+ SYNC `30f1152a`): options line + TRIAL_GRACE refusal in this callable; main keeps `gated()`/`requireTenantActor`/`TENANT_ACCESS`; 52/52 + emulator 15/15, grace mutant killed.
+- **Not live-exercised:** every refusal and open/pause/confirmHours path (0 marked roots). **Open:** B live owner test (needs W3b marker writer/UI), W3b / W2 wait; kit README history stale.
+
 ## R-2026-11-20-A — Functions: `salownCreateCheckoutSession` W3a online-booking gate on live lineage · `functions:salown:salownCreateCheckoutSession` · **LIVE — DEPLOYED_VERIFIED (measured; kit verifier STOP on a benign env key, owner accepted); owner booking test PASS 2026-11-20 (LIVE_VERIFIED)**
 
 - **Work ID:** `ONB-GUIDED-SETUP` W3a, unit C. **Approval:** owner in chat, 2026-11-20 (`ONB-W3A-FN-CHECKOUT-452DCB24-2026-11-20`; kit integrity, live start and census first; stop on any deviation; no retry/rollback).
