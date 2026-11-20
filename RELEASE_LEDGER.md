@@ -1,5 +1,30 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
+## R-2026-11-19-B — Firestore rules: W3a online-booking marker guard (RT1–RT7) on live lineage · Firestore rules (`cloud.firestore`) · **LIVE — DEPLOYED_VERIFIED; owner UI test PASS 2026-11-20 (LIVE_VERIFIED) — MAIN `ce1b32a7`**
+
+- **Work ID:** `ONB-GUIDED-SETUP` W3a, unit R. **Approval:** owner in chat, 2026-11-19 ("A (aa35b334) ve ardından R (2e08baef) yayınları onaylı"; R confirmed after A's measured verification was accepted). No automatic retry or rollback.
+- **Release:** ruleset `2d81a63c-9279-4ceb-9256-a32f7774ed36` (served sha256 `244bc439…8e88`, = R-2026-11-18-H) → **`3c642ce6-d87b-4e78-8a96-033459737a4b`**, deployed 2026-11-19T22:14:29Z (`firebase deploy --only firestore:rules`).
+  - **Rollback identity:** `2d81a63c` (keeps the anonymous-UPDATE removal; own approval; not used).
+- **Source:** `2e08baef` on branch `release/onb-w3a-rules-on-live-244bc439` (live text `244bc439` + W3a marker rules); served text sha256 **`6dd09c90a5686f3bfb3feb1d1a01d3cddaa446843fbb8931a23808c4af1d3d0e`** = candidate.
+- **Behaviour:** tenant-root `onlineBooking` marker is server-managed (owner/staff cannot write it; super-admin create may not carry it); anonymous booking create requires the marker to be absent or `open`. The bookings `allow update` arm stays `isSuperAdmin() || isTenantAny(tenantId)` — **no anonymous UPDATE** (R-2026-11-18-H kept).
+- **Gates:** release rules gate 455/455 (with the pinned marker lib `W3A_MARKER_LIB`); main gate 478/478.
+- **Pre:** census 14/14 tenant roots ABSENT (22:13:45Z, field mask `onlineBooking` only); kit integrity (only the A-branch fix changed); live start 2d81a63c / storage 16e25a89.
+- **Post-verify (kit + independent, read-only):** served text = `2e08baef:firestore.rules`; functions moved []; Storage `16e25a89` unchanged; `salownCreateBooking` still `-00012-jad` @100 %.
+- **Owner UI test:** see R-2026-11-19-A (same session).
+
+## R-2026-11-19-A — Functions: `salownCreateBooking` W3a online-booking gate on live lineage · `functions:salown:salownCreateBooking` · **LIVE — DEPLOYED_VERIFIED (measured; kit verifier STOP on a kit bug, owner accepted); owner UI test PASS 2026-11-20 (LIVE_VERIFIED) — MAIN `ce1b32a7`**
+
+- **Work ID:** `ONB-GUIDED-SETUP` W3a, unit A. **Approval:** owner in chat, 2026-11-19 (A then R, each after live start, kit integrity and census checks; stop on any deviation; no retry/rollback).
+- **Release:** `salowncreatebooking-00011-xer` → **`salowncreatebooking-00012-jad`** @100 %, deployed 2026-11-19T21:55:10Z (only `functions:salown:salownCreateBooking`).
+  - **Rollback identity:** `-00011-xer` (traffic 100 %; own approval; not used).
+- **Source:** `aa35b334` on live lineage `ffb9e9be` (marker lib blob `972aea7b` = main). Behaviour: a tenant with an `onlineBooking` marker other than `open` refuses public bookings; marker absent (every live tenant) → unchanged.
+- **Kit STOP (kept as evidence):** post-verify crashed with `FileNotFoundError post/ruleset.txt` — the kit's A branch never wrote that file (kit bug, not a live mismatch); `deploy.sh` exit 1 "POST-VERIFY MISMATCH — STOP". **Independent read-only measurement PASS:** config 10 fields + env + runtime equal, only `salownCreateBooking` moved, ruleset `2d81a63c` pre = post. Owner accepted; not redeployed. Kit fixed (`deploy.sh` A branch also writes `post/ruleset.txt`).
+- **Pre:** census 14/14 ABSENT (21:55:01Z); kit `check.sh A` OK (live `-00011-xer` gen `1792692100643975`).
+- **Logs:** after deploy only the Google rollout probe (2× GET 400, 2× GET 404 from 2607:f8b0…).
+- **Owner UI test (first-class-barbers, 2026-11-20 10:22–10:35Z, Stripe sandbox, owner-created records):** public prepaid booking → `-00012-jad` POST 200, `salownConnectWebhook` confirmed £28 FULL; customer-link reschedule (`salownRescheduleByToken -00081-ret`) 200; customer-link cancel (`salownCancelByToken -00077-zax`) 200, no refund-error log, owner saw Stripe "Refunded"; Online Profile save (tenant-root update under R) OK. 0 WARNING+ on any function since 09:00Z.
+- **Main / SYNC / claim:** main twin `ce1b32a7` (2026-11-19); SYNC entry `96f7507b`; claim `ONB-GUIDED-SETUP-W3A` narrowed to the B-narrow/C paths (claim `17aeb487` → `96f7507b`). **Not released:** B-narrow `2a326d8d`, C `452dcb24` (D4(b)).
+- **Found during the smoke (not W3a, nothing changed):** ROADMAP `SALON-NAME-SINGLE-SOURCE`, `BARBER-RENAME-SAFETY`, `BRAND-MANAGEBOOKING-FOOTER`.
+
 ## R-2026-11-18-H — Firestore rules: the anonymous bookings UPDATE arm is removed · Firestore rules (`cloud.firestore`) · **LIVE — DEPLOYED_VERIFIED; owner UI test PASS — MAIN `1d7bfddd`**
 
 - **Work ID:** `SEC-BOOKING-ANON-UPDATE-P0` (found by alish/sec-p0; patch handed to the `firestore.rules` holder, ONB-GUIDED-SETUP-W3A).
