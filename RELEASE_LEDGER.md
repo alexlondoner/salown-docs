@@ -1,5 +1,15 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
+## R-2026-11-20-C — Functions: `provisionTenant` (ONB-GUIDED-SETUP W3b: a NEW self-signup tenant is born with `onlineBooking.state='setup'`) · `functions:salown:provisionTenant` · **LIVE — DEPLOYED_VERIFIED; marker LIVE_VERIFIED by the owner's controlled signup (tenant `trimzy`)**
+
+- **Work ID:** `ONB-GUIDED-SETUP` W3b (provisionTenant only; `approveApplication`, demo seeders and Super Admin Add Tenant out of scope). **Approval:** owner in chat, 2026-11-20 (`ONB-W3B-PROVISION-2026-11-20`, kit digest `17fec78f19c5eeef`, deploy only this function, STOP = stop, no auto retry/rollback).
+- **Release:** `provisiontenant-00141-vuw` → **`provisiontenant-00142-lis`**, archive gen `1795183423483274`, ACTIVE, 100 %, europe-west2, 2026-11-20T14:04:41Z; isolated firebase-tools 15.26.0; kit run `deploy-20261120T140233Z`; post-verify class 0 (archive == upload set `2f673192…`, config/runtime/secret versions `OWNER_INVITE_SMTP_USER@2`/`PASS@1` unchanged, only provisionTenant moved, rules/hosting/scheduler unchanged, RB-1 target intact). **Rollback:** RB-1 traffic → `00141-vuw`, RB-2 re-release of `1be6dd54`; **neither deletes already-written `setup` markers** (those tenants stay closed until their owner opens booking). Not used.
+- **Source:** live lineage `4560b92668f31af8c81aae1131aa7b50ed43cad2` (parent `1be6dd54`; diff: `functions/src/index.ts` +4, two `provisionTenant*.authemu.test.js`), branch `release/onb-w3b-provision-on-live-1be6dd54`. Change = `onlineBooking: { state: 'setup' }` inside the tenant-root literal written by the create transaction; resume / id-taken / retry paths never write it. Main-only behaviour (business-type canonicalisation, rota rollout) NOT carried.
+- **Gates:** auth-emulator suites 70/70 (0 skipped); negative control (patch removed + rebuilt) 11 of 23 fail; `src/tenants` unit 24/24.
+- **Live evidence:** owner's controlled signup `trimzy` (createdAt 2026-11-20T14:13:39Z, after the deploy): read-only single-doc read (mask `onlineBooking`, `onboardingComplete`, `status`, `createdAt`) → `onlineBooking.state='setup'`, updateTime == createTime (never rewritten), trial, `onboardingComplete=false`. No other tenant read; existing tenants untouched.
+- **Main twin:** `4588b6b8` (same behaviour on main's provisionTenant, rota/canonicalisation kept); emulator suites 78/78 incl. new `A-marker`.
+- **Not done:** `SIGNUP-EMAIL-VERIFY` (planned, not implemented): signup creates the tenant without email verification.
+
 ## R-2026-11-20-B — Functions: `salownSetOnlineBooking` (owner "accept online bookings" callable, W3a unit B) · `functions:salown:salownSetOnlineBooking` · **LIVE — DEPLOYED_VERIFIED (measured); NOT called live (no owner call, no marker written)**
 
 - **Work ID:** `ONB-GUIDED-SETUP` W3a, unit B. **Approval:** owner in chat, 2026-11-20 (`ONB-W3A-FN-SETONLINEBOOKING-1A3AC96C-2026-11-20`; kit pre-check first, deploy only this function, no retry/rollback/delete on STOP).
