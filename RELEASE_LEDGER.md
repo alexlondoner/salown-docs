@@ -1,5 +1,16 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
+## R-2026-11-20-A — Functions: `salownCreateCheckoutSession` W3a online-booking gate on live lineage · `functions:salown:salownCreateCheckoutSession` · **LIVE — DEPLOYED_VERIFIED (measured; kit verifier STOP on a benign env key, owner accepted); owner booking test PASS 2026-11-20 (LIVE_VERIFIED)**
+
+- **Work ID:** `ONB-GUIDED-SETUP` W3a, unit C. **Approval:** owner in chat, 2026-11-20 (`ONB-W3A-FN-CHECKOUT-452DCB24-2026-11-20`; kit integrity, live start and census first; stop on any deviation; no retry/rollback).
+- **Release:** `salowncreatecheckoutsession-00016-qof` → **`-00017-faz`** @100 %, deployed 2026-11-20T11:48:58Z (only `functions:salown:salownCreateCheckoutSession`; isolated firebase-tools 15.26.0). **Rollback identity:** `-00016-qof` (traffic 100 %; own approval; not used).
+- **Source:** `452dcb249d55…` (parent `5bfd1a49` = U1-FIX live source). Behaviour: a tenant with an `onlineBooking` marker other than `open` takes no new deposit checkout (before any Stripe call/write); marker absent (every live tenant) → unchanged. Runtime options live-verbatim: `SALOWN_STRIPE_SECRET_KEY` v1 only, 256Mi/cpu 1/60 s/max 12/conc 80. New source generation `1795175280027393`: non-lib 27/27 = candidate blobs.
+- **Kit STOP (kept as evidence):** post-verify `environment differs` = platform-added `FUNCTION_REGION=europe-west2` (absent on `-00016-qof`); no secret/user value. Kit fixed afterwards (C branch accepts only that exact key/value; 5 offline negatives STOP). Original `deploy.log` + old script preserved. Independent read-only measurement PASS: only this function moved, traffic 100 % new revision, Firestore `3c642ce6` and Storage `16e25a89` unchanged, `salownSetOnlineBooking` still ABSENT.
+- **Pre:** census 14/14 ABSENT (11:47:16Z); `check.sh C` OK (digest `39de470b…07b32`).
+- **Logs:** after deploy only the Google rollout probe (1 ERROR/WARNING pair at 11:48:59Z).
+- **Owner booking test (2026-11-20 ~11:54Z, sandbox):** `salowncreatebooking-00012-jad` POST 200 (11:54:40Z) → `salowncreatecheckoutsession-00017-faz` OPTIONS 204 + POST 200 (11:54:43Z) → `salownconnectwebhook-00016-wiy` POST 200 (11:55:08Z); 0 WARNING+ on any Cloud Run service since 11:50Z (read-only).
+- **Not live-exercised:** the refusal for a `setup`/`paused` tenant (0 marked roots). **Not released:** B-narrow `2a326d8d` (`salownSetOnlineBooking`, live ABSENT) — W3b/W2 stay blocked on it.
+
 ## R-2026-11-19-B — Firestore rules: W3a online-booking marker guard (RT1–RT7) on live lineage · Firestore rules (`cloud.firestore`) · **LIVE — DEPLOYED_VERIFIED; owner UI test PASS 2026-11-20 (LIVE_VERIFIED) — MAIN `ce1b32a7`**
 
 - **Work ID:** `ONB-GUIDED-SETUP` W3a, unit R. **Approval:** owner in chat, 2026-11-19 ("A (aa35b334) ve ardından R (2e08baef) yayınları onaylı"; R confirmed after A's measured verification was accepted). No automatic retry or rollback.
