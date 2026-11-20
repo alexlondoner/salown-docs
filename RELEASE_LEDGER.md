@@ -1,5 +1,32 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
+## R-2026-11-20-F — Functions: `provisionTenant` (SIGNUP-EMAIL-VERIFY gate: no NEW tenant before the owner's email is verified) · `functions:salown:provisionTenant` · **LIVE — DEPLOYED_VERIFIED; behaviour LIVE_VERIFIED by the owner's signup tests (happy path + address correction)**
+
+- **Work ID:** `SIGNUP-EMAIL-VERIFY`, step F2 of F1 → H → F2. **Approval:** owner in chat, 2026-11-20 (`SIGNUP-VERIFY-F2-2026-11-20`, kit digest `7b35c5508072229d`; STOP = stop, no auto retry/rollback).
+- **Release:** `provisiontenant-00142-lis` → **`provisiontenant-00143-wav`** @100 %, europe-west2, 2026-11-20T16:49:42Z (archive gen `1795193335944423`); isolated firebase-tools 15.26.0; kit run `deploy-fn2-20261120T164805Z`; post-verify class 0 (21 config fields unchanged, secrets `OWNER_INVITE_SMTP_USER@2`/`PASS@1` unchanged, only provisionTenant moved). **Rollback:** traffic → `-00142-lis` (gate off); roll hosting back only after the gate is off. Not used. Suggested ≥30-minute quiet period after H was **not** observed (owner approved the sequence); an old-UI tab gets the refusal text, recovery = reload → sign in → `/signup/verify` → Resend.
+- **Source:** `90f49cf24f6b9cda7f4d32ae66e4a366a4cc5c11` (tree `77335150…`) on live source `4560b926`, branch `work/signup-email-verify-on-live-4560b926` (pushed `[skip ci]`); upload set 158 files, digest `9a8cde0c…`. Behaviour: after the resume / already-owns / refuse branches, a NEW tenant needs a live Auth record with `emailVerified === true` (`email-not-verified`) and the same address as the token (`stale-token`).
+- **Gates (candidate):** build 0; unit 14/14; Auth-emulator 80/80; negative control (gate removed) fails V3, V5 and two fault tests.
+- **Live evidence:** the owner's signups on `+` aliases of one mailbox reached `provisionTenant` only after the link was opened, and the salon was created (onboarding wizard 1/4 shown, sign-out/sign-in resumed). Request logs: no `Signup verification mail failed`.
+- **Main twin:** `42495a58` (+ SYNC/claim close `3e58da1d`). Main's rota rollout, canonicalisation, welcome mail and W3b marker kept; tests as `*.emulator.test.js`.
+- **Not live-exercised:** stale-tab refusal; owner-invite / lagging-claim account through the gate; an existing owner re-calling `provisionTenant`.
+
+## R-2026-11-20-E — Hosting: `hosting:salown` (SIGNUP-EMAIL-VERIFY UI: `/signup/verify`, signup stops at "check your email") · **LIVE — DEPLOYED_VERIFIED; flow LIVE_VERIFIED by the owner (happy path + address correction)**
+
+- **Work ID:** `SIGNUP-EMAIL-VERIFY`, step H. **Approval:** `SIGNUP-VERIFY-H-2026-11-20`, kit `7b35c5508072229d`.
+- **Release:** `hosting:salown` `9e54061bc5040df2` → **`064fefc75c5ee131`** (FINALIZED, 103 files), 2026-11-20T16:47Z; run `deploy-hosting-20261120T164525Z`; post-verify class 0 (served == candidate build 101/101 from the pinned manifest; `salown-staff` `1992043483840999` untouched). **Rollback:** re-release `9e54061bc5040df2` (only after the gate is off). Not used.
+- **Source:** `41251c5beddc88d45bdbf102eff4d2843b3caacb` (tree `37daa0c3…`) on live source `cfeb7a58`, branch `work/signup-email-verify-ui-on-live-cfeb7a58` (pushed `[skip ci]`); 12 paths. `firebase.json` +1 rewrite and +1 noindex/no-referrer header block for `/signup/verify`.
+- **Flow (live):** Signup → mail (Brevo, `noreply@salown.com`) → Firebase hosted handler → `/signup/verify` → sign in (other tab) → provisionTenant → onboarding. Address correction: the wrong address's link is refused ("expired or already used"), the new address verifies.
+- **Main twin:** `42495a58`. **Not live-exercised:** other-device verification; lagging-claim invite account ("being prepared"); send limits; reauth on `recent-login-required`.
+- **Open (separate, causes not established):** `SIGNUP-VERIFY-CORRECT-MSG`, `ONB-WIZARD-LIGHT-CONTRAST` (see ROADMAP).
+
+## R-2026-11-20-D — Functions: `sendSignupVerification` + `correctSignupEmail` (SIGNUP-EMAIL-VERIFY, new callables) · `functions:salown:sendSignupVerification,correctSignupEmail` · **LIVE — DEPLOYED_VERIFIED; sending LIVE_VERIFIED by owner-observed delivery**
+
+- **Work ID:** `SIGNUP-EMAIL-VERIFY`, step F1. **Approval:** `SIGNUP-VERIFY-F1-2026-11-20`, kit `7b35c5508072229d`.
+- **Release:** both functions CREATED (live was ABSENT, 148 functions before): `sendsignupverification-00001-nic` (2026-11-20T16:44:37Z), `correctsignupemail-00001-hak` (16:44:47Z); europe-west2, 256MiB, cpu 1, 60 s, concurrency 80, min 0, max 10, secret `BREVO_API_KEY` only; run `deploy-fn1-20261120T164231Z`; post-verify class 0 (only the two functions added; `provisionTenant` stayed `-00142-lis` until F). **Rollback = DELETE both** (own approval; deleting does not recall sent mail).
+- **Source / behaviour:** `90f49cf2` (same as F). Mail `salOWN <noreply@salown.com>` via the existing Brevo helper; link names the Firebase hosted handler with continue URL `https://salown.web.app/signup/verify`; recipient = the Auth record's address, never request data. Throttle in server-only `signupVerificationState/{uid}`: 60 s cooldown, 5/h, 10/day sends, 3 corrections/day. `correctSignupEmail`: unverified, no tenant claim, owns no tenant, `auth_time` ≤ 5 min, new address free; revokes refresh tokens.
+- **Live evidence:** owner-observed delivery (headers NOT verified). The first verification mail arrived late (cause not established); later mails arrived. Request logs 200; no mail-failure error. The correction call 23 s after a send did not mail the new address (cooldown) — the user then pressed Resend.
+- **Not live-exercised:** hourly/daily limits; `recent-login-required`; `has-tenant` probe refusal.
+
 ## R-2026-11-20-C — Functions: `provisionTenant` (ONB-GUIDED-SETUP W3b: a NEW self-signup tenant is born with `onlineBooking.state='setup'`) · `functions:salown:provisionTenant` · **LIVE — DEPLOYED_VERIFIED; marker LIVE_VERIFIED by the owner's controlled signup (tenant `trimzy`)**
 
 - **Work ID:** `ONB-GUIDED-SETUP` W3b (provisionTenant only; `approveApplication`, demo seeders and Super Admin Add Tenant out of scope). **Approval:** owner in chat, 2026-11-20 (`ONB-W3B-PROVISION-2026-11-20`, kit digest `17fec78f19c5eeef`, deploy only this function, STOP = stop, no auto retry/rollback).
