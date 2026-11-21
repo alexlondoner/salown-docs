@@ -1,5 +1,14 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
+## R-2026-11-20-G — Hosting: `hosting:salown-staff` (STAFF-PROFILE-QR: salon public-profile QR / share card on the Staff Profile) · **LIVE — DEPLOYED_VERIFIED; QR visible live (owner-observed); Share / WhatsApp NOT tried live**
+
+- **Work ID:** `STAFF-PROFILE-QR`. **Approval:** owner in chat, 2026-11-20 (pin push `[skip ci]` + `hosting:salown-staff` only; STOP = stop, no auto retry/rollback).
+- **Release:** `hosting:salown-staff` `1992043483840999` → **`9a1b5d0a816e21e8`** (2026-11-20T19:03:09Z); isolated firebase-tools 15.26.0, one deploy. Gate: live was `1992043483840999` before and immediately before the deploy. Clean `git archive` of the pin, built twice identical (25 files); served `staff.salown.com` 25/25 = kit manifest; the other 9 Hosting sites unchanged (pre/post live-version snapshot). **Rollback:** re-release `1992043483840999` (not used).
+- **Source:** `ccc87eaba1729573fa968b75b118962280c882a0` on live source `7949b6180c8aa147e33de2a2ca482f52102857a9` (rebuild of the base matched the live index, sw.js and entry byte for byte), branch `release/staff-profile-qr-on-live-7949b618` (pushed `[skip ci]`); 7 src/i18n files; entry JS `staff-DINWdEZ1.js` → `staff-Bubtxip2.js`, CSS and sw.js unchanged.
+- **Behaviour:** card with salon name, small QR and `salown.com/s/{tenantId}`; QR local, black on white, 4-module quiet zone, decoded to the exact URL; large closable view; Share (dismissal silent) / Copy fallback / WhatsApp recipient-less prefilled message; not published → "not live yet" notice, no QR. No backend, rules or customer data.
+- **Main twin:** `9612ccf7` (+ SYNC/claim close `0f64a76e`). Targeted tests 32/32.
+- **Not live-exercised:** Share button, Copy fallback, WhatsApp button, real-device share sheet; salon-name handling is out of scope. Evidence: `~/release-work/staff-profile-qr/{kit,release-evidence}`.
+
 ## R-2026-11-20-F — Functions: `provisionTenant` (SIGNUP-EMAIL-VERIFY gate: no NEW tenant before the owner's email is verified) · `functions:salown:provisionTenant` · **LIVE — DEPLOYED_VERIFIED; behaviour LIVE_VERIFIED by the owner's signup tests (happy path + address correction)**
 
 - **Work ID:** `SIGNUP-EMAIL-VERIFY`, step F2 of F1 → H → F2. **Approval:** owner in chat, 2026-11-20 (`SIGNUP-VERIFY-F2-2026-11-20`, kit digest `7b35c5508072229d`; STOP = stop, no auto retry/rollback).
