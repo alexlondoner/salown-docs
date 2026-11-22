@@ -1,5 +1,19 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
+## R-2026-11-22-D — Hosting: `hosting:salown-admin` (PROFILE-PREVIEW-UNMARKED-READINESS + -CURRENCY UI) · **LIVE — DEPLOYED_VERIFIED; owner screen test PASS**
+
+- **Approval:** owner in chat, 2026-11-22 (`PROFILE-PREVIEW-UI-2026-11-22`, kit digest `6258d8ea58bab836`). Backend first (R-2026-11-22-C); STOP = stop, no auto retry/rollback.
+- **Release:** `hosting:salown-admin` `f1cc70d3a336787a` → **`9810bc6a49130e61`** (FINALIZED); served == candidate manifest 5/5; the other 9 sites, all functions, rules, scheduler, indexes unchanged. **Rollback:** re-release the `91513ad1` build (rebuild == frozen manifest == bytes served before; proven offline). Not used.
+- **Source:** `3c15b04ecb4d0f5307ff366a4d3dcc74dc886ce6` (tree `4e8b7f47`) on live `91513ad1`, branch `work/profile-preview-unmarked-live-ui`; 3 files (`ProfilePreview.jsx`, `profilePreview.js`, test). `Tenants.jsx`, panel and review buttons byte-identical.
+- **Behaviour:** marker-less salon → "Setup check not applied" (no verdict, no "closed"); prices use the backend's `priceDisplay`, raw stored value when absent (old backend compatible). **Main twin:** super-admin `beaabd9` (tests 328 pass / 0 fail / 1 pre-existing skip).
+
+## R-2026-11-22-C — Functions: `salownPreviewProfile` UPDATE (additive payload fields) · **LIVE — DEPLOYED_VERIFIED; owner screen test PASS**
+
+- **Approval:** owner in chat, 2026-11-22 (`PROFILE-PREVIEW-FN-2026-11-22`, kit digest `6258d8ea58bab836`).
+- **Release:** `salownpreviewprofile-00001-wug` → **`-00002-xik`**; runtime unchanged (256Mi, cpu 1, 60 s, concurrency 80, max 3, min 0), default SA, no secrets, `run.invoker=allUsers`; only this function moved of 151. **Rollback:** redeploy `01cabad7` (kit `deploy-fn.sh --rollback`; rebuild lib == live archive lib, proven offline). Not used.
+- **Source:** `c09741187305d6af2cd5202e0a5e88f70486bd0f` (tree `0ff8c48b`) on live `01cabad7`, branch `work/profile-preview-unmarked-live-fn`; `preview.ts` + test only, `index.ts` byte-identical (authority, input, runtime unchanged).
+- **Behaviour:** payload adds `presentation` {currency, locale} and per-service/variation `priceDisplay` (existing `formatMoney`, salon `settings.presentation`, platform default when absent). Read-only; no tenant data, approval or booking change. **Main twin:** salown-app `077041fe` (preview + runtime + boundary tests 28/28).
+
 ## R-2026-11-22-B — Hosting: `hosting:salown-admin` (PROFILE-REVIEW-PREVIEW UI: inline "current draft" preview above Approve / Request changes) · **LIVE — DEPLOYED_VERIFIED; owner opened the preview, screen test PASS**
 
 - **Work ID:** `PROFILE-REVIEW-PREVIEW`, step 2 of 2 (backend first). **Approval:** owner in chat, 2026-11-22 (`PROFILE-PREVIEW-UI-2026-11-22`, kit digest `e9bff23251da176a`; STOP = stop, no auto retry/rollback).
