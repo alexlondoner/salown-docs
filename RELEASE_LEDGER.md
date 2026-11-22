@@ -1,5 +1,23 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
+## R-2026-11-22-B — Hosting: `hosting:salown-admin` (PROFILE-REVIEW-PREVIEW UI: inline "current draft" preview above Approve / Request changes) · **LIVE — DEPLOYED_VERIFIED; owner opened the preview, screen test PASS**
+
+- **Work ID:** `PROFILE-REVIEW-PREVIEW`, step 2 of 2 (backend first). **Approval:** owner in chat, 2026-11-22 (`PROFILE-PREVIEW-UI-2026-11-22`, kit digest `e9bff23251da176a`; STOP = stop, no auto retry/rollback).
+- **Release:** `hosting:salown-admin` `71e3464f7c3016c8` → **`f1cc70d3a336787a`** (FINALIZED), 2026-11-22 ~00:42Z; served == candidate manifest 5/5; the other 9 Hosting sites, all functions, rules, scheduler, indexes unchanged. **Rollback:** re-release `71e3464f7c3016c8` (kit `deploy-ui.sh --rollback`; its rebuild path was not exercised live). Not used.
+- **Source:** `91513ad1a550cd8c3f9eab10a7901d7dd5801129` (tree `71bd809e…`) on live source `cccccffc93875502720df29da859428993f7e204`, branch `release/profile-preview-ui-on-live-cccccffc` (pushed `[skip ci]`); 5 files, `Tenants.jsx` additions only. Approve / Request changes / Suspend untouched.
+- **Behaviour:** one call to `salownPreviewProfile`; logo, cover, salon details, services, team, hours; issues, advisories and booking readiness shown separately; loading / error / retry. Labelled "current draft" (the submitted version is not stored). Issues heading follows `meta.checksBlockApproval`.
+- **Main twin:** Super Admin `062676e` (on `7a003bd` + `11e0dd1`). Tests 326 pass / 0 fail; lint clean on changed files.
+
+## R-2026-11-22-A — Functions: `salownPreviewProfile` (NEW read-only super-admin callable) · `functions:salown:salownPreviewProfile` · **LIVE — DEPLOYED_VERIFIED; owner-used live**
+
+- **Work ID:** `PROFILE-REVIEW-PREVIEW`, step 1. **Approval:** `PROFILE-PREVIEW-FN-2026-11-22`.
+- **Release:** CREATED (live was ABSENT, 150 functions before): `salownpreviewprofile-00001-wug`, europe-west2, nodejs22, 256Mi, cpu 1, 60 s, concurrency 80, max 3, min 0, default compute SA, no secrets, Cloud Run invoker `allUsers` (callable contract; auth in handler `token.superAdmin === true`). Archive 96 non-build files == candidate; only this function added; hosting, rules, scheduler, project IAM unchanged. **Rollback:** delete the function (after the UI is rolled back first). Not used.
+- **Source:** `01cabad76de9690d686c9c60543b3d675427b47e` (tree `522e92c8…`) on live unit-B source `1a3ac96caeb83752cd75cbb37d8596f869927606` (= `salownSetOnlineBooking` -00001-hew), branch `release/profile-preview-fn-on-live-1a3ac96c`; 3 files, `index.ts` append-only. Live `tenants/index.ts` (approval composer, `salownReviewProfile` -00030-niy) and `onlineBookingGate.ts` identical to the candidate; the preview runs the live `buildPublicProfile` on a read-only facade (its one `public/profile` write is captured, never executed) and the unchanged W3a `evaluateOnlineBookingReadiness`.
+- **Finding:** live Approve does NOT re-run `profileChecks` (main's does) → payload carries `meta.checksBlockApproval=false`.
+- **STOP during release:** the first post-verify stopped on `config_proof` (platform env `EVENTARC_CLOUD_EVENT_SOURCE`, `FIREBASE_CONFIG`, `GCLOUD_PROJECT` flagged by name — a kit false positive; live config matched the declared runtime). Evidence kept in `kit/evidence/original-stop/`. Kit fixed to validate those keys by value (15/15 offline tests), a read-only `--verify-live` completed config, inventory, IAM and neighbour checks. No redeploy.
+- **Main twin:** salown-app `28874a23` (bookingReadiness + `checksBlockApproval: true`; callable runtime options NOT carried → `PROFILE-PREVIEW-MAIN-RUNTIME`), closed in `05a424c4`. Tests: preview 11/11; tenants + onboarding 302 pass / 0 fail.
+- **Not done:** snapshot / fingerprint of the submitted profile; approve-and-open-booking.
+
 ## R-2026-11-20-G — Hosting: `hosting:salown-staff` (STAFF-PROFILE-QR: salon public-profile QR / share card on the Staff Profile) · **LIVE — DEPLOYED_VERIFIED; QR visible live (owner-observed); Share / WhatsApp NOT tried live**
 
 - **Work ID:** `STAFF-PROFILE-QR`. **Approval:** owner in chat, 2026-11-20 (pin push `[skip ci]` + `hosting:salown-staff` only; STOP = stop, no auto retry/rollback).
