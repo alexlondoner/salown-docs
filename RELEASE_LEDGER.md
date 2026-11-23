@@ -64,6 +64,16 @@
 - **Main twin:** salown-app `28874a23` (bookingReadiness + `checksBlockApproval: true`; callable runtime options carried later by `PROFILE-PREVIEW-MAIN-RUNTIME`, 2026-11-22, main only, no deploy), closed in `05a424c4`. Tests: preview 11/11; tenants + onboarding 302 pass / 0 fail.
 - **Not done:** snapshot / fingerprint of the submitted profile; approve-and-open-booking.
 
+## R-2026-11-21-A — Functions: `approveApplication` (ONB-GUIDED-SETUP W3b: a NEW approved tenant is born with `onlineBooking.state='setup'`) · `functions:salown:approveApplication` · **LIVE — DEPLOYED_VERIFIED; marker LIVE_VERIFIED by the owner's controlled approval (tenant `memzikotest`)**
+
+- **Work ID:** `ONB-GUIDED-SETUP` W3b (approve saga only). **Approval:** owner in chat, `ONB-W3B-APPROVE-2026-11-21`, kit digest `b1aadc029ec84c5a`, one function, no auto retry/rollback.
+- **Release:** `approveapplication-00018-xur` → **`approveapplication-00019-kur`**, archive gen `1795258059267425`, ACTIVE, 100 %, 2026-11-21T10:48Z; post-verify class 0 (archive == upload set `33c436bc…`, config/runtime/SA/secret versions unchanged, only this function moved, RB-1 target `00018-xur` intact).
+- **Source:** live lineage candidate `6027fddd` on base `2eedd404` (branch `release/onb-w3b-approve-on-live-2eedd404`). Change = literal `onlineBooking: { state: 'setup' }` in `inviteTenantRoot`, written only by the TENANT_PROVISIONED `tx.create`; an existing root / retry / second approval is never rewritten.
+- **Gates:** build OK; unit 8/8; emulator `approveSaga` 22/22; negative control (marker stripped) 2 fail.
+- **Live evidence:** owner's controlled approval of `memzikotest` (createdAt 2026-11-21T12:21:02Z): single-doc masked read → `onlineBooking.state='setup'`, status `invite_pending`, createTime == updateTime, no trial; marker survived activation (12:22:44Z) and profile approval (13:07Z). Invite mail owner-observed (headers not verified). Server booking refusal NOT exercised live for this tenant (owner forbade a booking-based test).
+- **Main twin:** `f32b6819` (same behaviour on main's saga; emulator `approveSaga` + `approveActivation.main` 25/25); claim `ONB-GUIDED-SETUP-W3B-APPROVE` closed.
+- **Open:** `BOOK-PAGE-SETUP-PRESENTATION` (public page still shows Book while marker = setup); `TEST-APPROVESAGA-SNAPSHOT-SPEED`.
+
 ## R-2026-11-20-G — Hosting: `hosting:salown-staff` (STAFF-PROFILE-QR: salon public-profile QR / share card on the Staff Profile) · **LIVE — DEPLOYED_VERIFIED; QR visible live (owner-observed); Share / WhatsApp NOT tried live**
 
 - **Work ID:** `STAFF-PROFILE-QR`. **Approval:** owner in chat, 2026-11-20 (pin push `[skip ci]` + `hosting:salown-staff` only; STOP = stop, no auto retry/rollback).
