@@ -1,5 +1,37 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
+## R-2026-11-23-F — Hosting: `hosting:salown` (owner e-mail verification UI: "Verify my email" / "I've verified — check again" + bare-URL verification return) · **LIVE — DEPLOYED_VERIFIED; owner screen test PASS**
+
+- **Approval:** owner in chat, 2026-11-23 (kit `ops/releases/salon-name-set/`, branch `work/salon-name-set` @ `9250bd4a`); STOP = stop, no auto retry/rollback. After R-2026-11-23-E.
+- **Release:** `hosting:salown` release `1795391081213000` (version `cc5d24eee8ae5e8f`) → **`1795431811226000`** (version `865a60032cf6b80a`); 102/102 files served == `hosting-owner-verify.manifest.json`; `/app/confirm-salon-name` 200; rules, functions and the other sites unchanged. **Rollback:** `firebase hosting:clone salown@cc5d24eee8ae5e8f salown:live` (prepared, not used).
+- **Source:** `484d358e2b383b5fb833b45a51bae72d772e3819` on the byte-verified live source `f5db6e20`; 6 UI files only. Main twin: salown-app main (SALON-NAME-SET integration).
+
+## R-2026-11-23-E — Functions: `salownSendOwnerEmailVerification` CREATE · **LIVE — DEPLOYED_VERIFIED; owner test PASS**
+
+- **Approval:** owner in chat, 2026-11-23. **Release:** new function `salownsendowneremailverification-00001-hug` (nodejs22, 256Mi, `BREVO_API_KEY` bound on this callable only); the 123 other functions unchanged; anonymous call → 401 UNAUTHENTICATED. Recipient = the live Auth record of the signed-in tenant owner (never the request), noreply@salown.com via Brevo, server ledger `ownerEmailVerificationState/{uid}` (60 s / 5 per hour / 10 per day), continue URL `https://salown.com/app/confirm-salon-name` (**`salown.com` added to Auth authorized domains by the owner in Console, 2026-11-23**; no fallback host). Signup `has-tenant` refusal untouched. **Rollback:** `firebase functions:delete salownSendOwnerEmailVerification --region europe-west2` (prepared, not used).
+- **Source:** `e93bf60334af924205856c4b1f7029090e64a9c7` on live source `f55938e7` (its 146 deployable files byte-identical to live archive gen `1795390859097678`).
+
+## R-2026-11-23-D — Rules: `firestore.rules` (salon name written only by the e-mail-confirmed server path) · **LIVE — DEPLOYED_VERIFIED**
+
+- **Approval:** owner in chat, 2026-11-23 (kit digest `72585f324d3b36aac32fe60238e84b6548d1079694b632fe66f17b38d88fb350`), last of fnA → fnB → hosting → rules.
+- **Release:** ruleset `3c642ce6-d87b-4e78-8a96-033459737a4b` → **`9d0e5bf2-372e-497e-95ce-8c385c10e6d1`** (text sha256 `926c8b84…` == candidate = live + a 43-line patch; main's unreleased ONB-PD NOT carried). Direct client changes to tenant-root `name`/`salonName` (owner, admin, super-admin) and `settings.shopName` are denied; `tenants/*/salonNameChanges/**` is Admin-SDK-only (G4 catch-all + root read). An unchanged name repeated in a payload and every other settings/root save still pass; tenant creation, W3a and the anonymous-UPDATE removal are byte-identical. Verified with the Rules test API (no data read/written): before → after flips on exactly those cases, 0 mismatches; anonymous GET of `salonNameChanges` → 403.
+- **Rollback:** re-release `3c642ce6` — **this REOPENS every bypass of the e-mail confirmation** (treat as an incident). Not used.
+
+## R-2026-11-23-C — Hosting: `hosting:salown` (salon-name UI: Settings + Online Profile bound to the e-mail-confirmed backend, `/app/confirm-salon-name`) · **LIVE — DEPLOYED_VERIFIED**
+
+- **Release:** release `1795193236228000` (version `064fefc75c5ee131`) → **`1795391081213000`** (version `cc5d24eee8ae5e8f`); 102/102 served == `hosting-candidate.manifest.json`. **Rollback:** re-release `1795193236228000` (not used).
+- **Source:** `f5db6e205217716d8faaa688e581f931711bd905` on live source `41251c5b` (the live bundle was proven byte-equal to a build of `41251c5b`; **main was NOT the live base** — older landing, other chunks); 11 salon-name UI files only.
+
+## R-2026-11-23-B — Functions: `salownSyncPublicBooking` UPDATE (name-only change patches only the existing `public/booking` name fields) · **LIVE — DEPLOYED_VERIFIED**
+
+- **Release:** `salownsyncpublicbooking-00001-ges` → **`-00002-yag`**; only this function moved. **Source:** `fa3affedb7b8a26c869a6a420fd1d57b66443171` on live archive `2ba821cf` (pristine tsc == archive lib; lib changes `index.js` + `tenants/salonName.js`). **Rollback:** redeploy the live archive (not used).
+
+## R-2026-11-23-A — Functions: e-mail-confirmed salon rename (request / confirm / cancel / status) + `salownRepublishProfileOnEdit` / `salownRepublishOnSettingsEdit` UPDATE · **LIVE — DEPLOYED_VERIFIED; owner end-to-end test PASS**
+
+- **Approval:** owner in chat, 2026-11-23 (kit digest `72585f32…`). **Release:** created `salownRequestSalonNameChange` (`-00001-zar`, `BREVO_API_KEY` bound), `salownConfirmSalonNameChange`, `salownCancelSalonNameChange`, `salownSalonNameChangeStatus` (GET/HEAD, read-only); updated `salownrepublishprofileonedit` `-00027-nef` → `-00028-gob`, `salownrepublishonsettingsedit` `-00002-vut` → `-00003-jij`; the other functions unchanged. No direct rename callable exists (owner or super-admin). Token: 15 min, single use, SHA-256 only; request needs auth ≤ 10 min, 3/h + 10/day; recipient = verified Auth address; name apply + token consume + audit in one transaction.
+- **Source:** `f55938e77b0c63b48337979172a0c669fd5d8351` on live archive `386e69bf` (the first candidate `834f4a13` was REFUSED by `gatedReleaseGuard` — it carried ONB-PD files — and replaced by a self-contained owner gate; TRIAL_GRACE salons cannot rename: owner decision open).
+- **Owner end-to-end test (2026-11-23, `araserulas+fcbtest`):** First Class Barbers → Mez Mobile Barber → **Memz Mobile Barber** (owner's accepted name). Tenant root `name`/`salonName`, `settings.shopName`, `public/profile`, `public/booking` all moved in one confirm transaction; audit `SALON_NAME_SET via email-confirm`; tenant id/URL unchanged; request consumed. **Rollback:** previous revisions above (not used). Main twin: salown-app main.
+
 ## R-2026-11-22-D — Hosting: `hosting:salown-admin` (PROFILE-PREVIEW-UNMARKED-READINESS + -CURRENCY UI) · **LIVE — DEPLOYED_VERIFIED; owner screen test PASS**
 
 - **Approval:** owner in chat, 2026-11-22 (`PROFILE-PREVIEW-UI-2026-11-22`, kit digest `6258d8ea58bab836`). Backend first (R-2026-11-22-C); STOP = stop, no auto retry/rollback.
