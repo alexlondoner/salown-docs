@@ -1,5 +1,11 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
+## R-2026-11-24-I — Hosting: `salown-staff` (Staff booking detail Duration row, STAFF-DETAIL-DURATION) · **LIVE — DEPLOYED_VERIFIED, OWNER_VERIFIED**
+
+- **Release:** `hosting:salown-staff` `3ff8c183618fffe0` → **`72edc34b84378b1f`** (2026-11-24T15:05Z), one deploy, owner-approved, isolated firebase-tools 15.26.0 from a clean git-archive kit. Served 25/25 == candidate manifest; the other 9 Hosting sites unchanged. **Rollback:** `3ff8c183618fffe0` (not used).
+- **Source:** `7140c3917a43c28ff74479c113bd9e7812a55027` on the live Staff source `0be78b7e` (slug QR kept), pin `release/staff-detail-duration-on-live-0be78b7e`. The Duration row shows the recorded length from the standalone `src/staff/lib/bookingSpan.ts` (same per-source precedence as `getBookingSpan`: Booksy stored span first, others `duration` first; parity 750/750); no recorded length shows "—", never a catalogue or 30-minute guess. No parser, reschedule, payment or booking write.
+- **Main twin:** `25cdcaf7` (same 5 files on current main; tests 194/194; clean-archive Admin + Staff builds OK). **Note:** the earlier "first build error" was the shared `node_modules` lacking `@capacitor/app` for main's native Staff code — a clean `npm ci` builds.
+
 ## R-2026-11-24-H — PUBLIC-SALON-SLUG (public salon address) · **LIVE — DEPLOYED_VERIFIED, S1→S7 complete; owner-confirmed**
 
 - **Approval:** owner in chat, 2026-11-24 (kit `ops/releases/public-salon-slug/kit`, pin digest `a1f1f0e2…c2aa`, v2 exception `public-slug-approve-application-v2` for approveApplication only). Fixed order, fresh start + scope checks per stage; no auto retry/rollback; no mail, no tenant slug write by the release.
