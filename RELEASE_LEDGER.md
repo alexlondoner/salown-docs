@@ -1,5 +1,13 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
+## R-2026-11-24-J — Hosting: `salown` + `salown-staff` (WEEK-ROSTER-RESOLVER: weekly Admin picker / Staff chips follow the per-day staff column rule) · **LIVE — DEPLOYED_VERIFIED, OWNER_VERIFIED (current week); past week NOT owner-tested**
+
+- **Release:** `hosting:salown` `ae5dfbf5bc1caa2a` → **`bf72e45844efe310`** (102/102 served == candidate); then `hosting:salown-staff` `72edc34b84378b1f` → **`bc4584e80d40d807`** (25/25 served == candidate, sw.js identical). Owner-approved, one attempt each, Admin first then Staff after the scope check, isolated firebase-tools 15.26.0, clean `git archive` builds (own `npm ci`) byte-equal to the candidate manifests. Before/after snapshots: the other 8 Hosting sites, Firestore rules `710a5132`, functions fingerprint unchanged.
+- **Source:** Admin `7f14346d341e1296a4ff89e65f3c9439c4941e0b` on live `792d9fe4` (slug kept); Staff `1dc44dcf78436a4d7851268c070ce3f9f058fa49` on live `7140c391` (QR + Duration kept). Pins `release/week-roster-admin-on-live-792d9fe4`, `release/week-roster-staff-on-live-7140c391`. Bundle delta: Staff entry chunk +1,923 B; Admin Dashboard +1,299 B, index +138 B. One pure helper (`src/utils/weeklyStaffRoster.ts`) runs the existing `resolveStaffDayColumn` per day; no new lifecycle rule, no data write.
+- **Owner test:** current week no longer shows Arda or Kadim — PASS. Past week (history of leavers kept) was **not** tried by the owner; covered by tests only.
+- **Rollback (not used):** `hosting:clone` takes `<site>:<channel>`, NOT a version id. Use Hosting REST `POST /v1beta1/sites/<site>/releases?versionName=sites/<site>/versions/<id>` (or Console → Release history): `salown` → `ae5dfbf5bc1caa2a`, `salown-staff` → `72edc34b84378b1f` (both FINALIZED).
+- **Main twin:** `e3af2bb9` + `6de27519` (+ SYNC/claim close `11b436d3`); targeted 98/98, Admin + Staff builds exit 0. The pin edit in `futureStartKadimReaders.test.ts` is main-only (that test cannot load on the Admin live lineage: no `staffCutoff`). 10 `staffLifecycle` "twin agrees" failures need `functions/lib`, identical before/after.
+
 ## R-2026-11-24-I — Hosting: `salown-staff` (Staff booking detail Duration row, STAFF-DETAIL-DURATION) · **LIVE — DEPLOYED_VERIFIED, OWNER_VERIFIED**
 
 - **Release:** `hosting:salown-staff` `3ff8c183618fffe0` → **`72edc34b84378b1f`** (2026-11-24T15:05Z), one deploy, owner-approved, isolated firebase-tools 15.26.0 from a clean git-archive kit. Served 25/25 == candidate manifest; the other 9 Hosting sites unchanged. **Rollback:** `3ff8c183618fffe0` (not used).
