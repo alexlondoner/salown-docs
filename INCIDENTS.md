@@ -41,6 +41,25 @@ Every incident opens with `## YYYY-MM-DD — short title`, immediately followed 
 
 **Tag dictionary (CANONICAL — only these; sprawl forbidden):** `#security` `#stripe` `#secrets` `#config` `#deploy` `#normalization` `#permission` `#race` `#timezone` `#parser` `#email` `#data-loss` `#shared-infra`. A new tag is added only if a genuinely new class emerges (e.g. twins like `#payment`+`#payments`+`#stripe-payment` are FORBIDDEN → all `#stripe`). Every entry carries a `**Tags:**` line.
 
+## 2026-11-24 — Treatwell prepaid booking imported with £0 paid (TREATWELL-T2199233804, Whitecross)
+
+**Severity:** 🟠 High · **Owner:** alish/tw-price-parse · **Status:** 🟡 Open (data repaired, parser hardened; root cause not proven) · **Affected area:** Treatwell import via Brevo inbound → parseInbox dispatch; checkout of prepaid imports
+
+**Discovery:** owner saw £0.00 paid on a prepaid booking whose Treatwell mail said £20.00.
+**Impact:** the prepaid booking read as unpaid (checkout guard `NO_IMPORT_AMOUNT`); finance would have read the catalogue price instead of the paid amount.
+**Root Cause:** PROVEN: the booking was written at import with twGrossPrice 0, price '' and SERVICE_UNMATCHED, so the amount was not read at that moment (not iCal, not the September checkout overwrite). NOT PROVEN: why £20 was not extracted from Brevo's converted body — body selection (`RawTextBody || RawHtmlBody || ExtractedMarkdownMessage`), decoding or label format. The stored raw payload is deleted at PARSED, and the original .eml is not Brevo's converted payload.
+**Bug Class:** Parser input variance / catalogue price standing in for paid money (SSOT violation)
+**Resolution:** `R-2026-11-24-A..D` (three functions that run the Treatwell parser); one owner-approved 4-field data correction on the booking; main twin parser files `67c6f677`.
+**Prevention:** Treatwell-only `readTreatwellPrice`; an unreadable/missing/conflicting amount keeps the booking, raises `PAYMENT_AMOUNT_UNRESOLVED`, and never borrows the catalogue price; historical unresolved imports land CONFIRMED and stay silent via the import marks (tested against the live notification gates). Release lesson: a per-revision `maxInstances` set outside source is dropped by a source deploy — carry it in source (`maxInstances: 20` for these three).
+**Regression Tests:** `functions/src/parsers/treatwellPrice.test.js` (helper table, parser wiring, live-gate tests with `REQUIRE_LIVE_GATES=1`).
+**Related:** commits `0a8de961` `b3378ec9` `b98eeed1` `b230ccab` · roadmap `TW-PRICE-HARDEN` · files `functions/src/parsers/treatwell*.ts`
+
+**Follow-ups:** (1) `maxInstances: 20` for the three functions is not yet on main (`functions/src/index.ts` locked by PUBLIC-SALON-SLUG). (2) Provenance of the Cloud Run service-level cap 12 is unknown. (3) Capture the Brevo converted payload shape for the next Treatwell mail (a non-PII shape probe) to close the open root cause.
+
+**Lessons Learned:**
+- A pre/post check of the Functions config alone missed the Cloud Run service level; record both before a deploy.
+- A missing amount is a state, not a zero: never fill it from a catalogue.
+
 ## 2026-11-18 — Storage bucket world-readable: nightly full Firestore exports and tenant files reachable through the Firebase Storage API (SEC-STORAGE-RULES-P0)
 
 **Severity:** 🔴 Critical · **Owner:** salOWN owner · **Status:** 🟡 Open (rules closed by `R-2026-11-18-F`; follow-ups open) · **Affected area:** Firebase Storage `havuz-44f70.firebasestorage.app` (all salOWN apps + whitecross panels), `dailyFirestoreBackup`

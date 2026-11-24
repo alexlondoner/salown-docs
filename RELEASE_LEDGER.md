@@ -1,5 +1,26 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
+## R-2026-11-24-D — Functions: `salownManualImport` UPDATE (Treatwell price reading + `maxInstances: 20` in source) · **LIVE — DEPLOYED_VERIFIED**
+
+- **Release:** `salownmanualimport-00122-dur` → **`-00123-kol`**; only this service moved. Source `ff91480f4231434fd090a9e6e8424199231bea6a` on live source `18035f42` (98/98 served blobs == candidate). Revision cap 20, Cloud Run service cap 12 unchanged. **Rollback:** traffic to `-00122-dur` (restores the OLD price parsing and the cap) — not used.
+
+## R-2026-11-24-C — Functions: `salownParseEmails` UPDATE (same patch) · **LIVE — DEPLOYED_VERIFIED**
+
+- **Release:** `salownparseemails-00132-faf` → **`-00133-ric`**. Source `ad2a26ff875c66d21607d570077cf26c612eaba0` on live source `813e6229` (94/94 blobs == candidate). Revision cap 20 kept, service cap 12 unchanged. **Rollback:** `-00132-faf` (old price parsing). Not used.
+
+## R-2026-11-24-B — Functions: `salownParseInboxDispatch` UPDATE (restores `maxInstances: 20` in source) · **LIVE — DEPLOYED_VERIFIED**
+
+- **Release:** `salownparseinboxdispatch-00017-duw` → **`-00018-sav`**. Source `a063ca91fa6b0bcce2a353f6e9bbb6e2dcf2de7a` on live source `c990e8ae` (95/95 blobs == candidate); revision cap 20 restored, service cap 12 unchanged. **Rollback:** `-00017-duw` brings back only the missing cap; `-00016-xac` also brings back the old price parsing. Not used.
+
+## R-2026-11-24-A — Functions: `salownParseInboxDispatch` UPDATE (Treatwell-only price reading) · **LIVE — DEPLOYED_VERIFIED, with a recorded DEVIATION**
+
+- **Release:** `-00016-xac` → **`-00017-duw`**. Source `c990e8ae1c2f5674a25885717a5323909ced0fe7` on live source `2505011e`. **Deviation (STOP, no retry/rollback):** the per-revision `maxInstances: 20` was absent from the new revision because the cap lived outside source (console/gcloud); the Cloud Run service-level cap is 12 (its pre-deploy value was never recorded: UNKNOWN). Fixed by R-2026-11-24-B.
+- **Behaviour:** `readTreatwellPrice` (integer pence; £/GBP/entity/NBSP/thousands forms; MISSING / CONFLICT / MALFORMED / explicit £0). The catalogue price is never evidence of payment. An unreadable amount keeps the booking and adds `PAYMENT_AMOUNT_UNRESOLVED` + `twPriceStatus`; prepaid/historical records derive no price/twGrossPrice/commission from the catalogue. A historical unresolved import lands `CONFIRMED` (not CHECKED_OUT/CARD) with the operator-import marks, tested against the downloaded live notification gates (`salownNotifyBookingCreated-00107-wul`, `salownNotifyBookingPush-00042-moq`). Shared decoders and the Booksy/Fresha parsers untouched. Historical imports no longer fill `paidAmount` from the catalogue.
+- **Data:** one owner-approved 4-field correction on the Whitecross booking `TREATWELL-T2199233804` (paidAmount 0→20, price ''→£20.00, twGrossPrice 0→20, twNetPayout 0→20; Firestore updateTime precondition; previous values kept in the kit). No checkout, points, collection, refund or mail.
+- **Kit:** `~/release-work/tw-price-harden-kit` (digest at run `cc171029c375e12c`; approved `6864a5c4d424dc92` differed only by a preflight manifest-gate port fix). Release pins `release/tw-price-parse-on-live-2505011e`, `release/tw-price-parseemails-on-live-813e6229`, `release/tw-price-manualimport-on-live-18035f42`.
+- **Main twin:** salown-app `main` `67c6f677` carries the parser files only (`0a8de961`..`b230ccab`). NOT on main: the `maxInstances: 20` lines in `functions/src/index.ts` — locked by the active PUBLIC-SALON-SLUG claim.
+- **Open:** the exact cause of the missing £20 (Brevo body selection / decoding of the converted payload) is NOT proven; the stored `parseInbox` raw payload was deleted at PARSED. The helper covers the common variants only.
+
 ## R-2026-11-23-F — Hosting: `hosting:salown` (owner e-mail verification UI: "Verify my email" / "I've verified — check again" + bare-URL verification return) · **LIVE — DEPLOYED_VERIFIED; owner screen test PASS**
 
 - **Approval:** owner in chat, 2026-11-23 (kit `ops/releases/salon-name-set/`, branch `work/salon-name-set` @ `9250bd4a`); STOP = stop, no auto retry/rollback. After R-2026-11-23-E.
