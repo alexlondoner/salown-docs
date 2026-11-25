@@ -73,3 +73,10 @@ Owner-approved, ONE target, ONE attempt, isolated firebase-tools 15.26.0 (`~/rel
 **Owner post-release check (not done by me):** Team Members → Put on leave sheet → after a result, **Close** closes. Do NOT re-send Muhamed's leave; no need to re-enter his dates.
 
 **Not done / out of scope:** main integration (`9ed6592f`+`c55cd3b8` on `work/leave-close-button`), SYNC.md/ledger entry (R-id) and claim `LEAVE-CLOSE-BUTTON` closure — still open and need their own step.
+
+---
+## SOURCE + RELEASE RECORDS CLOSED (25 Nov, late)
+- **Main twin pushed:** `cb4e8b0f` (fix) + `0a0fe163` (no-resend assertions), both `[skip ci]`, on `origin/main 5df0156e`. Verified on `origin/main`: `src/pages/Barbers.tsx` blob `3fcb3ab1b1e561ea8ec43f46b3f3359b5e999443` and `src/pages/Barbers.leaveClose.render.test.tsx` blob `ad3bf735bde88c4c4ff1bc129cb85f4bb8c14fc7` equal the live candidate's blobs; main's other changes preserved (cherry-pick, no file replaced).
+- **Clean-archive verification of the main result** (`~/release-work/leave-close-main-verify-20261125/{head,base}`, own locks, `functions` built first): render 8/8; 7 related suites 356/356; Admin build OK; `tsc` 0 vs 0 (identical); eslint on `Barbers.tsx` identical to base (`rehireRota` pre-existing), test file clean.
+- Records updated: `SYNC.md` (salown-app main), `RELEASE_LEDGER.md` R-2026-11-25-J, `ROADMAP.md`, this file. Claim `LEAVE-CLOSE-BUTTON` closed (removed).
+- Still open: owner's live Close check; audit of offboard/rehire/availability-until sheets; rollback never rehearsed; pre-existing `rehireRota` lint error.
