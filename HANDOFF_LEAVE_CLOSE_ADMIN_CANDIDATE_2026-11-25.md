@@ -54,3 +54,22 @@
    - There is no supported CLI "roll back to version" command (`hosting:clone` takes `site:channel`, not a version). Fallback = redeploy the clean `base` tree (manifest `004afe7f…d56b2`, byte-equal to live) with the same targeted `--only hosting:salown`. Untested.
 3. **Extra no-resend assertions on the main work branch:** `a7fb579f` cherry-picked onto `work/leave-close-button` as **`c55cd3b8`** (test file only, +13 lines; `Barbers.tsx` still identical to `9ed6592f`; test file byte-identical to the candidate's). 8/8 render tests pass there. Not pushed.
 **Candidate SHA and digests are unchanged:** candidate `a7fb579fd63e16a4f95e44f07c9f955603b36b76`, tree `4924a7bf…`, manifest digest `c281f164ea23f9f9754c50efdc9d2cbe2ae37a9dd00bec18817b968edcd51835` (the new commit touches no shipped file).
+
+---
+## RELEASED — `hosting:salown` LIVE (25 Nov 2026, 22:02Z / 22:02 UK)
+Owner-approved, ONE target, ONE attempt, isolated firebase-tools 15.26.0 (`~/release-work/leave-close-admin-20261125/fbtools`), from a fresh archive of `a7fb579f` (`.../deploy`), own `npm ci`. Command: `firebase deploy --only hosting:salown --project havuz-44f70`. Exit 0; "found 102 files", version finalized, release complete. Log: `deploy-output.txt`.
+
+**Pre-flight pins (all matched before deploy):** live `salown` = `3ad05c035c7553bd` (release `1795616616368000`); candidate HEAD `a7fb579fd63e16a4f95e44f07c9f955603b36b76`, tree `4924a7bf…`, clean; manifest digest of the fresh pre-deploy build = `c281f164ea23f9f9754c50efdc9d2cbe2ae37a9dd00bec18817b968edcd51835`; 10 hosting sites' live versions recorded (`sites-pre.tsv`).
+
+**Result**
+- `salown` live: **`3ad05c035c7553bd` → `0490cef0f6e290da`**, release **`1795644122054000`** (2026-11-25T22:02:02Z), FINALIZED.
+- Version file list: 104 = **102 uploaded** (set identical to the candidate manifest; no live-only/local-only) **+ 2 Firebase-reserved `__/firebase/init.js`, `init.json`** (counted separately; their bytes were not compared).
+- **Served bytes vs candidate manifest: 102/102 full SHA-256 MATCH, 0 DIFF** (`deploy-vs-live.tsv`). `https://salown.com/app` now loads `/public-bundle/assets/index-B6LWawvT.js` (candidate entry).
+- **Other 9 hosting sites unchanged** (`diff sites-pre.tsv sites-post.tsv`: only `salown` differs). `salown-staff` is at `a42ae43f13547821` (release `1795632947042000`, before this deploy; it is not the version in the ledger and was not touched by this step).
+- No deviation, no retry, no rollback. Functions, rules, Staff, mail, Muhamed's leave record: untouched. No leave operation re-sent.
+
+**Rollback (still NOT executed/rehearsed):** Console → Hosting → `salown` → Release history → `3ad05c035c7553bd` (release `1795616616368000`, FINALIZED as of the pre-deploy check; re-confirm it is still listed) → ⋮ → Roll back. Expect `index-CKPRYHUh.js`, then `verify_served.sh` vs `base` = 102/102.
+
+**Owner post-release check (not done by me):** Team Members → Put on leave sheet → after a result, **Close** closes. Do NOT re-send Muhamed's leave; no need to re-enter his dates.
+
+**Not done / out of scope:** main integration (`9ed6592f`+`c55cd3b8` on `work/leave-close-button`), SYNC.md/ledger entry (R-id) and claim `LEAVE-CLOSE-BUTTON` closure — still open and need their own step.
