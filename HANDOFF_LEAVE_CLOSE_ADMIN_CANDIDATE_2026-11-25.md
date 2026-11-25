@@ -1,0 +1,47 @@
+# HANDOFF — LEAVE-CLOSE-BUTTON Admin release CANDIDATE (2026-11-25)
+
+**Status: READY (candidate only). NOT deployed, NOT pushed, no owner approval yet.** Related: `HANDOFF_LEAVE_CLOSE_BUTTON_2026-11-25.md` (root cause / fix).
+
+## Candidate
+- Branch (local only): `release/leave-close-on-live-61d9b54a`, worktree `~/release-work/leave-close-admin-20261125/cand`
+- **Candidate SHA `a7fb579fd63e16a4f95e44f07c9f955603b36b76`** (tree `4924a7bfa26575ba87cbb3d1a93c0a63f5861cb3`) = live source `61d9b54a` + `75bc4b5e` (= cherry-pick of `9ed6592f`, fix + 8 render tests) + `a7fb579f` (test-only: "no re-send" assertions).
+- Changes vs live source: `src/pages/Barbers.tsx` (+41/−21) and `src/pages/Barbers.leaveClose.render.test.tsx` (new). Nothing else. Special Hours and all other live behaviour untouched.
+- Claim `LEAVE-CLOSE-BUTTON` (main `36e4a9d8`) still `working`; close it when released/abandoned.
+
+## Pre-state (live, measured 25 Nov)
+- `hosting:salown` live version **`3ad05c035c7553bd`**, release `1795616616368000` (14:23:36Z), 104 files (= 102 uploaded + Firebase-reserved `__/firebase/init.js|json`). Matches ledger R-2026-11-25-A..F.
+- **Source parity proven:** clean `git archive 61d9b54a` + own `npm ci` (284 pkgs) + `vite build` → **102/102 files byte-identical (full SHA-256) to what `https://salown.com` serves** (`base-vs-live.tsv`); file-path set equals the live version's file list (`live-files.json`, Hosting REST) apart from the 2 reserved files. Base manifest digest `004afe7f…d56b2`.
+- Note: `61d9b54a` is NOT an ancestor of main (main twin of Special Hours is `768181c6`/`bb8a5047`); candidate is built on the live lineage, not main.
+
+## Candidate build
+- Built twice (clean `rm -rf hosting/public-bundle`, own `npm ci`) plus once more on the final commit: **manifests identical**, 102 files, **manifest digest (sha256 of `cand-manifest-1.txt`) `c281f164ea23f9f9754c50efdc9d2cbe2ae37a9dd00bec18817b968edcd51835`**.
+- Bundle diff vs live (`base-manifest.txt` ↔ `cand-manifest-1.txt`): 70 files unchanged. **One real content change: `Barbers-Bhpxc0EH.js` → `Barbers-CjJKkiXh.js` (172,722 → 173,096 chars, +374).** The other 29 JS chunks are renamed only (hash cascade: after normalising chunk-hash names they are byte-identical); `public-bundle/index.html` and `reset-password.html` change only by referencing the new entry `index-B6LWawvT.js` (was `index-CKPRYHUh.js`). Static root pages, emails, images unchanged. Upload set size 102, no new/removed logical files.
+- Candidate key files: `public-bundle/assets/Barbers-CjJKkiXh.js` `db355fa3…ffe25`; `index-B6LWawvT.js` `4849bc19…e69df`; `public-bundle/index.html` `83683c2d…bfee09`.
+
+## Tests / gates (on the clean candidate lineage)
+- 8 new render tests (real `Barbers`, mocked firebase + callable boundary): **8/8 pass**. They run in a SEPARATE copy (`cand-test`) because the live lineage's `package.json` has no `jsdom`/`@testing-library`; they were installed `--no-save` there, candidate `package.json`/lock untouched.
+- Explicit no-resend checks (5a unexpected throw, 5b write ok + refresh failure): Close enabled, send control + confirm input gone, Enter/Ctrl+Enter ignored, callable called exactly once. Honest scope: the UI offers no re-send path after a result; the ref/key guards are defence in depth and are exercised through the single-click/double-click/close-while-pending tests, not by calling `submitLeave` directly.
+- Lifecycle: `functions/lib` built with the candidate's own `functions/` deps (`npm ci` 766 pkgs, `npm run build`); `staffLifecycle.test.ts` **121/121 pass** (previous 10 failures were the missing lib, not code). The 293 source-guard tests were not re-run (unchanged files).
+- Lint: `Barbers.tsx` = 1 error `rehireRota` unused (line 349) — **identical on live source**; not fixed. `tsc --noEmit`: base 90 errors, candidate 91; the single extra is the new test's `@testing-library/react` import (same class as 15 existing errors in live lineage, whose package.json lacks the dep). No unrelated error fixed.
+- Admin build: OK ×3, deterministic.
+- NOT done: manual browser check of the leave flow; Muhamed's real leave not re-submitted; no live call of any kind.
+
+## Deploy plan (for the owner-approved step — not executed)
+1. Fresh clone/worktree of `a7fb579f`, `npm ci`, `vite build`, confirm manifest digest `c281f164…1835`.
+2. `firebase deploy --only hosting:salown --project havuz-44f70` from that tree (targeted; never unscoped `--only hosting`).
+3. Post-check: `curl -s https://salown.com/app | grep -oE 'src="[^"]*index-[^"]*\.js"'` → expect `index-B6LWawvT.js` under `/public-bundle/assets/`; `curl -fsI` 200; then full SHA-256 of every upload-set file vs `cand-manifest-1.txt` (use `verify_served.sh`, run it with the candidate tree and compare). Expect new version ID ≠ `3ad05c03…`; 104 files.
+4. Owner check: Team Members → a test member → Put on leave sheet → after a result, Close closes. Do NOT use Muhamed's real record.
+
+## Rollback (NOT rehearsed)
+- Target: previous live version **`3ad05c035c7553bd`** (release `1795616616368000`).
+- Preferred: Firebase Console → Hosting → site `salown` → Release history → that version → ⋮ → Roll back (per CLAUDE.md; `hosting:clone` is not a rollback tool).
+- Fallback (reproducible, also untried): deploy the verified base tree (`~/release-work/leave-close-admin-20261125/base`, clean `61d9b54a` build, manifest digest `004afe7f…d56b2`, proven byte-equal to live) with the same targeted command; then re-run `verify_served.sh`.
+- **Neither rollback path was executed or tested. Version retention of `3ad05c03…` was not checked.** Treat rollback as "planned", not "verified".
+
+## Artefacts (`~/release-work/leave-close-admin-20261125/`)
+`base/` clean live-source build · `cand/` candidate worktree · `cand-test/` test copy · `base-manifest.txt`, `cand-manifest-{1,2,final}.txt` · `base-vs-live.tsv`, `live-files.json` · `verify_served.sh`, `manifest.sh` · `tsc-base.txt`, `tsc-cand.txt`.
+
+## Open
+- Offboard / rehire / availability-until sheets: out of scope, same pattern unaudited.
+- Main twin of this fix is `9ed6592f` on `work/leave-close-button` (local); the extra no-resend assertions in `a7fb579f` are not yet ported there.
+- Pre-existing: unused `rehireRota`; live-lineage package.json lacks test deps.
