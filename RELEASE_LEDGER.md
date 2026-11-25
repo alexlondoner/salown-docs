@@ -1,5 +1,16 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
+## R-2026-11-25-G — Hosting: `salown-staff` (STAFF-CLIENTS-LOAD-ERROR: failed Clients load/search is not "no clients"/"no match") · **LIVE — DEPLOYED_VERIFIED; owner list/history/Book-now PASS; error/retry + restricted-staff NOT live-tested**
+
+- **Release:** `hosting:salown-staff` `b18505d1d9fbfd67` → **`8cb9f94111ebaba9`** (release `1795622053781000`, 2026-11-25T15:54Z; one attempt, isolated firebase-tools 15.26.0, `--only hosting:salown-staff`). Candidate `6c0891248982ee6891687dcf66dd55d136e53e5e` = live source `ae34439c` + 6 files (pin branch local only). Pre: live `b18505d1d9fbfd67`, served 25/25 full SHA-256 == `ae34439c` clean build. Post: served 25/25 == candidate (only the entry JS `staff-I4O35evz`→`staff-3JTVcgo4` and `index.html` changed); other 9 sites' version + release ids unchanged. Permission, duration, QR and roster code untouched.
+- **Behaviour:** `ClientsView` snapshot error → explicit message + working Try again (re-subscribe); `ClientSearch` failed lookup → message + Try again, "New client" NOT offered while failed/retrying; successful empty result keeps the empty state; stale responses (tenant switch/unmount) are discarded. `canViewClientInfo` behaviour unchanged.
+- **Tests (clean `git archive`, own `npm ci`):** candidate 12 files/273; main twin 10 files/236; Staff build ×2 identical; `tsc --noEmit` 56 (base `ae34439c`) / 83 (main) errors, candidate and twin add none (identical sets).
+- **Owner test:** Clients list opens, client history opens, Book now visible for owner = PASS. **Error/retry state and restricted staff: NOT tested live — restricted-staff test still PENDING.**
+- **Rollback (NOT executed, NOT verified):** Hosting REST re-release of `b18505d1d9fbfd67` on `salown-staff` (kit RUNBOOK §4).
+- **Main twin:** `df6f3b8c` + `d9175f41` (6 files blob-identical to `6c089124`); claim `STAFF-CLIENTS-LOAD-ERROR` closed `eb74850a`.
+- **Open:** `ClientSearch` contact privacy (dropdown shows phone/e-mail with no `canViewClientInfo` gate) — separate item, NOT resolved.
+- **Evidence:** `~/release-work/staff-clients-load-error-kit/evidence/`; handoff `salown-app/ops/releases/staff-clients-load-error/HANDOFF.md`.
+
 ## R-2026-11-25-A..D — Functions: `salownCreateStaffBooking` · `salownCreateAdminBooking` · `salownCreateWalkIn` · `salownCreateStaffWalkIn` (explicit creation-permission guard) · **LIVE — DEPLOYED_VERIFIED**
 
 - **Release:** one function per deploy, owner-approved 25 Nov, isolated clean-archive kit (digest `fc119b4ffcd207ecda55475f8941a03423d05ac1ad48f7495eaf7a8d16742430`). A `salownCreateStaffBooking` `-00003-cuz` → **`-00004-vem`**; B `salownCreateAdminBooking` `-00004-yif` → **`-00005-heg`**; C `salownCreateWalkIn` `-00004-xir` → **`-00005-zen`**; D `salownCreateStaffWalkIn` `-00003-koz` → **`-00004-jiw`**.
