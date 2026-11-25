@@ -14,12 +14,12 @@
 
 - **Release:** `hosting:salown-staff` `bc4584e80d40d807` → **`b18505d1d9fbfd67`** (25/25 served == candidate, tree digest `ff85638805f376cb…`; Admin site unchanged). Source `ae34439cd5114fb1f9daa56dc1617134b3c79833` on live `1dc44dcf` (QR + Duration + week-roster kept); clean archive + own `npm ci` rebuild identical to the earlier candidate 25/25; vs previous live only `index.html` + entry JS changed. Contact info / Book now follow `canViewClientInfo` / `canCreateBookings` (UI visibility, not field-level security); reschedule keeps the recorded booking length.
 - **Owner test:** owner create + duration PASS; **restricted staff account NOT yet tested live — PENDING.**
-- **Main twin:** components, duration, dictionaries on main `9b0dc875`; **`StaffRouter.tsx` wiring (6 lines + test) NOT on main — held under the STAFF-NATIVE-D1-P0 claim**, so on main the new props default to the old behaviour until the claim owner lands it.
+- **Main twin:** components, duration, dictionaries on main `9b0dc875`; **`StaffRouter.tsx` wiring (6 lines) + `staffRouter.permissions.test.tsx` landed `768181c6`** (owner-authorised, content == live; native paths untouched; STAFF-NATIVE-D1-P0 claim only annotated, still open). Targeted 184/184 (16 files), builds OK. `tsc --noEmit` has 4 type-only findings (not a gate; kept for live parity).
 
 ## R-2026-11-25-F — Hosting: `salown` (SPECIAL-HOURS-EDIT: stable, non-destructive Special Hours editing) · **LIVE — DEPLOYED_VERIFIED, OWNER_VERIFIED (Settings)**
 
 - **Release:** `hosting:salown` `bf72e45844efe310` → **`3ad05c035c7553bd`** (102/102 served == candidate; Staff unchanged). Source `61d9b54a` on live `7f14346d` (original owner candidate `979b42e9`). Base `7f14346d` rebuilt with `npm ci` == live `public-bundle` 60/60 sha256; candidate differs by real content only in `Settings.js` (29 other renames = hash cascade).
-- **Main twin:** NOT landed — `src/pages/Settings.tsx` + draft files are locked by the SPECIAL-HOURS-EDIT claim (owner `alish/special-hours`); live runs `61d9b54a`, main still has the pre-fix `Settings.tsx` until that owner lands `979b42e9`.
+- **Main twin:** `768181c6` — `979b42e9` content-identical (blob-verified: Settings.tsx, specialHoursDraft.ts + tests); SPECIAL-HOURS-EDIT claim closed `3d713933`. Live runs `61d9b54a` on `7f14346d`. `tsc` finding at `Settings.tsx:704` is in `979b42e9` itself (type-only, vite build passes).
 - **Rollback (not used):** Hosting REST release of `bf72e45844efe310`.
 
 ## R-2026-11-24-J — Hosting: `salown` + `salown-staff` (WEEK-ROSTER-RESOLVER: weekly Admin picker / Staff chips follow the per-day staff column rule) · **LIVE — DEPLOYED_VERIFIED, OWNER_VERIFIED (current week); past week NOT owner-tested**
