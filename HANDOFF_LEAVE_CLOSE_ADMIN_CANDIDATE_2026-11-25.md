@@ -45,3 +45,12 @@
 - Offboard / rehire / availability-until sheets: out of scope, same pattern unaudited.
 - Main twin of this fix is `9ed6592f` on `work/leave-close-button` (local); the extra no-resend assertions in `a7fb579f` are not yet ported there.
 - Pre-existing: unused `rehireRota`; live-lineage package.json lacks test deps.
+
+---
+## Final pre-deploy checks (25 Nov, later) — no deploy, no push, no live write
+1. **tsc, same conditions** (separate copies `base-test` / `cand-test`: own `npm ci`, `--no-save` jsdom + testing-library, own `functions/` `npm ci` + `npm run build`): **base 9 errors, candidate 9 errors, `diff` empty**; 0 errors mention `leaveClose`. The earlier "90 vs 91" was an unequal environment (no test deps / no `functions/lib` in base) and is superseded. Release `package.json` / `package-lock.json` of the candidate are byte-identical to live source `61d9b54a`. Files: `tsc2-base-test.txt`, `tsc2-cand-test.txt`.
+2. **Rollback target, read-only (Hosting REST GET):** version `3ad05c035c7553bd` exists, **status FINALIZED**, 104 files, 4,040,213 bytes, finalized 2026-11-25T14:23:35Z; it is the current `live` channel release `1795616616368000` (type DEPLOY). Four earlier FINALIZED versions are also listed (`bf72e458…`, `ae5dfbf5…`, `865a6003…`, `cc5d24ee…`). Existence/FINALIZED is verified; **the rollback itself was NOT executed or rehearsed — "rollback verified" does not apply.**
+   - **Committed rollback path:** Firebase Console → Hosting → site `salown` (project `havuz-44f70`) → Release history → version `3ad05c03…` (release 25 Nov 14:23) → ⋮ → **Roll back**. Afterwards: `curl -s https://salown.com/app | grep -oE 'index-[^"]*\.js'` must show `index-CKPRYHUh.js`, then `verify_served.sh` against `base` must give 102/102 MATCH.
+   - There is no supported CLI "roll back to version" command (`hosting:clone` takes `site:channel`, not a version). Fallback = redeploy the clean `base` tree (manifest `004afe7f…d56b2`, byte-equal to live) with the same targeted `--only hosting:salown`. Untested.
+3. **Extra no-resend assertions on the main work branch:** `a7fb579f` cherry-picked onto `work/leave-close-button` as **`c55cd3b8`** (test file only, +13 lines; `Barbers.tsx` still identical to `9ed6592f`; test file byte-identical to the candidate's). 8/8 render tests pass there. Not pushed.
+**Candidate SHA and digests are unchanged:** candidate `a7fb579fd63e16a4f95e44f07c9f955603b36b76`, tree `4924a7bf…`, manifest digest `c281f164ea23f9f9754c50efdc9d2cbe2ae37a9dd00bec18817b968edcd51835` (the new commit touches no shipped file).
