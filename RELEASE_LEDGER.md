@@ -1,5 +1,27 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
+## R-2026-11-25-A..D — Functions: `salownCreateStaffBooking` · `salownCreateAdminBooking` · `salownCreateWalkIn` · `salownCreateStaffWalkIn` (explicit creation-permission guard) · **LIVE — DEPLOYED_VERIFIED**
+
+- **Release:** one function per deploy, owner-approved 25 Nov, isolated clean-archive kit (digest `fc119b4ffcd207ecda55475f8941a03423d05ac1ad48f7495eaf7a8d16742430`). A `salownCreateStaffBooking` `-00003-cuz` → **`-00004-vem`**; B `salownCreateAdminBooking` `-00004-yif` → **`-00005-heg`**; C `salownCreateWalkIn` `-00004-xir` → **`-00005-zen`**; D `salownCreateStaffWalkIn` `-00003-koz` → **`-00004-jiw`**.
+- **Source:** A `593db9e2` on live `2c1d89a2`; B+C `f7dca08d` on `65b5e3f6`; D `f5f6bc29` on `3a480306` (each live archive matched its commit 112/75/75/113 files; base `lib` == archive `lib` byte for byte; lib diff = the guard only). Behaviour: explicit `permissions.canCreateBookings === false` → `PERMISSION_DENIED` inside the transaction for every role incl. owner/admin and both surfaces; absent/true unchanged; no new override.
+- **Runtime pinned + re-measured after each step:** 256Mi · cpu 1 · 60 s · concurrency 80 · SA compute · no secrets · env keys unchanged; functions `maxInstanceCount` **20** AND Cloud Run service + revision `maxScale` **20** (measured at both levels, `maxInstances: 20` now in source for these four); served source archive == candidate sha256; 156–159 other functions' revision + updateTime unchanged each step.
+- **Tests (targeted):** createBooking unit 156/139/153 per lineage; real emulator 44+43+25 (+ CROSS-FLOW 5/5 real race, two labelled-sequential tests). CROSS-FLOW fixture fixed (owner + `b1`, each loser's own contract: block loses → `SLOT_CONFLICT`, booking loses → `BLOCKED_TIME_CONFLICT`); the StaffBooking-lineage CROSS-FLOW test had been vacuous (plain staff without e-mail → block `PERMISSION_DENIED`).
+- **Owner test:** owner create + duration PASS. **Restricted-staff live permission test: PENDING — not done.**
+- **Rollback (not used):** Cloud Run traffic back to the previous revisions above (`gcloud run services update-traffic <fn> --to-revisions=<rev>=100`).
+- **Main twin:** `9b0dc875` (guards + tests, `maxInstances: 20` on the four callables); builds + targeted tests in SYNC.
+
+## R-2026-11-25-E — Hosting: `salown-staff` (Staff permission visibility + recorded-length reschedule) · **LIVE — DEPLOYED_VERIFIED; restricted-staff test PENDING**
+
+- **Release:** `hosting:salown-staff` `bc4584e80d40d807` → **`b18505d1d9fbfd67`** (25/25 served == candidate, tree digest `ff85638805f376cb…`; Admin site unchanged). Source `ae34439cd5114fb1f9daa56dc1617134b3c79833` on live `1dc44dcf` (QR + Duration + week-roster kept); clean archive + own `npm ci` rebuild identical to the earlier candidate 25/25; vs previous live only `index.html` + entry JS changed. Contact info / Book now follow `canViewClientInfo` / `canCreateBookings` (UI visibility, not field-level security); reschedule keeps the recorded booking length.
+- **Owner test:** owner create + duration PASS; **restricted staff account NOT yet tested live — PENDING.**
+- **Main twin:** components, duration, dictionaries on main `9b0dc875`; **`StaffRouter.tsx` wiring (6 lines + test) NOT on main — held under the STAFF-NATIVE-D1-P0 claim**, so on main the new props default to the old behaviour until the claim owner lands it.
+
+## R-2026-11-25-F — Hosting: `salown` (SPECIAL-HOURS-EDIT: stable, non-destructive Special Hours editing) · **LIVE — DEPLOYED_VERIFIED, OWNER_VERIFIED (Settings)**
+
+- **Release:** `hosting:salown` `bf72e45844efe310` → **`3ad05c035c7553bd`** (102/102 served == candidate; Staff unchanged). Source `61d9b54a` on live `7f14346d` (original owner candidate `979b42e9`). Base `7f14346d` rebuilt with `npm ci` == live `public-bundle` 60/60 sha256; candidate differs by real content only in `Settings.js` (29 other renames = hash cascade).
+- **Main twin:** NOT landed — `src/pages/Settings.tsx` + draft files are locked by the SPECIAL-HOURS-EDIT claim (owner `alish/special-hours`); live runs `61d9b54a`, main still has the pre-fix `Settings.tsx` until that owner lands `979b42e9`.
+- **Rollback (not used):** Hosting REST release of `bf72e45844efe310`.
+
 ## R-2026-11-24-J — Hosting: `salown` + `salown-staff` (WEEK-ROSTER-RESOLVER: weekly Admin picker / Staff chips follow the per-day staff column rule) · **LIVE — DEPLOYED_VERIFIED, OWNER_VERIFIED (current week); past week NOT owner-tested**
 
 - **Release:** `hosting:salown` `ae5dfbf5bc1caa2a` → **`bf72e45844efe310`** (102/102 served == candidate); then `hosting:salown-staff` `72edc34b84378b1f` → **`bc4584e80d40d807`** (25/25 served == candidate, sw.js identical). Owner-approved, one attempt each, Admin first then Staff after the scope check, isolated firebase-tools 15.26.0, clean `git archive` builds (own `npm ci`) byte-equal to the candidate manifests. Before/after snapshots: the other 8 Hosting sites, Firestore rules `710a5132`, functions fingerprint unchanged.
