@@ -1,5 +1,31 @@
 # RELEASE_LEDGER.md — one row per release, per deployable unit
 
+## R-2026-11-27-B — Hosting: `salown-staff` (STAFF-TODAY-CARD-PRICE: Booked price/total hidden when the stored price disagrees with the recorded lines) · **DEPLOYED_VERIFIED (served bytes 25/25); device check PASS for the reported booking**
+
+- **Release:** `salown-staff` `06e19811d8f76a8f` → **`a446a22f5465163d`** (release `1795787050769000`, 2026-11-27T13:44Z). Candidate `4d7bb9522fc635731170115b86d63cb9e23f37a4` (= `c3cbfc16` + fix `a96152e7` + test); manifest digest `d86eac0004830fe80242eb9d55152d15bb19b3cd9a5dec14cda7bb2b10c531ca` (two clean builds identical; 2 of 25 files change: entry `staff-DJ6YRngw.js` → `staff-nfQQ1ehP.js` + `index.html`).
+- **Pre/post:** one attempt, `--only hosting:salown-staff`, clean pinned archive + own `npm ci`; PRE: live version as expected, window clear, no overlapping claim, other 9 sites/Cloud Run(160)/rules baseline recorded; POST: served 25/25 HTTP 200 + SHA-256 == candidate manifest, other 9 sites + Functions + rules unchanged.
+- **Behaviour:** top-card "Booked total / Booked price" omitted when service + add-on line amounts (pence) ≠ stored `price` (checkout extras do not rewrite it); discount/loyalty/tip/products never trigger hiding. Reported case £10+£10+£28−£3 = £45 pinned by a real-sheet test. tsc base 56 / cand 56 identical set.
+- **Rollback target:** `06e19811d8f76a8f` (never executed). **Main twin:** pushed `56b82aad` series (see R-2026-11-27-A note); claim `STAFF-TODAY-CARD-PRICE` closed.
+- **Device:** owner "şimdi oldu" → PASS for this fix on the reported booking only. **Not tested:** checkout-sheet saved-discount scenarios, loyalty/welcome-offer, pre-checkout deposit card, other Payment cases. **Open:** writer does not update `price` for checkout extras; no stored discount reason.
+
+## R-2026-11-27-A — Hosting: `salown-staff` (STAFF-TODAY-CARD-PRICE: BookingDetailSheet Payment breakdown) · **DEPLOYED_VERIFIED (served bytes 25/25); superseded by R-2026-11-27-B**
+
+- **Release:** `salown-staff` `135c9cbad97f156a` → **`06e19811d8f76a8f`** (release `1795784768037000`, 2026-11-27T13:06Z). Candidate `c3cbfc166061bb8b3650d380f13f1ced4ff6d53f` (= live source `cc70b19f` + `bb7cd9a8`/`6e6dfda6` cherry-picks, 5 files); manifest digest `87be0c820bc75d32259dee8b68818b342a97ee4ac90187a6fb93317a12259d8e` (2 of 25 files change).
+- **Pre/post:** one attempt, `--only hosting:salown-staff`, clean pinned archive + own `npm ci`; PRE: live version as expected, window clear, no overlapping claim, other 9 sites/Cloud Run(160)/rules baseline recorded; POST: served 25/25 HTTP 200 + SHA-256 == candidate manifest, other 9 sites + Functions + rules unchanged.
+- **Behaviour:** the detail sheet itemises the recorded checkout (service/add-ons/products, discount, loyalty + points, net == Today card, tip apart, paid earlier / at the till from sound receipts); discount reason only from matching Booksy happy-hour evidence, never from `discountCode`/student/member hints.
+- **Source id note (recorded, not a change):** the approval named `c3cbfc16` and the deploy was built from exactly that commit; a later message called the live source `2cca1ad6` — different commit id, IDENTICAL tree `1ef90ddf…`; no build from it. Source of truth `c3cbfc16`.
+- **Rollback target:** `135c9cbad97f156a` (never executed). **Main twin:** 8 cherry-picks of the 10 claimed files pushed to `origin/main` (head `56b82aad`; claimed-file trees == `4d7bb952`); clean archives: 9 files / 118 targeted tests, eslint clean, `build:staff` 0, tsc 83 = 83 identical.
+- **Device:** a Payment-breakdown check was never run as a scenario suite; the owner called the lower breakdown "okay" on one booking (remark, not a PASS).
+
+## R-2026-11-26-B — Hosting: `salown-staff` (STAFF-TODAY-CARD-PRICE: Today card shows the visit net; CheckoutSheet starts from the saved discount) · **DEPLOYED_VERIFIED (served bytes 25/25); Today-card amount device PASS**
+
+- **Release:** `salown-staff` `a42ae43f13547821` → **`135c9cbad97f156a`** (release `1795724534854000`, 2026-11-26T20:22Z). Candidate `cc70b19f07a59e23744b4293f211dcbe49cb6978` (= live source `14e4f9d0` + Today-card price, saved-discount CheckoutSheet, tests); manifest digest `af1f3af24b60d5b56fe625900a3a2536be09a599f7b366c46cc0382e85d82ebc`.
+- **Pre/post:** one attempt, `--only hosting:salown-staff`, clean pinned archive + own `npm ci`; PRE: live version as expected, window clear, no overlapping claim, other 9 sites/Cloud Run(160)/rules baseline recorded; POST: served 25/25 HTTP 200 + SHA-256 == candidate manifest, other 9 sites + Functions + rules unchanged.
+- **Behaviour:** Today card = visit net (checked-out: `bookingNetWithoutTip`; pre-checkout: subtotal − deposit − discount), real £0 vs missing separated; CheckoutSheet starts from the booking's saved `discount` (never `discountSnapshot`), typing replaces, clearing removes, booking switch resets.
+- **Rollback target:** `a42ae43f13547821` (never executed).
+- **Device:** Today-card amount PASS (owner, 2026-11-27: "düzeldi, doğru yazıyor, hepsini ekliyor"). **Not tested:** checkout-sheet saved-discount scenarios, deposit visit total, loyalty/welcome-offer paths. **Open:** welcome offer clears the saved discount and removal does not restore it; revenue tile forecasts non-checked-out bookings with `pp(price)`.
+- Handoff: salown-app `ops/releases/staff-today-card-price/HANDOFF.md`.
+
 ## R-2026-11-26-A — Hosting: `salown` (BOOKSY-SETTINGS-SAVE: Settings → Integrations saves platform payment settings) · **DEPLOYED_VERIFIED (served bytes 102/102); demo-tenant Save test PENDING**
 
 - **Release:** `hosting:salown` `0490cef0f6e290da` → **`9a22c6990ac8e34c`** (2026-11-26T13:24Z; one attempt, `--only hosting:salown`). Candidate `5b7cae07204cc5e1b38c266cb16da18968d97e4f` (tree `344147ac…`) = live source `a7fb579f` + 4 files (Settings.tsx, `platformPaymentSettingsWrite.ts`, 2 tests; package/lock untouched); manifest digest `edd5cbb8564463a5dbc87e1e6feccb06073a9a16b8ef06ed687f6abd05f31b1a` (102 files, three+ clean builds identical; one content change = Settings chunk +1,195 B).
